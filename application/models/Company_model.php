@@ -6,47 +6,49 @@ class Company_model extends CI_Model {
     }
 
     // DEPARTMENT CODE START//
-    public function get_all_departments($column = null, $value = null)
+    public function get_all_departments($column=null,$value=null)
     {
+        $this->db->select('
+            department_master.*,
+            dashboard_master.dashboard_name
+        ');
+
         $this->db->from('department_master');
 
-        if (!empty($column) && $value != '') {
-            $this->db->like($column, $value);
+        $this->db->join(
+            'dashboard_master',
+            'dashboard_master.dashboard_id = department_master.dashboard_id',
+            'left'
+        );
+
+        if(!empty($column) && $value!='')
+        {
+            $this->db->like($column,$value);
         }
 
-        $this->db->order_by('dept_id', 'DESC');
+        $this->db->order_by('department_master.dept_id','DESC');
 
         return $this->db->get()->result();
     }
 
-	public function add_department_data() 
+	public function add_department_data($data) 
 	{
-		$data = array(
-		'dept_name' => $this->input->post('dept_name'),
-		'remark' => $this->input->post('remark'),
-		'created_by' => $this->session->userdata('user_id')
-		);
 		$this->db->insert('department_master', $data);
 		$insert_id = $this->db->insert_id();
 
 		if($insert_id)
 		{
-		$user_se_id=$this->session->userdata('user_id');
-		$page_name=explode('index.php/', $_SERVER['PHP_SELF']);
-		$ci = get_instance();
-		$ci->load->helper('log');
-		$log_msg=add_log_entry($user_se_id,1,$page_name[1],'department_master','dept_id',$insert_id);
+            $user_se_id=$this->session->userdata('user_id');
+            $page_name=explode('index.php/', $_SERVER['PHP_SELF']);
+            $ci = get_instance();
+            $ci->load->helper('log');
+            $log_msg=add_log_entry($user_se_id,1,$page_name[1],'department_master','dept_id',$insert_id);
 		}
 		return $insert_id;
 	}
 
-	public function update_department_data($dept_id) 
+	public function update_department_data($dept_id,$data) 
 	{
-		$data = array(
-            'dept_name' => $this->input->post('dept_name'),
-            'remark' => $this->input->post('remark'),
-            'status' => $this->input->post('status'),
-		);
 		$this->db->where('dept_id',$dept_id);
 		$res = $this->db->update('department_master', $data);
 
@@ -75,11 +77,21 @@ class Company_model extends CI_Model {
 		return $query->result();
 	}
 
-	public function get_department_record_by_id($dept_id)
-	{
-		$query=$this->db->query("select * from department_master where dept_id='$dept_id' ");
-		return $query->result();
-	}
+	// public function get_department_record_by_id($dept_id)
+	// {
+	// 	$query=$this->db->query("select * from department_master where dept_id='$dept_id' ");
+	// 	return $query->result();
+	// }
+
+    public function get_department_record_by_id($dept_id)
+    {
+        return $this->db->where('dept_id',$dept_id)->get('department_master')->result();
+    }
+
+    public function get_dashboard_list()
+    {
+        return $this->db->where('status',0)->get('dashboard_master')->result();
+    }
 
     // DEPARTMENT CODE END//
 

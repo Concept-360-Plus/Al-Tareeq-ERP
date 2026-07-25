@@ -1463,6 +1463,7 @@ class Company extends CI_Controller
         } else {
 
             $data['title'] = 'Add Department';
+            $data['dashboard_list'] = $this->Company_model->get_dashboard_list();
             $data['main_content'] = 'company/department_add.php';
         }
 
@@ -1472,12 +1473,11 @@ class Company extends CI_Controller
     public function save_department()
     {
         $data = array(
-
             'dept_name'     => $this->input->post('dept_name', TRUE),
             'remark'        => $this->input->post('remark', TRUE),
             'status'        => $this->input->post('status', TRUE),
+            'dashboard_id'  => $this->input->post('dashboard_id',TRUE),
             'created_by'    => $this->session->userdata('user_id')
-
         );
 
         if ($this->Company_model->add_department_data($data))
@@ -1501,6 +1501,7 @@ class Company extends CI_Controller
             $department_id   = $this->uri->segment(3);
 
             $data['title']   = 'Edit Department';
+            $data['dashboard_list'] = $this->Company_model->get_dashboard_list();
             $data['records'] = $this->Company_model->get_department_record_by_id($department_id);
             $data['main_content'] = 'company/department_edit.php';
         }
@@ -1514,9 +1515,9 @@ class Company extends CI_Controller
 
         $data = array(
             'dept_name'      => $this->input->post('dept_name', TRUE),
+            'dashboard_id'  =>$this->input->post('dashboard_id',TRUE),
             'remark'         => $this->input->post('remark', TRUE),
             'status'         => $this->input->post('status', TRUE),
-
         );
 
         if ($this->Company_model->update_department_data($department_id, $data))
