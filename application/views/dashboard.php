@@ -18,7 +18,6 @@
             float: right;
             opacity: .3
         }
-
         .bg1 {
             background: #3498db
         }

@@ -238,20 +238,74 @@ class Stock_Model extends CI_Model
     // 	return $query->result();
     //     }
 
-    function get_stock_inventory_report()
+    public function get_stock_inventory_report()
     {
-
         $warehouse_id = $this->input->post("warehouse_id");
-        $model_code = $this->input->post("product_id");
-        $size = $this->input->post("size");
+        $product_id   = $this->input->post("product_id");
 
         $itemcondition = '';
-        if ($model_code != '')
-            $itemcondition = "and i.product_id='$model_code'";
+        if ($product_id != '') {
+            $itemcondition = " AND i.product_id = '$product_id' ";
+        }
 
-        $query = $this->db->query("select zero.*, (coalesce(one.in_qty,0)-coalesce(two.out_qty,0)) as stock, four.allocation from (select s.*, i.product_code,i.product_name from stock_details s, item_master i where s.product_id=i.product_id and warehouse_id='$warehouse_id' $itemcondition group by product_id)as zero left join (select coalesce(sum(quantity),0)as in_qty,model_code,product_id from stock_details where stock_type='IN' group by product_id)as one on(zero.product_id=one.product_id) left join(select coalesce(sum(quantity),0)as out_qty, item_desc,sd.product_id from stock_details sd where stock_type='OUT' group by sd.product_id)as two on(zero.product_id=two.product_id) left join(select coalesce(sum(allocation),0)as allocation,s.product_id, model_code, item_code, item_name from stock_details s, item_master i where s.product_id=i.product_id and stock_type='IN' and status='0' group by i.product_id)as four on(zero.product_id=four.product_id)");
-        //echo $this->db->last_query();exit;
-        return $query->result();
+        $sql = "
+        SELECT
+            zero.*,
+            (COALESCE(one.in_qty,0) - COALESCE(two.out_qty,0)) AS stock,
+            COALESCE(four.allocation,0) AS allocation
+
+        FROM
+        (
+            SELECT
+                s.*,
+                i.product_code,
+                i.product_name
+            FROM stock_details s
+            JOIN item_master i ON s.product_id = i.product_id
+            WHERE s.warehouse_id = '$warehouse_id'
+            $itemcondition
+            GROUP BY s.product_id
+        ) AS zero
+
+        LEFT JOIN
+        (
+            SELECT
+                product_id,
+                COALESCE(SUM(quantity),0) AS in_qty
+            FROM stock_details
+            WHERE stock_type='IN'
+            GROUP BY product_id
+        ) AS one
+        ON zero.product_id = one.product_id
+
+        LEFT JOIN
+        (
+            SELECT
+                product_id,
+                COALESCE(SUM(quantity),0) AS out_qty
+            FROM stock_details
+            WHERE stock_type='OUT'
+            GROUP BY product_id
+        ) AS two
+        ON zero.product_id = two.product_id
+
+        LEFT JOIN
+        (
+            SELECT
+                s.product_id,
+                COALESCE(SUM(allocation),0) AS allocation,
+                i.product_code,
+                i.product_name
+            FROM stock_details s
+            JOIN item_master i ON s.product_id=i.product_id
+            WHERE s.stock_type='IN'
+            AND s.status='0'
+            GROUP BY s.product_id
+        ) AS four
+        ON zero.product_id = four.product_id
+        ";
+
+        return $this->db->query($sql)->result();
     }
 
 
