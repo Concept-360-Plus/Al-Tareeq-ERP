@@ -85,6 +85,58 @@
 
 <div class="row">
 
+    <div class="col-md-3">
+        <div class="panel panel-default">
+            <div class="panel-body text-center">
+
+                <h3><?= $pending_rfq ?></h3>
+
+                <h4>Pending RFQ</h4>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="panel panel-default">
+            <div class="panel-body text-center">
+
+                <h3><?= $pending_quotation ?></h3>
+
+                <h4>Pending Quotation</h4>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="panel panel-default">
+            <div class="panel-body text-center">
+
+                <h3><?= $pending_po ?></h3>
+
+                <h4>Pending PO</h4>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="panel panel-default">
+            <div class="panel-body text-center">
+
+                <h3><?= $pending_grn ?></h3>
+
+                <h4>Pending GRN</h4>
+
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="row">
+
     <div class="col-md-6">
 
         <div class="panel-modern">
@@ -135,7 +187,7 @@
 
         <div class="panel-modern">
 
-            <h4>Pending Purchase Orders</h4>
+            <h4>Recent Purchase Orders</h4>
 
             <table class="table table-bordered">
 
@@ -155,13 +207,19 @@
 
                 <tbody>
 
-                    <?php foreach ($pending_orders as $row) { ?>
+                    <?php foreach ($recent_po as $row) { ?>
 
                         <tr>
 
-                            <td><?= $row->po_code ?></td>
-
-                            <td><?= $row->supplier_name ?></td>
+                            <td>
+                                <?php
+                                if ($row->grn_status == 0) {
+                                    echo '<span class="label label-warning">Pending GRN</span>';
+                                } else {
+                                    echo '<span class="label label-success">Completed</span>';
+                                }
+                                ?>
+                            </td>
 
                             <td>
 
@@ -195,7 +253,7 @@
 
             <h4>Quick Actions</h4>
 
-            <a href="<?= base_url() ?>index.php/Purchase/direct_rfq" class="quick-btn">
+            <a href="<?= base_url() ?>index.php/Purchase/list_direct_rfq" class="quick-btn">
 
                 <i class="fa fa-plus"></i>
 
@@ -241,7 +299,7 @@
 
                 <li><?= $today_rfq ?> RFQs Created</li>
 
-                <li><?= $today_quote ?> Quotations</li>
+                <li><?= $today_quotation ?> Quotations</li>
 
                 <li><?= $today_po ?> Purchase Orders</li>
 
@@ -276,6 +334,96 @@
                     <td><?= $pending_grn ?></td>
 
                 </tr>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+<div class="row">
+
+    <div class="col-md-4">
+
+        <div class="panel-modern">
+
+            <h4>Total Quotation Value</h4>
+
+            <h2><?= number_format($quotation_value, 2) ?></h2>
+
+        </div>
+
+    </div>
+
+    <div class="col-md-4">
+
+        <div class="panel-modern">
+
+            <h4>Total Purchase Value</h4>
+
+            <h2><?= number_format($po_value, 2) ?></h2>
+
+        </div>
+
+    </div>
+
+    <div class="col-md-4">
+
+        <div class="panel-modern">
+
+            <h4>Total GRN Value</h4>
+
+            <h2><?= number_format($grn_value, 2) ?></h2>
+
+        </div>
+
+    </div>
+
+</div>
+
+<div class="row">
+
+    <div class="col-md-12">
+
+        <div class="panel-modern">
+
+            <h4>Top Suppliers</h4>
+
+            <table class="table table-bordered">
+
+                <thead>
+
+                    <tr>
+
+                        <th>Supplier</th>
+
+                        <th>Total Orders</th>
+
+                        <th>Total Purchase</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    <?php foreach ($top_suppliers as $supplier) { ?>
+
+                        <tr>
+
+                            <td><?= $supplier->supplier_name ?></td>
+
+                            <td><?= $supplier->total_orders ?></td>
+
+                            <td><?= number_format($supplier->total_amount, 2) ?></td>
+
+                        </tr>
+
+                    <?php } ?>
+
+                </tbody>
 
             </table>
 

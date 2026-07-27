@@ -2,6 +2,301 @@
 defined('BASEPATH') or exit('No direct script access allowed');
 class Purchase_Model extends CI_Model
 {
+	///////////////DASHBOARD CODES START //////////////
+
+	/* ===========================
+	DASHBOARD COUNT FUNCTIONS
+	=========================== */
+
+	public function get_rfq_count()
+	{
+		return $this->db->count_all('purchase_rfq');
+	}
+
+	public function get_quotation_count()
+	{
+		return $this->db->count_all('purchase_quotation_master');
+	}
+
+	public function get_po_count()
+	{
+		return $this->db->count_all('purchase_order_master');
+	}
+
+	public function get_grn_count()
+	{
+		return $this->db->count_all('purchase_grn_master');
+	}
+
+
+	/* ===========================
+	PENDING COUNT FUNCTIONS
+	=========================== */
+
+	public function get_pending_rfq()
+	{
+		return $this->db
+			->where('quotation_created', 0)
+			->count_all_results('purchase_rfq');
+	}
+
+	public function get_pending_quotation()
+	{
+		return $this->db
+			->where('po_created', 0)
+			->count_all_results('purchase_quotation_master');
+	}
+
+	public function get_pending_po()
+	{
+		return $this->db
+			->where('grn_status', 0)
+			->count_all_results('purchase_order_master');
+	}
+
+	public function get_pending_grn()
+	{
+		return $this->db
+			->where('status', 0)
+			->count_all_results('purchase_grn_master');
+	}
+
+
+	/* ===========================
+	TODAY'S COUNT
+	=========================== */
+
+	public function today_rfq()
+	{
+		return $this->db
+			->where('rfq_date', date('Y-m-d'))
+			->count_all_results('purchase_rfq');
+	}
+
+	public function today_quotation()
+	{
+		return $this->db
+			->where('quotation_date', date('Y-m-d'))
+			->count_all_results('purchase_quotation_master');
+	}
+
+	public function today_po()
+	{
+		return $this->db
+			->where('DATE(po_date)', date('Y-m-d'))
+			->count_all_results('purchase_order_master');
+	}
+
+	public function today_grn()
+	{
+		return $this->db
+			->where('grn_date', date('Y-m-d'))
+			->count_all_results('purchase_grn_master');
+	}
+
+
+	/* ===========================
+	TOTAL PURCHASE VALUE
+	=========================== */
+
+	public function total_po_value()
+	{
+		$this->db->select_sum('grand_total');
+		$query = $this->db->get('purchase_order_master');
+
+		return $query->row()->grand_total;
+	}
+
+	public function total_grn_value()
+	{
+		$this->db->select_sum('grand_total');
+		$query = $this->db->get('purchase_grn_master');
+
+		return $query->row()->grand_total;
+	}
+
+	public function total_quotation_value()
+	{
+		$this->db->select_sum('grand_total');
+		$query = $this->db->get('purchase_quotation_master');
+
+		return $query->row()->grand_total;
+	}
+
+
+	/* ===========================
+	RECENT RFQ
+	=========================== */
+
+	public function get_recent_rfq($limit = 5)
+	{
+		$this->db->select('purchase_rfq.*,supplier_master.supplier_name');
+		$this->db->from('purchase_rfq');
+		$this->db->join(
+			'supplier_master',
+			'supplier_master.supplier_id=purchase_rfq.supplier_id',
+			'left'
+		);
+		$this->db->order_by('purchase_rfq.rfq_id','DESC');
+		$this->db->limit($limit);
+
+		return $this->db->get()->result();
+	}
+
+
+	/* ===========================
+	RECENT QUOTATION
+	=========================== */
+
+	public function get_recent_quotation($limit = 5)
+	{
+		$this->db->select('purchase_quotation_master.*,supplier_master.supplier_name');
+		$this->db->from('purchase_quotation_master');
+		$this->db->join(
+			'supplier_master',
+			'supplier_master.supplier_id=purchase_quotation_master.supplier_id',
+			'left'
+		);
+		$this->db->order_by('quotation_id','DESC');
+		$this->db->limit($limit);
+
+		return $this->db->get()->result();
+	}
+
+
+	/* ===========================
+	RECENT PURCHASE ORDER
+	=========================== */
+
+	public function get_recent_po($limit = 5)
+	{
+		$this->db->select('purchase_order_master.*,supplier_master.supplier_name');
+		$this->db->from('purchase_order_master');
+		$this->db->join(
+			'supplier_master',
+			'supplier_master.supplier_id=purchase_order_master.supplier_id',
+			'left'
+		);
+		$this->db->order_by('po_id','DESC');
+		$this->db->limit($limit);
+
+		return $this->db->get()->result();
+	}
+
+
+	/* ===========================
+	RECENT GRN
+	=========================== */
+
+	public function get_recent_grn($limit = 5)
+	{
+		$this->db->select('purchase_grn_master.*,supplier_master.supplier_name');
+		$this->db->from('purchase_grn_master');
+		$this->db->join(
+			'supplier_master',
+			'supplier_master.supplier_id=purchase_grn_master.supplier_id',
+			'left'
+		);
+		$this->db->order_by('grn_id','DESC');
+		$this->db->limit($limit);
+
+		return $this->db->get()->result();
+	}
+
+
+	/* ===========================
+	TOP SUPPLIERS
+	=========================== */
+
+	public function get_top_suppliers($limit = 5)
+	{
+		$this->db->select("
+			supplier_master.supplier_name,
+			COUNT(purchase_order_master.po_id) AS total_orders,
+			SUM(purchase_order_master.grand_total) AS total_amount
+		");
+
+		$this->db->from('purchase_order_master');
+
+		$this->db->join(
+			'supplier_master',
+			'supplier_master.supplier_id=purchase_order_master.supplier_id',
+			'left'
+		);
+
+		$this->db->group_by('purchase_order_master.supplier_id');
+
+		$this->db->order_by('total_amount','DESC');
+
+		$this->db->limit($limit);
+
+		return $this->db->get()->result();
+	}
+
+
+	/* ===========================
+	MONTHLY PURCHASE TREND
+	=========================== */
+
+	public function get_monthly_po()
+	{
+		$this->db->select("
+			MONTH(po_date) AS month,
+			COUNT(po_id) AS total_po,
+			SUM(grand_total) AS total_amount
+		");
+
+		$this->db->from('purchase_order_master');
+
+		$this->db->where('YEAR(po_date)', date('Y'));
+
+		$this->db->group_by('MONTH(po_date)');
+
+		$this->db->order_by('MONTH(po_date)','ASC');
+
+		return $this->db->get()->result();
+	}
+
+
+	/* ===========================
+	LATEST ACTIVITIES
+	=========================== */
+
+	public function latest_activity($limit = 10)
+	{
+		$sql = "
+			SELECT rfq_code AS code,
+				rfq_date AS activity_date,
+				'RFQ' AS module
+			FROM purchase_rfq
+
+			UNION ALL
+
+			SELECT quotation_code,
+				quotation_date,
+				'Quotation'
+			FROM purchase_quotation_master
+
+			UNION ALL
+
+			SELECT po_code,
+				po_date,
+				'Purchase Order'
+			FROM purchase_order_master
+
+			UNION ALL
+
+			SELECT grn_code,
+				grn_date,
+				'GRN'
+			FROM purchase_grn_master
+
+			ORDER BY activity_date DESC
+			LIMIT ".$limit;
+
+		return $this->db->query($sql)->result();
+	}
+	///////////////DASHBOARD CODES END //////////////
 
 	////////////////// RFQ start ///////////////
 	function add_direct_rfq_records()
