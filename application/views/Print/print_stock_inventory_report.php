@@ -5,12 +5,12 @@ foreach ($comapny_records as $row) {
     $company_address = $row->company_address;
     $company_city = $row->company_city;
 
-    $company_pincode = $row->company_pincode;
+    $company_pincode = $row->company_pincode ?? '';
     $company_country = $row->company_country;
     $company_email_id = $row->company_email_id;
     $company_telephone = $row->company_telephone;
     $company_website = $row->company_website;
-    $company_TRN = $row->company_TRN;
+    $company_TRN = $row->company_TRN ?? '';
 }
 ?>
 <style>		
@@ -116,7 +116,7 @@ foreach ($comapny_records as $row) {
 			<tr>
 			<td><?php echo $i;$i++;?></td>		
 				<td><?php echo $row->product_name;?></td>
-				<td style="text-align: right;"><?php echo $row->current_quantity; $st=$st+$row->current_quantity;?></td>
+				<td style="text-align: right;"><?php echo $row->stock; $st=$st+$row->stock;?></td>
 				
 			</tr>
 		<?php endforeach; ?>

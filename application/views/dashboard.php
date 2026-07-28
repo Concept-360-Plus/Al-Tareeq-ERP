@@ -5,6 +5,10 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        .page-title{
+            padding-top: 15px;
+            margin-bottom: 40px;
+        }
         .kpi-card {
             border-radius: 12px;
             padding: 20px;
@@ -18,6 +22,7 @@
             float: right;
             opacity: .3
         }
+
         .bg1 {
             background: #3498db
         }

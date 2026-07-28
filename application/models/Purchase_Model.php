@@ -1486,6 +1486,7 @@ class Purchase_Model extends CI_Model
 					'product_id'   => $product_id,
 					'unit_id'      => $_POST['item_unit'][$i],
 					'quantity'     => 1,
+					'balance_qty'  => 1,
 					'price'        => $_POST['unit_price'][$i],
 					'remark'       => 'Purchase GRN',
 					'created_by'   => $user_id,

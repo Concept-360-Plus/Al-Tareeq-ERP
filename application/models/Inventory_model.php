@@ -177,15 +177,15 @@ class Inventory_model extends CI_Model
                 ) AS total_pending
             ")
             ->from('item_master im')
-            ->join('stock_details sd','sd.product_id=im.product_id','left')
-            ->where('im.is_inactive',0)
-            ->where('im.is_marked_delete',0)
+            ->join('stock_details sd', 'sd.product_id=im.product_id', 'left')
+            ->where('im.is_inactive', 0)
+            ->where('im.is_marked_delete', 0)
             ->group_by('im.product_id')
-            ->order_by('im.product_name','ASC')
+            ->order_by('im.product_name', 'ASC')
             ->get()
             ->result_array();
     }
-    
+
     public function get_item_reservation_list($item_id)
     {
         $this->db->select("
@@ -259,5 +259,30 @@ class Inventory_model extends CI_Model
     public function get_material_issue_items($mi_id)
     {
         return $this->db->get_where('material_issue_items', ['mi_id' => $mi_id])->result_array();
+    }
+
+    public function get_stock_ledger()
+    {
+        $this->db->select("
+            sd.*,
+            im.product_code,
+            im.product_name,
+            wm.warehouse_name,
+            u.user_name
+        ");
+
+        $this->db->from('stock_details sd');
+
+        $this->db->join('item_master im','im.product_id = sd.product_id');
+
+        $this->db->join('warehouse_master wm','wm.warehouse_id = sd.warehouse_id','left');
+
+        $this->db->join('users u','u.user_id = sd.created_by','left');
+
+        $this->db->order_by('sd.stock_date','DESC');
+
+        $this->db->order_by('sd.stock_id','DESC');
+
+        return $this->db->get()->result();
     }
 }

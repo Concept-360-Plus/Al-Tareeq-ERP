@@ -112,6 +112,7 @@ class Login extends CI_Controller {
                 break;
 
             default:
+                $data['title'] = 'Dashboard';
             	$data['main_content'] = 'dashboard.php';
                 $data['dashboard'] = true;
 	        	$this->load->view('includes/template',$data);
