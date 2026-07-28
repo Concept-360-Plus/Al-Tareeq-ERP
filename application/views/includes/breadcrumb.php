@@ -68,13 +68,17 @@
     if(empty($r_list_page)){
         $list_page = $page_name;
     }
+
+	$except = array('Project/list_resource_planning','Project/edit_resource_planning','Project/add_resource_planning');
     ?>
 
-    <?php if(strtolower($page_name) != 'accounts/view_account_transaction_details'){ ?>
+    <?php 
+		if(! in_array($list_page,$except)){
+		if(strtolower($page_name) != 'accounts/view_account_transaction_details'){ ?>
         <a href="<?php echo base_url().'index.php/'.$list_page; ?>" class="btn btn-secondary" type="button">
             List
         </a>
-    <?php } ?>
+    <?php } } ?>
 
 </div>
 						

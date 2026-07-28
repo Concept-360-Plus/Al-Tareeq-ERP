@@ -432,7 +432,7 @@
 	function get_product_by_id($id)
 	{
 		
-	$query=$this->db->query("SELECT * FROM product_master p LEFT JOIN unit_master u ON p.product_unit_id = u.unit_id LEFT JOIN brand_master m ON p.product_brand_id = m.brand_id WHERE p.product_id='$id'");
+	$query=$this->db->query("SELECT * FROM product_master p LEFT JOIN unit_master u ON p.unit_id = u.unit_id LEFT JOIN brand_master m ON p.product_brand_id = m.brand_id WHERE p.product_id='$id'");
 	return $query->result();
 	}
 	function get_products_list()
@@ -465,7 +465,7 @@
 
 	function get_product_list()
 	{
-	$query=$this->db->query("SELECT p.*,u.unit_abbr,m.brand_name,c.country_name,d.category_name FROM product_master p LEFT JOIN unit_master u ON p.product_unit_id = u.unit_id LEFT JOIN brand_master m ON p.product_brand_id = m.brand_id LEFT JOIN country_master c ON c.country_code = p.product_made_in LEFT JOIN category_master d ON d.category_id = p.product_category ORDER BY p.product_name;");
+	$query=$this->db->query("SELECT p.*,u.unit_abbr,m.brand_name,c.country_name,d.category_name FROM product_master p LEFT JOIN unit_master u ON p.unit_id = u.unit_id LEFT JOIN brand_master m ON p.product_brand_id = m.brand_id LEFT JOIN country_master c ON c.country_code = p.product_made_in LEFT JOIN category_master d ON d.category_id = p.product_category ORDER BY p.product_name;");
 	return $query->result_array();
 	}
 
