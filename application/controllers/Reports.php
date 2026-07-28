@@ -14,8 +14,8 @@ class Reports extends CI_Controller
   ///////////////  RFQ Report ////////////////////
   function rfq_report()
   {
-    $data['from'] = date('01-m-Y');
-    $data['to'] = date('d-m-Y');
+    $data['from'] = date('Y-m-01'); // First day of current month
+    $data['to']   = date('Y-m-d');  // Today's date
     $data['status'] = "";
     $data['title'] = "RFQ Report";
     $data['records'] = array();
@@ -569,5 +569,23 @@ class Reports extends CI_Controller
 
     $data['main_content'] = 'Reports/Stock/stock_inventory_report.php';
     $this->load->view('includes/template.php', $data);
+  }
+
+  function print_stock_inventory_report()
+  {
+    $data['title'] = 'Inventory Report';
+    $data['warehouse_id'] = $this->input->post('warehouse_id');
+    $data['item_id'] = $this->input->post('product_id');
+
+    $this->load->model('Setup_model');
+    $data['comapny_records'] = $this->Setup_model->get_company_master_list();
+
+    $this->load->model('Setup_model');
+    $data['store_records'] = $this->Setup_model->get_warehouse_list();
+
+    $this->load->model('Stock_Model');
+    $data['records'] = $this->Stock_Model->get_stock_inventory_report();
+
+    $this->load->view('Print/print_stock_inventory_report.php', $data);
   }
 }
