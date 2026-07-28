@@ -6,47 +6,49 @@ class Company_model extends CI_Model {
     }
 
     // DEPARTMENT CODE START//
-    public function get_all_departments($column = null, $value = null)
+    public function get_all_departments($column=null,$value=null)
     {
+        $this->db->select('
+            department_master.*,
+            dashboard_master.dashboard_name
+        ');
+
         $this->db->from('department_master');
 
-        if (!empty($column) && $value != '') {
-            $this->db->like($column, $value);
+        $this->db->join(
+            'dashboard_master',
+            'dashboard_master.dashboard_id = department_master.dashboard_id',
+            'left'
+        );
+
+        if(!empty($column) && $value!='')
+        {
+            $this->db->like($column,$value);
         }
 
-        $this->db->order_by('dept_id', 'DESC');
+        $this->db->order_by('department_master.dept_id','DESC');
 
         return $this->db->get()->result();
     }
 
-	public function add_department_data() 
+	public function add_department_data($data) 
 	{
-		$data = array(
-		'dept_name' => $this->input->post('dept_name'),
-		'remark' => $this->input->post('remark'),
-		'created_by' => $this->session->userdata('user_id')
-		);
 		$this->db->insert('department_master', $data);
 		$insert_id = $this->db->insert_id();
 
 		if($insert_id)
 		{
-		$user_se_id=$this->session->userdata('user_id');
-		$page_name=explode('index.php/', $_SERVER['PHP_SELF']);
-		$ci = get_instance();
-		$ci->load->helper('log');
-		$log_msg=add_log_entry($user_se_id,1,$page_name[1],'department_master','dept_id',$insert_id);
+            $user_se_id=$this->session->userdata('user_id');
+            $page_name=explode('index.php/', $_SERVER['PHP_SELF']);
+            $ci = get_instance();
+            $ci->load->helper('log');
+            $log_msg=add_log_entry($user_se_id,1,$page_name[1],'department_master','dept_id',$insert_id);
 		}
 		return $insert_id;
 	}
 
-	public function update_department_data($dept_id) 
+	public function update_department_data($dept_id,$data) 
 	{
-		$data = array(
-            'dept_name' => $this->input->post('dept_name'),
-            'remark' => $this->input->post('remark'),
-            'status' => $this->input->post('status'),
-		);
 		$this->db->where('dept_id',$dept_id);
 		$res = $this->db->update('department_master', $data);
 
@@ -75,11 +77,21 @@ class Company_model extends CI_Model {
 		return $query->result();
 	}
 
-	public function get_department_record_by_id($dept_id)
-	{
-		$query=$this->db->query("select * from department_master where dept_id='$dept_id' ");
-		return $query->result();
-	}
+	// public function get_department_record_by_id($dept_id)
+	// {
+	// 	$query=$this->db->query("select * from department_master where dept_id='$dept_id' ");
+	// 	return $query->result();
+	// }
+
+    public function get_department_record_by_id($dept_id)
+    {
+        return $this->db->where('dept_id',$dept_id)->get('department_master')->result();
+    }
+
+    public function get_dashboard_list()
+    {
+        return $this->db->where('status',0)->get('dashboard_master')->result();
+    }
 
     // DEPARTMENT CODE END//
 
@@ -91,12 +103,7 @@ class Company_model extends CI_Model {
         return str_pad($next_id, 2, '0', STR_PAD_LEFT); // e.g., 1 → 01, 2 → 02
     }
    
-    public function insert_branch_bank_details($data) {
-        if (!empty($data)) {
-            return $this->db->insert_batch('branch_bank_details', $data);
-        }
-        return false;
-    }
+   
     public function get_all_branches($filter_type="",$filter_value=""){
 		$this->db->select('*');
         $this->db->from('branch_master');
@@ -106,57 +113,7 @@ class Company_model extends CI_Model {
         $query = $this->db->get()->result();
         return $query; 
 	}
-    public function insert_branch_data($data){    
-        $this->db->insert('branch_master',$data);
-        return $this->db->insert_id();;
-    }
-    public function get_branch_by_id($id){
-        return $this->db->get_where('branch_master', ['branch_id' => $id])->row();  
-    }
-    public function get_branch_bank_by_id($id){
-     return $this->db->get_where('branch_bank_details', ['branch_id' => $id])->result();  
-    }
-    public function  check_branch_name_unique($branch_name,$id){
-        $this->db->where('branch_name', $branch_name);
-        $this->db->where('branch_id !=', $id); // Exclude current record
-        $query = $this->db->get('branch_master');
-
-        if ($query->num_rows() > 0) {
-        $this->form_validation->set_message('check_branch_name_unique', 'This Branch Name already exists.');
-            return TRUE;
-        }
-        return FALSE;
-    }
-    public function update_branch($id, $data) {
-        $this->db->where('branch_id', $id);
-        $this->db->update('branch_master', $data);
-    }
-    public function delete_branch_bank($branch_id) {
-        $this->db->where('branch_id', $branch_id);
-        $this->db->delete('branch_bank_details');
-    }
-    public function delete_branch_record($id){
-        $this->db->where('branch_id', $id);
-        return $this->db->delete('branch_master');
-    }
-    
-    public function is_branch_used_in_supplier($branch_id){
-        $this->db->select('*');
-        $this->db->from('supplier_master');
-        $this->db->where('branch_id',$branch_id);
-        $query = $this->db->get()->result();
-        return $query; 
-    }
-    public function is_branch_used_in_customer($branch_id){
-        $this->db->select('*');
-        $this->db->from('customer_master');
-        $this->db->where('branch_id',$branch_id);
-        $query = $this->db->get()->result();
-        return $query; 
-    }
-     public function get_branch_bank_by_bank_id($id){
-     return $this->db->get_where('branch_bank_details', ['bid' => $id])->result();  
-    }
+   
     //Customer
     public function get_all_customer_list() {
         $this->db->select('customer_master.*, branch_master.branch_name');
