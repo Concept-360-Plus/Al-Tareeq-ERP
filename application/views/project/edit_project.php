@@ -21,7 +21,7 @@ table th, table td {
 <h5>Project Details</h5>
 <div class="row">
 
-    <!-- Enquiry -->
+    <!-- Enquiry 
         <div class="col-md-6">
                             <div class="form-group">
                                 <label>Enquiry</label>
@@ -34,7 +34,7 @@ table th, table td {
                                     <?php endforeach; ?>
                                 </select>
                             </div>
-                        </div>
+                        </div>-->
 
                         <!-- Quotation -->
                         <div class="col-md-6">
@@ -70,13 +70,11 @@ table th, table td {
 <tr>
     <th width="20%">Customer</th>
     <td width="25%">
-       <input type="text" class="form-control" value="<?= $project['customer_name'] ?>" readonly>
-       <input type="hidden" name="customer_name" value="<?= $project['customer_name'] ?>">
+       <input type="text" name="customer_name" id="customer_name" class="form-control" value="<?= $project['customer_name'] ?>" <?= !empty($project['customer_name']) ? 'readonly' : '' ?>>
     </td>
     <th width="20%">Branch</th>
     <td width="25%">
-       <input type="text" class="form-control" value="<?= $project['branch_name'] ?>" readonly>
-       <input type="hidden" name="branch_name" value="<?= $project['branch_name'] ?>">
+       <input type="text" name="branch_name" id="branch_name" class="form-control" value="<?= $project['branch_name'] ?>" <?= !empty($project['branch_name']) ? 'readonly' : '' ?>>
     </td>
 </tr>
 
@@ -590,6 +588,10 @@ $(document).ready(function () {
 
                     $('#customer_name').val(response.customer);
                     $('#branch_name').val(response.branch);
+                     $('#project_name').val(response.project_name);
+                    $('#project_location').val(response.project_location);
+                    $('#customer_name').prop('readonly', !!$.trim(response.customer || ''));
+                    $('#branch_name').prop('readonly', !!$.trim(response.branch || ''));
 
                 }
             });
@@ -598,6 +600,7 @@ $(document).ready(function () {
 
             $('#customer_name').val('');
             $('#branch_name').val('');
+            $('#customer_name, #branch_name').prop('readonly', false);
 
         }
 

@@ -54,7 +54,7 @@
                     </div>-->
                     <div class="row">
 
-                        <!-- Enquiry -->
+                        <!-- Enquiry
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label>Enquiry</label>
@@ -67,7 +67,7 @@
                                     <?php endforeach; ?>
                                 </select>
                             </div>
-                        </div>
+                        </div> -->
 
                         <!-- Quotation -->
                         <div class="col-md-6">
@@ -75,6 +75,12 @@
                                 <label>Quotation</label>
                                 <select name="quotation_id" id="quotation_select" class="form-control" required>
                                     <option value="">-- Select Quotation --</option>
+                                    <?php foreach ($quotations as $qtn): ?>
+                                        <option value="<?= $qtn['qtn_id'] ?>" 
+                                            <?= (!empty($selected_qtn_id) && $selected_qtn_id == $qtn['qtn_id']) ? 'selected' : '' ?>>
+                                            <?= $qtn['quotation_code'] ?> (<?= $qtn['quotation_type'] ?>)
+                                        </option>
+                                    <?php endforeach; ?>
                                 </select>
                             </div>
                         </div>
@@ -622,7 +628,7 @@ $(document).ready(function(){
     });
 
 });
-$(document).ready(function () {
+/*$(document).ready(function () {
 
     $('#se_select').change(function () {
 
@@ -655,7 +661,7 @@ $(document).ready(function () {
     });
 
 });
-
+*/
 $(document).ready(function () {
 
     $('#quotation_select').change(function () {
@@ -675,6 +681,11 @@ $(document).ready(function () {
 
                     $('#customer_name').val(response.customer);
                     $('#branch_name').val(response.branch);
+                    $('#project_name').val(response.project_name);
+                    $('#project_location').val(response.project_location);
+
+                    $('#customer_name').prop('readonly', !!$.trim(response.customer || ''));
+                    $('#branch_name').prop('readonly', !!$.trim(response.branch || ''));
 
                 }
             });
@@ -683,6 +694,7 @@ $(document).ready(function () {
 
             $('#customer_name').val('');
             $('#branch_name').val('');
+            $('#customer_name, #branch_name').prop('readonly', false);
 
         }
 

@@ -105,6 +105,26 @@
                 </div>
             </div>-->
 
+            <!-- Tool -->
+            <div class="form-group row">
+                <label class="col-md-3 col-form-label">
+                    Tool
+                </label>
+
+                <div class="col-md-5">
+                    <?php if (!empty($tools)) { foreach($tools as $tool){ ?>
+                        <div class="checkbox">
+                            <label>
+                                <input type="checkbox"
+                                       name="tool_ids[]"
+                                       value="<?= $tool['tool_id']; ?>">
+                                <?= htmlspecialchars($tool['tool_name']); ?>
+                            </label>
+                        </div>
+                    <?php } } ?>
+                </div>
+            </div>
+
             <!-- Operation -->
             <div class="form-group row">
                 <label class="col-md-3 col-form-label">

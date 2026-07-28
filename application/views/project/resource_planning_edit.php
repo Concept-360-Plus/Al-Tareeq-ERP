@@ -110,6 +110,34 @@
                 </div>
             </div>
 
+            <!-- Tool -->
+            <div class="form-group row">
+                <label class="col-md-3 control-label">Tool</label>
+
+                <div class="col-md-5">
+                    <?php
+                    $selected_tool_ids = [];
+                    if (!empty($resource['tool_id'])) {
+                        $selected_tool_ids = array_map('trim', explode(',', $resource['tool_id']));
+                    }
+
+                    if (!empty($tools)) {
+                        foreach($tools as $tool){
+                    ?>
+                        <div class="checkbox">
+                            <label>
+                                <input type="checkbox"
+                                       name="tool_ids[]"
+                                       value="<?= $tool['tool_id']; ?>"
+                                       <?= in_array($tool['tool_id'], $selected_tool_ids) ? 'checked' : '' ?>>
+                                <?= htmlspecialchars($tool['tool_name']); ?>
+                            </label>
+                        </div>
+                    <?php }
+                    } ?>
+                </div>
+            </div>
+
             <!-- Skill -->
             <div class="form-group row">
                 <label class="col-md-3 control-label">Skill Level</label>

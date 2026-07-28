@@ -106,7 +106,11 @@
         </button>
 
         <div class="dropdown-menu dropdown-menu-right">
-
+         
+            <a class="dropdown-item"
+            href="<?= base_url('index.php/Project/project_dashboard/'. $row['project_id']) ?>">
+                <i class="fa fa-tachometer text-primary"></i> Project Dashboard
+            </a>
             <a class="dropdown-item"
             href="<?= base_url('index.php/Project/edit_project/'. $row['project_id']) ?>">
                 <i class="fa fa-edit text-warning"></i> Edit Project
@@ -117,17 +121,22 @@
             data-id="<?= $row['project_id'] ?>">
                 <i class="fa fa-eye text-info"></i> View Materials
             </a>
-             <a class="dropdown-item" href="<?= base_url('index.php/Project/list_resource_planning/'. $row['project_id']) ?>">
+            <a class="dropdown-item" href="<?= base_url('index.php/Project/list_resource_planning/'. $row['project_id']) ?>">
                 <i class="fa fa-calendar"></i> Resource Planning
-            </a>
-
-
-            <a class="dropdown-item view-team" data-id="<?= $row['project_id'] ?>" href="<?= base_url('index.php/Project/list_task/'.$row['project_id']) ?>">
-                <i class="fa fa-users text-primary"></i>View Assigned Team
             </a>
 
             <a class="dropdown-item"  href="<?= base_url('index.php/Project/list_task/'. $row['project_id']) ?>">
                 <i class="fa fa-tasks text-success"></i> Project Tasks
+            </a>
+            <a class="dropdown-item view-team" data-id="<?= $row['project_id'] ?>" href="<?= base_url('index.php/Project/list_task/'.$row['project_id']) ?>">
+                <i class="fa fa-users text-primary"></i>View Assigned Team
+            </a>
+            <a class="dropdown-item"  href="<?= base_url('index.php/Project/list_project_manpower/'. $row['project_id']) ?>">
+                <i class="fa fa-users text-info"></i> Project Manpower
+            </a>
+             
+            <a class="dropdown-item" href="<?= base_url('index.php/Project/list_work_orders/' . $row['project_id']) ?>">
+                <i class="fa fa-file-text text-info"></i> Work Orders
             </a>
 
             <a class="dropdown-item" href="#">

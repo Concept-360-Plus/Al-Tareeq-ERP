@@ -11,6 +11,9 @@
 		url("https://netdna.bootstrapcdn.com/bootstrap/3.0.0/fonts/glyphicons-halflings-regular.svg#glyphicons-halflingsregular")
 			format("svg");
 }
+#ajaxModal .bg-primary1{
+	background-color: #eb5783;
+}
 .glyphicon {
 	position: relative;
 	top: 1px;
@@ -1318,6 +1321,9 @@ table.no-margin .progress {
 .row {
 	margin-right: -10px;
 	margin-left: -10px;
+}
+.bg-primary1{
+    background-color:#eb5783 !important;
 }
 .grid_slider .col-md-6 {
 	padding: 0 40px;
@@ -5175,3 +5181,71 @@ ul.notifications {
 #slash {
 	display: none;
 }
+/*
+modal
+*/
+/* BACKDROP */
+.modal-backdrop-custom {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 999;
+}
+
+/* MODAL WRAPPER */
+.modal-custom {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 800px;
+    max-width: 95%;
+    background: #fff;
+    border-radius: 8px;
+    z-index: 1000;
+    display: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+/* HEADER */
+.modal-custom-header {
+    padding: 12px 15px;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* BODY */
+.modal-custom-body {
+    padding: 15px;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+/* CLOSE BUTTON */
+.modal-close {
+    cursor: pointer;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+/* SHOW */
+.modal-show {
+    display: block;
+}
+
+/* ANIMATION */
+.modal-custom {
+    animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { transform: translate(-50%, -55%); opacity: 0; }
+    to { transform: translate(-50%, -50%); opacity: 1; }
+}
+
+

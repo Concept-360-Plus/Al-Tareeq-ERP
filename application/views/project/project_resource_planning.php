@@ -17,6 +17,7 @@ td,th{
 .dropdown-item i{
     width:20px;
 }
+
 </style>
 
 <div class="row">
@@ -24,15 +25,7 @@ td,th{
 <div class="x_panel">
 
 <div class="x_title">
-    <h2>Resource Planning - <?php if(!empty($resources)){ echo $resources[0]->project_name; } ?></h2>
-
-    <div class="pull-right">
-        <a href="<?=base_url('index.php/Project/add_resource_planning/'.$project_id)?>"
-           class="btn btn-success btn-sm">
-            <i class="fa fa-plus"></i> Add Resource Planning
-        </a>
-    </div>
-
+    <h2>Resource Planning</h2>
     <div class="clearfix"></div>
 </div>
 
@@ -46,8 +39,7 @@ td,th{
 
 <?php } ?>
 
-<table id="datatable-responsive" class="table table-striped table-bordered dt-responsive nowrap"
-width="100%">
+<table id="datatable-responsive" class="table table-striped table-bordered dt-responsive nowrap" width="100%">
 
 <thead>
 
@@ -72,9 +64,7 @@ width="100%">
     <?php
 
     $i=1;
-
     foreach($resources as $row){
-
     ?>
 
     <tr>
@@ -141,9 +131,12 @@ width="100%">
 
         <div class="dropdown-menu dropdown-menu-right">
 
+        <a class="dropdown-item" href="<?= base_url('index.php/Project/list_resource_planning/'. $row->project_id) ?>">
+                <i class="fa fa-calendar"></i> List <?=$row->project_name;?> Resource Planning
+        </a>
         <a class="dropdown-item"
 
-        href="<?=base_url('index.php/Project/edit_resource_planning/'.$project_id.'/'.$row->resource_id)?>">
+        href="<?=base_url('index.php/Project/edit_resource_planning/'.$row->project_id.'/'.$row->resource_id)?>">
 
         <i class="fa fa-edit text-warning"></i>
 
@@ -155,7 +148,7 @@ width="100%">
 
         onclick="return confirm('Delete this Resource Planning?')"
 
-        href="<?=base_url('index.php/Project/delete_resource_planning/'.$project_id.'/'.$row->resource_id)?>">
+        href="<?=base_url('index.php/Project/delete_resource_planning/'.$row->project_id.'/'.$row->resource_id)?>">
 
         <i class="fa fa-trash"></i>
 

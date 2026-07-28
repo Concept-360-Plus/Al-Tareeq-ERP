@@ -14,11 +14,12 @@ class Project extends CI_Controller
         $this->output->set_header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
         $this->output->set_header("Cache-Control: post-check=0, pre-check=0", false);
         $this->output->set_header("Pragma: no-cache");
-
+        $this->load->model('Users_model');
         $this->load->model('Project_model');
         $this->load->model('Sales_model'); 
         $this->load->model('Company_model');
         $this->load->model('Item_model');
+        
     }
 
     // Add/Edit Project Page
@@ -59,6 +60,7 @@ class Project extends CI_Controller
         $data['selected_eq_id'] = $eq_id ?? null;
 
         $data['enquires']   = $this->Project_model->get_enquiries();
+        $data['quotations'] = $this->Project_model->getQuotationByEnquiry();
         $data['employees']  = $this->Project_model->get_employees();
         $data['designations'] = $this->Project_model->get_designations();
         $data['users']      = $this->db->get('users')->result_array();
@@ -77,9 +79,9 @@ class Project extends CI_Controller
         $data['title'] = 'Edit Project';
 
         $data['project'] = $this->Project_model->get_project_by_id($project_id);
-        $enq_id = $data['project']['fk_enq_id'];
+        $enq_id = $data['project']['fk_enq_id']??'';
         $data['enquires']   = $this->Project_model->get_enquiries();
-        $data['quotation'] = $this->Project_model->getQuotationByEnquiry($enq_id);
+        $data['quotation'] = $this->Project_model->getQuotationByEnquiry();
         $data['project_items'] = $this->Project_model->get_project_items_list($project_id);
         $data['project_technicians'] = $this->Project_model->get_project_technicians($project_id);
         $data['sales_orders'] = $this->Sales_model->get_all_sales_orders();
@@ -120,7 +122,7 @@ public function save_project()
     $project_id = $this->input->post('project_id');
     $projectData = [
         //'so_id'            => $this->input->post('so_id'),
-        'fk_enq_id'        => $this->input->post('e_id'),
+        //'fk_enq_id'        => $this->input->post('e_id'),
         'fk_quot_id'       => $this->input->post('quotation_id'),
         'project_name'     => $this->input->post('project_name'),
         'project_location' => $this->input->post('project_location'),
@@ -155,6 +157,53 @@ public function save_project()
         $this->Project_model->update_project($project_id, [
             'project_code' => $project_code
         ]);
+        $qid = $this->input->post('quotation_id');
+        $dataq = array(
+					'pid' => $project_id,
+					'qid' => $qid,
+				);
+		$this->db->insert('project_quotation', $dataq);
+
+                //$query=$this->db->query("select * from sales_quotation_transaction where quote_master_id=$qid");
+				$query=$this->db->query("select * from quotation_main_heading where qtn_id=$qid");
+			    $res1= $query->result();
+				foreach($res1 as $r1)
+				{
+					$data = array(
+					'pid' => $project_id,
+					'qid' => $qid,
+					//'product_desc' => $r1->product_desc,
+					//item_remark' => $r1->item_remark,
+                    'product_desc' => $r1->main_heading,
+					'item_remark' => $r1->description,
+					);
+					$this->db->insert('project_transaction1', $data);
+					$insert_id1 = $this->db->insert_id();
+		
+					//$trans_id= $r1->trans_id;
+					//$query=$this->db->query("select * from sales_quotation_transaction2 where quote_master_id=$qid and trans_id1=$trans_id");
+                    $query=$this->db->query("select * from quotation_products where qtn_id=$qid");
+					$res2= $query->result();
+					foreach($res2 as $r2)
+					{
+						$data = array(
+						'trans_id1' => $insert_id1,
+						'pid' => $project_id,
+						//'sub_details' => $r2->sub_heading_id,
+                        'sub_details' => $r2->prd_id,
+						'qty' => $r2->qty,
+						//'width' => $r2->width,
+						//'height' => $r2->height,
+						'unit' => $r2->unit_id,
+						'price' => $r2->unit_price,
+						'discount_percent' => $r2->discount_percent,
+                        'discount_amount' => $r2->discount_amount,
+                        'taxable_amount' => $r2->taxable_amount,
+                        
+						);
+						$this->db->insert('project_transaction2', $data);
+					}
+                }
 
         $message = 'Project saved successfully';
     }
@@ -207,7 +256,8 @@ public function save_project()
                 'Technician "' . $this->Project_model->get_technician_name($tid) . 
                 '" has Start Date later than End Date.'
             );
-            redirect('Project/add/' . $project_id);
+            //redirect('Project/add/' . $project_id);
+            redirect('Project/add_project/');
             return; // stop saving
         }
 
@@ -222,7 +272,8 @@ public function save_project()
         if (!$available) {
             $this->db->trans_rollback(); 
             $this->session->set_flashdata('error', 'Technician "' . $this->Project_model->get_technician_name($tid) . '" is not available for the selected dates.');
-            redirect('Project/add/' . $project_id); 
+            //redirect('Project/add/' . $project_id); 
+            redirect('Project/add_project/');
             return;
         }
 
@@ -624,11 +675,21 @@ public function get_project_details_ajax()
     ]);
 }
 
+public function get_project_items_for_work_order_ajax()
+{
+    $project_id = (int) $this->input->post('project_id');
+    $items = $project_id ? $this->Project_model->get_project_items_list($project_id) : [];
+
+    $this->output
+        ->set_content_type('application/json')
+        ->set_output(json_encode(['items' => $items]));
+}
+
 public function list_material_request()
 {
     $data['title'] = 'Material Request';
     $this->load->model('Project_model');
-
+    $data['project_list'] = $this->Project_model->get_projects();
     $data['material_requests'] = $this->Project_model->get_all_mrs(); 
     $data['main_content'] = 'material_request/list_material_request';
     $this->load->view('includes/template', $data);
@@ -870,9 +931,15 @@ public function delete_progress_log()
         $quotation_id = $this->input->post('quotation_id');
         $result = $this->Project_model->getcustomerDetailsByQuotation($quotation_id);
         $final = [];
-        $final['customer'] = $result['customer_name'];
+        $enq_id = $result['enquiry_id']??'';
+        if($enq_id){
+            $result_e = $this->Project_model->getProjectDetailsByEnquiry($enq_id);
+            $final['project_name'] = $result_e['project_name'];
+            $final['project_location'] = $result_e['project_location'];
+        }
+        $final['customer'] = $result['customer_name']??'';
         $result_b = $this->Project_model->getBranchDetailsByQuotation($quotation_id);
-        $final['branch'] = $result_b['branch_name'];
+        $final['branch'] = $result_b['branch_name']??'';
 
         echo json_encode($final);
     }
@@ -958,6 +1025,8 @@ public function delete_progress_log()
 
     }
     //Task assignment
+    
+    //project Task assignment
     public function assign_task($project_id)
     {
         if (!$project_id) {
@@ -1398,6 +1467,15 @@ public function delete_progress_log()
         $this->load->view('includes/template', $data);
     }
 
+    public function project_task_list($id="")
+    {
+        //$data['project_id'] = $id;
+        $data['project_task'] = $this->Project_model->get_projects_tasks(); 
+        $data['title'] = 'List Project Task';
+        $data['main_content'] = 'project/project_assign_task';
+        $this->load->view('includes/template', $data);
+    }
+
     public function delete_task_item($pid,$task_id)
     {
         $this->Project_model->delete_taskitem($task_id);
@@ -1724,14 +1802,20 @@ public function delete_progress_log()
     }
 
     //Resource planning
+    public function project_resource_planning()
+    {
+        $data['title'] = 'Resource Planning';
+        $data['resources'] = $this->Project_model->get_all_resource_planning();
+        $data['main_content'] = 'project/project_resource_planning';
+        $this->load->view('includes/template', $data);
+    } 
+    //resource planning for project
     public function list_resource_planning($id)
     {
         $data['title'] = 'Resource Planning';
-
         $data['resources'] = $this->Project_model->get_all_resource_planning($id);
         $data['project_id'] = $id;
         $data['main_content'] = 'project/list_resource_planning';
-
         $this->load->view('includes/template', $data);
     } 
     // ===============================
@@ -1742,6 +1826,7 @@ public function delete_progress_log()
         $data['projects']  = $this->Project_model->get_project_by_id($id);
         $data['employees'] = $this->Project_model->get_employees();
         $data['machines']  = $this->Project_model->get_machines();
+        $data['tools']     = $this->Project_model->get_tools();
         $data['machine_operator'] = $this->Project_model->get_machine_operator_mapping();
         $data['resource']  = [];
         $data['project_id'] = $id;
@@ -1779,21 +1864,18 @@ public function delete_progress_log()
        
         $id     = $this->input->post('project_id');
         if ($this->Project_model->add_machine_resource()) {
-
             $this->session->set_flashdata(
                 'success',
                 'Resource Planning Added Successfully'
             );
 
         } else {
-
             $this->session->set_flashdata(
                 'error',
                 'Unable to Save Resource Planning'
             );
 
         }
-
         redirect('Project/list_resource_planning/'.$id);
     }
     
@@ -1808,9 +1890,9 @@ public function delete_progress_log()
         $data['projects']  = $this->Project_model->get_project_by_id($pid);
         $data['machines']  = $this->Project_model->get_machines();
         $data['employees'] = $this->Project_model->get_employees();
+        $data['tools']     = $this->Project_model->get_tools();
         $data['machine_operator'] = $this->Project_model->get_machine_operator_mapping();
         $data['main_content'] = 'project/resource_planning_edit';
-
         $this->load->view('includes/template', $data);
     }
 
@@ -1819,21 +1901,16 @@ public function delete_progress_log()
         $id     = $this->input->post('resource_id');
         $pid    = $this->input->post('project_id');
         if ($this->Project_model->update_machine_resource($id)) {
-
             $this->session->set_flashdata(
                 'success',
                 'Resource Planning Updated Successfully'
             );
-
         } else {
-
             $this->session->set_flashdata(
                 'error',
                 'Unable to Update Resource Planning'
             );
-
         }
-
         redirect('Project/list_resource_planning/'.$pid);
     }
 
@@ -1841,16 +1918,447 @@ public function delete_progress_log()
     {
         $this->db->where('resource_id', $id);
         $this->db->delete('project_machine_resource');
-
         $this->session->set_flashdata(
             'success',
             'Resource Planning Deleted Successfully'
         );
-
         redirect('Project/list_resource_planning/'.$pid);
     }
 
+    // ===============================
+    // Project Manpower
+    // ===============================
+     public function list_project_manpower($id = null)
+    {
+        if (empty($id)) {
+            $this->session->set_flashdata('error', 'Please select a project first.');
+            redirect('Project/get_project_list');
+        }
+
+        $data['title'] = 'Project Manpower';
+        $data['resources'] = $this->Project_model->get_all_project_manpower($id);
+        $data['project_id'] = $id;
+        $data['main_content'] = 'project/list_project_manpower';
+        $this->load->view('includes/template', $data);
+    } 
+    
+    public function add_project_manpower($id)
+    {
+        $data['projects']  = $this->Project_model->get_project_by_id($id);
+        //$data['projects']      = $this->Project_model->get_projects();
+        $data['designations']  = $this->Project_model->get_designations();
+        $data['employees']     = array(); // Employees will be loaded via AJAX
+        $data['resource']  = [];
+        $data['project_id'] = $id;
+
+        // Generate Manpower Code
+        $last = $this->db->select('manpower_code')
+                        ->from('project_manpower')
+                        ->order_by('manpower_id', 'DESC')
+                        ->limit(1)
+                        ->get()
+                        ->row();
+
+        if ($last && !empty($last->manpower_code)) {
+
+            $num = (int) substr($last->manpower_code, 4); // Skip "MRP-"
+            $num++;
+
+            $code = 'PMP-' . str_pad($num, 4, '0', STR_PAD_LEFT);
+
+        } else {
+
+            $code = 'PMP-0001';
+
+        }
+
+        $data['auto_code'] = $code;
+        $data['title'] = 'Add Manpower';
+        $data['main_content'] = 'project/project_manpower_add';
+
+        $this->load->view('includes/template', $data);
+    }
+
+    public function get_employees_by_designation()
+    {
+        $designation_id = $this->input->post('designation_id');
+        $employees = [];
+
+        if (!empty($designation_id)) {
+            $employees = $this->Project_model->get_employees($designation_id);
+        }
+
+        echo json_encode([
+            'status' => 'success',
+            'employees' => $employees
+        ]);
+    }
+	
+   public function add_project_manpower_data()
+    {
+        $id = $this->input->post('project_id');
+
+        if ($this->Project_model->add_project_manpower()) {
+            $this->session->set_flashdata('success', 'Manpower Added Successfully');
+        } else {
+            $this->session->set_flashdata('error', 'Unable to Save Manpower');
+        }
+
+        redirect('Project/list_project_manpower/' . $id);
+    }
+
+    public function edit_project_manpower($pid, $id)
+    {
+        if (!$id) {
+            redirect('Project/list_project_manpower/' . $pid);
+        }
+
+        $data['project_id'] = $pid;
+        $data['title'] = 'Edit Manpower';
+        $data['resource'] = $this->Project_model->get_project_manpower($id);
+        $data['projects'] = $this->Project_model->get_project_by_id($pid);
+        $data['designations'] = $this->Project_model->get_designations();
+        $data['employees'] = $this->Project_model->get_employees();
+        $data['main_content'] = 'project/project_manpower_edit';
+        $this->load->view('includes/template', $data);
+    }
+
+    public function update_project_manpower_data()
+    {
+        $id = $this->input->post('manpower_id');
+        $pid = $this->input->post('project_id');
+
+        if ($this->Project_model->update_project_manpower($id)) {
+            $this->session->set_flashdata('success', 'Manpower Updated Successfully');
+        } else {
+            $this->session->set_flashdata('error', 'Unable to Update Manpower');
+        }
+
+        redirect('Project/list_project_manpower/' . $pid);
+    }
+
+    public function delete_project_manpower($pid, $id)
+    {
+        if ($this->Project_model->delete_project_manpower($id)) {
+            $this->session->set_flashdata('success', 'Manpower Deleted Successfully');
+        } else {
+            $this->session->set_flashdata('error', 'Unable to Delete Manpower');
+        }  
+
+        redirect('Project/list_project_manpower/' . $pid);
+    }
+
+    public function view_project_manpower_details($id)
+    {
+        $resource = $this->Project_model->get_project_manpower($id);
+
+        if (empty($resource)) {
+            show_404();
+        }
+
+        $resource['project'] = $this->Project_model->get_project_by_id($resource['project_id'] ?? null);
+        $this->load->view('project/project_manpower_details_modal', ['resource' => $resource]);
+    }
+    /*
+    public function add_work_order($project_id = null)
+    {
+        $data['title'] = 'Add Work Order';
+        $data['project_id'] = $project_id;
+        $data['project'] = $this->Project_model->get_project_by_id($project_id);
+        $data['projects'] = $this->Project_model->get_all_projects();
+        $data['tasks'] = $this->Project_model->get_tasks();
+        $data['resources'] = $this->Project_model->get_work_order_resources($project_id);
+        $data['users'] = $this->Project_model->get_active_users();
+        $data['work_order'] = [];
+        $data['main_content'] = 'project/work_order_add';
+        $this->load->view('includes/template', $data);
+    }
+    */
+       
+    //Project dashboard
+    public function project_dashboard($project_id)
+    {
+
+        $data['project']       = $this->Project_model->get_project($project_id);
+        $data['title']         = 'Project Dashboard - '.$data['project']['project_name'];
+        $data['project_items']         = $this->Project_model->get_project_items_list($project_id);
+        $data['materials']     = [];
+        $data['materials']     = $this->Project_model->get_projectmr_items($project_id);
+        $data['resources']     = $this->Project_model->get_resources($project_id);
+        $data['tasks']         = $this->Project_model->get_tasks_dash($project_id);
+        $data['team']          = $this->Project_model->get_team($project_id);
+        $data['manpower']      = $this->Project_model->get_manpower($project_id);
+        //$data['work_orders']   = $this->Project_model->get_work_orders($project_id);
+        $data['work_orders']  = [];
+        //$data['timeline']      = $this->Project_model->get_timeline($project_id);
+        $data['timeline']  = [];
+        $data['main_content'] = 'project/project_dashboard';
+        $this->load->view('includes/template', $data);
+       
+    }
+    /***
+     * Work Order
+     */
+    public function work_order()
+	{
+		$data['title'] = "Work Order Details";
+		$prifix = 'WO' . date('y') . '';
+		$this->load->model('Setup_model');
+		$num = $this->Setup_model->get_next_code($prifix, 'wo_code', 'project_work_order', 6) + 1;
+		$digit = sprintf("%1$04d", $num);
+		$code = $prifix . $digit;
+		$data['code'] = $code;
+    	$this->load->model('Product_model');
+		$data['products'] = $this->Project_model->get_itemlist();
+		$this->load->model('Users_model');
+		$data['user_records'] = $this->Project_model->get_userlist();
+		$this->load->model('Project_model');
+		$data['records'] = $this->Project_model->get_quality_checked_project_list();
+		$data['main_content'] = 'project/work_order_add.php';
+		$this->load->view('includes/template', $data);
+	}
+    function view_work_order_list()
+	{
+		$data['title'] = "Work Order Details List";
+		$this->load->model('Project_model');
+		$data['records'] = $this->Project_model->get_work_order_list();
+		$data['main_content'] = 'project/work_order_list.php';
+		$this->load->view('includes/template', $data);
+	}
+
+	function add_work_order_details()
+	{
+		$data['title'] = " Add Work Order Details";
+		$this->load->model('Project_model');
+		$flag = $this->Project_model->add_work_order_details();
+		if ($flag) {
+			$this->session->set_flashdata('success', 'Record Successfully Saved');
+			redirect('Project/view_work_order_list');
+		} else {
+			$this->session->set_flashdata('warning', 'Report Already Exist');
+			redirect('Project/add_work_order');
+		}
+	}
+    
+	function edit_work_order()
+	{
+		$data['title'] = " Edit Work Order Details";
+		$id = $this->uri->segment('3');
+		$this->load->model('Product_model');
+		$data['products'] = $this->Project_model->get_itemlist();
+		$data['user_records'] = $this->Project_model->get_userlist();
+		$this->load->model('Project_model');
+		$data['records'] = $this->Project_model->get_project_list();
+		$this->load->model('Project_model');
+		$data['records1'] = $this->Project_model->transaction_work_order($id);
+		$data['trans_records'] = $this->Project_model->get_requisition_tr_by_id_item($id);
+		$data['product_route'] = $this->Project_model->get_product_extra_records($id);
+		$data['attachment'] = $this->Project_model->get_attachment_records($id);
+		$data['file_records'] = $this->Project_model->get_employee_document_doc_id($id);
+		$data['records2'] = $this->Project_model->get_project_wo_trans($id);
+		// print_r($data['records2']);
+		$data['records3'] = $this->Project_model->get_project_wo_trans1($id);
+		$data['main_content'] = 'project/work_order_edit.php';
+		$this->load->view('includes/template', $data);
+	}
+    /***
+     * Outsourcing
+     */
+    function material_outsource_processing()
+	{
+		$data['title'] = "Outsource Processing";
+		$data['records'] = $this->Project_model->get_project_running_list();
+		$data['supplier_records'] = $this->Users_model->get_supplier_list();
+		$this->load->model('Product_model');
+		$data['products'] = $this->Project_model->get_product_list();
+		$data['terms_rec'] = $this->Project_model->get_terms_details();
+		$data['category_records'] = $this->Project_model->get_main_category_list();
+		$this->load->model('Sales_model');
+		$data['enq_records'] = $this->Project_model->get_feasible_enquiry_list();
+		$this->load->model('Users_model');
+		$data['user_records'] = $this->Users_model->get_user_list();
+		$data['main_content'] = 'project/material_outsource_add.php';
+		$this->load->view('includes/template', $data);
+	}
+	function material_outsource_processing_list()
+	{
+        //echo "<pre>";print_r($_SESSION); exit;
+		$data['title'] = "Outsource Processing List";
+		$data['records'] = $this->Project_model->get_outsource_processing_list();
+		$data['main_content'] = 'project/material_outsource_list.php';
+		$this->load->view('includes/template', $data);
+	}
+    function ajax_get_project_info()
+	{
+		$value = array();
+		$id = $this->input->post('project_id');
+
+		$this->load->model('Project_model');
+		$data['record1'] = $this->Project_model->get_project_by_id_out($id);
+		foreach ($data['record1'] as $row) {
+			$customer_id = $row->cust_name;
+			$user_id = $row->project_manager;
+			$sdate = date('d-m-Y', strtotime($row->start_date));
+			$edate = date('d-m-Y', strtotime($row->end_date));
+		}
+		$value = array('customer_id' => $customer_id, 'user_id' => $user_id, 'sdate' => $sdate, 'edate' => $edate);
+
+		echo json_encode($value);
+	}
+
+    function add_material_outsource_processing()
+	{
+        $data['title'] = " Add Outsource Processing";
+		$this->load->model('Project_model');
+		$flag = $this->Project_model->add_outsource_processing_details();
+		if ($flag) {
+			$this->session->set_flashdata('success', 'Record Successfully Saved');
+			redirect('Project/material_outsource_processing_list');
+		} else {
+			$this->session->set_flashdata('warning', 'Report Already Exist');
+			redirect('Project/material_outsource_processing');
+		}
+	}
+
+	function edit_material_outsource_processing()
+	{
+		$data['title'] = " Edit Outsource Processing";
+		$id = $this->uri->segment('3');
+
+		$this->load->model('Project_model');
+		$data['records1'] = $this->Project_model->print_outsource_processing_list($id);
+        $pid = $data['records1'][0]->project_id;
+        $data['pinfo'] = $this->Project_model->get_project_details($pid);
+        $data['records'] = $this->Project_model->get_project_list();
+		$data['trans_records'] = $this->Project_model->get_requisition_tr_by_id_outsource($id);
+
+		$data['out_records'] = $this->Project_model->outsource_processing_details_list($id);
+		
+        
+        //$this->load->model('Sales_model');
+		$data['enq_records'] = $this->Project_model->get_feasible_enquiry_list();
+
+		$this->load->model('Users_model');
+		$data['user_records'] = $this->Users_model->get_user_list();
+		//$this->load->model('Product_model');
+		$data['products'] = $this->Project_model->get_product_list_out();
+
+		//$this->load->model('Setup_model');
+		$data['terms_rec'] = $this->Project_model->get_terms_details();
 
 
+		
+		$data['supplier_records'] = $this->Users_model->get_supplier_list();
+
+		$this->load->model('Product_model');
+		$data['category_records'] = $this->Project_model->get_main_category_list();
+
+		$data['main_content'] = 'project/material_outsource_edit.php';
+		$this->load->view('includes/template', $data);
+	}
+
+	function update_material_outsource_processing()
+	{
+		$data['title'] = "Update Outsource Processing";
+		$id = $this->input->post('outsource_id');
+		$this->load->model('Project_model');
+		$res = $this->Project_model->update_outsource_processing_details($id);
+		if ($res) {
+			$this->session->set_flashdata('success', 'Record Successfully Updated');
+			redirect('Project/material_outsource_processing_list');
+		}
+	}
+	function delete_material_outsource_processing()
+	{
+		$id = $this->uri->segment('3');
+
+		$this->load->model('Project_model');
+		$data['user_records'] = $this->Project_model->delete_outsource_data($id);
+		$this->session->set_flashdata('success', 'Delete Record Successfully');
+		redirect('Project/material_outsource_processing_list');
+	}
+	function print_material_outsource_processing()
+	{
+		$id = $this->uri->segment('3');
+
+		$this->load->model('Project_model');
+		$data['records'] = $this->Project_model->print_outsource_processing_list($id);
+
+		$this->load->view('project/print/print_material_outsource_processing.php', $data);
+	}
+    function get_project_items_details()
+	{
+		$value = array();
+		$id = $this->input->post('project_id');
+
+		$this->load->model('Project_model');
+		$data['record1'] = $this->Project_model->get_project_details($id);
+        //print_r($data['record1']); exit;
+		$revision = '';
+		foreach ($data['record1'] as $row) {
+			$customer_id = $row['customer_name'];
+			$user_id = $row['user_name'];
+			$sdate = date('d-m-Y', strtotime($row['start_date']));
+			$edate = date('d-m-Y', strtotime($row['end_date']));
+		}
+		$value = array('customer_id' => $customer_id, 'user_id' => $user_id, 'sdate' => $sdate, 'edate' => $edate);
+
+		echo json_encode($value);
+	}
+    public function get_project_items_list()
+	{
+		$pid = $this->input->post('project_id');
+        $this->load->model('Project_model');
+		$data['records'] = $this->Project_model->get_project_quotaions($pid);
+		foreach ($data['records'] as $p) {
+			$qid = $p->qid;
+		}
+		$this->load->model('Sales_model');
+		$data['records1'] = $this->Sales_model->get_quotation_master_by_id($qid);
+		$revision = $this->Project_model->get_max_revision_project_trans1($pid);
+		$data['records2'] = $this->Project_model->get_project_trans1($pid, $revision);
+		$data['records3'] = $this->Project_model->get_project_trans2($pid, $revision);
+
+		$this->load->view('project/items_details', $data);
+	}
+    
+    function delete_work_order()
+	{
+		$id = $this->uri->segment('3');
+		$this->load->model('Project_model');
+		$data['user_records'] = $this->Project_model->delete_work_order_data($id);
+		$this->session->set_flashdata('success', 'Delete Record Successfully');
+		redirect('Project/view_work_order_list');
+	}
+
+    /**
+     * Project Reports
+     **/
+    //progress
+    public function project_progress_report(){
+        $data['title']     = 'Project Progress Report';
+        $data['project_list'] = $this->Project_model->get_projects();
+        $data['projects']  = $this->Project_model->get_project_progress_report();
+        $data['main_content'] = 'Project/project_progress_report.php';
+        $this->load->view('includes/template', $data);
+    }
+    public function view($project_id)
+    {
+        $data['title']   = 'Project Report';
+        $data['project'] = $this->Project_report_model->get_project_details_report($project_id);
+        $data['tasks'] = $this->Project_report_model->get_project_tasks($project_id);
+        $data['materials'] = $this->Project_report_model->get_project_materials($project_id);
+        $data['resources'] = $this->Project_report_model->get_project_resources($project_id);
+        $data['manpower'] = $this->Project_report_model->get_project_manpower_report($project_id);
+        $data['workorders'] = $this->Project_report_model->get_workorders($project_id);
+        $data['progress'] =  $this->Project_report_model->get_progress($project_id);
+        $data['expenses'] = $this->Project_report_model->get_expenses($project_id);
+        $data['main_content'] = 'Project/project_progress_report.php';
+        $this->load->view('includes/template', $data);
+       
+    }
+
+
+    
 
 }
