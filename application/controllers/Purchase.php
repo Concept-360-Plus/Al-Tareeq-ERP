@@ -508,7 +508,7 @@ class Purchase extends CI_Controller
         }
         // 2. Get Branch Details (join branch_master in model if needed)
         $branch_id = $po_master[0]->branch_id;
-        $branch = $this->Company_model->get_branch_by_id($branch_id); // create this model function if not exists
+        $branch = $this->Setup_model->get_branch_by_id($branch_id); // create this model function if not exists
 
         // 3. Prepare data for view
         $data['po'] = $po_master[0];

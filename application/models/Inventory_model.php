@@ -79,15 +79,19 @@ class Inventory_model extends CI_Model
     //     }
     // }
 
-    public function allocate_stock_for_mi($product_id, $issue_qty, $mr_id)
+    public function allocate_stock_for_mi($product_id, $issue_qty, $mi_id)
     {
-        if ($issue_qty <= 0) return;
+        if ($issue_qty <= 0) {
+            return;
+        }
 
-        // Fetch only IN stock for the product
+        $user_id = $this->session->userdata('user_id');
+
+        // Fetch available IN stock (FIFO)
         $stocks = $this->db
             ->where('product_id', $product_id)
             ->where('stock_type', 'IN')
-            // ->where('status', 1)
+            ->where('balance_qty >', 0)
             ->order_by('stock_id', 'ASC')
             ->get('stock_details')
             ->result();
@@ -95,27 +99,66 @@ class Inventory_model extends CI_Model
         $remaining = $issue_qty;
 
         foreach ($stocks as $stock) {
-            if ($remaining <= 0) break;
 
-            $available = $stock->quantity;
-            if ($available <= 0) continue;
+            if ($remaining <= 0) {
+                break;
+            }
+
+            $available = (float)$stock->balance_qty;
+
+            if ($available <= 0) {
+                continue;
+            }
 
             $deduct = min($available, $remaining);
 
-            $this->db->where('stock_id', $stock->stock_id)->update('stock_details', [
-                'stock_type'   => 'OUT',
-                'quantity'     => $deduct,
-                'item_remark'  => 'MI',
-                'allocation_id' => $mr_id,
-                'created_date' => date('Y-m-d H:i:s')
+            // Reduce available balance from original IN stock
+            $this->db->where('stock_id', $stock->stock_id)
+                ->update('stock_details', [
+                    'balance_qty' => $available - $deduct
+                ]);
+
+            // Create NEW OUT transaction
+            $this->db->insert('stock_details', [
+                'warehouse_id'   => $stock->warehouse_id,
+                'stock_type'     => 'OUT',
+                'trans_id'       => $mi_id,
+                'stock_date'     => date('Y-m-d'),
+                'year'           => date('Y'),
+                'product_id'     => $stock->product_id,
+                'unit_id'        => $stock->unit_id,
+                'quantity'       => $deduct,
+                'balance_qty'    => 0,
+                'price'          => $stock->price,
+                'stock_value'    => $deduct * $stock->price,
+                'remark'         => 'Material Issue',
+                'item_remark'    => 'MI',
+                'created_by'     => $user_id,
+                'created_date'   => date('Y-m-d H:i:s'),
+                'status'         => 1,
+                'allocation_for' => 'MI',
+                'allocation_id'  => $mi_id
             ]);
 
             $remaining -= $deduct;
         }
 
         if ($remaining > 0) {
-            log_message('error', "Not enough IN stock to issue product_id: $product_id, remaining: $remaining");
+
+            log_message(
+                'error',
+                'Material Issue failed. Product ID: ' .
+                    $product_id .
+                    ', Required: ' .
+                    $issue_qty .
+                    ', Available: ' .
+                    ($issue_qty - $remaining)
+            );
+
+            return false;
         }
+
+        return true;
     }
 
     public function get_all_material_issues()
@@ -229,17 +272,14 @@ class Inventory_model extends CI_Model
     {
         return $this->db
             ->select('
-            im.*,
-            bm.brand_name,
-            bm.discount_limit,
-            um.unit_name,
-            um.unit_abbr
-        ')
+                im.*,
+                um.unit_name,
+                um.unit_abbr
+            ')
             ->from('item_master im')
-            // ->join('brand_master bm', 'bm.brand_id = im.item_brand', 'left')
-            ->join('unit_master um', 'um.unit_id = im.item_unit', 'left')
+            ->join('unit_master um', 'um.unit_id = im.unit_id', 'left')
             ->where('im.product_id', $item_id)
-            ->where('im.active', 1)
+            ->where('im.is_inactive', 0)
             ->get()
             ->row_array();
     }
@@ -273,15 +313,15 @@ class Inventory_model extends CI_Model
 
         $this->db->from('stock_details sd');
 
-        $this->db->join('item_master im','im.product_id = sd.product_id');
+        $this->db->join('item_master im', 'im.product_id = sd.product_id');
 
-        $this->db->join('warehouse_master wm','wm.warehouse_id = sd.warehouse_id','left');
+        $this->db->join('warehouse_master wm', 'wm.warehouse_id = sd.warehouse_id', 'left');
 
-        $this->db->join('users u','u.user_id = sd.created_by','left');
+        $this->db->join('users u', 'u.user_id = sd.created_by', 'left');
 
-        $this->db->order_by('sd.stock_date','DESC');
+        $this->db->order_by('sd.stock_date', 'DESC');
 
-        $this->db->order_by('sd.stock_id','DESC');
+        $this->db->order_by('sd.stock_id', 'DESC');
 
         return $this->db->get()->result();
     }

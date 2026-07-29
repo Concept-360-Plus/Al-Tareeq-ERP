@@ -234,16 +234,14 @@ class Ajax_model extends CI_Model
         return $this->db->select('
                 mii.mi_item_id,
                 mii.product_id,
-                i.item_name,
-                b.brand_name,
-                i.item_description,
+                i.product_name,
+                i.description,
                 mii.pending_qty,
                 mii.unit_id,
                 u.unit_name
             ')
             ->from('material_issue_items mii')
-            ->join('item_master i', 'i.item_id = mii.product_id', 'left')
-            ->join('brand_master b', 'b.brand_id = i.item_brand', 'left')
+            ->join('item_master i', 'i.product_id = mii.product_id', 'left')
             ->join('unit_master u', 'u.unit_id = mii.unit_id', 'left')
             ->where('mii.mi_id', $mi_id)
             ->where('mii.pending_qty >', 0)

@@ -557,7 +557,7 @@ class Reports extends CI_Controller
   {
     $data['title'] = 'Inventory Report';
     $data['warehouse_id'] = $this->input->post('warehouse_id');
-    $data['item_id'] = $this->input->post('product_id');
+    $data['product_id'] = $this->input->post('product_id');
 
     $this->load->model('Stock_model');
     $data['products'] = $this->Stock_model->get_stock_code_list();
@@ -575,7 +575,7 @@ class Reports extends CI_Controller
   {
     $data['title'] = 'Inventory Report';
     $data['warehouse_id'] = $this->input->post('warehouse_id');
-    $data['item_id'] = $this->input->post('product_id');
+    $data['product_id'] = $this->input->post('product_id');
 
     $this->load->model('Setup_model');
     $data['comapny_records'] = $this->Setup_model->get_company_master_list();

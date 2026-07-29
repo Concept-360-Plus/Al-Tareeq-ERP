@@ -42,56 +42,6 @@ class Inventory extends CI_Controller
         $this->load->view('includes/template', $data);
     }
 
-
-    // public function get_mr_details_ajax()
-    // {
-    //     $mr_id = $this->input->post('mr_id');
-    //     $mr = $this->Project_model->get_mr_by_id($mr_id);
-    //     $items = $this->Project_model->get_mr_items($mr_id);
-
-    //     $result_items = [];
-
-    //     foreach ($items as $item) {
-    //         $product_id = $item['product_id'];
-
-    //         // TOTAL IN only 
-    //         $available_qty = (float) ($this->db
-    //             ->select_sum('quantity')
-    //             ->where('product_id', $product_id)
-    //             ->where('stock_type', 'IN')
-    //             ->get('stock_details')
-    //             ->row()->quantity ?? 0);
-
-    //         // Reserved quantity for this MR
-    //         $reserved_qty = (float) ($this->db
-    //             ->select_sum('reserved_quantity')
-    //             ->where('product_id', $product_id)
-    //             ->where('allocation_id', $mr_id)
-    //             ->where('stock_type', 'RESERVE')
-    //             ->get('stock_details')
-    //             ->row()->reserved_quantity ?? 0);
-
-    //         // Pending = Requested - Reserved
-    //         $pending_qty = max(0, $item['quantity'] - $reserved_qty);
-
-    //         $result_items[] = [
-    //             'product_id'    => $product_id,
-    //             'product_name'  => $item['product_name'],
-    //             'item_unit'     => $item['unit'],
-    //             'requested_qty' => (float) $item['quantity'],
-    //             'available_qty' => $available_qty,   
-    //             'reserved_qty'  => $reserved_qty,
-    //             'issue_qty'     => $reserved_qty,
-    //             'pending_qty'   => $pending_qty,
-    //         ];
-    //     }
-
-    //     echo json_encode([
-    //         'mr'    => $mr,
-    //         'items' => $result_items
-    //     ]);
-    // }
-
     public function get_mr_details_ajax()
     {
         $mr_id = $this->input->post('mr_id');
@@ -101,18 +51,31 @@ class Inventory extends CI_Controller
         $result_items = [];
 
         foreach ($items as $item) {
-            $product_id = $item['product_id'];
 
-            // ✅ TOTAL IN only (ignore OUT and RESERVED)
-            $available_qty = (float) ($this->db
+            // project_material_items column
+            $product_id = $item['fk_item_id'];
+
+            // Get unit from item_master
+            $unit = $this->db
+                ->select('um.unit_name')
+                ->from('item_master im')
+                ->join('unit_master um', 'um.unit_id = im.unit_id', 'left')
+                ->where('im.product_id', $product_id)
+                ->get()
+                ->row();
+
+            $item_unit = $unit ? $unit->unit_name : '';
+
+            // Available Stock
+            $available_qty = (float)($this->db
                 ->select_sum('quantity')
                 ->where('product_id', $product_id)
                 ->where('stock_type', 'IN')
                 ->get('stock_details')
                 ->row()->quantity ?? 0);
 
-            // Reserved quantity for this MR
-            $reserved_qty = (float) ($this->db
+            // Reserved Stock
+            $reserved_qty = (float)($this->db
                 ->select_sum('reserved_quantity')
                 ->where('product_id', $product_id)
                 ->where('allocation_id', $mr_id)
@@ -120,21 +83,19 @@ class Inventory extends CI_Controller
                 ->get('stock_details')
                 ->row()->reserved_quantity ?? 0);
 
-            // Pending = Requested - Reserved
-            $pending_qty = max(0, $item['quantity'] - $reserved_qty);
+            $requested_qty = (float)$item['item_qty'];
 
-            // Total issued for this product
             $total_issued = $this->Project_model->get_total_issued_qty($mr_id, $product_id);
 
             $result_items[] = [
                 'product_id'       => $product_id,
                 'product_name'     => $item['product_name'],
-                'item_unit'        => $item['unit'],
-                'requested_qty'    => (float) $item['quantity'],
+                'item_unit'        => $item_unit,
+                'requested_qty'    => $requested_qty,
                 'available_qty'    => $available_qty,
                 'reserved_qty'     => $reserved_qty,
                 'issue_qty'        => $reserved_qty,
-                'pending_qty'      => max(0, $item['quantity'] - $reserved_qty),
+                'pending_qty'      => max(0, $requested_qty - $reserved_qty),
                 'issued_qty_total' => $total_issued,
             ];
         }
@@ -199,7 +160,16 @@ class Inventory extends CI_Controller
                 $this->db->insert('material_issue_items', $itemData);
 
                 // Allocate stock
-                $this->Inventory_model->allocate_stock_for_mi($products[$i], $issue_qtys[$i], $this->input->post('mr_id'));
+                $result = $this->Inventory_model->allocate_stock_for_mi($products[$i], $issue_qtys[$i], $mi_id);
+                if (!$result) {
+                    $this->db->trans_rollback();
+                    $this->session->set_flashdata(
+                        'error',
+                        'Insufficient stock for the selected product.'
+                    );
+                    redirect('Inventory/add_material_issue');
+                    return;
+                }
             }
         }
 
@@ -229,7 +199,7 @@ class Inventory extends CI_Controller
 
         foreach ($items as &$item) {
             $product = $this->Inventory_model->get_item_details($item['product_id']);
-            $item['product_name'] = $product['item_name'] ?? '';
+            $item['product_name'] = $product['product_name'] ?? '';
             $item['available_qty'] = $product['total_stock'] ?? 0;
         }
 
