@@ -7,7 +7,10 @@
 				<select name="warehouse_id" id="warehouse_id" class="form-control select2" required>
 					<option value="">Select warehouse</option>
 					<?php foreach ($store_records as $g) { ?>
-						<option value="<?php echo $g->warehouse_id; ?>"><?php echo $g->warehouse_name; ?></option>
+						<option value="<?= $g->warehouse_id ?>"
+							<?= ($warehouse_id == $g->warehouse_id) ? 'selected' : ''; ?>>
+							<?= $g->warehouse_name ?>
+						</option>
 					<?php } ?>
 				</select>
 			</div>
@@ -19,7 +22,10 @@
 					<?php foreach ($products as $s) {
 						// $size= str_replace('"', ' Inch' ,$s->size);
 					?>
-						<option value="<?php echo $s->product_id; ?>"><?php echo $s->product_name; ?></option>
+						<option value="<?= $s->product_id ?>"
+							<?= ($product_id == $s->product_id) ? 'selected' : ''; ?>>
+							<?= $s->product_name; ?>
+						</option>
 					<?php } ?>
 				</select>
 			</div>
@@ -34,7 +40,7 @@
 	<td>
 		<form target="_blank" action="<?php echo base_url() . 'index.php/'; ?>Reports/print_stock_inventory_report" id="ques1" method="post" name="ques1">
 			<input type="hidden" name="warehouse_id" value="<?php echo $warehouse_id; ?>" />
-			<input type="hidden" name="item_id" value="<?php echo $item_id; ?>" />
+			<input type="hidden" name="product_id" value="<?php echo $product_id; ?>" />
 			<input tabindex="6" type="submit" id="print" value="Print" class="btn btn-warning btn-sm" />
 		</form>
 	</td>
@@ -42,7 +48,7 @@
 	<td>
 		<form action="<?php echo base_url() . 'index.php/'; ?>Reports/export_stock_inventory_report" id="ques1" method="post" name="ques1">
 			<input type="hidden" name="warehouse_id" value="<?php echo $warehouse_id; ?>" />
-			<input type="hidden" name="item_id" value="<?php echo $item_id; ?>" />
+			<input type="hidden" name="product_id" value="<?php echo $product_id; ?>" />
 			<input tabindex="7" type="submit" id="export" value="Export to excel" class="btn btn-warning btn-sm" />
 		</form>
 	</td>
