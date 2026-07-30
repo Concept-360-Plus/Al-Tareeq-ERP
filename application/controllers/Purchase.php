@@ -710,6 +710,7 @@ class Purchase extends CI_Controller
         $data['Code']            = $prifix . date("y") . '/' . $digit;
 
         $data['warehouse_list']  = $this->Setup_model->get_warehouse_list();
+        $data['store_list']      = [];
         $data['records']         = $this->Purchase_Model->get_approved_po_list();
 
         $data['supplier']        = $this->Purchase_Model->get_po_supplier_details($po_id);

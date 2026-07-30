@@ -72,6 +72,18 @@
                                         <td width=70%><?php echo $grn[0]->supplier_name; ?></td>
                                     </tr>
 
+                                    <tr>
+                                        <td>Warehouse</td>
+                                        <td>:</td>
+                                        <td><?php echo $grn[0]->warehouse_name; ?></td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>Store</td>
+                                        <td>:</td>
+                                        <td><?php echo $grn[0]->store_name; ?></td>
+                                    </tr>
+
                                 </table>
                             </td>
                         </tr>

@@ -1,92 +1,139 @@
 <form id="mi_form" action="<?= base_url('index.php/Inventory/save_material_issue') ?>" method="post">
-<div class="container">
+    <div class="container">
 
-    <!-- Material Request Selection -->
-    <div class="mb-3">
-        <label>Select Material Request</label>
-        <select name="mr_id" id="mr_id" class="form-control" required>
-            <option value="">-- Select MR --</option>
-            <?php foreach($material_requests as $mr): ?>
-                <option value="<?= $mr['mr_id'] ?>">
-                    <?= $mr['mr_code'] ?> (<?= $mr['project_name'] ?>)
-                </option>
-            <?php endforeach; ?>
-        </select>
-    </div>
+        <!-- Material Request Selection -->
+        <div class="mb-3">
+            <label>Select Material Request</label>
+            <select name="mr_id" id="mr_id" class="form-control" required>
+                <option value="">-- Select MR --</option>
+                <?php foreach ($material_requests as $mr): ?>
+                    <option value="<?= $mr['mr_id'] ?>">
+                        <?= $mr['mr_code'] ?> (<?= $mr['project_name'] ?>)
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
 
-    <!-- MR Details -->
-    <table class="table table-bordered">
-        <tr><th>Project</th><td id="project_name">-</td></tr>
-        <tr><th>Customer</th><td id="customer_name">-</td></tr>
-        <tr><th>Branch</th><td id="branch_name">-</td></tr>
-    </table>
-
-    <!-- Items Table -->
-    <table class="table table-bordered" id="items_table">
-        <thead>
+        <!-- MR Details -->
+        <table class="table table-bordered">
             <tr>
-                <th>#</th>
-                <th>Select</th>
-                <th>Item</th>
-                <th>Unit</th>
-                <th>Requested qty</th>
-                <!-- <th>Reserved</th> -->
-                <th>Available Stock</th>
-                <th>Previously Issued</th>
-                <th>Issue qty</th>
-                <th>Pending stock</th>
+                <th width="25%">Project</th>
+                <td id="project_name">-</td>
             </tr>
-        </thead>
-        <tbody>
-            <tr><td colspan="8">Select MR</td></tr>
-        </tbody>
-    </table>
+
+            <tr>
+                <th>Customer</th>
+                <td id="customer_name">-</td>
+            </tr>
+
+            <tr>
+                <th>Branch</th>
+                <td id="branch_name">-</td>
+            </tr>
+
+            <tr>
+                <th>Warehouse</th>
+                <td>
+                    <select
+                        class="form-control"
+                        name="warehouse_id"
+                        id="warehouse_id"
+                        onchange="loadStores()"
+                        required>
+
+                        <option value="">Select Warehouse</option>
+                        <?php foreach ($warehouse_list as $warehouse) { ?>
+                            <option value="<?= $warehouse->warehouse_id; ?>">
+                                <?= $warehouse->warehouse_name; ?>
+                            </option>
+                        <?php } ?>
+                    </select>
+                </td>
+            </tr>
+
+            <tr>
+                <th>Store</th>
+                <td>
+                    <select
+                        class="form-control"
+                        name="store_id"
+                        id="store_id"
+                        required>
+                        <option value="">Select Store</option>
+                    </select>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Items Table -->
+        <table class="table table-bordered" id="items_table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Select</th>
+                    <th>Item</th>
+                    <th>Unit</th>
+                    <th>Requested qty</th>
+                    <!-- <th>Reserved</th> -->
+                    <th>Available Stock</th>
+                    <th>Previously Issued</th>
+                    <th>Issue qty</th>
+                    <th>Pending stock</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="8">Select MR</td>
+                </tr>
+            </tbody>
+        </table>
 
 
-<!-- Hidden Fields -->
-<input type="hidden" name="project_id" id="project_id">
-<input type="hidden" name="project_code" id="project_code">
-<input type="hidden" name="customer_name" id="customer_name_input">
-<input type="hidden" name="branch_name" id="branch_name_input">
+        <!-- Hidden Fields -->
+        <input type="hidden" name="project_id" id="project_id">
+        <input type="hidden" name="project_code" id="project_code">
+        <input type="hidden" name="customer_name" id="customer_name_input">
+        <input type="hidden" name="branch_name" id="branch_name_input">
 
-    
 
-    <button id="saveBtn" class="btn btn-success">Material Issue / Purchase request</button>
-</div>
+
+        <button id="saveBtn" class="btn btn-success">Material Issue / Purchase request</button>
+    </div>
 </form>
 
 <script>
-$(document).ready(function(){
+    $(document).ready(function() {
 
-    const units = <?= json_encode($units); ?>; // array of units from PHP
+        const units = <?= json_encode($units); ?>; // array of units from PHP
 
-    // On MR selection
-    $('#mr_id').change(function(){
-        let mr_id = $(this).val();
-        if(!mr_id) return;
+        // On MR selection
+        $('#mr_id').change(function() {
+            let mr_id = $(this).val();
+            if (!mr_id) return;
 
-        $.post('<?= base_url("index.php/Inventory/get_mr_details_ajax") ?>',
-        {mr_id: mr_id}, function(res){
+            $.post('<?= base_url("index.php/Inventory/get_mr_details_ajax") ?>', {
+                mr_id: mr_id
+            }, function(res) {
 
-               // Update visible table
-        $('#project_name').text(res.mr.project_name);
-        $('#customer_name').text(res.mr.customer_name);
-        $('#branch_name').text(res.mr.branch_name);
+                // Update visible table
+                $('#project_name').text(res.mr.project_name);
+                $('#customer_name').text(res.mr.customer_name);
+                $('#branch_name').text(res.mr.branch_name);
 
-        // Update hidden inputs
-        $('#project_id').val(res.mr.project_id);
-        $('#project_code').val(res.mr.project_code);
-        $('#customer_name_input').val(res.mr.customer_name);
-        $('#branch_name_input').val(res.mr.branch_name);
-            // Build table rows
-            let rows = '';
-            res.items.forEach((item, i) => {
+                // Update hidden inputs
+                $('#project_id').val(res.mr.project_id);
+                $('#project_code').val(res.mr.project_code);
+                $('#customer_name_input').val(res.mr.customer_name);
+                $('#branch_name_input').val(res.mr.branch_name);
+                // Build table rows
+                let rows = '';
+                res.items.forEach((item, i) => {
 
-                let default_issue = Math.min(item.available_qty, item.requested_qty);
-                let pending = item.requested_qty - default_issue;
-                if(pending < 0) pending = 0;
+                    let default_issue = Math.min(item.available_qty, item.requested_qty);
+                    let pending = item.requested_qty - default_issue;
+                    if (pending < 0) pending = 0;
 
-                rows += `
+                    rows += `
                 <tr>
                     <td>${i+1}</td>
 
@@ -151,62 +198,85 @@ $(document).ready(function(){
                     <!-- Hidden Product ID -->
                     <input type="hidden" name="product_id[]" value="${item.product_id}">
                 </tr>`;
-            });
+                });
 
-            $('#items_table tbody').html(rows);
+                $('#items_table tbody').html(rows);
 
-        }, 'json');
+            }, 'json');
+        });
+
+        // Recalculate Pending live when Issue qty changes
+        $(document).on('input', '.issue_qty', function() {
+            let $row = $(this).closest('tr');
+            let max = parseFloat($(this).attr('max')) || 0;
+            let val = parseFloat($(this).val()) || 0;
+
+            if (val > max) val = max;
+            if (val < 0) val = 0;
+            $(this).val(val);
+
+            // Pending = Requested - Issue
+            let requested = parseFloat($row.find('.requested_qty').val()) || 0;
+            let pending = requested - val;
+            if (pending < 0) pending = 0;
+            $row.find('.pending_qty').val(pending);
+        });
+
     });
 
-    // Recalculate Pending live when Issue qty changes
-    $(document).on('input', '.issue_qty', function(){
+    // Enable/Disable row inputs based on checkbox
+    $(document).on('change', '.item_check', function() {
         let $row = $(this).closest('tr');
-        let max = parseFloat($(this).attr('max')) || 0;
-        let val = parseFloat($(this).val()) || 0;
+        let isChecked = $(this).is(':checked');
 
-        if(val > max) val = max;
-        if(val < 0) val = 0;
-        $(this).val(val);
-
-        // Pending = Requested - Issue
-        let requested = parseFloat($row.find('.requested_qty').val()) || 0;
-        let pending = requested - val;
-        if(pending < 0) pending = 0;
-        $row.find('.pending_qty').val(pending);
+        $row.find('select, input.issue_qty').prop('disabled', !isChecked);
     });
 
-});
+    document.getElementById("mi_form").addEventListener("submit", function(e) {
 
-// Enable/Disable row inputs based on checkbox
-$(document).on('change', '.item_check', function () {
-    let $row = $(this).closest('tr');
-    let isChecked = $(this).is(':checked');
+        var btn = document.getElementById("saveBtn");
 
-    $row.find('select, input.issue_qty').prop('disabled', !isChecked);
-});
+        // Prevent multiple submissions
+        if (btn.disabled) {
+            e.preventDefault();
+            return false;
+        }
 
-document.getElementById("mi_form").addEventListener("submit", function (e) {
+        // Disable immediately
+        btn.disabled = true;
+        btn.innerHTML = "Processing...";
 
-    var btn = document.getElementById("saveBtn");
+    });
 
-    // Prevent multiple submissions
-    if (btn.disabled) {
-        e.preventDefault();
-        return false;
+    function loadStores() {
+        var warehouse_id = $("#warehouse_id").val();
+        if (warehouse_id == "") {
+            $("#store_id").html('<option value="">Select Store</option>');
+            return;
+        }
+
+        $.ajax({
+            url: "<?= base_url('index.php/Ajax/get_store_by_warehouse'); ?>",
+            type: "POST",
+            data: {
+                warehouse_id: warehouse_id
+            },
+            dataType: "json",
+            success: function(result) {
+                var html = '<option value="">Select Store</option>';
+                $.each(result, function(i, row) {
+                    html += '<option value="' + row.store_id + '">' + row.store_name + '</option>';
+                });
+                $("#store_id").html(html);
+            }
+        });
     }
-
-    // Disable immediately
-    btn.disabled = true;
-    btn.innerHTML = "Processing...";
-
-});
-
 </script>
 
 
 
 <!-- Reserved -->
-                    <!-- <td>
+<!-- <td>
                         <input type="number" class="form-control reserved_qty"
                                value="${item.reserved_qty}" readonly>
                     </td> -->
