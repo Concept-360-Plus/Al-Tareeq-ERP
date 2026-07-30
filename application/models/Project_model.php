@@ -826,7 +826,7 @@ public function get_last_progress_log($project_id)
     //update project task
     public function update_project_task($project_task_id, $data){
         $this->db->where('id', $project_task_id);
-        return $this->db->update('project_task', $data);
+        return $this->db->update('project_task_items', $data);
     }
     //insert project task
     public function insert_project_task_items($items){
@@ -1599,7 +1599,7 @@ public function get_last_progress_log($project_id)
 	{
 
 		$outsource_date = $this->input->post('outsource_date');
-         $outsource_finish_date = $this->input->post('outsource_finish_date');
+        $outsource_finish_date = $this->input->post('outsource_finish_date');
 
 		$data = array(
 			'project_id' => $this->input->post('project_id'),
@@ -1613,16 +1613,19 @@ public function get_last_progress_log($project_id)
 		$this->db->insert('project_outsource', $data);
 		$insert_id = $this->db->insert_id();
 
-		for ($c = 0; $c < count($_POST['product_id']); $c++) {
+		for ($c = 0; $c < count($_POST['outsource_item']); $c++) {
 			$data = array(
 				'os_master_id' => $insert_id,
-				'outsource_type' => $_POST['product_id'][$c],
+				//'outsource_type' => $_POST['product_id'][$c],
+                'outsource_item' => $_POST['outsource_item'][$c],
+                'item_price' => $_POST['item_price'][$c],
 				'product_desc' => $_POST["desc"][$c],
 				'quantity' => $_POST["trading_qty"][$c],
 				'nature_work' => $_POST["nature_work"][$c],
 
 			);
 			$this->db->insert('project_outsource_details', $data);
+           
 		}
 		
 		if ($insert_id) {
@@ -1649,18 +1652,23 @@ public function get_last_progress_log($project_id)
 			);
 		$this->db->where('outsource_id', $id);
 		$res = $this->db->update('project_outsource', $data);
+        //echo $this->db->last_query();
+        //exit;
 
 		$query = $this->db->query(" delete from project_outsource_details where os_master_id=$id");
-		for ($c = 0; $c < count($_POST['product_id']); $c++) {
+		for ($c = 0; $c < count($_POST['outsource_item']); $c++) {
 			$data = array(
 				'os_master_id' => $id,
-				'outsource_type' => $_POST['product_id'][$c],
-				'product_desc' => $_POST["desc"][$c],
+				//'outsource_type' => $_POST['product_id'][$c],
+				//'product_desc' => $_POST["desc"][$c],
 				'quantity' => $_POST["trading_qty"][$c],
 				'nature_work' => $_POST["nature_work"][$c],
+                'outsource_item' => $_POST['outsource_item'][$c],
+                'item_price' => $_POST['item_price'][$c],
 
 			);
 			$this->db->insert('project_outsource_details', $data);
+            
 		}
 		if ($id) {
 			$user_se_id = $this->session->userdata('user_id');
@@ -2409,6 +2417,7 @@ public function get_last_progress_log($project_id)
 
     }
     soumya*/
+    //changes
     public function get_projectmr_items($p_id)
     {
         return $result = $this->db
@@ -2421,7 +2430,49 @@ public function get_last_progress_log($project_id)
             ->result_array();
 
     }
+    public function get_employee_by_designation($designation_id)
+    {
+        return $this->db
+                ->where('designation_id', $designation_id)
+                ->where('active', 1)
+                ->order_by('employee_name', 'ASC')
+                ->get('employee_master')
+                ->result_array();
+    }
+    public function insert_project_task($data)
+    {
+        $this->db->insert('project_task_items',$data);
 
-    
+        return $this->db->insert_id();
+    }
+   
+    public function delete_removed_tasks($project_id,$ids=array())
+    {
+        $this->db->where('project_id',$project_id);
+
+        if(!empty($ids))
+        {
+            $this->db->where_not_in('id',$ids);
+        }
+
+        $this->db->delete('project_task_items');
+    }
+    public function get_project_tasks($project_id)
+    {
+        /*return $this->db
+                ->where('project_id',$project_id)
+                ->order_by('id')
+                ->get('project_task_items')
+                ->result_array();
+        */
+         $query_tasks = $this->db->query("SELECT  pti.*,`em`.`employee_id`,pc.project_task_name,pti.priority,pti.start_date,pti.end_date,pti.status,pti.task_description, `pm`.`milestone_name`, `dm`.`designation_name`, `em`.`employee_name`
+                    FROM  `project_task_items` `pti` 
+                    LEFT JOIN `project_milestone` `pm` ON `pm`.`milestone_id` = `pti`.`milestone_id`
+                    LEFT JOIN `designation_master` `dm` ON `dm`.`id` = `pti`.`designation_id`
+                    LEFT JOIN `employee_master` `em` ON `em`.`employee_id` = `pti`.`employee_id`
+                    LEFT JOIN  project_task_category pc on pc.project_task_id=pti.task_category_id
+                    WHERE `pti`.`project_id`=".$project_id);
+        return $query_tasks->result_array();
+    }
 
 }

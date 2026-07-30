@@ -1,6 +1,11 @@
 <div class="row">
 <div class="col-md-12">
 <div class="x_panel">
+    <?php if ($this->session->flashdata('success')): ?>
+    <div class="alert alert-success">
+        <?= $this->session->flashdata('success') ?>
+    </div>
+    <?php endif; ?>
         <table id="datatable" class="table table-striped" data-toggle="data-table">
             <thead>
                 <tr>

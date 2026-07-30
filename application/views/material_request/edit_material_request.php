@@ -1,11 +1,15 @@
 <link href="<?php echo base_url()."public/build/css/popup.css"; ?>" rel="stylesheet">
+<div class="clearfix"></div>
+<div class="row">
+    <div class="col-md-12 col-sm-12">
+        <div class="x_panel">
 <form id="mr_form" action="<?= base_url('index.php/Project/update_material_request') ?>" method="post">
 
 <input type="hidden" name="mr_id" value="<?= $mr['mr_id'] ?>">
 
 <!-- Select Approved Project mb-3-->
-<div class="col-md-6">
-    <label for="project_id" class="form-label">Select Approved Project</label>
+<div class="col-md-5">
+    <label for="project_id" class="form-label">Approved Project</label>
     <select name="project_id" id="project_id" class="form-control" required>
         <option value="">-- Select Project --</option>
         <?php foreach ($approved_projects as $proj): ?>
@@ -18,7 +22,7 @@
 </div>
 
 <!-- Initiated By -->
-<div class="col-md-6">
+<div class="col-md-5">
     <label for="initiated_by" class="form-label">Initiated By</label>
     <select name="initiated_by" id="initiated_by" class="form-control" required>
         <option value="">-- Select User --</option>
@@ -251,6 +255,10 @@
 </table>
 
 </div>
+</div>
+</div>
+
+
 
 <!--<h5>Items</h5>
 <table class="table table-bordered" id="items_table">

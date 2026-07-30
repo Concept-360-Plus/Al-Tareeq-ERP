@@ -41,6 +41,11 @@
     <?= $this->session->flashdata('success') ?>
 </div>
 <?php endif; ?>
+<?php if ($this->session->flashdata('error')): ?>
+<div class="alert alert-error">
+    <?= $this->session->flashdata('error') ?>
+</div>
+<?php endif; ?>
 
 <!-- <table class="table table-bordered table-striped" id="projectTable"> -->
 <table id="datatable-responsive" class="table table-striped table-bordered dt-responsive nowrap" cellspacing="0" width="100%">

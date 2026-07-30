@@ -1,10 +1,14 @@
 
 <link href="<?php echo base_url()."public/build/css/popup.css"; ?>" rel="stylesheet">
+<div class="clearfix"></div>
+<div class="row">
+    <div class="col-md-12 col-sm-12">
+        <div class="x_panel">
 <form id="mr_form" action="<?= base_url('index.php/Project/save_material_request') ?>" method="post">
 
 <!-- Select Approved Project -->
-<div class="col-md-6">
-    <label for="project_id" class="form-label">Select Approved Project</label>
+<div class="col-md-5">
+    <label for="project_id" class="form-label">Approved Project</label>
     <select name="project_id" id="project_id" class="form-control" required>
     <option value="">-- Select Project --</option>
     <?php foreach ($approved_projects as $proj): ?>
@@ -18,7 +22,7 @@
 </div>
 
 <!-- Initiated By -->
-<div class="col-md-6">
+<div class="col-md-5">
     <label for="initiated_by" class="form-label">Initiated By</label>
     <select name="initiated_by" id="initiated_by" class="form-control" required>
         <option value="">-- Select User --</option>
@@ -134,6 +138,7 @@
 </div></div>
 
 </form>
+</div></div>
 <?php
 $productOptions="";
 $productOptions .= '<option value="">-- Select Product --</option>';

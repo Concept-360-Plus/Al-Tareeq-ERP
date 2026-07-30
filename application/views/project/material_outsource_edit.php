@@ -1,22 +1,17 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multiscale | ERP</title>
-</head>
-
-<body>
-    <div class="card-body">
+<style>
+	 .btn-sm .fa{color:#fff;}
+</style>
+<div class="clearfix"></div>
+<div class="row">
+    <div class="col-md-12 col-sm-12">
+        <div class="x_panel">
         <form id="main" method="post"
             action="<?php echo base_url() . 'index.php/'; ?>Project/update_material_outsource_processing"
             autocomplete="off" enctype="multipart/form-data">
             <?php foreach ($records1 as $row) { ?>
 
                 <div class="form-group row">
-                    <label class="col-xs-12 col-sm-2 col-md-3 col-lg-2 col-form-label">Project Name<span
+                    <label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">Project Name<span
                             style="color: red;"> *</span></label>
                     <div class="col-xs-12 col-sm-9 col-md-3 col-lg-3" role='group'>
                         <select tabindex="1" class="form-select form-control select2" id="project_id" name="project_id"
@@ -31,7 +26,7 @@
                         </select>
                     </div>
 
-                    <label class="col-xs-12 col-sm-2 col-md-3 col-lg-2 col-form-label">Select Supplier<span
+                    <label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">Select Supplier<span
                             style="color: red;"> *</span></label>
                     <div class="col-xs-12 col-sm-9 col-md-3 col-lg-3">
                         <select tabindex="2" class="form-select form-control select2" id="supplier_id" name="supplier_id"
@@ -86,20 +81,20 @@
                     <label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">Outsource Starting Date:</label>
                     <div class="col-xs-12 col-sm-9 col-md-3 col-lg-3">
                         <div class="input-group date datepicker1">
-                          <input type="text" class="form-control form-control datepicker1" 
+                          <input type="date" class="form-control form-control" 
        id="outsource_date" name="outsource_date"
-       value="<?php echo !empty($row->outsource_date) && $row->outsource_date != '0000-00-00' ? date('d-m-Y', strtotime($row->outsource_date)) : ''; ?>">
-                            <div class="input-group-addon"><i class="fa fa-calendar"></i></div>
+       value="<?php echo !empty($row->outsource_date) && $row->outsource_date != '0000-00-00' ? $row->outsource_date : ''; ?>">
+                            
                         </div>
                     </div>
 
                     <label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">Outsource Finishing Date:</label>
                     <div class="col-xs-12 col-sm-9 col-md-3 col-lg-3">
                         <div class="input-group date datepicker1">
-                           <input type="text" class="form-control form-control datepicker1" 
+                           <input type="date" class="form-control form-control datepicker1" 
        id="outsource_finish_date" name="outsource_finish_date"
-       value="<?php echo !empty($row->outsource_finish_date) && $row->outsource_finish_date != '0000-00-00' ? date('d-m-Y', strtotime($row->outsource_finish_date)) : ''; ?>">
-                            <div class="input-group-addon"><i class="fa fa-calendar"></i></div>
+       value="<?php echo !empty($row->outsource_finish_date) && $row->outsource_finish_date != '0000-00-00' ? $row->outsource_finish_date : ''; ?>">
+                            
                         </div>
                     </div>
                       </div>
@@ -143,13 +138,12 @@
 				<table class="table table-bordered table-hover" id="tab_logic">
 					<thead>
 						<tr>
-							<th>Items</th>
-							<th>Quantity</th>
+							<th>Item</th>
+                            <th>Quantity</th>
+                            <th>Price</th>
                             <th>Nature Of Work</th>
 							<th width='10%'>
-								<a id="add_row" title="Add"
-										class="btn btn-primary btn-sm"><span class="fa fa-plus"></span></a>
-								
+								<a id="add_row" title="Add"	class="btn btn-primary btn-sm"><span class="fa fa-plus"></span></a>
 							</th>
 						</tr>
 					</thead>
@@ -157,7 +151,7 @@
 						<?php $i = 50001;
 						foreach ($trans_records as $r):?>
 							<tr>
-								<td>
+								<!--<td>
 									<select tabindex="11" class="form-select form-control select2 select2Width"
 										id="product_id<?php echo $i; ?>" name="product_id[]"
 										onchange="get_product_info_old(<?php echo $i; ?>)">
@@ -171,13 +165,19 @@
 									<textarea rows='4' cols='20' name="desc[]" id="desc<?php echo $i; ?>"
 										style="font-size:11px; font-weight:bold;" class="form-control form-control"
 										tabindex='9' required><?php echo $r->product_desc; ?></textarea>
-								</td>
+								</td>-->
+                                <td><input type="text" name="outsource_item[]" id="outsource_item0" tabindex='10' class="form-control form-control"	value="<?php echo $r->outsource_item ?? ''; ?>" required>
+						        </td>
 								<td>
-									<input type="number" name="trading_qty[]" id="trading_qty0" tabindex='10'
-										class="form-control form-control" value="<?php echo $r->quantity; ?>" required>
+									<input type="number" name="trading_qty[]" id="trading_qty<?php echo $i; ?>" tabindex='10'
+										class="form-control form-control" value="<?php echo $r->quantity ?? ''; ?>" required>
 								</td>
+                                
+                                <td>
+                                    <input type="number" name="item_price[]" id="item_price<?php echo $i; ?>" tabindex='10'
+                                        class="form-control form-control" value="<?php echo $r->item_price ?? ''; ?>" required>
 								<td>
-									<textarea name="nature_work[]" id="nature_work0" tabindex='16'
+									<textarea name="nature_work[]" id="nature_work<?php echo $i; ?>" tabindex='16'
 										class="form-control form-control"
 										><?php echo $r->nature_work; ?></textarea>
 									<input type="hidden" name="outsource_trid[]" value="<?php echo $r->outsource_trid; ?>">
@@ -205,9 +205,7 @@
             <?php } ?>
         </form>
     </div>
-</body>
 
-</html>
 <div>
 </div>
 </div>
@@ -216,7 +214,8 @@
 
 var i = 1;
 $("#add_row").click(function () {
-    $('#addr' + i).html("<td><select tabindex='11' class='form-select form-control select2' id='product_id" + i + "' name='product_id[]' onchange='get_treding_product_info(" + i + ")' style='width:350px;'><option value=''>Select </option><?php foreach ($products as $s) { ?><option value='<?php echo $s['product_id']; ?>'><?php echo $s['product_code'] . ' ' . $s['product_name']; ?></option><?php } ?></select><textarea rows='4' cols='20' name='desc[]' id='desc" + i + "' style='font-size:11px; font-weight:bold;'  class='form-control form-control' tabindex='13' placeholder='Description'></textarea></td><td><input type='number' name='trading_qty[]' id='trading_qty" + i + "' tabindex='14' class='form-control form-control' placeholder='' ></td><td><textarea name='nature_work[]' id='nature_work" + i + "' tabindex='16' class='form-control form-control' ></textarea></td><td><a id='delete_row' title='Delete' onclick='remove_row(" + i + ")' class='btn btn-danger btn-sm remove1'><span class='fa fa-trash'></span></a></td>");
+    //$('#addr' + i).html("<td><select tabindex='11' class='form-select form-control select2' id='product_id" + i + "' name='product_id[]' onchange='get_treding_product_info(" + i + ")' style='width:350px;'><option value=''>Select </option><?php foreach ($products as $s) { ?><option value='<?php echo $s['product_id']; ?>'><?php echo $s['product_code'] . ' ' . $s['product_name']; ?></option><?php } ?></select><textarea rows='4' cols='20' name='desc[]' id='desc" + i + "' style='font-size:11px; font-weight:bold;'  class='form-control form-control' tabindex='13' placeholder='Description'></textarea></td><td><input type='number' name='trading_qty[]' id='trading_qty" + i + "' tabindex='14' class='form-control form-control' placeholder='' ></td><td><textarea name='nature_work[]' id='nature_work" + i + "' tabindex='16' class='form-control form-control' ></textarea></td><td><a id='delete_row' title='Delete' onclick='remove_row(" + i + ")' class='btn btn-danger btn-sm remove1'><span class='fa fa-trash'></span></a></td>");
+    $('#addr' + i).html("<td><input type='text' name='outsource_item[]' id='outsource_item0' tabindex='10' class='form-control form-control' value='' required></td><td><input type='number' name='trading_qty[]' id='trading_qty" + i + "' tabindex='14' class='form-control form-control' placeholder='' required></td><td><input type='number' name='item_price[]' id='item_price" + i + "' tabindex='10' class='form-control form-control' value='' required><td><textarea name='nature_work[]' id='nature_work" + i + "' tabindex='16' class='form-control form-control' ></textarea></td><td><a id='delete_row' title='Delete' onclick='remove_row(" + i + ")' class='btn btn-sm bg-red remove1'><span class='fa fa-trash'></span></a></td>");
     $('#mytbbody tr:last').after('<tr id="addr' + (i + 1) + '"></tr>');
     i++;
     $('.select2').select2({ width: "220px" });
@@ -359,4 +358,14 @@ $.ajax({
             get_project_info();
         }
     };
+    /*$(document).ready(function () {
+
+        $('.select2').select2({
+            placeholder: '-- Select Project --',
+            allowClear: true,
+            width: '100%'
+        });
+
+    });
+    */
 </script>

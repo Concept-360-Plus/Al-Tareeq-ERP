@@ -610,4 +610,13 @@
             document.getElementById("edate").value = '';
         }
     }
+    $(document).ready(function () {
+
+    $('.select2').select2({
+        placeholder: '-- Select Project --',
+        allowClear: true,
+        width: '100%'
+    });
+
+});
 </script>

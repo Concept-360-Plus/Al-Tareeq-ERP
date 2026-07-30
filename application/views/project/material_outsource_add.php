@@ -19,7 +19,7 @@
 
 
             <div class="form-group row">
-                <label class="col-xs-12 col-sm-2 col-md-3 col-lg-2 col-form-label">Select Project<span
+                <label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">Select Project<span
                         style="color: red;"> * </span></label>
                 <div class="col-xs-12 col-sm-9 col-md-3 col-lg-3" role='group'>
                     <select tabindex="1" class="form-select form-control select2" id="project_id" name="project_id"
@@ -32,7 +32,7 @@
                     </select>
                 </div>
 
-                <label class="col-xs-12 col-sm-2 col-md-3 col-lg-2 col-form-label">Select Supplier<span
+                <label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">Select Supplier<span
                         style="color: red;"> * </span></label>
                 <div class="col-xs-12 col-sm-9 col-md-3 col-lg-3">
                     <select tabindex="2" class="form-select form-control select2" id="supplier_id" name="supplier_id"
@@ -69,7 +69,7 @@
 				<input type="text" class="form-control form-control bg-soft-gray" id="manager_id"
 						name="manager_id" value=" " tabindex="3" readonly>
 		       </div>		
-			   	<label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">Select Customer</label>
+			   	<label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">Customer:</label>
 			<div class="col-xs-12 col-sm-9 col-md-3 col-lg-3" role='group'>
 			<input type="text" class="form-control form-control bg-soft-gray" id="customer_id"
 						name="customer_id" value="" tabindex="3" readonly>
@@ -105,7 +105,7 @@
 
                 <label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">Remark :</label>
                 <div class="col-sm-3">
-                    <textarea id="remark" class='form-control'  name="remark" rows="1" placeholder="Remark/Comments" style="width: 100%;"
+                    <textarea id="remark" class='form-control'  name="remark" rows="5" placeholder="Remark/Comments" style="width: 100%;"
                         tabindex="11"></textarea>
                 </div>
             </div>
@@ -117,10 +117,11 @@
 				<thead>
 					<tr>
 						<!-- <th>Sr</th> -->
-						<th>Select Items</th>
+						<th>Items</th>
 						<th>Quantity</th>
+						<th>Price</th>
 						<th>Nature Of Work</th>
-						<th width='10%'><a id="add_row" title="Add" class="btn btn-sm bg-red"><span
+						<th width='10%'><a id="add_row" title="Add" class="btn btn-sm btn-primary"><span
 									class="fa fa-plus"></span></a></th>
 					</tr>
 				</thead>
@@ -130,7 +131,10 @@
 						<!-- <td><input type="text" name="srn[]" id="srn0" tabindex='10' class="form-control form-control"
 								value="1">
 						</td> -->
-						<td>
+						<td><input type="text" name="outsource_item[]" id="outsource_item0" tabindex='10' class="form-control form-control"
+								value="" required>
+						</td>
+						<!--<td>
 							<select tabindex="11" class="form-select form-control select2" id="product_id0"
 								name="product_id[]" onchange="get_treding_product_info(0)" style="width:350px;">
 								<option value="">Select</option>
@@ -141,14 +145,17 @@
 							<textarea rows='4' cols='20' name="desc[]" id="desc0"
 								style="font-size:11px; font-weight:bold;" class="form-control form-control"
 								tabindex='13' placeholder="Description"></textarea>
-						</td>
+						</td>-->
 						<td><input type="number" name="trading_qty[]" id="trading_qty0" tabindex='14'
-								class="form-control form-control" placeholder=""></td>
+								class="form-control form-control" placeholder="" required></td>
+						<td><input type="number" name="item_price[]" id="item_price0" tabindex='10' class="form-control form-control"
+								value="" required>
+						</td>
 
 						<td><textarea name="nature_work[]" id="nature_work0" tabindex='16'
 								class="form-control form-control" ></textarea></td>
 						<td><a id='delete_row' title="Delete" onclick='remove_row(0)'
-								class="btn btn-sm btn-primary remove1"><span class="fa fa-trash"></span></a></td>
+								class="btn btn-sm bg-red remove1"><span class="fa fa-trash"></span></a></td>
 					</tr>
 					<tr id='addr1'></tr>
 				</tbody>
@@ -171,7 +178,8 @@
 $(document).ready(function () {
 		var i = 1;
 		$("#add_row").click(function () {
-			$('#addr' + i).html("<td><select tabindex='11' class='form-select form-control select2' id='product_id" + i + "' name='product_id[]' onchange='get_treding_product_info(" + i + ")' style='width:350px;'><option value=''>Select </option><?php foreach ($products as $s) { ?><option value='<?php echo $s->product_id; ?>'><?php echo $s->product_code . ' ' . $s->product_name; ?></option><?php } ?></select><textarea rows='4' cols='20' name='desc[]' id='desc" + i + "' style='font-size:11px; font-weight:bold;'  class='form-control form-control' tabindex='13' placeholder='Description'></textarea></td><td><input type='number' name='trading_qty[]' id='trading_qty" + i + "' tabindex='14' class='form-control form-control' placeholder='' ></td><td><textarea name='nature_work[]' id='nature_work" + i + "' tabindex='16' class='form-control form-control' ></textarea></td><td><a id='delete_row' title='Delete' onclick='remove_row(" + i + ")' class='btn btn-xs bg-orange remove1'><span class='fa fa-trash'></span></a></td>");
+			//$('#addr' + i).html("<td><select tabindex='11' class='form-select form-control select2' id='product_id" + i + "' name='product_id[]' onchange='get_treding_product_info(" + i + ")' style='width:350px;'><option value=''>Select </option><?php foreach ($products as $s) { ?><option value='<?php echo $s->product_id; ?>'><?php echo $s->product_code . ' ' . $s->product_name; ?></option><?php } ?></select><textarea rows='4' cols='20' name='desc[]' id='desc" + i + "' style='font-size:11px; font-weight:bold;'  class='form-control form-control' tabindex='13' placeholder='Description'></textarea></td><td><input type='number' name='trading_qty[]' id='trading_qty" + i + "' tabindex='14' class='form-control form-control' placeholder='' ></td><td><textarea name='nature_work[]' id='nature_work" + i + "' tabindex='16' class='form-control form-control' ></textarea></td><td><a id='delete_row' title='Delete' onclick='remove_row(" + i + ")' class='btn btn-xs bg-orange remove1'><span class='fa fa-trash'></span></a></td>");
+		$('#addr' + i).html("<td><input type='text' name='outsource_item[]' id='outsource_item0' tabindex='10' class='form-control form-control' value='' required></td><td><input type='number' name='trading_qty[]' id='trading_qty" + i + "' tabindex='14' class='form-control form-control' placeholder='' required></td><td><input type='number' name='item_price[]' id='item_price" + i + "' tabindex='10' class='form-control form-control' value='' required><td><textarea name='nature_work[]' id='nature_work" + i + "' tabindex='16' class='form-control form-control' ></textarea></td><td><a id='delete_row' title='Delete' onclick='remove_row(" + i + ")' class='btn btn-sm bg-red remove1'><span class='fa fa-trash'></span></a></td>");
 
 			$('#mytbbody tr:last').after('<tr id="addr' + (i + 1) + '"></tr>');
 			i++;
@@ -259,5 +267,13 @@ $(document).ready(function () {
 			document.getElementById("edate").value = '';
 		}
 	}
+$(document).ready(function () {
 
+    $('.select2').select2({
+        placeholder: '-- Select Project --',
+        allowClear: true,
+        width: '100%'
+    });
+
+});
 </script>
