@@ -34,6 +34,10 @@ class Inventory extends CI_Controller
 
     public function create_material_issue($mr_id = null)
     {
+        $this->load->model('Setup_model');
+        $data['warehouse_list'] = $this->Setup_model->get_warehouse_list();
+        $data['store_list'] = [];
+        
         $data['material_requests'] = $this->Project_model->get_pending_material_requests();
         $data['units'] = $this->Project_model->get_all_units();
         $data['selected_mr_id'] = $mr_id;
