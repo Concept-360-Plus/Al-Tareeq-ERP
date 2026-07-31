@@ -29,6 +29,8 @@
                 <th>Project</th>
                 <th>Customer</th>
                 <th>Branch</th>
+                <th>Warehouse</th>
+                <th>Store</th>
                 <th>Issue Date</th>
                 <!-- <th>Issued By</th> -->
                 <th>Status</th>
@@ -45,6 +47,13 @@
                         <td><?= $mi['project_name']; ?></td>
                         <td><?= $mi['customer_name']; ?></td>
                         <td><?= $mi['branch_name']; ?></td>
+                        <td>
+                            <?= !empty($mi['warehouse_name']) ? $mi['warehouse_name'] : '-'; ?>
+                        </td>
+
+                        <td>
+                            <?= !empty($mi['store_name']) ? $mi['store_name'] : '-'; ?>
+                        </td>
                         <td><?= date('d-m-Y H:i', strtotime($mi['issue_date'])); ?></td>
                         <!-- <td>
                             <?php
