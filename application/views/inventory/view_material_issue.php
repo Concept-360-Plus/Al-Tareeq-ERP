@@ -21,6 +21,15 @@
             <th>Branch</th>
             <td><?= $mi['branch_name'] ?></td>
         </tr>
+        <tr>
+            <th>Warehouse</th>
+            <td><?= !empty($mi['warehouse_name']) ? $mi['warehouse_name'] : '-'; ?></td>
+        </tr>
+
+        <tr>
+            <th>Store</th>
+            <td><?= !empty($mi['store_name']) ? $mi['store_name'] : '-'; ?></td>
+        </tr>
     </table>
 
     <!-- Items Table -->

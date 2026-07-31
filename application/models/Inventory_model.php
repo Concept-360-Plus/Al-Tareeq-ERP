@@ -79,7 +79,7 @@ class Inventory_model extends CI_Model
     //     }
     // }
 
-    public function allocate_stock_for_mi($product_id, $issue_qty, $mi_id)
+    public function allocate_stock_for_mi($product_id, $issue_qty, $mi_id, $warehouse_id, $store_id)
     {
         if ($issue_qty <= 0) {
             return;
@@ -89,6 +89,8 @@ class Inventory_model extends CI_Model
 
         // Fetch available IN stock (FIFO)
         $stocks = $this->db
+            ->where('warehouse_id', $warehouse_id)
+            ->where('store_id', $store_id)
             ->where('product_id', $product_id)
             ->where('stock_type', 'IN')
             ->where('balance_qty >', 0)
@@ -121,6 +123,7 @@ class Inventory_model extends CI_Model
             // Create NEW OUT transaction
             $this->db->insert('stock_details', [
                 'warehouse_id'   => $stock->warehouse_id,
+                'store_id'       => $stock->store_id,
                 'stock_type'     => 'OUT',
                 'trans_id'       => $mi_id,
                 'stock_date'     => date('Y-m-d'),
@@ -164,10 +167,12 @@ class Inventory_model extends CI_Model
     public function get_all_material_issues()
     {
 
-        $this->db->select('mi.*, mr.mr_code, p.project_name');
+        $this->db->select('mi.*, mr.mr_code, p.project_name, w.warehouse_name, s.store_name');
         $this->db->from('material_issue mi');
         $this->db->join('material_requests mr', 'mr.mr_id = mi.mr_id', 'left');
         $this->db->join('project_master p', 'p.project_id = mi.project_id', 'left');
+        $this->db->join('warehouse_master w', 'w.warehouse_id = mi.warehouse_id', 'left');
+        $this->db->join('store_master s', 's.store_id = mi.store_id', 'left');
         $this->db->order_by('mi.mi_id', 'DESC');
         $issues = $this->db->get()->result_array();
 
@@ -288,10 +293,12 @@ class Inventory_model extends CI_Model
     //   MI VIEW
     public function get_material_issue_by_id($mi_id)
     {
-        $this->db->select('mi.*, mr.mr_code, p.project_name, p.project_code, mr.customer_name, mr.branch_name');
+        $this->db->select('mi.*, mr.mr_code, p.project_name, p.project_code, mr.customer_name, mr.branch_name, w.warehouse_name, s.store_name');
         $this->db->from('material_issue mi');
         $this->db->join('material_requests mr', 'mr.mr_id = mi.mr_id', 'left');
         $this->db->join('project_master p', 'p.project_id = mi.project_id', 'left');
+        $this->db->join('warehouse_master w', 'w.warehouse_id = mi.warehouse_id', 'left');
+        $this->db->join('store_master s', 's.store_id = mi.store_id', 'left');
         $this->db->where('mi.mi_id', $mi_id);
         return $this->db->get()->row_array();
     }
