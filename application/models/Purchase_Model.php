@@ -1763,11 +1763,125 @@ class Purchase_Model extends CI_Model
 
 		return $query->result();
 	}
+
+	public function get_grn_items_by_id($grn_id)
+	{
+		$this->db->select("
+        gt.*,
+        im.product_code,
+        im.product_name,
+        um.unit_name,
+        (
+            SELECT COALESCE(SUM(prt.return_qty),0)
+            FROM purchase_return_transaction prt
+            WHERE prt.grn_transaction_id = gt.grn_transaction_id
+        ) AS returned_qty
+    ");
+
+		$this->db->from('purchase_grn_transaction gt');
+		$this->db->join('item_master im', 'im.product_id=gt.product_id');
+		$this->db->join('unit_master um', 'um.unit_id=gt.unit');
+
+		$this->db->where('gt.grn_master_id', $grn_id);
+
+		return $this->db->get()->result();
+	}
+	
 	function get_grn_tr_by_id($grn_id)
 	{
 		$query = $this->db->query("select * from purchase_grn_transaction tr left join item_master pm on tr.product_id = pm.product_id left join unit_master um on pm.unit_id = um.unit_id  where  grn_master_id=$grn_id ");
 		return $query->result();
 	}
+	public function save_purchase_return()
+	{
+		$this->db->trans_begin();
+
+		$master = array(
+			'return_date' => $this->input->post('return_date'),
+			'grn_id' => $this->input->post('grn_id'),
+			'supplier_id' => $this->input->post('supplier_id'),
+			'warehouse_id' => $this->input->post('warehouse_id'),
+			'store_id' => $this->input->post('store_id'),
+			'remarks' => $this->input->post('remarks'),
+			'created_by' => $this->session->userdata('user_id')
+		);
+
+		$this->db->insert('purchase_return_master', $master);
+		$return_id = $this->db->insert_id();
+
+		for ($i = 0; $i < count($_POST['product_id']); $i++) {
+			if ($_POST['return_qty'][$i] <= 0)
+				continue;
+			$tr = array(
+				'return_master_id' => $return_id,
+				'grn_transaction_id' => $_POST['grn_transaction_id'][$i],
+				'product_id' => $_POST['product_id'][$i],
+				'return_qty' => $_POST['return_qty'][$i]
+			);
+
+			$this->db->insert(
+				'purchase_return_transaction',
+				$tr
+			);
+
+			$this->reduce_stock(
+				$_POST['product_id'][$i],
+				$_POST['return_qty'][$i],
+				$return_id
+			);
+		}
+
+		if ($this->db->trans_status() == FALSE) {
+			$this->db->trans_rollback();
+			return false;
+		}
+
+		$this->db->trans_commit();
+		return true;
+	}
+
+	public function reduce_stock($product_id, $qty, $return_id)
+	{
+		$rows = $this->db
+			->where('product_id', $product_id)
+			->where('balance_qty >', 0)
+			->order_by('stock_id')
+			->get('stock_details')
+			->result();
+
+		foreach ($rows as $row) {
+			if ($qty <= 0)
+				break;
+			if ($row->balance_qty >= $qty) {
+				$this->db
+					->where('stock_id', $row->stock_id)
+					->update('stock_details', [
+						'balance_qty' => $row->balance_qty - $qty
+					]);
+
+				$this->db->insert('stock_details', [
+					'trans_id' => $return_id,
+					'stock_type' => 'OUT',
+					'warehouse_id' => $row->warehouse_id,
+					'store_id' => $row->store_id,
+					'product_id' => $product_id,
+					'quantity' => $qty,
+					'balance_qty' => 0,
+					'remark' => 'Purchase Return'
+
+				]);
+				$qty = 0;
+			} else {
+				$this->db
+					->where('stock_id', $row->stock_id)
+					->update('stock_details', [
+						'balance_qty' => 0
+					]);
+				$qty -= $row->balance_qty;
+			}
+		}
+	}
+
 	function delete_grn($grn_id)
 	{
 		$this->db->query("delete from purchase_grn_transaction where grn_master_id='$grn_id'");

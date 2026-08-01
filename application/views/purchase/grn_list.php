@@ -68,6 +68,11 @@
                                                    <i class="fa fa-print"></i>&nbsp;
                                                </a>
 
+                                               <a href="<?= base_url('index.php/Purchase/return_grn_items/' . $row->grn_id); ?>"
+                                                   title="Return Items" style="margin-right:10px;">
+                                                   <i class="fa fa-undo"></i>
+                                               </a>
+
                                                <a href="#" class="delete-grn" data-grn-id="<?php echo $row->grn_id; ?>" title="Delete">
                                                    <i class="glyphicon glyphicon-trash"></i>
                                                </a>
