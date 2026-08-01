@@ -23,11 +23,10 @@ class Purchase extends CI_Controller
     {
         $user = $this->session->userdata('user_id');
 
-        if (!has_access($user,'Purchase/list_direct_rfq','A'))
-        {
+        if (!has_access($user, 'Purchase/list_direct_rfq', 'A')) {
             $data['title'] = 'Access Denied';
             $data['main_content'] = 'errors/access_control.php';
-            $this->load->view('includes/template',$data);
+            $this->load->view('includes/template', $data);
             return;
         }
         $this->load->model('Item_model');
@@ -74,11 +73,10 @@ class Purchase extends CI_Controller
     {
         $user = $this->session->userdata('user_id');
 
-        if (!has_view_access($user,'Purchase/list_direct_rfq'))
-        {
+        if (!has_view_access($user, 'Purchase/list_direct_rfq')) {
             $data['title'] = 'Access Denied';
             $data['main_content'] = 'errors/access_control.php';
-            $this->load->view('includes/template',$data);
+            $this->load->view('includes/template', $data);
             return;
         }
         $data['title'] = 'Request For Quotation(RFQ)';
@@ -92,11 +90,10 @@ class Purchase extends CI_Controller
     {
         $user = $this->session->userdata('user_id');
 
-        if (!has_access($user,'Purchase/list_direct_rfq','D'))
-        {
+        if (!has_access($user, 'Purchase/list_direct_rfq', 'D')) {
             $data['title'] = 'Access Denied';
             $data['main_content'] = 'errors/access_control.php';
-            $this->load->view('includes/template',$data);
+            $this->load->view('includes/template', $data);
             return;
         }
         $rfq_id = $this->uri->segment('3');
@@ -110,11 +107,10 @@ class Purchase extends CI_Controller
     {
         $user = $this->session->userdata('user_id');
 
-        if (!has_access($user,'Purchase/list_direct_rfq','E'))
-        {
+        if (!has_access($user, 'Purchase/list_direct_rfq', 'E')) {
             $data['title'] = 'Access Denied';
             $data['main_content'] = 'errors/access_control.php';
-            $this->load->view('includes/template',$data);
+            $this->load->view('includes/template', $data);
             return;
         }
         $this->load->model('Company_model');
@@ -150,11 +146,10 @@ class Purchase extends CI_Controller
     {
         $user = $this->session->userdata('user_id');
 
-        if (!has_access($user,'Purchase/purchase_quotation_list','A'))
-        {
+        if (!has_access($user, 'Purchase/purchase_quotation_list', 'A')) {
             $data['title'] = 'Access Denied';
             $data['main_content'] = 'errors/access_control.php';
-            $this->load->view('includes/template',$data);
+            $this->load->view('includes/template', $data);
             return;
         }
         $this->load->model('Setup_model');
@@ -203,11 +198,10 @@ class Purchase extends CI_Controller
     {
         $user = $this->session->userdata('user_id');
 
-        if (!has_view_access($user,'Purchase/purchase_quotation_list'))
-        {
+        if (!has_view_access($user, 'Purchase/purchase_quotation_list')) {
             $data['title'] = 'Access Denied';
             $data['main_content'] = 'errors/access_control.php';
-            $this->load->view('includes/template',$data);
+            $this->load->view('includes/template', $data);
             return;
         }
         $data['title'] = 'Purchase Quotation';
@@ -222,11 +216,10 @@ class Purchase extends CI_Controller
     {
         $user = $this->session->userdata('user_id');
 
-        if (!has_access($user,'Purchase/purchase_quotation_list','E'))
-        {
+        if (!has_access($user, 'Purchase/purchase_quotation_list', 'E')) {
             $data['title'] = 'Access Denied';
             $data['main_content'] = 'errors/access_control.php';
-            $this->load->view('includes/template',$data);
+            $this->load->view('includes/template', $data);
             return;
         }
         $this->load->model('Setup_model');
@@ -307,11 +300,10 @@ class Purchase extends CI_Controller
     {
         $user = $this->session->userdata('user_id');
 
-        if (!has_access($user,'Purchase/purchase_quotation_list','D'))
-        {
+        if (!has_access($user, 'Purchase/purchase_quotation_list', 'D')) {
             $data['title'] = 'Access Denied';
             $data['main_content'] = 'errors/access_control.php';
-            $this->load->view('includes/template',$data);
+            $this->load->view('includes/template', $data);
             return;
         }
         // $quote_id = $this->uri->segment('3');	
@@ -350,11 +342,10 @@ class Purchase extends CI_Controller
     {
         $user = $this->session->userdata('user_id');
 
-        if (!has_access($user,'Purchase/purchase_order_list','A'))
-        {
+        if (!has_access($user, 'Purchase/purchase_order_list', 'A')) {
             $data['title'] = 'Access Denied';
             $data['main_content'] = 'errors/access_control.php';
-            $this->load->view('includes/template',$data);
+            $this->load->view('includes/template', $data);
             return;
         }
         $data['title'] = 'Purchase Order';
@@ -415,11 +406,10 @@ class Purchase extends CI_Controller
     {
         $user = $this->session->userdata('user_id');
 
-        if (!has_view_access($user,'Purchase/purchase_order_list'))
-        {
+        if (!has_view_access($user, 'Purchase/purchase_order_list')) {
             $data['title'] = 'Access Denied';
             $data['main_content'] = 'errors/access_control.php';
-            $this->load->view('includes/template',$data);
+            $this->load->view('includes/template', $data);
             return;
         }
         $data['title'] = 'Purchase Order List';
@@ -460,11 +450,10 @@ class Purchase extends CI_Controller
     {
         $user = $this->session->userdata('user_id');
 
-        if (!has_view_access($user,'Purchase/purchase_order_list'))
-        {
+        if (!has_view_access($user, 'Purchase/purchase_order_list')) {
             $data['title'] = 'Access Denied';
             $data['main_content'] = 'errors/access_control.php';
-            $this->load->view('includes/template',$data);
+            $this->load->view('includes/template', $data);
             return;
         }
 
@@ -566,11 +555,10 @@ class Purchase extends CI_Controller
     {
         $user = $this->session->userdata('user_id');
 
-        if (!has_access($user,'Purchase/purchase_order_list','E'))
-        {
+        if (!has_access($user, 'Purchase/purchase_order_list', 'E')) {
             $data['title'] = 'Access Denied';
             $data['main_content'] = 'errors/access_control.php';
-            $this->load->view('includes/template',$data);
+            $this->load->view('includes/template', $data);
             return;
         }
         $po_id = $this->uri->segment('3');
@@ -583,11 +571,10 @@ class Purchase extends CI_Controller
     {
         $user = $this->session->userdata('user_id');
 
-        if (!has_access($user,'Purchase/purchase_order_list','E'))
-        {
+        if (!has_access($user, 'Purchase/purchase_order_list', 'E')) {
             $data['title'] = 'Access Denied';
             $data['main_content'] = 'errors/access_control.php';
-            $this->load->view('includes/template',$data);
+            $this->load->view('includes/template', $data);
             return;
         }
 
@@ -652,7 +639,7 @@ class Purchase extends CI_Controller
 
         redirect('Purchase/purchase_order_list');
     }
-    
+
     function add_PO_direct_from_reorder()
     {
         $this->load->model('Purchase_Model');
@@ -710,6 +697,7 @@ class Purchase extends CI_Controller
         $data['Code']            = $prifix . date("y") . '/' . $digit;
 
         $data['warehouse_list']  = $this->Setup_model->get_warehouse_list();
+        $data['store_list']      = [];
         $data['records']         = $this->Purchase_Model->get_approved_po_list();
 
         $data['supplier']        = $this->Purchase_Model->get_po_supplier_details($po_id);
@@ -789,7 +777,35 @@ class Purchase extends CI_Controller
         $this->Purchase_Model->delete_grn($grn_id);
         redirect('Purchase/purchase_grn_list');
     }
-    
+
+    public function return_grn_items()
+    {
+        $grn_id = $this->uri->segment(3);
+
+        $this->load->model('Purchase_model');
+        $this->load->model('Setup_model');
+
+        $data['title'] = "Purchase Return";
+        $data['grn_master'] = $this->Purchase_model->get_grn_master_by_id($grn_id);
+        $data['grn_items'] = $this->Purchase_Model->get_grn_items_by_id($grn_id);
+        $data['warehouse_records'] = $this->Setup_model->get_warehouse_list();
+        $data['main_content'] = 'Purchase/purchase_return_item.php';
+
+        $this->load->view('includes/template', $data);
+    }
+
+    public function save_purchase_return()
+    {
+        $this->Purchase_model->save_purchase_return();
+
+        $this->session->set_flashdata(
+            'success',
+            'Purchase Return Saved Successfully'
+        );
+
+        redirect('Purchase/purchase_return_list');
+    }
+
     function direct_po()
     {
         $data['title'] = 'Direct Purchase Order';
@@ -1068,11 +1084,10 @@ class Purchase extends CI_Controller
     {
         $user = $this->session->userdata('user_id');
 
-        if (!has_access($user,'Purchase/purchase_order_list','D'))
-        {
+        if (!has_access($user, 'Purchase/purchase_order_list', 'D')) {
             $data['title'] = 'Access Denied';
             $data['main_content'] = 'errors/access_control.php';
-            $this->load->view('includes/template',$data);
+            $this->load->view('includes/template', $data);
             return;
         }
         $this->load->model('Purchase_Model');

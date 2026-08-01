@@ -36,6 +36,8 @@
                                        <th>GRN Code</th>
                                        <th>GRN Date</th>
                                        <th>Supplier</th>
+                                       <th>Warehouse</th>
+                                       <th>Store</th>
                                        <th>Amount</th>
                                        <th></th>
                                    </tr>
@@ -58,10 +60,17 @@
                                                    <?php echo $row->supplier_name; ?>
                                                </a>
                                            </td>
+                                           <td><?php echo $row->warehouse_name; ?></td>
+                                           <td><?php echo $row->store_name; ?></td>
                                            <td><?php echo $row->grand_total; ?></td>
                                            <td>
                                                <a target="_blank" href="<?php echo base_url() . 'index.php/Purchase/print_grn/' . $row->grn_id . '/1'; ?>" style="margin-right:10px;">
                                                    <i class="fa fa-print"></i>&nbsp;
+                                               </a>
+
+                                               <a href="<?= base_url('index.php/Purchase/return_grn_items/' . $row->grn_id); ?>"
+                                                   title="Return Items" style="margin-right:10px;">
+                                                   <i class="fa fa-undo"></i>
                                                </a>
 
                                                <a href="#" class="delete-grn" data-grn-id="<?php echo $row->grn_id; ?>" title="Delete">

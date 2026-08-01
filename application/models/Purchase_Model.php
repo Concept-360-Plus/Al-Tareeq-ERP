@@ -137,7 +137,7 @@ class Purchase_Model extends CI_Model
 			'supplier_master.supplier_id=purchase_rfq.supplier_id',
 			'left'
 		);
-		$this->db->order_by('purchase_rfq.rfq_id','DESC');
+		$this->db->order_by('purchase_rfq.rfq_id', 'DESC');
 		$this->db->limit($limit);
 
 		return $this->db->get()->result();
@@ -157,7 +157,7 @@ class Purchase_Model extends CI_Model
 			'supplier_master.supplier_id=purchase_quotation_master.supplier_id',
 			'left'
 		);
-		$this->db->order_by('quotation_id','DESC');
+		$this->db->order_by('quotation_id', 'DESC');
 		$this->db->limit($limit);
 
 		return $this->db->get()->result();
@@ -177,7 +177,7 @@ class Purchase_Model extends CI_Model
 			'supplier_master.supplier_id=purchase_order_master.supplier_id',
 			'left'
 		);
-		$this->db->order_by('po_id','DESC');
+		$this->db->order_by('po_id', 'DESC');
 		$this->db->limit($limit);
 
 		return $this->db->get()->result();
@@ -197,7 +197,7 @@ class Purchase_Model extends CI_Model
 			'supplier_master.supplier_id=purchase_grn_master.supplier_id',
 			'left'
 		);
-		$this->db->order_by('grn_id','DESC');
+		$this->db->order_by('grn_id', 'DESC');
 		$this->db->limit($limit);
 
 		return $this->db->get()->result();
@@ -226,7 +226,7 @@ class Purchase_Model extends CI_Model
 
 		$this->db->group_by('purchase_order_master.supplier_id');
 
-		$this->db->order_by('total_amount','DESC');
+		$this->db->order_by('total_amount', 'DESC');
 
 		$this->db->limit($limit);
 
@@ -252,7 +252,7 @@ class Purchase_Model extends CI_Model
 
 		$this->db->group_by('MONTH(po_date)');
 
-		$this->db->order_by('MONTH(po_date)','ASC');
+		$this->db->order_by('MONTH(po_date)', 'ASC');
 
 		return $this->db->get()->result();
 	}
@@ -292,7 +292,7 @@ class Purchase_Model extends CI_Model
 			FROM purchase_grn_master
 
 			ORDER BY activity_date DESC
-			LIMIT ".$limit;
+			LIMIT " . $limit;
 
 		return $this->db->query($sql)->result();
 	}
@@ -1403,6 +1403,7 @@ class Purchase_Model extends CI_Model
 			'branch_id'         => $this->input->post('branch_id'),
 			'supplier_id'       => $this->input->post('supplier_id'),
 			'warehouse_id'      => $this->input->post('warehouse_id'),
+			'store_id'          => $this->input->post('store_id'),
 			'po_id'             => $po_id,
 			'delivery_details'  => $this->input->post('remarks'),
 			'sub_total'         => $this->input->post('sub_total'),
@@ -1483,6 +1484,7 @@ class Purchase_Model extends CI_Model
 					'year'         => date('Y', strtotime($this->input->post('grn_date'))),
 					'stock_type'   => 'IN',
 					'warehouse_id' => $this->input->post('warehouse_id'),
+					'store_id'     => $this->input->post('store_id'),
 					'product_id'   => $product_id,
 					'unit_id'      => $_POST['item_unit'][$i],
 					'quantity'     => 1,
@@ -1715,19 +1717,171 @@ class Purchase_Model extends CI_Model
 
 	function get_grn_list()
 	{
-		$query = $this->db->query("select r.*, s.supplier_name from purchase_grn_master r, supplier_master s where r.supplier_id=s.supplier_id  order by grn_id desc");
+		$query = $this->db->query("
+        SELECT
+            g.*,
+            s.supplier_name,
+            w.warehouse_name,
+            st.store_name
+        FROM purchase_grn_master g
+        LEFT JOIN supplier_master s
+            ON g.supplier_id = s.supplier_id
+        LEFT JOIN warehouse_master w
+            ON g.warehouse_id = w.warehouse_id
+        LEFT JOIN store_master st
+            ON g.store_id = st.store_id
+        ORDER BY g.grn_id DESC
+    ");
+
 		return $query->result();
 	}
 	function get_grn_master_by_id($grn_id)
 	{
-		$query = $this->db->query("select one.*, three.user_name from (select po.*, supplier_name,contact_number, s.supplier_email, s.contact_person,s.contact_person_number,s.billing_address from purchase_grn_master po, supplier_master s where po.supplier_id=s.supplier_id and po.grn_id=$grn_id)as one left join(select * from users)as three on(one.created_by=three.user_id); ");
+		$query = $this->db->query("
+			SELECT
+				g.*,
+				s.supplier_name,
+				s.contact_number,
+				s.supplier_email,
+				s.contact_person,
+				s.contact_person_number,
+				s.billing_address,
+				w.warehouse_name,
+				st.store_name,
+				u.user_name
+			FROM purchase_grn_master g
+			LEFT JOIN supplier_master s
+				ON g.supplier_id = s.supplier_id
+			LEFT JOIN warehouse_master w
+				ON g.warehouse_id = w.warehouse_id
+			LEFT JOIN store_master st
+				ON g.store_id = st.store_id
+			LEFT JOIN users u
+				ON g.created_by = u.user_id
+			WHERE g.grn_id = '$grn_id'
+		");
+
 		return $query->result();
 	}
+
+	public function get_grn_items_by_id($grn_id)
+	{
+		$this->db->select("
+        gt.*,
+        im.product_code,
+        im.product_name,
+        um.unit_name,
+        (
+            SELECT COALESCE(SUM(prt.return_qty),0)
+            FROM purchase_return_transaction prt
+            WHERE prt.grn_transaction_id = gt.grn_transaction_id
+        ) AS returned_qty
+    ");
+
+		$this->db->from('purchase_grn_transaction gt');
+		$this->db->join('item_master im', 'im.product_id=gt.product_id');
+		$this->db->join('unit_master um', 'um.unit_id=gt.unit');
+
+		$this->db->where('gt.grn_master_id', $grn_id);
+
+		return $this->db->get()->result();
+	}
+	
 	function get_grn_tr_by_id($grn_id)
 	{
 		$query = $this->db->query("select * from purchase_grn_transaction tr left join item_master pm on tr.product_id = pm.product_id left join unit_master um on pm.unit_id = um.unit_id  where  grn_master_id=$grn_id ");
 		return $query->result();
 	}
+	public function save_purchase_return()
+	{
+		$this->db->trans_begin();
+
+		$master = array(
+			'return_date' => $this->input->post('return_date'),
+			'grn_id' => $this->input->post('grn_id'),
+			'supplier_id' => $this->input->post('supplier_id'),
+			'warehouse_id' => $this->input->post('warehouse_id'),
+			'store_id' => $this->input->post('store_id'),
+			'remarks' => $this->input->post('remarks'),
+			'created_by' => $this->session->userdata('user_id')
+		);
+
+		$this->db->insert('purchase_return_master', $master);
+		$return_id = $this->db->insert_id();
+
+		for ($i = 0; $i < count($_POST['product_id']); $i++) {
+			if ($_POST['return_qty'][$i] <= 0)
+				continue;
+			$tr = array(
+				'return_master_id' => $return_id,
+				'grn_transaction_id' => $_POST['grn_transaction_id'][$i],
+				'product_id' => $_POST['product_id'][$i],
+				'return_qty' => $_POST['return_qty'][$i]
+			);
+
+			$this->db->insert(
+				'purchase_return_transaction',
+				$tr
+			);
+
+			$this->reduce_stock(
+				$_POST['product_id'][$i],
+				$_POST['return_qty'][$i],
+				$return_id
+			);
+		}
+
+		if ($this->db->trans_status() == FALSE) {
+			$this->db->trans_rollback();
+			return false;
+		}
+
+		$this->db->trans_commit();
+		return true;
+	}
+
+	public function reduce_stock($product_id, $qty, $return_id)
+	{
+		$rows = $this->db
+			->where('product_id', $product_id)
+			->where('balance_qty >', 0)
+			->order_by('stock_id')
+			->get('stock_details')
+			->result();
+
+		foreach ($rows as $row) {
+			if ($qty <= 0)
+				break;
+			if ($row->balance_qty >= $qty) {
+				$this->db
+					->where('stock_id', $row->stock_id)
+					->update('stock_details', [
+						'balance_qty' => $row->balance_qty - $qty
+					]);
+
+				$this->db->insert('stock_details', [
+					'trans_id' => $return_id,
+					'stock_type' => 'OUT',
+					'warehouse_id' => $row->warehouse_id,
+					'store_id' => $row->store_id,
+					'product_id' => $product_id,
+					'quantity' => $qty,
+					'balance_qty' => 0,
+					'remark' => 'Purchase Return'
+
+				]);
+				$qty = 0;
+			} else {
+				$this->db
+					->where('stock_id', $row->stock_id)
+					->update('stock_details', [
+						'balance_qty' => 0
+					]);
+				$qty -= $row->balance_qty;
+			}
+		}
+	}
+
 	function delete_grn($grn_id)
 	{
 		$this->db->query("delete from purchase_grn_transaction where grn_master_id='$grn_id'");

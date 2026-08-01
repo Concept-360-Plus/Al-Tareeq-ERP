@@ -34,6 +34,10 @@ class Inventory extends CI_Controller
 
     public function create_material_issue($mr_id = null)
     {
+        $this->load->model('Setup_model');
+        $data['warehouse_list'] = $this->Setup_model->get_warehouse_list();
+        $data['store_list'] = [];
+
         $data['material_requests'] = $this->Project_model->get_pending_material_requests();
         $data['units'] = $this->Project_model->get_all_units();
         $data['selected_mr_id'] = $mr_id;
@@ -112,14 +116,16 @@ class Inventory extends CI_Controller
         $this->db->trans_start();
 
         $miData = [
-            'mr_id' => $this->input->post('mr_id'),
-            'project_id' => $this->input->post('project_id'),
-            'project_code' => $this->input->post('project_code'),
+            'mr_id'         => $this->input->post('mr_id'),
+            'project_id'    => $this->input->post('project_id'),
+            'project_code'  => $this->input->post('project_code'),
             'customer_name' => $this->input->post('customer_name'),
-            'branch_name' => $this->input->post('branch_name'),
-            'issued_by' => $this->session->userdata('user_id'),
-            'issue_date' => date('Y-m-d H:i:s'),
-            'status' => 'Issued'
+            'branch_name'   => $this->input->post('branch_name'),
+            'warehouse_id'  => $this->input->post('warehouse_id'),
+            'store_id'      => $this->input->post('store_id'),
+            'issued_by'     => $this->session->userdata('user_id'),
+            'issue_date'    => date('Y-m-d H:i:s'),
+            'status'        => 'Issued'
         ];
 
         // Insert MI master
@@ -160,7 +166,7 @@ class Inventory extends CI_Controller
                 $this->db->insert('material_issue_items', $itemData);
 
                 // Allocate stock
-                $result = $this->Inventory_model->allocate_stock_for_mi($products[$i], $issue_qtys[$i], $mi_id);
+                $result = $this->Inventory_model->allocate_stock_for_mi($products[$i], $issue_qtys[$i], $mi_id, $this->input->post('warehouse_id'), $this->input->post('store_id'));
                 if (!$result) {
                     $this->db->trans_rollback();
                     $this->session->set_flashdata(
