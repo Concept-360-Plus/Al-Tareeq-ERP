@@ -205,19 +205,49 @@
 			</tbody>
 		</table>
 	</div>
+</div>
 
-	<script>
-		document.getElementById("export").addEventListener("click", function(e) {
+<script>
+	document.getElementById("export").addEventListener("click", function(e) {
+		// count table rows (excluding header)
+		var rowCount = document.querySelectorAll("#basic-btn tbody tr").length;
+		// check if only total row OR no data
+		if (rowCount <= 1) {
+			e.preventDefault();
+			alert("No data available to export. Please check your filter criteria.");
+			return false;
+		}
+	});
 
-			// count table rows (excluding header)
-			var rowCount = document.querySelectorAll("#basic-btn tbody tr").length;
-
-			// check if only total row OR no data
-			if (rowCount <= 1) {
-				e.preventDefault();
-				alert("No data available to export. Please check your filter criteria.");
-				return false;
-			}
-
+	$(document).ready(function() {
+		$('#warehouse_id').change(function() {
+			var warehouse_id = $(this).val();
+			$('#store_id').html('<option value="">Loading...</option>');
+			$.ajax({
+				url: "<?= base_url('index.php/Ajax/get_store_by_warehouse'); ?>",
+				type: "POST",
+				data: {
+					warehouse_id: warehouse_id
+				},
+				dataType: "json",
+				success: function(result) {
+					var selectedStore = "<?= $store_id ?>";
+					var html = '<option value="">Select Store</option>';
+					$.each(result, function(i, row) {
+						var selected = (row.store_id == selectedStore) ? 'selected' : '';
+						html += '<option value="' + row.store_id + '" ' + selected + '>' +
+							row.store_name +
+							'</option>';
+					});
+					$('#store_id').html(html);
+					// Refresh Select2
+					$('#store_id').trigger('change.select2');
+				}
+			});
 		});
-	</script>
+		// Trigger AFTER binding
+		if ($('#warehouse_id').val() != '') {
+			$('#warehouse_id').trigger('change');
+		}
+	});
+</script>

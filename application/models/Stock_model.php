@@ -241,29 +241,41 @@ class Stock_Model extends CI_Model
     public function get_stock_inventory_report()
     {
         $warehouse_id = $this->input->post("warehouse_id");
+        $store_id     = $this->input->post("store_id");
         $product_id   = $this->input->post("product_id");
 
-        $itemcondition = '';
+        $condition = "";
+
+        if ($warehouse_id != '') {
+            $condition .= " AND s.warehouse_id = '$warehouse_id' ";
+        }
+
+        if ($store_id != '') {
+            $condition .= " AND s.store_id = '$store_id' ";
+        }
+
         if ($product_id != '') {
-            $itemcondition = " AND i.product_id = '$product_id' ";
+            $condition .= " AND s.product_id = '$product_id' ";
         }
 
         $sql = "
         SELECT
             zero.*,
-            (COALESCE(one.in_qty,0) - COALESCE(two.out_qty,0)) AS stock,
+            COALESCE(one.in_qty,0) - COALESCE(two.out_qty,0) AS stock,
             COALESCE(four.allocation,0) AS allocation
 
         FROM
         (
             SELECT
-                s.*,
+                s.product_id,
+                s.price,
                 i.product_code,
                 i.product_name
             FROM stock_details s
-            JOIN item_master i ON s.product_id = i.product_id
-            WHERE s.warehouse_id = '$warehouse_id'
-            $itemcondition
+            INNER JOIN item_master i
+                ON i.product_id = s.product_id
+            WHERE 1=1
+            $condition
             GROUP BY s.product_id
         ) AS zero
 
@@ -271,9 +283,11 @@ class Stock_Model extends CI_Model
         (
             SELECT
                 product_id,
-                COALESCE(SUM(quantity),0) AS in_qty
+                SUM(quantity) AS in_qty
             FROM stock_details
             WHERE stock_type='IN'
+            " . ($warehouse_id != '' ? "AND warehouse_id='$warehouse_id'" : "") . "
+            " . ($store_id != '' ? "AND store_id='$store_id'" : "") . "
             GROUP BY product_id
         ) AS one
         ON zero.product_id = one.product_id
@@ -282,9 +296,11 @@ class Stock_Model extends CI_Model
         (
             SELECT
                 product_id,
-                COALESCE(SUM(quantity),0) AS out_qty
+                SUM(quantity) AS out_qty
             FROM stock_details
             WHERE stock_type='OUT'
+            " . ($warehouse_id != '' ? "AND warehouse_id='$warehouse_id'" : "") . "
+            " . ($store_id != '' ? "AND store_id='$store_id'" : "") . "
             GROUP BY product_id
         ) AS two
         ON zero.product_id = two.product_id
@@ -292,17 +308,18 @@ class Stock_Model extends CI_Model
         LEFT JOIN
         (
             SELECT
-                s.product_id,
-                COALESCE(SUM(allocation),0) AS allocation,
-                i.product_code,
-                i.product_name
-            FROM stock_details s
-            JOIN item_master i ON s.product_id=i.product_id
-            WHERE s.stock_type='IN'
-            AND s.status='0'
-            GROUP BY s.product_id
+                product_id,
+                SUM(allocation) AS allocation
+            FROM stock_details
+            WHERE stock_type='IN'
+            AND status='0'
+            " . ($warehouse_id != '' ? "AND warehouse_id='$warehouse_id'" : "") . "
+            " . ($store_id != '' ? "AND store_id='$store_id'" : "") . "
+            GROUP BY product_id
         ) AS four
         ON zero.product_id = four.product_id
+
+        ORDER BY zero.product_name
         ";
 
         return $this->db->query($sql)->result();
