@@ -11,8 +11,9 @@
 
 <div class="x_panel">
     <div class="x_title">
-        <h2>Edit tool</h2>
+        
         <div class="clearfix"></div>
+        <a class="btn btn-sm btn-primary" href="<?php echo base_url() . 'index.php/'; ?>Project/print_work_order/<?php echo $id; ?>">Print</a>
     </div>
 
     <div class="x_content">
@@ -202,7 +203,7 @@
                     </thead>
                     <tbody>
                         <?php foreach ($records2 as $r) { ?>
-                            <tr class="bg-soft-gray">
+                            <!--<tr class="bg-soft-gray">
                                 <td></td>
                                 <td></td>
                                 <td> &nbsp;&nbsp;&nbsp;
@@ -226,7 +227,7 @@
                                 <td></td>
                                 <td></td>
                                 <td></td>
-                            </tr>
+                            </tr>-->
                             <?php $i = 1;
                             foreach ($records3 as $tr) {
                                 if ($tr->trans_id1 == $r->trans_id) { ?>
@@ -254,6 +255,8 @@
                                         <input type="hidden" name="total<?php echo $r->trans_id; ?>[]" value="<?php echo $tr->total; ?>" />
                                         <input type="hidden" name="item_name[]" value="<?php echo $tr->item_name; ?>" />
                                         <input type="hidden" name="item_code[]" value="<?php echo $tr->item_code; ?>" />
+                                        <input type="hidden" name="product_id[]" value="<?php echo $tr->product_id; ?>" />
+								
 
                                     </tr>
                         <?php $i++;
@@ -265,22 +268,6 @@
                     </tbody>
                 </table>
             </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
             <h7>Work Order Attachments:</h7>
             <div class="form-group row">
                 <!-- <label class="col-xs-12 col-sm-3 col-md-3 col-lg-3 col-form-label">Upload("jpeg","jpg","png","doc","pdf"):</label> -->
@@ -299,7 +286,7 @@
                     </thead>
                     <tbody id="mytbbody1">
                         <?php $k = 50001;
-                        foreach ($attachment as $row): ?>
+                        //foreach ($attachment as $row): ?>
                             <tr id='r0'>
                                 <td>1</td>
 
@@ -316,270 +303,287 @@
                                         <div class="col-sm-10">
                                             <select class="form-select form-control" name="wo_attachments[]" id="wo_attachments">
                                                 <option value="" selected disabled>Please select type</option>
-                                                <option <?php if ($row->wo_attachments == 'Cutting List') echo 'selected'; ?> value="Cutting List">Cutting List </option>
-                                                <option <?php if ($row->wo_attachments == 'Optimization') echo 'selected'; ?> value="Optimization">Optimization</option>
-                                                <option <?php if ($row->wo_attachments == 'Material Allocation') echo 'selected'; ?> value="Material Allocation">Material Allocation</option>
-                                                <option <?php if ($row->wo_attachments == 'Indent To Stores') echo 'selected'; ?> value="Indent To Stores">Indent To Stores</option>
-                                                <option <?php if ($row->wo_attachments == 'Fabrication Details') echo 'selected'; ?> value="Fabrication Details">Fabrication Details</option>
-                                                <option <?php if ($row->wo_attachments == 'Templates/Samples') echo 'selected'; ?> value="Templates/Samples">Templates/Samples</option>
-                                                <option <?php if ($row->wo_attachments == 'Shop Drawing') echo 'selected'; ?> value="Shop Drawing">Shop Drawing</option>
+                                                <option  value="Cutting List">Cutting List </option>
+                                                <option  value="Optimization">Optimization</option>
+                                                <option  value="Material Allocation">Material Allocation</option>
+                                                <option  value="Indent To Stores">Indent To Stores</option>
+                                                <option  value="Fabrication Details">Fabrication Details</option>
+                                                <option  value="Templates/Samples">Templates/Samples</option>
+                                                <option  value="Shop Drawing">Shop Drawing</option>
 
                                             </select>
                                         </div>
                                     </div>
                                 </td>
 
-                                <td>
-                                    <!-- <a id="add_row1" title="Add" class="btn btn-sm btn-primary"><span class="fa fa-plus"></span></a>
-                                <a id='delete_row1' title="Delete" class="btn btn-sm bg-red"><span class="fa fa-trash"></span></a> -->
-                                </td>
+                                <!--<td>
+                                <a id="add_row1" title="Add" class="btn btn-sm btn-primary"><span class="fa fa-plus"></span></a>
+                                <a id='delete_row1' title="Delete" class="btn btn-sm bg-red"><span class="fa fa-trash"></span></a> 
+                                </td>-->
                             </tr>
 
 
 
-                            <?php if ($file_records) {
+                            <?php if (!empty($file_records)) { 
+                                
                                 $x = 1;
                                 $i = 1;
-                                foreach ($file_records as $f) {
-                                    if ($f->wo_type == 'Work Order Attachments') { ?>
+                                foreach ($file_records as $f) { ?>
+                                     <input type="hidden" name="work_extra_id[]" value="<?= $f['work_extra_id']; ?>">
+                                <?php
+                                    if ($f['wo_type'] == 'Work Order Attachments') { ?>
                                         <tr>
                                             <td><?php echo $i;
-                                                $i++; ?></td>
-                                            <td><a href="<?php echo base_url() . 'public/uploded_documents/' . $f->attachment_one; ?>" download>File <?php echo $x;
+                                                $i++; ?>
+                                            </td>
+                                            <td><a href="<?php echo base_url() . 'public/uploded_documents/' . $f['attachment_one']; ?>" download>File <?php echo $x;
                                                                                                                                                         $x++; ?></a></td>
-                                            <td><?php echo $f->wo_attachments; ?></td>
-                                        </tr>
-                            <?php }
+                                            <td><?php echo $f['wo_attachments']; ?></td>
+                                             <td>
+                                                <button type="button"
+                                                        class="btn btn-sm btn-danger deleteRoute"
+                                                        data-id="<?= $f['work_extra_id']; ?>">
+                                                    <i class="fa fa-trash"></i>
+                                                </button>
+                                            </td>                                                                                               
+                                        </tr> 
+                            <?php } 
                                 }
-                            } ?>
-
-
-
-
-                        <?php $k++;
-                        endforeach; ?>
-
-                        <tr id='r1'></tr>
+                            } ?> 
+ 
+ 
+ 
+ 
+                         <?php $k++;
+                         //endforeach; ?>
+ 
+                         <tr id='r1'></tr>
                     </tbody>
-                </table>
-                <!-- </div> -->
-            </div>
-
-            <h7>Product Process Route:</h7>
-            <div class="form-group row">
+                 </table>
+                 <!-- </div> -->
+                   </div>
+               
+            <h7 >Product Process Route:</h7>
+            <div  class="form-group row">
                 <table class="table table-bordered table-hover" id="tab_logic2">
-                    <thead>
-                        <tr>
-                            <!-- <th></th> -->
+                     <thead>
+                         <tr>
+                             <!-- <th></th> -->
                             <th>Select Type</th>
-                            <th>Description</th>
-                            <th width='10%'>
-                                <a id="add_row2" title="Add" class="btn btn-sm btn-primary"><span class="fa fa-plus"></span></a>
+                             <th>Description</th>
+                             <th width='10%'>
+                                  <a id="add_row2" title="Add" class="btn btn-sm btn-primary"><span class="fa fa-plus"></span></a>
                                 <a id='delete_row2' title="Delete" class="btn btn-sm bg-red"><span class="fa fa-trash"></span></a>
-                            </th>
-                        </tr>
-                    </thead>
+                             </th>
+                        </ tr>
+                    </thead >
                     <tbody id="mytbbody2">
-                        <?php $j = 50001;
+                        <?php  $j = 50001;
                         foreach ($product_route as $row): 
-                            if ($row->wo_type == 'Product Process Route'):
+                            if  ($row->wo_type == 'Product Process Route'):
                         ?>
-                                
+                                 
                             <tr id='dr0'>
-                                <!-- <td>1</td> -->
-                                <td>
-                                    <div class="form-group row">
-                                        <div class="col-sm-10">
-                                           <select class="form-select form-control" name="product_route[]" id="product_route" required>
-    <option value="" disabled>Please select process</option>
+                               
+                                <td >
+                                     <div class="form-group row">
+                                         <div class="col-sm-10">
+                                            <select class="form-select form-control" name="product_route[]" id="product_route" required>
+                <option value="" disabled>Please se lect process</option>
+            
+                <option value="Material Planning" <?php if ($row->product_route == 'Material Planning') echo 'selected'; ?>>
+                    Material Planning
+                </option>
 
-    <option value="Material Planning" <?php if ($row->product_route == 'Material Planning') echo 'selected'; ?>>
-        Material Planning
-    </option>
+                <option value="Material Cutting" <?php if ($row->product_route == 'Material Cutting') echo 'selected'; ?>>
+                    Material Cutting
+                </option>
+            
+                <option value="CNC Machining" <?php if ($row->product_route == 'CNC Machining') echo 'selected'; ?>>
+                    CNC Machining
+                </option>
+            
+                <option value="Edge Banding" <?php if ($row->product_route == 'Edge Banding') echo 'selected'; ?>>
+                    Edge Banding
+                </option>
 
-    <option value="Material Cutting" <?php if ($row->product_route == 'Material Cutting') echo 'selected'; ?>>
-        Material Cutting
-    </option>
+                <option value="Drilling" <?php if ($row->product_route == 'Drilling') echo 'selected'; ?>>
+                    Drilling
+                </option>
+            
+                <option value="Assembly" <?php if ($row->product_route == 'Assembly') echo 'selected'; ?>>
+                    Assembly
+                </option>
+            
+                <option value="Sanding" <?php if ($row->product_route == 'Sanding') echo 'selected'; ?>>
+                    Sanding
+                </option>
+            
+                <option value="Painting / Polishing" <?php if ($row->product_route == 'Painting / Polishing') echo 'selected'; ?>>
+                    Painting / Polishing
+                </option>
+            
+                <option value="Quality Inspection" <?php if ($row->product_route == 'Quality Inspection') echo 'selected'; ?>>
+                    Quality Inspection
+                </option>
+            
+                <option value="Packing" <?php if ($row->product_route == 'Packing') echo 'selected'; ?>>
+                    Packing
+                </option>
 
-    <option value="CNC Machining" <?php if ($row->product_route == 'CNC Machining') echo 'selected'; ?>>
-        CNC Machining
-    </option>
+                <option value="Dispatch" <?php if ($row->product_route == 'Dispatch') echo 'selected'; ?>>
+                    Dispatch
+                </ option>
+            
+                <option value="Site Installation" <?php if ($row->product_route == 'Site Installation') echo 'selected'; ?>>
+                    Site Installation
+                </option>
+            
+                <option value="Final Inspection" <?php if ($row->product_route == 'Final Inspection') echo 'selected'; ?>>
+                    Final Inspection
+                </option>
 
-    <option value="Edge Banding" <?php if ($row->product_route == 'Edge Banding') echo 'selected'; ?>>
-        Edge Banding
-    </option>
-
-    <option value="Drilling" <?php if ($row->product_route == 'Drilling') echo 'selected'; ?>>
-        Drilling
-    </option>
-
-    <option value="Assembly" <?php if ($row->product_route == 'Assembly') echo 'selected'; ?>>
-        Assembly
-    </option>
-
-    <option value="Sanding" <?php if ($row->product_route == 'Sanding') echo 'selected'; ?>>
-        Sanding
-    </option>
-
-    <option value="Painting / Polishing" <?php if ($row->product_route == 'Painting / Polishing') echo 'selected'; ?>>
-        Painting / Polishing
-    </option>
-
-    <option value="Quality Inspection" <?php if ($row->product_route == 'Quality Inspection') echo 'selected'; ?>>
-        Quality Inspection
-    </option>
-
-    <option value="Packing" <?php if ($row->product_route == 'Packing') echo 'selected'; ?>>
-        Packing
-    </option>
-
-    <option value="Dispatch" <?php if ($row->product_route == 'Dispatch') echo 'selected'; ?>>
-        Dispatch
-    </option>
-
-    <option value="Site Installation" <?php if ($row->product_route == 'Site Installation') echo 'selected'; ?>>
-        Site Installation
-    </option>
-
-    <option value="Final Inspection" <?php if ($row->product_route == 'Final Inspection') echo 'selected'; ?>>
-        Final Inspection
-    </option>
-
-    <option value="Other" <?php if ($row->product_route == 'Other') echo 'selected'; ?>>
-        Other
-    </option>
-</select>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
+                <option value="Other" <?php if ($row->product_route == 'Other') echo 'selected'; ?>>
+                    Other
+                </option>
+            </select>
+                                         </div>
+                                     </div>
+                                 </td>
+                                 <td>
+                                     <input type="hidden" name="work_extra_id[]" value="<?= $row->work_extra_id; ?>">
                                     <textarea rows='4' cols='20' name="proute_desc[]" id="proute_desc0"
-                                        style="font-size:11px; font-weight:bold;" class="form-control form-control"
-                                        tabindex='13' placeholder="Description"><?php echo $row->proute_desc; ?></textarea>
-                                </td>
-
-                                <td></td>
-
-                            </tr>
-                            <?php
-                             endif;
-                              $j++;
-                        endforeach; ?>
-
-                            <tr id='dr1'></tr>
-                    </tbody>
-                </table>
-            </div>
+                                         style="font-size:11px; font-weight:bold;" class="form-control form-control"
+                                         tabindex='13' placeholder="Description"><?php echo $row->proute_desc; ?></textarea>
+                                 </td>
+ 
+                                 <td>
+                                 <button type="button"
+                                         class="btn btn-sm btn-danger deleteRoute"
+                                         data-id="<?= $row->work_extra_id; ?>">
+                                     <i class="fa fa-trash"></i>
+                                 </button>
+                            </td>
+ 
+                             </tr>
+                             <?php
+                              endif;
+                               $j++;
+                         endforeach; ?>
+ 
+                             <tr id='dr1'></tr>
+                     </tbody>
+                 </table>
+             </div>
             <h7>Work Order Distribution Plan:</h7>
-            <div class="form-group row">
-                <table class="table table-bordered table-hover" id="tab_logic3">
-                    <thead>
-                        <tr>
-                            <!-- <th></th> -->
-                            <th>Select Type</th>
-                            <th>Description</th>
+             <div class="form-group row">
+                 <table class="table table-bordered table-hover" id="tab_logic3">
+                     <thead>
+                         <tr>
+                             <!-- <th></th> -->
+                             <th>Select Type</th>
+                             <th>Description</th>
                             <th width='10%'>
-                                <a id="add_row3" title="Add" class="btn btn-sm btn-primary"><span class="fa fa-plus"></span></a>
-                                <a id='delete_row3' title="Delete" class="btn btn-sm bg-red"><span class="fa fa-trash"></span></a>
+                                  <a id="add_row3" title="Add" class="btn btn-sm btn-primary"><span class="fa fa-plus"></span></a>
+                                 <a id='delete_row3' title="Delete" class="btn btn-sm bg-red"><span class="fa fa-trash"></span></a>
                             </th>
-                        </tr>
-                    </thead>
-                    <tbody id="mytbbody3">
-                    <?php $s = 50001;
-                        foreach ($product_route as $row):
-                            if ($row->wo_type == 'Work Order Distribution Plan'):
-                        ?>
-                        <tr id='ddr0'>
-                            <!-- <td>1</td> -->
-                            <td>
-                                <div class="form-group row">
+                         </tr>
+                     </thead>
+                     <tbody id="mytbbody3">
+                     <?php $s = 50001;
+                         foreach ($product_route as $row):
+                             if ($row->wo_type == 'Work Order Distribution Plan'):
+                         ?>
+                         <tr id='ddr0'>
+                             <!-- <td>1</td> -->
+                             <td>
+                                 <div class="form-group row">
                                     <div class="col-sm-10">
-                                        <select class="form-select form-control" name="wo_plan[]" id="wo_plan">
-                                            <option value="" selected disabled>Please select type</option>
-                                            <option <?php if ($row->wo_plan == 'Originator') echo 'selected'; ?> value="Originator">Originator</option>
-                                            <option <?php if ($row->wo_plan == 'Planning') echo 'selected'; ?> value="Planning">Planning</option>
-                                            <option <?php if ($row->wo_plan == 'Quality') echo 'selected'; ?> value="Quality">Quality</option>
-                                            <option <?php if ($row->wo_plan == 'Procurement') echo 'selected'; ?> value="Procurement">Procurement</option>
-                                            <option <?php if ($row->wo_plan == 'Production') echo 'selected'; ?> value="Production">Production</option>
-                                            <option <?php if ($row->wo_plan == 'Project') echo 'selected'; ?> value="Project">Project</option>
-                                            <option <?php if ($row->wo_plan == 'Other') echo 'selected'; ?> value="Other">Other</option>
-                                        </select>
+                                         <select class="form-select form-control" name="wo_plan[]" id="wo_plan">
+                                             <option value="" selected disabled>Please select type</option>
+                                             <option <?php if ($row->wo_plan == 'Originator') echo 'selected'; ?> value="Originator">Originator</option>
+                                             <option <?php if ($row->wo_plan == 'Planning') echo 'selected'; ?> value="Planning">Planning</option>
+                                             <option <?php if ($row->wo_plan == 'Quality') echo 'selected'; ?> value="Quality">Quality</option>
+                                             <option <?php if ($row->wo_plan == 'Procurement') echo 'selected'; ?> value="Procurement">Procurement</option>
+                                             <option <?php if ($row->wo_plan == 'Production') echo 'selected'; ?> value="Production">Production</option>
+                                             <option <?php if ($row->wo_plan == 'Project') echo 'selected'; ?> value="Project">Project</option>
+                                             <option <?php if ($row->wo_plan == 'Other') echo 'selected'; ?> value="Other">Other</option>
+                                         </select>
                                     </div>
-                                </div>
-                            </td>
-                            <td>
-                                <textarea rows='4' cols='20' name="woplan_desc[]" id="woplan_desc0"
-                                    style="font-size:11px; font-weight:bold;" class="form-control form-control"
+                                </di v>
+                            </td> 
+                            <td> 
+                                  <input type="hidden" name="work_extra_id[]" value="<?= $row->work_extra_id; ?>">
+                                    
+                                <te xtarea rows='4' cols='20' name="woplan_desc[]" id="woplan_desc0"
+                                     style="font-size:11px; font-weight:bold;" class="form-control form-control"
                                     tabindex='13' placeholder="Description"><?php echo $row->woplan_desc; ?></textarea>
-                            </td>
-
-                            <td></td>
-
-                        </tr>
-                    <?php 
-                    endif;
+                            </td>  
+ 
+                            <td>
+                                 <button type="button"
+                                         class="btn btn-sm btn-danger deleteRoute"
+                                         data-id="<?= $row->work_extra_id; ?>">
+                                     <i class="fa fa-trash"></i>
+                                 </button>
+                             </td>
+ 
+ 
+                         </tr>
+                     <?php 
+                     endif;
                     $s++;
-                        endforeach; ?>
-
-                    <tr id='ddr1'></tr>
-                    </tbody>
-                </table>
-            </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-            <div class="form-group row">
-                <label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">Prepared By:</label>
-                <div class="col-xs-12 col-sm-9 col-md-2 col-lg-2">
+                         endforeach; ?>
+ 
+                     <tr id='ddr1'></tr>
+                     </tbody>
+                 </table>
+             </div>
+ 
+ 
+ 
+             <div class="form-group row">
+                 <label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">Prepared By:</label>
+                 <div class="col-xs-12 col-sm-9 col-md-2 col-lg-2">
                     <select tabindex="1" class="form-control" id="prepared_id" name="prepared_id"
-                        style='width:155px'>
-                        <option value="">Select</option>
-                        <?php foreach ($user_records as $s) { ?>
-                            <option <?php if ($row1->prepared_by == $s->user_id)
-                                        echo 'selected'; ?>
-                                value="<?php echo $s->user_id ?>"><?php echo $s->user_name; ?></option>
-                        <?php } ?>
-                    </select>
-                </div>
-
-                <label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">Checked By:</label>
-                <div class="col-xs-12 col-sm-9 col-md-2 col-lg-2">
+                         style='width:155px'>
+                         <option value="">Select</option>
+                         <?php foreach ($user_records as $s) { ?>
+                             <option <?php if ($row1->prepared_by == $s->user_id)
+                                         echo 'selected'; ?>
+                                 value="<?php echo $s->user_id ?>"><?php echo $s->user_name; ?></option>
+                         <?php } ?>
+                     </select>
+                 </div>
+ 
+                 <label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">Checked By:</label>
+                 <div class="col-xs-12 col-sm-9 col-md-2 col-lg-2">
                     <select tabindex="1" class="form-control" id="checked_id" name="checked_id"
-                        style='width:155px'>
-                        <option value="">Select</option>
-                        <?php foreach ($user_records as $s) { ?>
-                            <option <?php if ($row1->checked_by == $s->user_id)
-                                        echo 'selected'; ?>
-                                value="<?php echo $s->user_id ?>"><?php echo $s->user_name; ?></option>
-                        <?php } ?>
+                         style='width:155px'>
+                         <option value="">Select</option>
+                         <?php foreach ($user_records as $s) { ?>
+                             <option <?php if ($row1->checked_by == $s->user_id)
+                                         echo 'selected'; ?>
+                                 value="<?php echo $s->user_id ?>"><?php echo $s->user_name; ?></option>
+                         <?php } ?>
+                    </select>
+                 </div>
+                 <label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">Approved By:</label>
+                 <div class="col-xs-12 col-sm-9 col-md-2 col-lg-2">
+                     <select tabindex="1" class="form-control" id="approved_id" name="approved_id"
+                         style='width:155px'>
+                         <option value="">Select</option>
+                         <?php foreach ($user_records as $s) { ?>
+                             <option <?php if ($row1->approved_by == $s->user_id)
+                                         echo 'selected'; ?>
+                                 value="<?php echo $s->user_id ?>"><?php echo $s->user_name; ?></option>
+                         <?php } ?>
                     </select>
                 </div>
-                <label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">Approved By:</label>
-                <div class="col-xs-12 col-sm-9 col-md-2 col-lg-2">
-                    <select tabindex="1" class="form-control" id="approved_id" name="approved_id"
-                        style='width:155px'>
-                        <option value="">Select</option>
-                        <?php foreach ($user_records as $s) { ?>
-                            <option <?php if ($row1->approved_by == $s->user_id)
-                                        echo 'selected'; ?>
-                                value="<?php echo $s->user_id ?>"><?php echo $s->user_name; ?></option>
-                        <?php } ?>
-                    </select>
-                </div>
-
-            </div>
-
-
+ 
+             </div>
+ 
+                                                                                                                                                                                      
 
 
 
@@ -817,4 +821,33 @@
             }
         });
     }
+
+    $(document).on('click', '.deleteRoute', function () {
+
+    var btn = $(this);
+    var id = btn.data('id');
+
+    if(confirm('Are you sure you want to delete this process?'))
+    {
+        $.ajax({
+            url: "<?php echo base_url() ?>index.php/Project/delete_product_route",
+            type: "POST",
+            data: {
+                id:id
+            },
+            success:function(response)
+            {
+                if(response == 1)
+                {
+                    btn.closest('tr').remove();
+                }
+                else
+                {
+                    alert('Delete failed.');
+                }
+            }
+        });
+    }
+
+});
 </script>

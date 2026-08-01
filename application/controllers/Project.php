@@ -2288,11 +2288,27 @@ public function delete_progress_log()
 		$data['attachment'] = $this->Project_model->get_attachment_records($id);
 		$data['file_records'] = $this->Project_model->get_employee_document_doc_id($id);
 		$data['records2'] = $this->Project_model->get_project_wo_trans($id);
-		// print_r($data['records2']);
+	    //echo "<pre>";print_r($data['records2']);
+        $data['id'] = $id;
 		$data['records3'] = $this->Project_model->get_project_wo_trans1($id);
-		$data['main_content'] = 'project/work_order_edit.php';
+        $data['main_content'] = 'project/work_order_edit.php';
 		$this->load->view('includes/template', $data);
 	}
+
+    function approve_work_order()
+	{
+		$data['title'] = 'Approve Work Order';
+		$work_id = $this->input->post('work_id');
+
+
+
+		$this->load->model('Project_model');
+		$this->Project_model->approve_work_order($work_id);
+
+		$this->session->set_flashdata('success', 'Record Approved Successfully..');
+		redirect('Project/view_work_order_list');
+	}
+
     /***
      * Outsourcing
      */
@@ -2498,7 +2514,32 @@ public function delete_progress_log()
 
         echo json_encode($employees);
     }
+    public function delete_product_route()
+    {
+        $id = $this->input->post('id');
+        $query = $this->db->query('SELECT work_extra_id,attachment_one FROM project_work_order_extra_details WHERE work_extra_id = ? AND wo_type = ?', array($id, 'Work Order Attachments'));
+        if($query->num_rows() > 0){
+            $res = $query->row_array();
+            $img = $res['attachment_one'];
+            if(file_exists('./public/uploded_documents/'.$img)){
+                unlink('./public/uploded_documents/'.$img);
+            }
+           
+        }
+        $this->db->where('work_extra_id', $id);
+        $result = $this->db->delete('project_work_order_extra_details');
+        echo ($result) ? 1 : 0;
+    }
+    public function print_work_order($id)
+    {
+        $data['workorder'] = $this->Project_model->get_workorder($id);
+        $data['items'] = $this->Project_model->get_workorder_items($id);
+        $data['routes'] = $this->Project_model->get_workorder_routes($id);
+        $data['plans'] = $this->Project_model->get_workorder_plans($id);
+        $data['attachments'] = $this->Project_model->get_workorder_attachments($id);
 
+        $this->load->view('project/print_work_order',$data);
+    }
     
 
 }

@@ -1508,6 +1508,7 @@ public function get_last_progress_log($project_id)
             JOIN customer_master c ON p.fk_cust_id = c.customer_id
             JOIN project_outsource po ON po.project_id = p.project_id
             WHERE p.project_complete = '0'
+            group BY p.project_id
             ORDER BY p.created_on DESC
         ");
         //AND po.quality_check_done = 'Yes'
@@ -1536,15 +1537,17 @@ public function get_last_progress_log($project_id)
     
     function get_attachment_records($id)
 	{
-		$query = $this->db->query("select *  from project_work_order_extra_details where work_extra_id =$id");
-
-		return $query->result();
+		$query = $this->db->query("select *  from project_work_order_extra_details where 	wo_master_id =$id and wo_type='Work Order Attachments'");
+    	return $query->result();
 	}
 	
     function get_project_wo_trans1($id)
     {
+        $qry = $this->db->query("select trans_id from project_work_order_transaction where wo_master_id=$id order by trans_id desc");
+        $re = $qry->row_array();
+        $tid = $re['trans_id']; 
         // $query=$this->db->query("select * from project_work_order_transaction1 where trans_id1 = '$id' ");
-            $query=$this->db->query("select one.*, three.unit_abbr from (select * from project_work_order_transaction1  where trans_id1='$id' )as one  left join(select * from unit_master)as three on(one.unit=three.unit_id)");
+            $query=$this->db->query("select one.*, three.unit_abbr from (select * from project_work_order_transaction1  where trans_id1='$tid' )as one  left join(select * from unit_master)as three on(one.unit=three.unit_id)");
         // $query=$this->db->query("select one.*, two.item_name, two.item_code, three.unit_abbr from (select * from project_work_order_transaction1  where trans_id1='$id' )as one left join(select * from item_master)as two on(one.sub_details=two.item_id) left join(select * from unit_master)as three on(one.unit=three.unit_id)");
         
         return $query->result();
@@ -1806,8 +1809,8 @@ public function get_last_progress_log($project_id)
 		else if($revtype>0)
 			$condition= "and revision=$revtype";
 			
-		$query=$this->db->query("select one.*, two.product_name as item_name, two.product_code as item_code, three.unit_abbr from (select * from project_transaction2  where pid='$id' $condition)as one left join(select * from item_master)as two on(one.sub_details=two.product_id) left join(select * from unit_master)as three on(one.unit=three.unit_id)");
-		echo $this->db->last_query();
+		$query=$this->db->query("select one.*, two.product_id, two.product_name as item_name, two.product_code as item_code, three.unit_abbr from (select * from project_transaction2  where pid='$id' $condition)as one left join(select * from item_master)as two on(one.sub_details=two.product_id) left join(select * from unit_master)as three on(one.unit=three.unit_id)");
+		//echo $this->db->last_query();
         return $query->result();
 	}
 
@@ -1866,104 +1869,107 @@ public function get_last_progress_log($project_id)
 	);
 	$this->db->insert('project_work_order', $data);
 	$insert_id = $this->db->insert_id();
+    //echo "<pre>";print_r($_POST);//exit;
+    if(!empty($_POST['product_id'])){
+        for ($c = 0; $c < count($_POST['product_id']); $c++) {
+            $data2 = array(
+                'wo_master_id' => $insert_id,
+                'product_desc' => $_POST['desc'][$c] ?? '',
+                'cproduct_type' => $_POST['product_id'][$c] ?? '',
+                'colour_finish' => $_POST['colour_finish'][$c] ?? '',
+                //'uom' => $_POST['item_uom'][$c],
+                'quntity' => $_POST['qty4'][$c] ?? '',
 
-	// for ($c = 0; $c < count($_POST['product_id']); $c++) {
-	// 	$data2 = array(
-	// 		'wo_master_id' => $insert_id,
-	// 		'item_desc' => $_POST['desc'][$c],
-	// 		'cproduct_type' => $_POST['product_id'][$c],
-	// 		'colour_finish' => $_POST['colour_finish'][$c],
-	// 		'uom' => $_POST['item_uom'][$c],
-	// 		'quntity' => $_POST['trading_qty'][$c],
-
-	// 	);
-	// 	$this->db->insert('project_work_order_transaction', $data2);
-	// }
+            );
+            $this->db->insert('project_work_order_transaction', $data2);
+        }
+    }
 	$revision=0;	
+    if(!empty($_POST['desc'])){
 	for ($i = 0; $i < count($_POST['desc']); $i++)
- {		
- $trans_id= $_POST['trans_id'][$i];
- $revision= $_POST['revision'][$i];
- $data = array(
-	'pid' => $insert_id,
-	'wo_master_id' => $insert_id,
- 'revision'=>$revision,
- 'qid' => $_POST['qid'][$i],
- 'product_desc' => $_POST['desc'][$i],
- 'item_remark' => $_POST['item_remark'][$i],
- );
- $this->db->insert('project_work_order_transaction', $data);
- $insert_id1 = $this->db->insert_id();
+    {		
+        $trans_id= $_POST['trans_id'][$i];
+        $revision= $_POST['revision'][$i];
+        $data = array(
+            'pid' => $insert_id,
+            'wo_master_id' => $insert_id,
+        'revision'=>$revision,
+        'qid' => $_POST['qid'][$i],
+        'product_desc' => $_POST['desc'][$i],
+        'item_remark' => $_POST['item_remark'][$i],
+        );
+        $this->db->insert('project_work_order_transaction', $data);
+        $insert_id1 = $this->db->insert_id();
 
+        for ($j = 0; $j < count($_POST["sub_details$trans_id"]); $j++)
+            {
+            $data = array(
+            'trans_id1' => $insert_id1,
+            'pid' => $insert_id,
+            'revision' => $revision,
+            'sub_details' => $_POST["sub_details$trans_id"][$j],
+            'qty' =>  $_POST["qty$trans_id"][$j],
+            'width' =>  $_POST["width$trans_id"][$j],
+            'height' =>  $_POST["height$trans_id"][$j],
+            'unit' =>  $_POST["unit$trans_id"][$j],
+            'price' =>  $_POST["price$trans_id"][$j],
+            'total' =>  $_POST["total$trans_id"][$j],
+            'colour_finish' => $_POST['colour_finish'][$j],
+            'item_name' => $_POST['item_name'][$j],
+            'item_code' => $_POST['item_code'][$j],
+             'product_id'      => $_POST['product_id'][$j]
 
+            );
+            $this->db->insert('project_work_order_transaction1', $data);
+        }
+    }
+    }
+	$uploadedFiles = array();
 
+if ($insert_id) {
+    if (!empty($_FILES["documents_res"])) {
 
+        $allowedExts = array("jpeg", "jpg", "png", "doc", "docx", "pdf");
 
- for ($j = 0; $j < count($_POST["sub_details$trans_id"]); $j++)
-	 {
-	 $data = array(
-	 'trans_id1' => $insert_id1,
-	 'pid' => $insert_id,
-	 'revision' => $revision,
-	 'sub_details' => $_POST["sub_details$trans_id"][$j],
-	 'qty' =>  $_POST["qty$trans_id"][$j],
-	 'width' =>  $_POST["width$trans_id"][$j],
-	 'height' =>  $_POST["height$trans_id"][$j],
-	 'unit' =>  $_POST["unit$trans_id"][$j],
-	 'price' =>  $_POST["price$trans_id"][$j],
-	 'total' =>  $_POST["total$trans_id"][$j],
-	 'colour_finish' => $_POST['colour_finish'][$j],
-	 'item_name' => $_POST['item_name'][$j],
-	 'item_code' => $_POST['item_code'][$j],
+        foreach ($_FILES['documents_res']["name"] as $key => $filename) {
 
-	 );
-	 $this->db->insert('project_work_order_transaction1', $data);
- }
+            if (!empty($filename)) {
+
+                $temp = explode(".", $filename);
+                $extension = strtolower(end($temp));
+
+                if (in_array($extension, $allowedExts)) {
+
+                    $timestamp = time();
+                    $file_tmp = $_FILES["documents_res"]["tmp_name"][$key];
+
+                    // filename already contains extension
+                    $other_file = $timestamp . "_" . $filename;
+
+                    move_uploaded_file(
+                        $file_tmp,
+                        "./public/uploded_documents/" . $other_file
+                    );
+
+                    // Save filename in array
+                    $uploadedFiles[$key] = $other_file;
+                }
+            }
+        }
+    }
 }
 
+for ($i = 0; $i < count($_POST['wo_attachments']); $i++) {
 
+    $data3 = array(
+        'wo_master_id'   => $insert_id,
+        'wo_type'        => 'Work Order Attachments',
+        'wo_attachments' => $_POST['wo_attachments'][$i],
+        'attachment_one' => isset($uploadedFiles[$i]) ? $uploadedFiles[$i] : ''
+    );
 
-
-	if ($insert_id) {
-		if (!empty($_FILES["documents_res"])) {
-			$allowedExts = array("jpeg", "jpg", "png", "doc", "pdf");
-			foreach ($_FILES['documents_res']["name"] as $key => $filename) {
-				if (!empty($filename)) {
-					$temp = explode(".", $filename);
-					$extension = end($temp);
-					if (in_array($extension, $allowedExts)) {
-						$timestamp1 = time();
-						$file_tmp = $_FILES["documents_res"]["tmp_name"][$key];
-						$other_file = $timestamp1 . "_" . $filename;
-						//move_uploaded_file($file_tmp, "/home/webadmin/gen/multiscale/public/uploded_documents/" . $other_file);
-                        move_uploaded_file($file_tmp, "./public/uploded_documents/" . $other_file);
-
-						// $data1 = array(
-						// 	'wo_master_id' => $insert_id,
-						// 	'wo_attachments' => $_POST['wo_attachments'][$i],
-						// 	'attachment_one' => $other_file,
-						// );
-						// $this->db->insert('project_work_order_extra_details', $data1);
-					}
-				}
-			}
-		}
-	}
-
-	for ($i = 0; $i < count($_POST['wo_attachments']); $i++) {
-		$data3 = array(
-			'wo_master_id' => $insert_id,
-			'wo_type' => 'Work Order Attachments',
-			'wo_attachments' => $_POST['wo_attachments'][$i],
-		'attachment_one' => $other_file,
-		// 'product_route' => $_POST['product_route'][$i],
-		// 	'proute_desc' => $_POST['proute_desc'][$i],
-		// 	'wo_plan' => $_POST['wo_plan'][$i],
-		// 	'woplan_desc' => $_POST['woplan_desc'][$i],
-
-		);
-		$this->db->insert('project_work_order_extra_details', $data3);
-	}
+    $this->db->insert('project_work_order_extra_details', $data3);
+}
 	for ($j = 0; $j < count($_POST['product_route']); $j++) {
 		$data4 = array(
 			'wo_master_id' => $insert_id,
@@ -1993,6 +1999,186 @@ public function get_last_progress_log($project_id)
 	return $insert_id;
 }
 
+    public function update_work_order_details($id)
+        {
+            $this->db->trans_start();
+
+            $data = array(
+                'project_id'           => $this->input->post('project_id'),
+                'work_order_date'      => date('Y-m-d', strtotime($this->input->post('work_order_date'))),
+                'wo_code'              => $this->input->post('wo_code'),
+                'installation_manhr'   => $this->input->post('im'),
+                'fabrication_manhr'    => $this->input->post('fm'),
+                'fsdate'               => date('Y-m-d', strtotime($this->input->post('fsdate'))),
+                'fedate'               => date('Y-m-d', strtotime($this->input->post('fedate'))),
+                'isdate'               => date('Y-m-d', strtotime($this->input->post('isdate'))),
+                'iedate'               => date('Y-m-d', strtotime($this->input->post('iedate'))),
+                'prepared_by'          => $this->input->post('prepared_id'),
+                'checked_by'           => $this->input->post('checked_id'),
+                'approved_by'          => $this->input->post('approved_id'),
+                'handed_over_to'       => $this->input->post('handed_over_to'),
+                'created_by'           => $this->session->userdata('user_id'),
+                'created_date'         => date('Y-m-d')
+            );
+
+            $this->db->where('work_id', $id);
+            $this->db->update('project_work_order', $data);
+
+            //$this->db->where('wo_master_id', $id)->delete('project_work_order_transaction');
+            //$this->db->where('pid', $id)->delete('project_work_order_transaction1');
+           // $this->db->where('wo_master_id', $id)->delete('project_work_order_extra_details');
+
+            $revision = 0;
+            if(!empty($_POST['desc'])){
+                $this->db->where('wo_master_id', $id)->delete('project_work_order_transaction');
+                for ($i = 0; $i < count($_POST['desc']); $i++) {
+
+                    $trans_id = $_POST['trans_id'][$i];
+                    $revision = $_POST['revision'][$i];
+
+                    $data = array(
+                        'pid'            => $id,
+                        'wo_master_id'   => $id,
+                        'revision'       => $revision,
+                        'qid'            => $_POST['qid'][$i],
+                        'product_desc'   => $_POST['desc'][$i],
+                        'item_remark'    => $_POST['item_remark'][$i]
+                    );
+
+                    $this->db->insert('project_work_order_transaction', $data);
+                    $insert_id1 = $this->db->insert_id();
+
+                    if (isset($_POST["sub_details$trans_id"])) {
+                        $this->db->where('pid', $id)->delete('project_work_order_transaction1');
+                        for ($j = 0; $j < count($_POST["sub_details$trans_id"]); $j++) {
+
+                            $data1 = array(
+                                'trans_id1'      => $insert_id1,
+                                'pid'            => $id,
+                                'revision'       => $revision,
+                                'sub_details'    => $_POST["sub_details$trans_id"][$j],
+                                'qty'            => $_POST["qty$trans_id"][$j],
+                                'width'          => $_POST["width$trans_id"][$j],
+                                'height'         => $_POST["height$trans_id"][$j],
+                                'unit'           => $_POST["unit$trans_id"][$j],
+                                'price'          => $_POST["price$trans_id"][$j],
+                                'total'          => $_POST["total$trans_id"][$j],
+                                'colour_finish'  => $_POST['colour_finish'][$j]??'',
+                                'item_name'      => $_POST['item_name'][$j],
+                                'item_code'      => $_POST['item_code'][$j],
+                                'product_id'      => $_POST['product_id'][$j],
+
+                            );
+
+                            $this->db->insert('project_work_order_transaction1', $data1);
+                        }
+                    }
+                }
+            }
+
+            $other_files = array();
+
+           if (!empty($_FILES['documents_res']['name']))
+            {
+                $allowedExts = array("jpeg","jpg","png","doc","docx","pdf");
+
+                foreach ($_FILES['documents_res']['name'] as $i => $filename)
+                {
+                    if($filename=='')
+                        continue;
+
+                    $ext = strtolower(pathinfo($filename,PATHINFO_EXTENSION));
+
+                    if(!in_array($ext,$allowedExts))
+                        continue;
+
+                    $newFile=time().'_'.$i.'_'.$filename;
+
+                    move_uploaded_file(
+                        $_FILES['documents_res']['tmp_name'][$i],
+                        "./public/uploded_documents/".$newFile
+                    );
+
+                    $data=array(
+
+                        'wo_master_id'=>$id,
+
+                        'wo_type'=>'Work Order Attachments',
+
+                        'wo_attachments'=>$_POST['wo_attachments'][$i],
+
+                        'attachment_one'=>$newFile
+
+                    );
+
+                    $this->db->insert(
+                        'project_work_order_extra_details',
+                        $data
+                    );
+                   
+                }
+            }
+
+            if(!empty($_POST['product_route'])){
+                // Product Route
+                $this->db->where('wo_master_id', $id);
+                $this->db->where('wo_type', 'Product Process Route');
+                $this->db->delete('project_work_order_extra_details');
+                    foreach($_POST['product_route'] as $i=>$route){
+
+                    $data4=array(
+                        'wo_master_id'=>$id,
+                        'wo_type'=>'Product Process Route',
+                        'product_route'=>$route,
+                        'proute_desc'=>$_POST['proute_desc'][$i]
+                    );
+
+                    $this->db->insert('project_work_order_extra_details',$data4);
+                }
+            }
+
+            if(!empty($_POST['wo_plan'])){
+                // Distribution Plan
+                $this->db->where('wo_master_id', $id);
+                $this->db->where('wo_type', 'Work Order Distribution Plan');
+                $this->db->delete('project_work_order_extra_details');
+                foreach($_POST['wo_plan'] as $i=>$plan){
+
+                    $data5=array(
+                        'wo_master_id'=>$id,
+                        'wo_type'=>'Work Order Distribution Plan',
+                        'wo_plan'=>$plan,
+                        'woplan_desc'=>$_POST['woplan_desc'][$i]
+                    );
+
+                    $this->db->insert('project_work_order_extra_details',$data5);
+                }
+            }
+
+            if ($id) {
+
+                $user_se_id = $this->session->userdata('user_id');
+                $page_name = explode('index.php/', $_SERVER['PHP_SELF']);
+
+                $ci = get_instance();
+                $ci->load->helper('log');
+
+                add_log_entry(
+                    $user_se_id,
+                    2,
+                    $page_name[1],
+                    'project_work_order',
+                    'work_id',
+                    $id
+                );
+            }
+
+            $this->db->trans_complete();
+
+            return $id;
+        }
+
+    /*
 	function update_work_order_details($id)
 	{
 
@@ -2036,71 +2222,56 @@ public function get_last_progress_log($project_id)
 		$this->db->where('work_id', $id);
 		$res = $this->db->update('project_work_order', $data);
 
-		// $query = $this->db->query(" delete from project_work_order_transaction where wo_master_id=$id");
-		// for ($c = 0; $c < count($_POST['category_id']); $c++) {
-		// 	$data = array(
-		// 		'wo_master_id' => $id,
-		// 		'dept_id' => $_POST['dept_id'][$c],
-		// 		'category_type' => $_POST['category_id'][$c],
-		// 		'scope_details' => $_POST['work_details'][$c],
-
-
-		// 	);
-		// 	$this->db->insert('project_work_order_transaction', $data);
-		// }
-
-
-		
-		// for ($c = 0; $c < count($_POST['product_id']); $c++) {
-		// 	$data2 = array(
-		// 		'wo_master_id' => $id,
-		// 		'item_desc' => $_POST['desc'][$c],
-		// 		'cproduct_type' => $_POST['product_id'][$c],
-		// 		'colour_finish' => $_POST['colour_finish'][$c],
-		// 		'uom' => $_POST['item_uom'][$c],
-		// 		'quntity' => $_POST['trading_qty'][$c],
-
-		// 	);
-		// 	$this->db->update('project_work_order_transaction', $data2);
-		// }
-
-
-
-
+		 $query = $this->db->query(" delete from project_work_order_transaction where wo_master_id=$id");
 		
 
-		// if ($id) {
-		// 	if (!empty($_FILES["documents_res"])) {
-		// 		$allowedExts = array("jpeg", "jpg", "png", "doc", "pdf");
-		// 		foreach ($_FILES['documents_res']["name"] as $key => $filename) {
-		// 			if (!empty($filename)) {
-		// 				$temp = explode(".", $filename);
-		// 				$extension = end($temp);
-		// 				if (in_array($extension, $allowedExts)) {
-		// 					$timestamp1 = time();
-		// 					$file_tmp = $_FILES["documents_res"]["tmp_name"][$key];
-		// 					$other_file = $timestamp1 . "_" . $filename;
-		// 					move_uploaded_file($file_tmp, "/home/webadmin/gen/multiscale/public/uploded_documents/" . $other_file);
+		
+		 for ($c = 0; $c < count($_POST['product_id']); $c++) {
+		 	$data2 = array(
+		 		'wo_master_id' => $id,
+		 		'item_desc' => $_POST['desc'][$c],
+				'cproduct_type' => $_POST['product_id'][$c],
+				'colour_finish' => $_POST['colour_finish'][$c],
+		 		'uom' => $_POST['item_uom'][$c],
+		 		'quntity' => $_POST['trading_qty'][$c],
 
-		// 				}
-		// 			}
-		// 		}
-		// 	}
-		// }
+			);
+		 	$this->db->update('project_work_order_transaction', $data2);
+		 }
 
-		// for ($i = 0; $i < count($_POST['wo_attachments']); $i++) {
-		// 	$data3 = array(
-		// 		'wo_master_id' => $id,
-		// 		'wo_attachments' => $_POST['wo_attachments'][$i],
-		// 	'attachment_one' => $other_file,
-		// 	'product_route' => $_POST['product_route'][$i],
-		// 		'proute_desc' => $_POST['proute_desc'][$i],
-		// 		'wo_plan' => $_POST['wo_plan'][$i],
-		// 		'woplan_desc' => $_POST['woplan_desc'][$i],
 
-		// 	);
-		// 	$this->db->update('project_work_order_extra_details', $data3);
-		// }
+		 if ($id) {
+		 	if (!empty($_FILES["documents_res"])) {
+				$allowedExts = array("jpeg", "jpg", "png", "doc", "pdf");
+				foreach ($_FILES['documents_res']["name"] as $key => $filename) {
+					if (!empty($filename)) {
+						$temp = explode(".", $filename);
+		 				$extension = end($temp);
+						if (in_array($extension, $allowedExts)) {
+							$timestamp1 = time();
+							$file_tmp = $_FILES["documents_res"]["tmp_name"][$key];
+							$other_file = $timestamp1 . "_" . $filename;
+		 					move_uploaded_file($file_tmp, "/home/webadmin/gen/multiscale/public/uploded_documents/" . $other_file);
+
+		 				}
+					}
+				}
+			}
+		}
+
+		 for ($i = 0; $i < count($_POST['wo_attachments']); $i++) {
+		 	$data3 = array(
+		 		'wo_master_id' => $id,
+		 		'wo_attachments' => $_POST['wo_attachments'][$i],
+		 	'attachment_one' => $other_file,
+			'product_route' => $_POST['product_route'][$i],
+				'proute_desc' => $_POST['proute_desc'][$i],
+				'wo_plan' => $_POST['wo_plan'][$i],
+				'woplan_desc' => $_POST['woplan_desc'][$i],
+
+		 	);
+			$this->db->update('project_work_order_extra_details', $data3);
+		 }
 
 
 		if ($id) {
@@ -2113,6 +2284,7 @@ public function get_last_progress_log($project_id)
 		}
 		return $id;
 	}
+        */
 
 	function approve_work_order($id)
 	{
@@ -2187,16 +2359,68 @@ public function get_last_progress_log($project_id)
 	
 	function get_employee_document_doc_id($id)
 	{
-		$query = $this->db->query("select * from project_work_order_extra_details where wo_master_id='$id' ");
-		return $query->result();
+		$query = $this->db->query("select * from project_work_order_extra_details where wo_master_id='$id' and wo_type='Work Order Attachments'");
+		return $query->result_array();
 	}
     function get_project_wo_trans($id)
     {
-        $query=$this->db->query("select * from project_work_order_transaction where trans_id = '$id' ");
+        $query=$this->db->query("select * from project_work_order_transaction where wo_master_id = '$id' ");
         // $query=$this->db->query("select * from project_production_transaction where ptrans_id = '$id' ");
 
         return $query->result();
     }
+
+    //print work order
+    public function get_workorder($id)
+    {
+        return $this->db
+            ->select('pw.*,
+                    pm.project_name,
+                    cm.customer_name')
+            ->from('project_work_order pw')
+            ->join('project_master pm','pm.project_id=pw.project_id','left')
+            ->join('customer_master cm','cm.customer_id=pm.fk_cust_id','left')
+            ->where('pw.work_id',$id)
+            ->get()
+            ->row();
+    }
+    public function get_workorder_items($id)
+    {
+        return $this->db
+            ->select('t.*,p.product_name,u.unit_abbr')
+            ->from('project_work_order_transaction1 t')
+            ->join('project_work_order_transaction wt','wt.trans_id=t.trans_id1','left')
+            ->join('item_master p','p.product_id=t.product_id','left')
+            ->join('unit_master u', 'u.unit_id = p.unit_id', 'left')
+            ->where('wt.wo_master_id',$id)
+            ->get()
+            ->result();
+    }
+    public function get_workorder_routes($id)
+    {
+        return $this->db
+            ->where('wo_master_id',$id)
+            ->where('wo_type','Product Process Route')
+            ->get('project_work_order_extra_details')
+            ->result();
+    }
+    public function get_workorder_plans($id)
+    {
+        return $this->db
+            ->where('wo_master_id',$id)
+            ->where('wo_type','Work Order Distribution Plan')
+            ->get('project_work_order_extra_details')
+            ->result();
+    }
+    public function get_workorder_attachments($id)
+    {
+        return $this->db
+            ->where('wo_master_id',$id)
+            ->where('wo_type','Work Order Attachments')
+            ->get('project_work_order_extra_details')
+            ->result();
+    }
+    //print work order.
     public function get_project_progress_report(){
         return $this->db->select('pm.project_id,pm.project_code,pm.created_on,pm.project_name,cm.customer_name,u.user_name as manager,pm.start_date,pm.end_date,pm.status,pp.progress_percentage,pp.current_status,pp.last_updated')
         ->from('project_master pm')
@@ -2475,4 +2699,5 @@ public function get_last_progress_log($project_id)
         return $query_tasks->result_array();
     }
 
+   
 }
