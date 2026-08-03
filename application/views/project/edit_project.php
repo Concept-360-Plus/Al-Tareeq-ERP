@@ -1,19 +1,17 @@
 <style>
-label, h5 {
-    color: #000;
-    font-weight: bold;
-}
-table th, table td {
-    vertical-align: middle !important;
-}
-</style>
+    /*
 
+    */
+</style>
+<link href="<?php echo base_url()."public/assets/task.css"; ?>" rel="stylesheet">
 <div class="row">
 <div class="col-md-12">
 <div class="x_panel">
 <div class="x_content">
 
-<form id="project_form" action="<?= base_url('index.php/Project/update_task') ?>" method="post">
+<!--        <form id="project_form" action="<?= base_url('index.php/Project/update_task') ?>" method="post">-->
+<form id="project_form" action="<?= base_url('index.php/Project/update_project') ?>" method="post">
+
 
 <input type="hidden" name="project_id" value="<?= $project['project_id']; ?>">
 <input type="hidden" name="project_task_id" value="<?= !empty($project_task) ? $project_task['id'] : ''; ?>">
@@ -40,7 +38,7 @@ table th, table td {
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label>Quotation</label>
-                                <select name="quotation_id" id="quotation_select" class="form-control" required>
+                                <select name="quotation_id" id="quotation_select" class="form-control" required readonly>
                                     <option value="">-- Select Quotation --</option>
                                     <?php foreach ($quotation as $qo): ?>
                                         <option value="<?= $qo['qtn_id']; ?>" <?php if($qo['qtn_id']==$project['fk_quot_id']):?> selected="selected"<?php endif;?>>
@@ -93,19 +91,19 @@ table th, table td {
 <tr>
     <th>Start Date</th>
     <td>
-        <input type="date" name="start_date" id="start_date" class="form-control"
+        <input type="date" name="start_date1" id="start_date" class="form-control"
                value="<?= $project['start_date'] ?>">
     </td>
     <th>End Date</th>
     <td>
-        <input type="date" name="end_date" id="end_date" class="form-control"
+        <input type="date" name="end_date1" id="end_date" class="form-control"
                value="<?= $project['end_date'] ?>">
     </td>
 </tr>
 
 <tr>
     <th>Duration (Days)</th>
-    <td colspan="3">
+    <td colspan="1">
         <input type="text" name="duration" id="duration" class="form-control"
                value="<?= $project['duration'] ?>" readonly>
     </td>
@@ -183,6 +181,314 @@ table th, table td {
 </tbody>
 </table>
 
+<!-- Task assignment-->
+<!-- ================= PROJECT TASKS ================= -->
+
+<div class="card mt-3 col-md-12">
+
+    <div class="card-header d-flex justify-content-between align-items-center">
+
+        <h4 class="mb-0">
+            Project Tasks
+        </h4>
+
+        <button type="button"
+                class="btn btn-primary btn-sm"
+                data-toggle="modal"
+                data-target="#taskModal">
+
+            <i class="fa fa-plus"></i>
+
+            Assign Task
+
+        </button>
+
+    </div>
+
+    <div class="card-body">
+
+        <table class="table table-bordered table-striped" id="taskTable">
+
+            <thead>
+
+            <tr>
+
+                <th width="5%">#</th>
+
+                <th>Task</th>
+                <th>Category</th>
+                <th>Milestone</th>
+
+                <th>Employee</th>
+
+                <th>Priority</th>
+
+                <th>Start</th>
+
+                <th>End</th>
+
+                <th>Status</th>
+
+                <th width="12%">Action</th>
+
+            </tr>
+
+            </thead>
+
+            <tbody>
+
+            <?php
+            if(!empty($project_tasks))
+            {
+                $i=1;
+
+                foreach($project_tasks as $row)
+                {
+            ?>
+
+            <tr>
+
+                <td><?= $i++ ?></td>
+
+               
+
+                <td><?= $row['task_name']; ?></td>
+                <td><?= $row['project_task_name']; ?></td>
+
+                <td><?= $row['milestone_name']; ?></td>
+
+                <td><?= $row['employee_name']; ?></td>
+
+                <td><?= $row['priority']; ?></td>
+
+                <td><?= date('d-m-Y',strtotime($row['start_date'])); ?></td>
+
+                <td><?= date('d-m-Y',strtotime($row['end_date'])); ?></td>
+
+                <td><?= ucfirst(str_replace('_',' ',$row['status'])); ?></td>
+
+                <td>
+
+                    <button
+                        type="button"
+                        class="btn btn-warning btn-xs editTask">
+
+                        <i class="fa fa-pencil"></i>
+
+                    </button>
+
+                    <button
+                        type="button"
+                        class="btn btn-danger btn-xs removeTask">
+
+                        <i class="fa fa-trash"></i>
+
+                    </button>
+
+                    <!-- Hidden Values -->
+
+                    <input type="hidden" class="task_id"
+                           value="<?= $row['id']; ?>">
+
+                    <input type="hidden" class="category_id"
+                           value="<?= $row['task_category_id']; ?>">
+
+                    <input type="hidden" class="milestone_id"
+                           value="<?= $row['milestone_id']; ?>">
+
+                    <input type="hidden" class="designation_id"
+                           value="<?= $row['designation_id']; ?>">
+
+                    <input type="hidden" class="employee_id"
+                           value="<?= $row['employee_id']; ?>">
+
+                    <input type="hidden" class="task_description"
+                           value="<?= htmlspecialchars($row['task_description']); ?>">
+
+                </td>
+                <td style="display:none" class="hiddenTaskData">
+
+                    <!-- Hidden inputs for this task -->
+
+                </td>
+
+            </tr>
+
+            <?php
+
+                }
+
+            }
+
+            ?>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+
+
+<div id="hiddenTaskInputs">
+
+<?php
+
+if(!empty($project_tasks))
+{
+
+    foreach($project_tasks as $row)
+    {
+
+?>
+
+<input type="hidden" name="task_id[]" value="<?= $row['id']; ?>">
+<input type="hidden" name="task_name[]" value="<?= htmlspecialchars($row['task_name']); ?>">
+<input type="hidden" name="milestone[]" value="<?= $row['milestone_id']; ?>">
+<input type="hidden" name="designation_id[]" value="<?= $row['designation_id']; ?>">
+<input type="hidden" name="employee_id[]" value="<?= $row['employee_id']; ?>">
+<input type="hidden" name="priority[]" value="<?= $row['priority']; ?>">
+<input type="hidden" name="task_category[]" value="<?= $row['task_category_id']; ?>">
+<input type="hidden" name="start_date[]" value="<?= $row['start_date']; ?>">
+<input type="hidden" name="end_date[]" value="<?= $row['end_date']; ?>">
+
+<input type="hidden" name="status[]" value="<?= $row['status']; ?>">
+
+<input type="hidden" name="task_description[]" value="<?= htmlspecialchars($row['task_description']); ?>">
+
+<?php
+
+    }
+
+}
+
+?>
+
+</div>
+
+
+
+<!-- ================= TASK MODAL ================= -->
+
+<div class="modal fade"
+     id="taskModal"
+     tabindex="-1">
+
+<div class="modal-dialog modal-xl task-modal-dialog">
+
+<div class="modal-content">
+
+<div class="modal-header bg-primary text-white">
+
+<h4 class="modal-title">
+
+Assign Project Tasks
+
+</h4>
+
+<button type="button"
+        class="close"
+        data-dismiss="modal">
+
+&times;
+
+</button>
+
+</div>
+
+<div class="modal-body task-modal-body">
+
+<button
+type="button"
+class="btn btn-success btn-sm mb-3"
+id="addTaskRow">
+
+<i class="fa fa-plus"></i>
+
+Add Task
+
+</button>
+
+<div class="task-table-responsive">
+
+<table
+class="table table-bordered"
+id="popupTaskTable">
+
+<thead>
+
+<tr>
+
+<th>Category</th>
+
+<th>Task</th>
+
+<th>Milestone</th>
+
+<th>Designation</th>
+
+<th>Employee</th>
+
+<th>Priority</th>
+
+<th>Start</th>
+
+<th>End</th>
+
+<th>Status</th>
+
+<th>Description</th>
+
+<th>Action</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<!-- Filled by JavaScript -->
+
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+<div class="modal-footer">
+
+<button
+type="button"
+class="btn btn-success"
+id="saveTask">
+
+Save Tasks
+
+</button>
+
+<button
+type="button"
+class="btn btn-secondary"
+data-dismiss="modal">
+
+Close
+
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- Task assignment -->
+
 <!-- ================= FINANCIAL SUMMARY ================= -->
 <!--
 <h5>Financial Summary</h5>
@@ -219,7 +525,7 @@ table th, table td {
 
 <!-- ================= TECHNICIAN ASSIGNMENT ================= -->
 
-<h5 style="clear:both;">Technician & Resource Assignment</h5>
+<!--<h5 style="clear:both;">Technician & Resource Assignment</h5>
 
 <table class="table table-bordered" id="technician_table">
 <thead>
@@ -229,7 +535,7 @@ table th, table td {
     <th>Role</th>
     <th>Start</th>
     <th>End</th>
-    <!-- <th>Availability</th> -->
+   
     <th>Action</th>
 </tr>
 </thead>
@@ -263,9 +569,7 @@ table th, table td {
            value="<?= $tech['assignment_start'] ?>"></td>
 <td><input type="date" name="assignment_end[]" class="form-control assignment_end"
            value="<?= $tech['assignment_end'] ?>"></td>
-<!-- <td class="availability_status">
-    <span class="badge bg-secondary">Checking...</span>
-</td> -->
+
 
     <td>
         <button type="button" class="btn btn-danger btn-sm remove_row">Remove</button>
@@ -278,18 +582,18 @@ table th, table td {
 </table>
 
 <button type="button" class="btn btn-primary btn-sm" id="add_technician">Add Technician</button>
-
+        -->
 <!-- ================= REMARKS ================= -->
-
-<div class="form-group mt-3">
+        </div>
+<div class="form-group mt-3 col-md-12">
 <label>Remarks</label>
-<textarea name="remarks" class="form-control"><?= $project['remarks']; ?></textarea>
+<textarea name="remarks" class="form-control" style="width:50%;"><?= $project['remarks']; ?></textarea>
 </div>
 
-<tr>
-    <th>Approver</th>
-    <td colspan="3">
-       <select name="approver" class="form-control">
+<div class="form-group mt-3 col-md-12">
+   <label>Approver</label>
+    
+       <select name="approver" class="form-control" style="width:50%;">
         <?php foreach($users as $user){ ?>
             <option value="<?= $user['user_id']; ?>"
                 <?= ($project['approver_id']==$user['user_id'])?'selected':''; ?>>
@@ -297,11 +601,9 @@ table th, table td {
             </option>
         <?php } ?>
 </select>
-    </td>
-</tr>
+</div>
 
-
-<div class="text-end mt-4">
+<div class="text-end col-md-12">
     <button type="submit" class="btn btn-success">Update Project</button>
     <a href="<?= base_url('index.php/Project/get_project_list') ?>" class="btn btn-secondary">Cancel</a>
 
@@ -339,6 +641,7 @@ table th, table td {
 <!-- ================= JS ================= -->
 
 <script>
+var editingRow = null;
 var employees = <?= json_encode($employees); ?>;
 var designations = <?= json_encode($designations); ?>;
 var rowCount = $('#technician_table tbody tr').length;
@@ -711,5 +1014,567 @@ document.addEventListener("DOMContentLoaded", function () {
     startDate.addEventListener("change", calculateDuration);
     endDate.addEventListener("change", calculateDuration);
 });
+</script>
+
+<script>
+
+var taskIndex = 0;
+var editingRow = null;
+/*------------------------------------------
+Create New Task Row
+-------------------------------------------*/
+
+function newTaskRow(data = {})
+{
+    taskIndex++;
+
+    var employeeSelectId = 'task_employee_' + taskIndex;
+
+    var row = '';
+
+    row += '<tr data-task-index="'+taskIndex+'">';
+
+    /* Category */
+
+    row += '<td>';
+
+    row += '<input type="hidden" name="task_id[]" value="'+(data.task_id || '')+'">';
+
+    row += '<select name="task_category[]" class="form-control task-category select2">';
+
+    row += '<option value="">Select</option>';
+
+<?php foreach($task_categories as $cat){ ?>
+
+    row += '<option value="<?= $cat["project_task_id"] ?>">'+
+            '<?= addslashes($cat["project_task_name"]) ?>'+
+            '</option>';
+
+<?php } ?>
+
+    row += '</select>';
+
+    row += '</td>';
+
+    /* Task */
+
+    row += '<td>';
+
+    row += '<input type="text" class="form-control" name="task_name[]" value="'+(data.task_name || '')+'">';
+
+    row += '</td>';
+
+    /* Milestone */
+
+    row += '<td>';
+
+    row += '<select name="milestone[]" class="form-control select2">';
+
+    row += '<option value="">Select</option>';
+
+<?php foreach($milestones as $m){ ?>
+
+    row += '<option value="<?= $m["milestone_id"] ?>">'+
+            '<?= addslashes($m["milestone_name"]) ?>'+
+            '</option>';
+
+<?php } ?>
+
+    row += '</select>';
+
+    row += '</td>';
+
+    /* Designation */
+
+    row += '<td>';
+
+    row += '<select name="designation_id[]" class="form-control task-designation-select select2" data-employee-select="#'+employeeSelectId+'">';
+
+    row += '<option value="">Select</option>';
+
+<?php foreach($designations as $d){ ?>
+
+    row += '<option value="<?= $d["id"] ?>">'+
+            '<?= addslashes($d["designation_name"]) ?>'+
+            '</option>';
+
+<?php } ?>
+
+    row += '</select>';
+
+    row += '</td>';
+
+    /* Employee */
+
+    row += '<td>';
+
+    row += '<select id="'+employeeSelectId+'" name="employee_id[]" class="form-control task-employee-select select2">';
+
+    row += '<option value="">Select Employee</option>';
+
+    row += '</select>';
+
+    row += '</td>';
+
+    /* Priority */
+
+    row += '<td>';
+
+    row += '<select name="priority[]" class="form-control">';
+
+    row += '<option value="Low">Low</option>';
+
+    row += '<option value="Medium">Medium</option>';
+
+    row += '<option value="High">High</option>';
+
+    row += '<option value="Critical">Critical</option>';
+
+    row += '</select>';
+
+    row += '</td>';
+
+    /* Dates */
+
+    row += '<td>';
+
+    row += '<input type="date" class="form-control" name="start_date[]" value="'+(data.start_date || '')+'">';
+
+    row += '</td>';
+
+    row += '<td>';
+
+    row += '<input type="date" class="form-control" name="end_date[]" value="'+(data.end_date || '')+'">';
+
+    row += '</td>';
+
+    /* Status */
+
+    row += '<td>';
+
+    row += '<select name="status[]" class="form-control">';
+
+    row += '<option value="not_started">Not Started</option>';
+
+    row += '<option value="in_progress">In Progress</option>';
+
+    row += '<option value="completed">Completed</option>';
+
+    row += '<option value="hold">Hold</option>';
+
+    row += '</select>';
+
+    row += '</td>';
+
+    /* Description */
+
+    row += '<td>';
+
+    row += '<textarea class="form-control" name="task_description[]">'+
+            (data.task_description || '')+
+            '</textarea>';
+
+    row += '</td>';
+
+    /* Remove */
+
+    row += '<td>';
+
+    row += '<button type="button" class="btn btn-danger btn-sm removeRow">';
+
+    row += '<i class="fa fa-trash"></i>';
+
+    row += '</button>';
+
+    row += '</td>';
+
+    row += '</tr>';
+
+    $('#popupTaskTable tbody').append(row);
+
+    var currentRow = $('#popupTaskTable tbody tr:last');
+
+    /* Select selected values */
+
+    currentRow.find('[name="task_category[]"]').val(data.task_category_id);
+
+    currentRow.find('[name="milestone[]"]').val(data.milestone_id);
+
+    currentRow.find('[name="designation_id[]"]').val(data.designation_id);
+
+    currentRow.find('[name="priority[]"]').val(data.priority);
+
+    currentRow.find('[name="status[]"]').val(data.status);
+
+    /* Select2 */
+
+    currentRow.find('.select2').select2({
+
+        width:'100%',
+
+        dropdownParent:$('#taskModal')
+
+    });
+
+    currentRow.find('.task-designation-select').on('change', function () {
+        loadEmployees(
+            $(this).closest('tr').find('.task-employee-select'),
+            $(this).val()
+        );
+    });
+
+    /* Load employee if designation exists */
+
+    if(data.designation_id)
+    {
+        loadEmployees(currentRow.find('.task-employee-select'), data.designation_id, data.employee_id);
+    }
+
+}
+
+/*------------------------------------------
+Add Row
+-------------------------------------------*/
+
+$('#addTaskRow').on('click',function(){
+
+    newTaskRow();
+
+});
+
+/*------------------------------------------
+Remove Row
+-------------------------------------------*/
+
+$(document).on('click','.removeRow',function(){
+
+    $(this).closest('tr').remove();
+
+});
+
+/*------------------------------------------
+Load Employees
+-------------------------------------------*/
+
+function loadEmployees(employeeSelect,designation_id,selected='')
+{
+
+    employeeSelect.empty().append('<option value="">Select Employee</option>').val('').trigger('change.select2');
+
+    if (!designation_id) {
+        return;
+    }
+
+    $.ajax({
+
+        url:"<?= base_url('index.php/Project/get_employee_by_designation'); ?>",
+
+        type:"POST",
+
+        data:{designation_id:designation_id},
+
+        dataType:"json",
+
+        success:function(res){
+
+            var html='<option value="">Select Employee</option>';
+
+            $.each(res,function(i,r){
+
+                html+='<option value="'+r.employee_id+'">'+
+                        r.employee_name+
+                        '</option>';
+
+            });
+
+            employeeSelect.html(html);
+
+            employeeSelect.val(selected);
+            employeeSelect.trigger('change.select2');
+
+        }
+
+    });
+
+}
+
+//task 
+/*=========================================================
+LOAD EXISTING TASKS INTO POPUP
+=========================================================*/
+
+$('button[data-target="#taskModal"]').on('click', function () {
+
+    $('#popupTaskTable tbody').empty();
+
+    var hasTask = false;
+
+    $('#hiddenTaskInputs').find('input[name="task_id[]"]').each(function (i) {
+
+        hasTask = true;
+
+        var data = {
+
+            task_id: $(this).val(),
+
+            task_category_id: $('#hiddenTaskInputs input[name="task_category[]"]').eq(i).val(),
+
+            task_name: $('#hiddenTaskInputs input[name="task_name[]"]').eq(i).val(),
+
+            milestone_id: $('#hiddenTaskInputs input[name="milestone[]"]').eq(i).val(),
+
+            designation_id: $('#hiddenTaskInputs input[name="designation_id[]"]').eq(i).val(),
+
+            employee_id: $('#hiddenTaskInputs input[name="employee_id[]"]').eq(i).val(),
+
+            priority: $('#hiddenTaskInputs input[name="priority[]"]').eq(i).val(),
+
+            start_date: $('#hiddenTaskInputs input[name="start_date[]"]').eq(i).val(),
+
+            end_date: $('#hiddenTaskInputs input[name="end_date[]"]').eq(i).val(),
+
+            status: $('#hiddenTaskInputs input[name="status[]"]').eq(i).val(),
+
+            task_description: $('#hiddenTaskInputs input[name="task_description[]"]').eq(i).val()
+
+        };
+
+        newTaskRow(data);
+
+    });
+
+    /* If project has no task yet */
+
+    if (!hasTask) {
+
+        newTaskRow();
+
+    }
+
+});
+
+/*==========================================
+EDIT TASK
+==========================================*/
+
+$(document).on('click', '.editTask', function () {
+
+    editingRow = $(this).closest('tr');
+
+    var data = {
+        task_id: editingRow.find('.task_id').val(),
+        task_category_id: editingRow.find('.category_id').val(),
+        task_name: editingRow.children('td:eq(2)').text().trim(),
+        milestone_id: editingRow.find('.milestone_id').val(),
+        designation_id: editingRow.find('.designation_id').val(),
+        employee_id: editingRow.find('.employee_id').val(),
+        priority: editingRow.children('td:eq(5)').text().trim(),
+        start_date: formatDate(editingRow.children('td:eq(6)').text().trim()),
+        end_date: formatDate(editingRow.children('td:eq(7)').text().trim()),
+        status: editingRow.children('td:eq(8)').text().trim().toLowerCase().replace(/ /g,'_'),
+        task_description: editingRow.find('.task_description').val()
+    };
+
+    $('#popupTaskTable tbody').html('');
+
+    newTaskRow(data);
+
+    $('#taskModal').modal('show');
+
+});    /*==========================================
+    DELETE TASK
+    ==========================================*/
+
+    $(document).on('click','.removeTask',function(){
+
+        if(!confirm('Delete this task?'))
+            return;
+
+        $(this).closest('tr').remove();
+
+        rebuildHiddenInputs();
+
+        refreshSerialNo();
+
+    });
+
+    function refreshSerialNo()
+    {
+        $('#taskTable tbody tr').each(function(i){
+
+            $(this).find('td:first').text(i+1);
+
+        });
+    }
+    function formatDate(date)
+    {
+        if(date=='')
+            return '';
+
+        var arr=date.split('-');
+
+        if(arr.length!=3)
+            return '';
+
+        return arr[2]+'-'+arr[1]+'-'+arr[0];
+    }
+    function rebuildHiddenInputs()
+    {
+        $('#hiddenTaskInputs').empty();
+
+        $('#taskTable tbody tr').each(function(){
+
+            $('#hiddenTaskInputs').append($(this).find('.hiddenTaskData').html());
+
+        });
+    }
+
+    /*=========================================================
+    SAVE TASKS
+    =========================================================*/
+$('#saveTask').on('click', function () {
+    if (editingRow != null) {
+    }else{
+        $('#taskTable tbody').html('');
+    }
+    
+    $('#popupTaskTable tbody tr').each(function () {
+
+        var task_id = $(this).find('[name="task_id[]"]').val();
+
+        var category_id = $(this).find('[name="task_category[]"]').val();
+        var category = $(this).find('[name="task_category[]"] option:selected').text();
+
+        var task = $(this).find('[name="task_name[]"]').val();
+
+        var milestone_id = $(this).find('[name="milestone[]"]').val();
+        var milestone = $(this).find('[name="milestone[]"] option:selected').text();
+
+        var designation_id = $(this).find('[name="designation_id[]"]').val();
+
+        var employee_id = $(this).find('[name="employee_id[]"]').val();
+        var employee = $(this).find('[name="employee_id[]"] option:selected').text();
+
+        var priority = $(this).find('[name="priority[]"]').val();
+
+        var start = $(this).find('[name="start_date[]"]').val();
+
+        var end = $(this).find('[name="end_date[]"]').val();
+
+        var status = $(this).find('[name="status[]"]').val();
+
+        var description = $(this).find('[name="task_description[]"]').val();
+
+        if (task == '')
+            return true;
+
+        var html = '';
+
+        html += '<td></td>';
+
+        html += '<td>' + category + '</td>';
+
+        html += '<td>' + task + '</td>';
+
+        html += '<td>' + milestone + '</td>';
+
+        html += '<td>' + employee + '</td>';
+
+        html += '<td>' + priority + '</td>';
+
+        html += '<td>' + start + '</td>';
+
+        html += '<td>' + end + '</td>';
+
+        html += '<td>' + status + '</td>';
+
+        html += '<td>';
+
+        html += '<button type="button" class="btn btn-warning btn-xs editTask"><i class="fa fa-pencil"></i></button> ';
+
+        html += '<button type="button" class="btn btn-danger btn-xs removeTask"><i class="fa fa-trash"></i></button>';
+
+        html += '<input type="hidden" class="task_id" value="' + task_id + '">';
+
+        html += '<input type="hidden" class="category_id" value="' + category_id + '">';
+
+        html += '<input type="hidden" class="milestone_id" value="' + milestone_id + '">';
+
+        html += '<input type="hidden" class="designation_id" value="' + designation_id + '">';
+
+        html += '<input type="hidden" class="employee_id" value="' + employee_id + '">';
+
+        html += '<input type="hidden" class="task_description" value="' + $('<div>').text(description).html() + '">';
+
+        html += '</td>';
+
+        if (editingRow != null) {
+
+            editingRow.html(html);
+
+            editingRow = null;
+
+        } else {
+           
+            $('#taskTable tbody').append('<tr>' + html + '</tr>');
+
+        }
+
+    });
+
+    $('#popupTaskTable tbody').empty();
+
+    rebuildTaskSlNo();
+
+    rebuildHiddenInputs();
+
+    $('#taskModal').modal('hide');
+
+});
+function rebuildTaskSlNo() {
+
+    $('#taskTable tbody tr').each(function (i) {
+
+        $(this).find('td:first').text(i + 1);
+
+    });
+
+}
+function rebuildHiddenInputs() {
+
+    $('#hiddenTaskInputs').empty();
+
+    $('#taskTable tbody tr').each(function () {
+
+        $('#hiddenTaskInputs').append(
+
+            '<input type="hidden" name="task_id[]" value="' + $(this).find('.task_id').val() + '">' +
+
+            '<input type="hidden" name="task_category[]" value="' + $(this).find('.category_id').val() + '">' +
+
+            '<input type="hidden" name="task_name[]" value="' + $('<div>').text($(this).children('td:eq(2)').text().trim()).html() + '">' +
+
+            '<input type="hidden" name="milestone[]" value="' + $(this).find('.milestone_id').val() + '">' +
+
+            '<input type="hidden" name="designation_id[]" value="' + $(this).find('.designation_id').val() + '">' +
+
+            '<input type="hidden" name="employee_id[]" value="' + $(this).find('.employee_id').val() + '">' +
+
+            '<input type="hidden" name="priority[]" value="' + $(this).children('td:eq(5)').text().trim() + '">' +
+
+            '<input type="hidden" name="start_date[]" value="' + $(this).children('td:eq(6)').text().trim() + '">' +
+
+            '<input type="hidden" name="end_date[]" value="' + $(this).children('td:eq(7)').text().trim() + '">' +
+
+            '<input type="hidden" name="status[]" value="' + $(this).children('td:eq(8)').text().trim() + '">' +
+
+            '<input type="hidden" name="task_description[]" value="' + $('<div>').text($(this).find('.task_description').val()).html() + '">'
+
+        );
+
+    });
+
+}
+//task
 </script>
 

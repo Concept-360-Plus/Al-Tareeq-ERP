@@ -1,6 +1,13 @@
+<link href="<?php echo base_url()."public/assets/task.css"; ?>" rel="stylesheet"/>
+  
 <div class="row">
 <div class="col-md-12">
 <div class="x_panel">
+    <?php if ($this->session->flashdata('success')): ?>
+    <div class="alert alert-success">
+        <?= $this->session->flashdata('success') ?>
+    </div>
+    <?php endif; ?>
         <table id="datatable" class="table table-striped" data-toggle="data-table">
             <thead>
                 <tr>
@@ -53,7 +60,7 @@
                             
                             <a href="<?php echo base_url() . 'index.php/Project/edit_work_order/' . $row->work_id; ?>"
                                 title="Edit" class="btn btn-primary btn-sm"><?php //echo $this->session->userdata('edit_icon'); ?> Edit</a>
-                            <a href="<?php echo base_url() . 'index.php/Project/delete_work_order/' . $row->work_id; ?>"
+                            <a  onclick="return confirm('Are you sure you want to delete this work order?');" href="<?php echo base_url() . 'index.php/Project/delete_work_order/' . $row->work_id; ?>"
                                 title="Delete" class="btn btn-danger btn-sm" onclick="return confirmcancel(<?php echo $row->work_id; ?>);"><?php //echo $this->session->userdata('delete_icon'); ?>Delete</a>
                             <!--<a class="btn btn-primary btn-sm" href="<?php echo base_url() . 'index.php/Project/print_work_order/' . $row->work_id; ?>"
                                 title="Print" target="_blank"><i class="fa fa-print" style="font-size:18px"></i></a>-->
@@ -83,7 +90,7 @@
         var r = confirm("Are you sure you want to Delete Record?");
         if (r == true) {
             $.ajax({
-                url: "<?php echo base_url() ?>index.php/Ajax/delete_record",
+                url:                              
                 type: "POST",
                 data: {
                     table_name: 'project_work_order',

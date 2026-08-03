@@ -59,6 +59,10 @@ class Project extends CI_Controller
         $eq_id = $this->input->get('eq_id');
         $data['selected_eq_id'] = $eq_id ?? null;
 
+        $data['task_categories']  =   $this->Project_model->get_tasks();
+        $data['milestones']  =   $this->Project_model->get_milestones();
+        $data['designation_list'] = $this->Project_model->get_designations();
+        //$data['quotation'] = $this->Project_model->getQuotationByEnquiry($enq_id);
         $data['enquires']   = $this->Project_model->get_enquiries();
         $data['quotations'] = $this->Project_model->getQuotationByEnquiry();
         $data['employees']  = $this->Project_model->get_employees();
@@ -89,7 +93,11 @@ class Project extends CI_Controller
         $data['designations'] = $this->Project_model->get_designations();
         $data['users'] = $this->Project_model->get_active_users();
         $data['logged_in_user_id'] = $this->session->userdata('user_id');
-
+        $data['task_categories']  =   $this->Project_model->get_tasks();
+        $data['milestones']  =   $this->Project_model->get_milestones();
+        $data['designation_list'] = $this->Project_model->get_designations();
+        $data['project_tasks']  =   $this->Project_model->get_project_tasks($project_id);
+       
 
         if (empty($data['project'])) {
             show_404();
@@ -128,8 +136,8 @@ public function save_project()
         'project_location' => $this->input->post('project_location'),
         'customer_name'    => $this->input->post('customer_name'),
         'branch_name'      => $this->input->post('branch_name'),
-        'start_date'       => $this->input->post('start_date'),
-        'end_date'         => $this->input->post('end_date'),
+        'start_date'       => $this->input->post('start_date1'),
+        'end_date'         => $this->input->post('end_date1'),
         'duration'         => $this->input->post('duration'),
         'subtotal'         => $this->input->post('subtotal'),
         'vat_percentage'   => $this->input->post('vat_percentage'),
@@ -150,8 +158,43 @@ public function save_project()
         $this->Project_model->update_project($project_id, $projectData);
         $message = 'Project updated successfully';
     } else {
-
+        
         $project_id = $this->Project_model->insert_project($projectData);
+        //task category
+  
+            $task_category=$this->input->post('task_category');
+            $task_name=$this->input->post('task_name');
+
+            for($i=0;$i<count($task_name);$i++)
+            {
+                $this->db->insert('project_task_items',array(
+
+                    'project_id'=>$project_id,
+
+                    'task_category_id'=>$task_category[$i],
+
+                    'task_name'=>$task_name[$i],
+
+                    'milestone_id'=>$this->input->post('milestone')[$i],
+
+                    'designation_id'=>$this->input->post('designation_id')[$i],
+
+                    'employee_id'=>$this->input->post('employee_id')[$i],
+
+                    'priority'=>$this->input->post('priority')[$i],
+
+                    'start_date'=>$this->input->post('start_date')[$i],
+
+                    'end_date'=>$this->input->post('end_date')[$i],
+
+                    'status'=>$this->input->post('status')[$i],
+
+                    'task_description'=>$this->input->post('task_description')[$i]
+
+                ));
+            }
+
+        //task project
 
         $project_code = 'PRJ-' . str_pad($project_id, 6, '0', STR_PAD_LEFT);
         $this->Project_model->update_project($project_id, [
@@ -314,8 +357,8 @@ public function update_project()
         'project_location' => $this->input->post('project_location'),
         'customer_name'    => $this->input->post('customer_name'),
         'branch_name'      => $this->input->post('branch_name'),
-        'start_date'       => $this->input->post('start_date'),
-        'end_date'         => $this->input->post('end_date'),
+        'start_date'       => $this->input->post('start_date1'),
+        'end_date'         => $this->input->post('end_date1'),
         'duration'         => $this->input->post('duration'),
         'subtotal'         => $this->input->post('subtotal'),
         'vat_percentage'   => $this->input->post('vat_percentage'),
@@ -353,9 +396,81 @@ public function update_project()
     }
 
     $this->Project_model->save_project_items($project_id, $items);
+    //UPDATE TASK
+    $task_ids      = $this->input->post('task_id');
+    $category      = $this->input->post('task_category');
+    $task_name     = $this->input->post('task_name');
+    $milestone     = $this->input->post('milestone');
+    $designation   = $this->input->post('designation_id');
+    $employee      = $this->input->post('employee_id');
+    $priority      = $this->input->post('priority');
+    $start         = $this->input->post('start_date');
+    $end           = $this->input->post('end_date');
+    $status        = $this->input->post('status');
+    $description   = $this->input->post('task_description');
 
+    $submittedIds = array();
+
+    if(!empty($task_name))
+    {
+        foreach($task_name as $i=>$value)
+        {
+            if(trim($value)=='')
+                continue;
+
+            $data=array(
+
+                'project_id'        => $project_id,
+
+                'task_category_id'  => $category[$i],
+
+                'task_name'         => $task_name[$i],
+
+                'milestone_id'      => $milestone[$i],
+
+                'designation_id'    => $designation[$i],
+
+                'employee_id'       => $employee[$i],
+
+                'priority'          => $priority[$i],
+
+                'start_date'        => $start[$i],
+
+                'end_date'          => $end[$i],
+
+                'status'            => $status[$i],
+
+                'task_description'  => $description[$i]
+
+            );
+
+            if(!empty($task_ids[$i]))
+            {
+                $this->Project_model->update_project_task(
+                    $task_ids[$i],
+                    $data
+                );
+
+                $submittedIds[]=$task_ids[$i];
+            }
+            else
+            {
+                $newId=$this->Project_model->insert_project_task($data);
+
+                $submittedIds[]=$newId;
+            }
+        }
+    }
+
+    $this->Project_model->delete_removed_tasks(
+        $project_id,
+        $submittedIds
+    );
+
+
+    //UPDATE TASK
     // UPDATE TECHNICIANS WITH AVAILABILITY CHECK
-    $tech_ids    = $this->input->post('technician_id');
+    /*$tech_ids    = $this->input->post('technician_id');
     $des_ids     = $this->input->post('designation_id');
     $start_dates = $this->input->post('assignment_start');
     $end_dates   = $this->input->post('assignment_end');
@@ -392,7 +507,7 @@ public function update_project()
     }
 
     $this->Project_model->save_project_technicians($project_id, $techs);
-
+    */
     $this->db->trans_complete(); // 🔐 End transaction
 
     if ($this->db->trans_status() === FALSE) {
@@ -1178,8 +1293,8 @@ public function delete_progress_log()
             'project_location' => $this->input->post('project_location'),
             'customer_name'    => $this->input->post('customer_name'),
             'branch_name'      => $this->input->post('branch_name'),
-            'start_date'       => $this->input->post('start_date'),
-            'end_date'         => $this->input->post('end_date'),
+            'start_date'       => $this->input->post('start_date1'),
+            'end_date'         => $this->input->post('end_date1'),
             'duration'         => $this->input->post('duration'),
             'subtotal'         => $this->input->post('subtotal'),
             'vat_percentage'   => $this->input->post('vat_percentage'),
@@ -1219,7 +1334,7 @@ public function delete_progress_log()
         $this->Project_model->save_project_items($project_id, $items);
 
         // UPDATE TECHNICIANS WITH AVAILABILITY CHECK
-        $tech_ids    = $this->input->post('technician_id');
+        /*$tech_ids    = $this->input->post('technician_id');
         $des_ids     = $this->input->post('designation_id');
         $start_dates = $this->input->post('assignment_start');
         $end_dates   = $this->input->post('assignment_end');
@@ -1256,7 +1371,7 @@ public function delete_progress_log()
         }
 
         $this->Project_model->save_project_technicians($project_id, $techs);
-
+        */
         $this->db->trans_complete(); // 🔐 End transaction
 
         if ($this->db->trans_status() === FALSE) {
@@ -1300,6 +1415,8 @@ public function delete_progress_log()
         $data['designation_list'] = $this->Project_model->get_designations();
         $data['employees']        = $this->Project_model->get_employees();
        // $data['users']            = $this->Project_model->get_users();
+       $data['project_tasks']=$this->Project_model->get_project_tasks($project_id);
+
 
         $this->load->view('project/edit_task', $data);
          $data['main_content'] = 'project/edit_task';
@@ -2074,6 +2191,21 @@ public function delete_progress_log()
         $this->load->view('includes/template', $data);
     }
     */
+    function update_work_order()
+	{
+		$data['title'] = "Update Work Order Details";
+		$id = $this->input->post('work_id');
+
+		$this->load->model('Project_model');
+		$res = $this->Project_model->update_work_order_details($id);
+		if ($res) {
+			$this->session->set_flashdata('success', 'Record Successfully Updated');
+			redirect('Project/view_work_order_list');
+		}else{
+            $this->session->set_flashdata('error', 'Some error occured');
+			redirect('Project/view_work_order_list');
+        }
+	}
        
     //Project dashboard
     public function project_dashboard($project_id)
@@ -2156,11 +2288,27 @@ public function delete_progress_log()
 		$data['attachment'] = $this->Project_model->get_attachment_records($id);
 		$data['file_records'] = $this->Project_model->get_employee_document_doc_id($id);
 		$data['records2'] = $this->Project_model->get_project_wo_trans($id);
-		// print_r($data['records2']);
+	    //echo "<pre>";print_r($data['records2']);
+        $data['id'] = $id;
 		$data['records3'] = $this->Project_model->get_project_wo_trans1($id);
-		$data['main_content'] = 'project/work_order_edit.php';
+        $data['main_content'] = 'project/work_order_edit.php';
 		$this->load->view('includes/template', $data);
 	}
+
+    function approve_work_order()
+	{
+		$data['title'] = 'Approve Work Order';
+		$work_id = $this->input->post('work_id');
+
+
+
+		$this->load->model('Project_model');
+		$this->Project_model->approve_work_order($work_id);
+
+		$this->session->set_flashdata('success', 'Record Approved Successfully..');
+		redirect('Project/view_work_order_list');
+	}
+
     /***
      * Outsourcing
      */
@@ -2357,8 +2505,41 @@ public function delete_progress_log()
         $this->load->view('includes/template', $data);
        
     }
+    public function get_employee_by_designation()
+    {
+        $designation_id = $this->input->post('designation_id');
 
+        $employees = $this->Project_model
+                        ->get_employee_by_designation($designation_id);
 
+        echo json_encode($employees);
+    }
+    public function delete_product_route()
+    {
+        $id = $this->input->post('id');
+        $query = $this->db->query('SELECT work_extra_id,attachment_one FROM project_work_order_extra_details WHERE work_extra_id = ? AND wo_type = ?', array($id, 'Work Order Attachments'));
+        if($query->num_rows() > 0){
+            $res = $query->row_array();
+            $img = $res['attachment_one'];
+            if(file_exists('./public/uploded_documents/'.$img)){
+                unlink('./public/uploded_documents/'.$img);
+            }
+           
+        }
+        $this->db->where('work_extra_id', $id);
+        $result = $this->db->delete('project_work_order_extra_details');
+        echo ($result) ? 1 : 0;
+    }
+    public function print_work_order($id)
+    {
+        $data['workorder'] = $this->Project_model->get_workorder($id);
+        $data['items'] = $this->Project_model->get_workorder_items($id);
+        $data['routes'] = $this->Project_model->get_workorder_routes($id);
+        $data['plans'] = $this->Project_model->get_workorder_plans($id);
+        $data['attachments'] = $this->Project_model->get_workorder_attachments($id);
+
+        $this->load->view('project/print_work_order',$data);
+    }
     
 
 }

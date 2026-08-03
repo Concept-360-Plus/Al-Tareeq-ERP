@@ -1,8 +1,9 @@
-<div class="card-body">
-	<div class="form-group row">
-		<h7>items Details:</h7>
 
-		<table border='1' width='90%' cellpadding='0' cellspacing=0>
+	<h7>items Details:</h7>
+	<div class="form-group row">
+		
+<div style="clear:both;"></div>
+		<table border='1' width='90%' cellpadding='2' cellspacing=2 class="table table-bordered table-hover">
 			<thead>
 				<tr height="50px">
 					<td style="width: 80px;" rowspan=2>SL.NO</td>
@@ -20,6 +21,7 @@
 						<td></td>
 						<td> &nbsp;&nbsp;&nbsp;
 							<b><?php echo $r->product_desc; ?></b>
+							
 							<input type="hidden" name="desc[]" value="<?php echo $r->product_desc; ?>" />
 							<input type="hidden" name="pid[]" value="<?php echo $r->pid; ?>" />
 							<input type="hidden" name="qid[]" value="<?php echo $r->qid; ?>" />
@@ -50,7 +52,6 @@
 								<td style="width: 90px;"><input type="text" name="colour_finish[]" class="form-control form-control-sm" style="margin-right: 30px;" /></td>
 								<td style="width: 80px;"><input type="text" name="qty<?php echo $r->trans_id; ?>[]" class="form-control form-control-sm" value="<?php echo intval($tr->qty); ?>" readonly /></td>
 								<!-- <td style="width: 80px;" align='center'><input type="text" name="qty<?php echo $r->trans_id; ?>[]" class="form-control form-control-sm" value=" &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <?php echo intval($tr->qty); ?>" readonly style="border: none; background-color: transparent;" /></td> -->
-
 								<td style="width: 80px;" align='center'><?php echo $tr->unit_abbr; ?></td>
 								<input type="hidden" name="sub_details<?php echo $r->trans_id; ?>[]" value="<?php echo $tr->sub_details; ?>" />
 								<input type="hidden" name="width<?php echo $r->trans_id; ?>[]" value="<?php echo $tr->width; ?>" />
@@ -60,7 +61,8 @@
 								<input type="hidden" name="total<?php echo $r->trans_id; ?>[]" value="<?php echo $tr->total; ?>" />
 								<input type="hidden" name="item_name[]" value="<?php echo $tr->item_name; ?>" />
 								<input type="hidden" name="item_code[]" value="<?php echo $tr->item_code; ?>" />
-
+								<input type="hidden" name="product_id[]" value="<?php echo $tr->product_id; ?>" />
+								
 							</tr>
 				<?php $i++;
 						}  //end of if
@@ -82,7 +84,7 @@
 </div>
 </div>
 </div>
-</div>
+
 
 <!-- <script>
 	$(document).ready(function() {

@@ -41,7 +41,7 @@
             </div>
             <label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label" style="padding-right: 5px;"> Handed over to:</label>
             <div class="col-xs-12 col-sm-9 col-md-3 col-lg-3">
-                <select tabindex="2" class="form-select form-control select2" id="handed_over_to" name="handed_over_to" >
+                <select tabindex="2" class="form-select form-control " id="handed_over_to" name="handed_over_to" >
                     <option value="">Select</option>
                     <?php foreach ($user_records as $s) { ?>
                         <option value="<?php echo $s->user_id ?>"><?php echo $s->user_name; ?></option>
@@ -610,4 +610,13 @@
             document.getElementById("edate").value = '';
         }
     }
+    $(document).ready(function () {
+
+    $('.select2').select2({
+        placeholder: '-- Select Project --',
+        allowClear: true,
+        width: '100%'
+    });
+
+});
 </script>

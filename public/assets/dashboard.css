@@ -1,0 +1,172 @@
+.x_title{
+    clear:both;
+    padding:5px 5px 0px 5px;
+}
+.info-box{
+    display:flex;
+    min-height:95px;
+    background:#fff;
+    width:100%;
+    box-shadow:0 1px 3px rgba(0,0,0,.15);
+    border-radius:5px;
+    margin-bottom:20px;
+}
+
+.info-box-icon{
+    width:90px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:38px;
+    color:#fff;
+}
+
+.info-box-content{
+    flex:1;
+    padding:12px;
+}
+
+.info-box-text{
+    font-size:15px;
+    text-transform:uppercase;
+    color:#555;
+}
+
+.info-box-number{
+    font-size:28px;
+    font-weight:bold;
+}
+
+.bg-blue{background:#3498db;}
+.bg-green{background:#2ecc71;}
+.bg-orange{background:#f39c12;}
+.bg-red{background:#e74c3c;}
+.bg-purple{background:#9b59b6;}
+.bg-aqua{background:#00c0ef;}
+.bg-navy{background:#34495e;}
+.bg-maroon{background:#d81b60;}
+
+.x_title h2 {
+    margin: 12px 0 6px;
+}
+@media screen and (min-width: 962px) and (max-width: 1919px) {
+
+    #tbl_recent_projects_wrapper .dt-buttons,
+    #tbl_recent_workorders_wrapper .dt-buttons,
+    #tbl_recent_progress_wrapper .dt-buttons,
+    #tbl_delayed_projects_wrapper .dt-buttons,
+    #tbl_pending_outsource_wrapper .dt-buttons {
+        margin-bottom: -42px;
+    }
+
+}
+.quick-actions{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+}
+
+.qa-btn{
+
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+
+    padding:8px 14px;
+
+    border-radius:4px;
+
+    color:#fff;
+
+    text-decoration:none;
+
+    font-size:13px;
+
+    font-weight:600;
+
+    transition:.2s;
+
+    min-width:145px;
+
+}
+
+.qa-btn i{
+
+    margin-right:6px;
+
+    font-size:15px;
+
+}
+
+.qa-btn:hover{
+
+    color:#fff;
+
+    text-decoration:none;
+
+    opacity:.9;
+
+    transform:translateY(-2px);
+
+}
+
+/* Colors */
+
+.qa-primary{background:#337ab7;}
+.qa-success{background:#26B99A;}
+.qa-warning{background:#f39c12;}
+.qa-purple{background:#9b59b6;}
+.qa-info{background:#00c0ef;}
+.qa-dark{background:#34495e;}
+
+#goTop{
+
+    position:fixed;
+
+    right:15px;
+
+    bottom:15px;
+
+    width:32px;
+
+    height:32px;
+
+    line-height:32px;
+
+    text-align:center;
+
+    border-radius:50%;
+
+    background:#2A3F54;
+
+    color:#fff;
+
+    display:none;
+
+    cursor:pointer;
+
+    z-index:9999;
+
+    font-size:14px;
+
+    box-shadow:0 2px 5px rgba(0,0,0,.25);
+
+    transition:all .25s ease;
+
+}
+
+#goTop:hover{
+
+    background:#26B99A;
+
+    color:#fff;
+
+    transform:scale(1.08);
+
+}
+
+#goTop i{
+
+    line-height:32px;
+
+}
