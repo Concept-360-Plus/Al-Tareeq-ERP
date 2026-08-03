@@ -17,6 +17,7 @@ class Project_attendance extends CI_Controller
     | Attendance Dashboard
     |--------------------------------------------------------------------------
     */
+    
 
     public function index()
     {
