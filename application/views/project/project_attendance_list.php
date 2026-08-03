@@ -1,4 +1,7 @@
-<div class="right_col" role="main">
+<div class="row">
+<div class="col-md-12">
+<div class="x_panel">
+
 
 <div class="page-title">
 
@@ -134,9 +137,7 @@ value="<?= date('Y-m-d')?>"
 
 <table
 
-id="datatable-responsive"
-
-class="table table-striped table-bordered">
+id="datatable-responsive1" class="table table-striped table-bordered">
 
 <thead>
 
@@ -385,13 +386,24 @@ Completed
 
 </div>
 
+</div></div>
+
 </div>
+<link rel="stylesheet" href="<?= base_url('public/assets/datatables/datatables.min.css'); ?>">
+<link rel="stylesheet" href="<?= base_url('public/assets/datatables/buttons.dataTables.min.css'); ?>">
+
+<script src="<?= base_url('public/assets/datatables/jquery.dataTables.min.js'); ?>"></script>
+<script src="<?= base_url('public/assets/datatables/dataTables.bootstrap.min.js'); ?>"></script>
+
+<script src="<?= base_url('public/assets/datatables/dataTables.buttons.min.js'); ?>"></script>
+<script src="<?= base_url('public/assets/datatables/buttons.html5.min.js'); ?>"></script>
+<script src="<?= base_url('public/assets/datatables/buttons.print.min.js'); ?>"></script>
 
 <script>
 
 $(document).ready(function(){
 
-    $('#datatable-responsive').DataTable({
+    $('#datatable-responsive1').DataTable({
 
         pageLength:25,
 

@@ -22,12 +22,10 @@ class Project_attendance extends CI_Controller
     {
 
         $data['title']="Project Employee Attendance";
-
-        $data['attendance_list']
-            =$this->attendance->get_today_task_employees();
-
-        $this->load->view('project/project_attendance_list',$data);
-
+        $data['attendance_list'] =$this->attendance->get_today_task_employees();
+        $data['main_content'] = 'project/project_attendance_list.php';
+        $this->load->view('includes/template', $data);
+        
     }
 
     /*
