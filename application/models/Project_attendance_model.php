@@ -264,48 +264,70 @@ class Project_attendance_model extends CI_Model
     |--------------------------------------------------------------------------
     */
 
-    public function attendance_report()
+    public function attendance_report($filter = array())
     {
+        $this->db->select("
+            pta.*,
+            pm.project_code,
+            pm.project_name,
+            em.employee_name,
+            dm.designation_name,
+            pti.task_name
+        ");
 
+        $this->db->from('project_task_attendance pta');
+
+        $this->db->join('project_master pm','pm.project_id=pta.project_id');
+
+        $this->db->join('employee_master em','em.employee_id=pta.employee_id');
+
+        $this->db->join('designation_master dm','dm.id=em.designation_id','left');
+
+        $this->db->join('project_task_items pti','pti.id=pta.task_item_id','left');
+
+        if(!empty($filter['project_id']))
+            $this->db->where('pta.project_id',$filter['project_id']);
+
+        if(!empty($filter['employee_id']))
+            $this->db->where('pta.employee_id',$filter['employee_id']);
+
+        if(!empty($filter['status']))
+            $this->db->where('pta.attendance_status',$filter['status']);
+
+        if(!empty($filter['from_date']))
+            $this->db->where('pta.attendance_date >=',$filter['from_date']);
+
+        if(!empty($filter['to_date']))
+            $this->db->where('pta.attendance_date <=',$filter['to_date']);
+
+        $this->db->order_by('pta.attendance_date','DESC');
+
+        return $this->db->get()->result();
+    }
+
+    public function get_projects()
+    {
         return $this->db
-
-            ->select('
-
-                pta.*,
-
-                pm.project_code,
-
-                pm.project_name,
-
-                em.employee_name,
-
-                dm.designation_name,
-
-                pti.task_name
-
-            ')
-
-            ->from('project_task_attendance pta')
-
-            ->join('project_master pm',
-                'pm.project_id=pta.project_id')
-
-            ->join('employee_master em',
-                'em.employee_id=pta.employee_id')
-
-            ->join('project_task_items pti',
-                'pti.id=pta.task_item_id')
-
-            ->join('designation_master dm',
-                'dm.id=pti.designation_id',
-                'left')
-
-            ->order_by('attendance_date','DESC')
-
+            ->select('project_id, project_code, project_name')
+            ->from('project_master')
+            ->order_by('project_name', 'ASC')
             ->get()
-
             ->result();
-
+    }
+    public function get_employees()
+    {
+        return $this->db
+            ->select('
+                em.employee_id,
+                em.employee_name,
+                dm.designation_name
+            ')
+            ->from('employee_master em')
+            ->join('designation_master dm', 'dm.id = em.designation_id', 'left')
+            ->where('em.active', 1)
+            ->order_by('em.employee_name', 'ASC')
+            ->get()
+            ->result();
     }
 
 }

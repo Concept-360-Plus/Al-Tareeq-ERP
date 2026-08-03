@@ -3,13 +3,6 @@
 <div class="x_panel">
 
 
-<div class="page-title">
-
-<div class="title_left">
-<h3>Project Employee Attendance</h3>
-</div>
-
-</div>
 
 <div class="clearfix"></div>
 <div class="x_panel">
@@ -48,7 +41,7 @@ $projects[$row->project_id]=$row->project_name;
 
 ?>
 
-<option value="<?= $row->project_name ?>">
+<option value="<?= $row->project_name ?>" data-id="<?= $row->project_id ?>">
 
 <?= $row->project_code ?> -
 <?= $row->project_name ?>
@@ -99,21 +92,7 @@ placeholder="Employee Name">
 
 </div>
 
-<div class="col-md-3">
 
-<label>Date</label>
-
-<input
-
-type="date"
-
-class="form-control"
-
-value="<?= date('Y-m-d')?>"
-
->
-
-</div>
 
 </div>
 
@@ -184,7 +163,7 @@ foreach($attendance_list as $row){
 <td><?= $i++ ?></td>
 
 <td>
-
+ <span style="display:none"><?= $row->project_id ?></span>
 <?= $row->project_code ?>
 
 <br>
@@ -448,7 +427,7 @@ $(document).ready(function(){
 
         $.ajax({
 
-            url:"<?= base_url('Project_attendance/start_attendance');?>",
+            url:"<?= base_url('index.php/Project_attendance/start_attendance');?>",
 
             type:"POST",
 
@@ -492,7 +471,7 @@ $(document).ready(function(){
 
         $.ajax({
 
-            url:"<?= base_url('Project_attendance/pause_attendance');?>",
+            url:"<?= base_url('index.php/Project_attendance/pause_attendance');?>",
 
             type:"POST",
 
@@ -534,7 +513,7 @@ $(document).ready(function(){
 
         $.ajax({
 
-            url:"<?= base_url('Project_attendance/resume_attendance');?>",
+            url:"<?= base_url('index.php/Project_attendance/resume_attendance');?>",
 
             type:"POST",
 
@@ -576,7 +555,7 @@ $(document).ready(function(){
 
         $.ajax({
 
-            url:"<?= base_url('Project_attendance/finish_attendance');?>",
+            url:"<?= base_url('index.php/Project_attendance/finish_attendance');?>",
 
             type:"POST",
 
@@ -601,6 +580,28 @@ $(document).ready(function(){
         });
 
     });
+
+});
+$('#project_filter').change(function () {
+    var projectId = $(this).find(':selected').data('id');
+    $('#datatable-responsive1').DataTable().column(1).search(projectId).draw();
+});
+$('#employee_filter').keyup(function(){
+
+    $('#datatable-responsive1')
+    .DataTable()
+    .column(2)
+    .search($(this).val())
+    .draw();
+
+});
+$('#status_filter').change(function(){
+
+    $('#datatable-responsive1')
+    .DataTable()
+    .column(6)
+    .search($(this).val())
+    .draw();
 
 });
 </script>

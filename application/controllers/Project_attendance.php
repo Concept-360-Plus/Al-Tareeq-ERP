@@ -22,10 +22,11 @@ class Project_attendance extends CI_Controller
     {
 
         $data['title']="Project Employee Attendance";
+
         $data['attendance_list'] =$this->attendance->get_today_task_employees();
-        $data['main_content'] = 'project/project_attendance_list.php';
-        $this->load->view('includes/template', $data);
-        
+        $data['main_content']       = 'project/project_attendance_list.php';
+        $this->load->view('includes/template.php', $data);
+
     }
 
     /*
@@ -128,23 +129,30 @@ class Project_attendance extends CI_Controller
     |--------------------------------------------------------------------------
     */
 
-    public function report()
+   public function report()
     {
+        $data['title'] = "Attendance Report";
 
-        $data['title']="Attendance Report";
+        // Dropdown data
+        $data['projects'] = $this->attendance->get_projects();
+        $data['employees'] = $this->attendance->get_employees();
 
-        $data['attendance']
-
-            =$this->attendance->attendance_report();
-
-        $this->load->view(
-
-            'project/project_attendance_report',
-
-            $data
-
+        // Filters
+        $filter = array(
+            'project_id'  => $this->input->get('project_id'),
+            'employee_id' => $this->input->get('employee_id'),
+            'status'      => $this->input->get('status'),
+            'from_date'   => $this->input->get('from_date'),
+            'to_date'     => $this->input->get('to_date')
         );
 
+        // Report data
+        $data['attendance'] = $this->attendance->attendance_report($filter);
+        $data['main_content']       = 'project/project_attendance_report.php';
+        $this->load->view('includes/template.php', $data);
+        
     }
+
+    
 
 }
