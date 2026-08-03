@@ -1767,16 +1767,16 @@ class Purchase_Model extends CI_Model
 	public function get_grn_items_by_id($grn_id)
 	{
 		$this->db->select("
-        gt.*,
-        im.product_code,
-        im.product_name,
-        um.unit_name,
-        (
-            SELECT COALESCE(SUM(prt.return_qty),0)
-            FROM purchase_return_transaction prt
-            WHERE prt.grn_transaction_id = gt.grn_transaction_id
-        ) AS returned_qty
-    ");
+			gt.*,
+			im.product_code,
+			im.product_name,
+			um.unit_name,
+			(
+				SELECT COALESCE(SUM(prt.return_qty),0)
+				FROM purchase_return_transaction prt
+				WHERE prt.grn_transaction_id = gt.trans_id
+			) AS returned_qty
+		");
 
 		$this->db->from('purchase_grn_transaction gt');
 		$this->db->join('item_master im', 'im.product_id=gt.product_id');
@@ -1786,7 +1786,7 @@ class Purchase_Model extends CI_Model
 
 		return $this->db->get()->result();
 	}
-	
+
 	function get_grn_tr_by_id($grn_id)
 	{
 		$query = $this->db->query("select * from purchase_grn_transaction tr left join item_master pm on tr.product_id = pm.product_id left join unit_master um on pm.unit_id = um.unit_id  where  grn_master_id=$grn_id ");
@@ -1796,14 +1796,24 @@ class Purchase_Model extends CI_Model
 	{
 		$this->db->trans_begin();
 
+		$this->load->model('Setup_model');
+
+		$prefix = 'AVE/PRN/';
+		$num = $this->Setup_model ->get_next_code($prefix,'return_code','purchase_return_master',12) + 1;
+
+		$digit = sprintf("%05d", $num);
+		$return_code = $prefix . date('y') . '/' . $digit;
+
 		$master = array(
-			'return_date' => $this->input->post('return_date'),
-			'grn_id' => $this->input->post('grn_id'),
-			'supplier_id' => $this->input->post('supplier_id'),
+			'return_code'  => $return_code,
+			'return_date'  => $this->input->post('return_date'),
+			'grn_id'       => $this->input->post('grn_id'),
+			'supplier_id'  => $this->input->post('supplier_id'),
 			'warehouse_id' => $this->input->post('warehouse_id'),
-			'store_id' => $this->input->post('store_id'),
-			'remarks' => $this->input->post('remarks'),
-			'created_by' => $this->session->userdata('user_id')
+			'store_id'     => $this->input->post('store_id'),
+			'remarks'      => $this->input->post('remarks'),
+			'created_by'   => $this->session->userdata('user_id'),
+			'created_date' => date('Y-m-d H:i:s')
 		);
 
 		$this->db->insert('purchase_return_master', $master);

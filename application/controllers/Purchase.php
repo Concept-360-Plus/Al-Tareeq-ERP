@@ -787,7 +787,7 @@ class Purchase extends CI_Controller
 
         $data['title'] = "Purchase Return";
         $data['grn_master'] = $this->Purchase_model->get_grn_master_by_id($grn_id);
-        $data['grn_items'] = $this->Purchase_Model->get_grn_items_by_id($grn_id);
+        $data['items'] = $this->Purchase_Model->get_grn_items_by_id($grn_id);
         $data['warehouse_records'] = $this->Setup_model->get_warehouse_list();
         $data['main_content'] = 'Purchase/purchase_return_item.php';
 
