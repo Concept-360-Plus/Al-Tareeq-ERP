@@ -1787,11 +1787,87 @@ class Purchase_Model extends CI_Model
 		return $this->db->get()->result();
 	}
 
+	public function get_purchase_return_list()
+	{
+		$this->db->select("
+			prm.*,
+			pgm.grn_code,
+			sm.supplier_name,
+			wm.warehouse_name,
+			stm.store_name
+		");
+
+		$this->db->from('purchase_return_master prm');
+
+		$this->db->join(
+			'purchase_grn_master pgm',
+			'pgm.grn_id=prm.grn_id'
+		);
+
+		$this->db->join(
+			'supplier_master sm',
+			'sm.supplier_id=prm.supplier_id'
+		);
+
+		$this->db->join(
+			'warehouse_master wm',
+			'wm.warehouse_id=prm.warehouse_id',
+			'left'
+		);
+
+		$this->db->join(
+			'store_master stm',
+			'stm.store_id=prm.store_id',
+			'left'
+		);
+
+		$this->db->order_by('prm.return_id', 'DESC');
+
+		return $this->db->get()->result();
+	}
+
+	public function get_purchase_return_master($id)
+	{
+		return $this->db
+			->where('return_id', $id)
+			->get('purchase_return_master')
+			->row();
+	}
+
+	public function get_purchase_return_items($id)
+	{
+		$this->db->select("
+        prt.*,
+        im.product_code,
+        im.product_name,
+        um.unit_name
+    ");
+
+		$this->db->from('purchase_return_transaction prt');
+
+		$this->db->join(
+			'item_master im',
+			'im.product_id=prt.product_id'
+		);
+
+		$this->db->join(
+			'unit_master um',
+			'um.unit_id=im.unit_id'
+		);
+
+		$this->db->where(
+			'prt.return_master_id',
+			$id
+		);
+
+		return $this->db->get()->result();
+	}
 	function get_grn_tr_by_id($grn_id)
 	{
 		$query = $this->db->query("select * from purchase_grn_transaction tr left join item_master pm on tr.product_id = pm.product_id left join unit_master um on pm.unit_id = um.unit_id  where  grn_master_id=$grn_id ");
 		return $query->result();
 	}
+
 	public function save_purchase_return()
 	{
 		$this->db->trans_begin();
@@ -1799,7 +1875,7 @@ class Purchase_Model extends CI_Model
 		$this->load->model('Setup_model');
 
 		$prefix = 'AVE/PRN/';
-		$num = $this->Setup_model ->get_next_code($prefix,'return_code','purchase_return_master',12) + 1;
+		$num = $this->Setup_model->get_next_code($prefix, 'return_code', 'purchase_return_master', 12) + 1;
 
 		$digit = sprintf("%05d", $num);
 		$return_code = $prefix . date('y') . '/' . $digit;
@@ -1837,7 +1913,7 @@ class Purchase_Model extends CI_Model
 			$this->reduce_stock(
 				$_POST['product_id'][$i],
 				$_POST['return_qty'][$i],
-				$return_id
+				$return_id, $this->input->post('warehouse_id'), $this->input->post('store_id')
 			);
 		}
 
@@ -1850,45 +1926,44 @@ class Purchase_Model extends CI_Model
 		return true;
 	}
 
-	public function reduce_stock($product_id, $qty, $return_id)
+	public function reduce_stock($product_id, $qty, $return_id, $warehouse_id, $store_id)
 	{
+
 		$rows = $this->db
 			->where('product_id', $product_id)
+			->where('warehouse_id', $warehouse_id)
+			->where('store_id', $store_id)
+			->where('stock_type', 'IN')
 			->where('balance_qty >', 0)
-			->order_by('stock_id')
+			->order_by('stock_id', 'ASC')
+			->limit($qty)
 			->get('stock_details')
 			->result();
 
 		foreach ($rows as $row) {
-			if ($qty <= 0)
-				break;
-			if ($row->balance_qty >= $qty) {
-				$this->db
-					->where('stock_id', $row->stock_id)
-					->update('stock_details', [
-						'balance_qty' => $row->balance_qty - $qty
-					]);
 
-				$this->db->insert('stock_details', [
-					'trans_id' => $return_id,
-					'stock_type' => 'OUT',
-					'warehouse_id' => $row->warehouse_id,
-					'store_id' => $row->store_id,
-					'product_id' => $product_id,
-					'quantity' => $qty,
-					'balance_qty' => 0,
-					'remark' => 'Purchase Return'
-
+			$this->db
+				->where('stock_id', $row->stock_id)
+				->update('stock_details', [
+					'balance_qty' => 0
 				]);
-				$qty = 0;
-			} else {
-				$this->db
-					->where('stock_id', $row->stock_id)
-					->update('stock_details', [
-						'balance_qty' => 0
-					]);
-				$qty -= $row->balance_qty;
-			}
+
+			$this->db->insert('stock_details', [
+				'trans_id' => $return_id,
+				'stock_date' => date('Y-m-d'),
+				'year' => date('Y'),
+				'stock_type' => 'OUT',
+				'warehouse_id' => $row->warehouse_id,
+				'store_id' => $row->store_id,
+				'product_id' => $product_id,
+				'unit_id' => $row->unit_id,
+				'quantity' => 1,
+				'balance_qty' => 0,
+				'price' => $row->price,
+				'remark' => 'Purchase Return',
+				'created_by' => $this->session->userdata('user_id'),
+				'created_date' => date('Y-m-d H:i:s')
+			]);
 		}
 	}
 

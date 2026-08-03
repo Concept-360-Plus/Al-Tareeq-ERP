@@ -778,6 +778,45 @@ class Purchase extends CI_Controller
         redirect('Purchase/purchase_grn_list');
     }
 
+    //////////// PURCHASE RETURN CODE START /////////////////
+    public function purchase_return_list()
+    {
+        $user = $this->session->userdata('user_id');
+
+        if (!has_view_access($user, 'Purchase/purchase_quotation_list')) {
+            $data['title'] = 'Access Denied';
+            $data['main_content'] = 'errors/access_control';
+            $this->load->view('includes/template', $data);
+            return;
+        }
+
+        $data['title'] = "Purchase Return List";
+        $data['purchase_returns'] = $this->Purchase_Model->get_purchase_return_list();
+        $data['main_content'] = "purchase/purchase_return_list";
+
+        $this->load->view('includes/template', $data);
+    }
+
+    public function add_purchase_return($grn_id = 0)
+    {
+        $user = $this->session->userdata('user_id');
+
+        if (!has_access($user, 'Purchase/purchase_quotation_list', 'A')) {
+            $data['title'] = 'Access Denied';
+            $data['main_content'] = 'errors/access_control';
+            $this->load->view('includes/template', $data);
+            return;
+        }
+
+        $data['title'] = "Purchase Return";
+        $data['grn_master'] = $this->Purchase_Model->get_grn_master_by_id($grn_id);
+        $data['items'] = $this->Purchase_Model->get_grn_items_by_id($grn_id);
+        $data['warehouse_records'] = $this->Setup_model->get_warehouse_list();
+        $data['main_content'] = "purchase/add_purchase_return";
+
+        $this->load->view('includes/template', $data);
+    }
+
     public function return_grn_items()
     {
         $grn_id = $this->uri->segment(3);
@@ -796,15 +835,21 @@ class Purchase extends CI_Controller
 
     public function save_purchase_return()
     {
-        $this->Purchase_model->save_purchase_return();
-
-        $this->session->set_flashdata(
-            'success',
-            'Purchase Return Saved Successfully'
-        );
+        if ($this->Purchase_Model->save_purchase_return()) {
+            $this->session->set_flashdata(
+                'success',
+                'Purchase Return Saved Successfully.'
+            );
+        } else {
+            $this->session->set_flashdata(
+                'error',
+                'Failed to Save Purchase Return.'
+            );
+        }
 
         redirect('Purchase/purchase_return_list');
     }
+    //////////// PURCHASE RETURN CODE END /////////////////
 
     function direct_po()
     {
