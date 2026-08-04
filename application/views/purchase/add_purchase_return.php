@@ -1,54 +1,134 @@
 <div class="content-wrapper">
-    <section class="content-header">
-        <h1>
-            Purchase Return
-            <small>Create Purchase Return</small>
-        </h1>
-    </section>
-
     <section class="content">
-        <div class="box box-danger">
-            <div class="box-header with-border">
-                <h3 class="box-title">
-                    Purchase Return
-                </h3>
-            </div>
-
             <form method="post"
                 action="<?= base_url() ?>index.php/Purchase/save_purchase_return">
                 <div class="box-body">
-                    <input type="hidden"
-                        name="grn_id"
-                        value="<?= $grn_master[0]->grn_id; ?>">
 
-                    <input type="hidden"
-                        name="supplier_id"
-                        value="<?= $grn_master[0]->supplier_id; ?>">
+                    <div class="row">
 
-                    <input type="hidden"
-                        name="warehouse_id"
-                        value="<?= $grn_master[0]->warehouse_id; ?>">
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Return Date <span style="color:red">*</span></label>
 
-                    <input type="hidden"
-                        name="store_id"
-                        value="<?= $grn_master[0]->store_id; ?>">
+                                <input type="date"
+                                    name="return_date"
+                                    class="form-control"
+                                    value="<?= date('Y-m-d') ?>"
+                                    required>
+                            </div>
+                        </div>
 
-                    <div class="col-md-3">
-                        <label>Return Date</label>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Return No</label>
 
-                        <input type="date"
-                            name="return_date"
-                            class="form-control"
-                            value="<?= date('Y-m-d') ?>"
-                            required>
+                                <input type="text"
+                                    class="form-control"
+                                    name="return_code"
+                                    value="<?= $return_code ?>"
+                                    readonly>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Select GRN <span style="color:red">*</span></label>
+
+                                <select
+                                    class="form-control select2"
+                                    id="grn_id"
+                                    name="grn_id"
+                                    required>
+
+                                    <option value="">Select GRN</option>
+
+                                    <?php foreach ($grn_list as $row) { ?>
+
+                                        <option value="<?= $row->grn_id ?>">
+
+                                            <?= $row->grn_code ?>
+
+                                            -
+
+                                            <?= $row->supplier_name ?>
+
+                                        </option>
+
+                                    <?php } ?>
+
+                                </select>
+                            </div>
+                        </div>
+
                     </div>
 
-                    <div class="col-md-3">
-                        <label>Return No</label>
-                        <input type="text"
-                            class="form-control"
-                            readonly
-                            value="<?= $return_code; ?>">
+
+                    <div class="row">
+
+                        <div class="col-md-3">
+                            <div class="form-group">
+
+                                <label>GRN Date</label>
+
+                                <input
+                                    type="text"
+                                    id="grn_date"
+                                    class="form-control"
+                                    readonly>
+
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+
+                            <div class="form-group">
+
+                                <label>Supplier</label>
+
+                                <input
+                                    type="text"
+                                    id="supplier_name"
+                                    class="form-control"
+                                    readonly>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="col-md-3">
+
+                            <div class="form-group">
+
+                                <label>Warehouse</label>
+
+                                <input
+                                    type="text"
+                                    id="warehouse_name"
+                                    class="form-control"
+                                    readonly>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="col-md-3">
+
+                            <div class="form-group">
+
+                                <label>Store</label>
+
+                                <input
+                                    type="text"
+                                    id="store_name"
+                                    class="form-control"
+                                    readonly>
+
+                            </div>
+
+                        </div>
+
                     </div>
 
                     <div class="row">
@@ -57,51 +137,19 @@
 
                             <input
                                 type="text"
+                                id="grn_code"
                                 class="form-control"
-                                readonly
-                                value="<?= $grn_master[0]->grn_code; ?>">
+                                readonly>
                         </div>
 
-                        <div class="col-md-3">
-                            <label>Date</label>
-                            <input
-                                type="text"
-                                class="form-control"
-                                readonly
-                                value="<?= date('d-m-Y'); ?>">
-                        </div>
-
-                        <div class="col-md-3">
-                            <label>Warehouse</label>
-                            <input
-                                type="text"
-                                class="form-control"
-                                readonly
-                                value="<?= $grn_master[0]->warehouse_name; ?>">
-                        </div>
-
-                        <div class="col-md-3">
-                            <label>Store</label>
-                            <input
-                                type="text"
-                                class="form-control"
-                                readonly
-                                value="<?= $grn_master[0]->store_name; ?>">
-                        </div>
                     </div>
 
                     <br>
 
-                    <div class="row">
-                        <div class="col-md-6">
-                            <label>Supplier</label>
-                            <input
-                                type="text"
-                                class="form-control"
-                                readonly
-                                value="<?= $grn_master[0]->supplier_name; ?>">
-                        </div>
-                    </div>
+
+                    <input type="hidden" name="supplier_id" id="supplier_id">
+                    <input type="hidden" name="warehouse_id" id="warehouse_id">
+                    <input type="hidden" name="store_id" id="store_id">
 
                     <br>
 
@@ -116,80 +164,112 @@
                             </tr>
                         </thead>
 
-                        <tbody>
-                            <?php foreach ($items as $row) { ?>
-                                <?php
-                                $balance = $row->rec_quantity - $row->returned_qty;
-                                ?>
-                                <tr>
-                                    <td>
-                                        <?= $row->product_code; ?> -
-                                        <?= $row->product_name; ?>
-                                    </td>
+                        <tbody id="grn_items">
 
-                                    <td align="center">
-                                        <?= $row->rec_quantity; ?>
-                                    </td>
-
-                                    <td align="center">
-                                        <?= $row->returned_qty; ?>
-                                    </td>
-
-                                    <td align="center">
-                                        <b><?= $balance; ?></b>
-                                    </td>
-
-                                    <td>
-                                        <input
-                                            type="number"
-                                            class="form-control return_qty"
-                                            name="return_qty[]"
-                                            value="0"
-                                            min="0"
-                                            max="<?= $balance; ?>">
-
-                                        <input
-                                            type="hidden"
-                                            name="grn_transaction_id[]"
-                                            value="<?= $row->trans_id; ?>">
-
-                                        <input
-                                            type="hidden"
-                                            name="product_id[]"
-                                            value="<?= $row->product_id; ?>">
-                                    </td>
-                                </tr>
-                            <?php } ?>
                         </tbody>
                     </table>
 
                     <div class="row">
+
                         <div class="col-md-12">
-                            <label>Return Reason</label>
-                            <textarea
-                                class="form-control"
-                                rows="4"
-                                name="remarks"
-                                placeholder="Enter Return Reason"></textarea>
+
+                            <div class="form-group">
+
+                                <label>Remarks</label>
+
+                                <textarea
+                                    class="form-control"
+                                    rows="4"
+                                    name="remarks"></textarea>
+
+                            </div>
+
                         </div>
+
                     </div>
                 </div>
 
-                <div class="box-footer text-center">
+                <div class="box-footer">
+
                     <button
                         type="submit"
-                        class="btn btn-danger">
-                        <i class="fa fa-undo"></i>
-                        Return Items
+                        class="btn btn-success">
+
+                        <i class="fa fa-save"></i>
+
+                        Save Purchase Return
+
                     </button>
 
                     <a
                         href="<?= base_url() ?>index.php/Purchase/purchase_return_list"
                         class="btn btn-default">
+
                         Cancel
+
                     </a>
+
                 </div>
             </form>
-        </div>
     </section>
 </div>
+
+<script>
+    $('#grn_id').change(function() {
+        var grn_id = $(this).val();
+        if (grn_id == '')
+            return;
+        $.ajax({
+            url: "<?= base_url() ?>index.php/Ajax/ajax_get_grn_info",
+            type: "POST",
+            data: {
+                grn_id: grn_id
+            },
+            dataType: "json",
+            success: function(res) {
+                $('#grn_code').val(res.grn_code);
+                $('#grn_date').val(res.grn_date);
+                $('#supplier_name').val(res.supplier_name);
+                $('#warehouse_name').val(res.warehouse_name);
+                $('#store_name').val(res.store_name);
+                $('#supplier_id').val(res.supplier_id);
+                $('#warehouse_id').val(res.warehouse_id);
+                $('#store_id').val(res.store_id);
+
+            }
+        });
+
+
+        $.ajax({
+            url: "<?= base_url() ?>index.php/Ajax/get_grn_items_for_return",
+            type: "POST",
+            data: {
+                grn_id: grn_id
+            },
+            success: function(html) {
+                $('#grn_items').html(html);
+            }
+        });
+    });
+
+    $(document).on('keyup', '.return_qty', function() {
+        var max = parseFloat($(this).attr('max'));
+        var qty = parseFloat($(this).val());
+        if (qty > max) {
+            alert("Return quantity cannot exceed Balance Qty.");
+            $(this).val(max);
+        }
+    });
+
+    $('form').submit(function() {
+        var total = 0;
+        $('.return_qty').each(function() {
+            total += parseFloat($(this).val()) || 0;
+        });
+
+        if (total == 0) {
+            alert("Please enter at least one Return Qty.");
+            return false;
+        }
+    });
+</script>

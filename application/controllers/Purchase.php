@@ -801,17 +801,27 @@ class Purchase extends CI_Controller
     {
         $user = $this->session->userdata('user_id');
 
-        if (!has_access($user, 'Purchase/purchase_quotation_list', 'A')) {
+        if (!has_access($user, 'Purchase/purchase_return_list', 'A')) {
             $data['title'] = 'Access Denied';
             $data['main_content'] = 'errors/access_control';
             $this->load->view('includes/template', $data);
             return;
         }
 
+        $prefix = 'AVE/PRTN/';
+
+        $num = $this->Setup_model
+            ->get_next_code(
+                $prefix,
+                'return_code',
+                'purchase_return_master',
+                12
+            ) + 1;
+
+        $digit = sprintf("%05d", $num);
+        $data['return_code'] = $prefix . date('y') . '/' . $digit;
         $data['title'] = "Purchase Return";
-        $data['grn_master'] = $this->Purchase_Model->get_grn_master_by_id($grn_id);
-        $data['items'] = $this->Purchase_Model->get_grn_items_by_id($grn_id);
-        $data['warehouse_records'] = $this->Setup_model->get_warehouse_list();
+        $data['grn_list'] = $this->Purchase_Model->get_grn_list();
         $data['main_content'] = "purchase/add_purchase_return";
 
         $this->load->view('includes/template', $data);
@@ -835,19 +845,40 @@ class Purchase extends CI_Controller
 
     public function save_purchase_return()
     {
-        if ($this->Purchase_Model->save_purchase_return()) {
+        $return_id = $this->Purchase_Model->save_purchase_return();
+
+        if ($return_id) {
             $this->session->set_flashdata(
                 'success',
-                'Purchase Return Saved Successfully.'
+                'Purchase Return Created Successfully.'
             );
         } else {
             $this->session->set_flashdata(
                 'error',
-                'Failed to Save Purchase Return.'
+                'Unable to save Purchase Return.'
             );
         }
 
         redirect('Purchase/purchase_return_list');
+    }
+
+    public function print_purchase_return($return_id)
+    {
+        $this->load->model('Purchase_Model');
+        $this->load->model('Setup_model');
+
+        $data['master'] = $this->Purchase_Model->get_purchase_return_master($return_id);
+
+        if (empty($data['master'])) {
+            show_404();
+        }
+
+        $data['items'] = $this->Purchase_Model->get_purchase_return_items($return_id);
+
+        // Company Details
+        $data['company'] = $this->Setup_model->get_company_details();
+
+        $this->load->view('purchase/print/purchase_return_print', $data);
     }
     //////////// PURCHASE RETURN CODE END /////////////////
 
