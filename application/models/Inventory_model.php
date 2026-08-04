@@ -3,6 +3,228 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class Inventory_model extends CI_Model
 {
+    ///////////////////// Inventory Dashboard Code Start ///////////////////////////
+    public function get_product_count()
+    {
+        return $this->db->count_all('item_master');
+    }
+
+    public function get_material_issue_count()
+    {
+        return $this->db->count_all('material_issue');
+    }
+
+    public function get_stock_ledger_count()
+    {
+        return $this->db->count_all('stock_details');
+    }
+
+    public function get_minimum_stock_count()
+    {
+        $this->db->where('reorder_level >', 0);
+        return $this->db->count_all_results('item_master');
+    }
+
+    public function get_total_stock_in()
+    {
+        $this->db->select('COALESCE(SUM(quantity),0) total');
+        $this->db->where('stock_type', 'IN');
+
+        $row = $this->db->get('stock_details')->row();
+
+        return $row->total;
+    }
+
+    public function get_total_stock_out()
+    {
+        $this->db->select('COALESCE(SUM(quantity),0) total');
+        $this->db->where('stock_type', 'OUT');
+
+        $row = $this->db->get('stock_details')->row();
+
+        return $row->total;
+    }
+
+    public function get_reserved_stock_total()
+    {
+        $this->db->select('COALESCE(SUM(allocation),0) total');
+
+        $row = $this->db->get('stock_details')->row();
+
+        return $row->total;
+    }
+
+    public function get_available_stock()
+    {
+        $sql = "
+            SELECT
+            SUM(stock)
+            total_stock
+            FROM
+                (
+                    SELECT
+                    product_id,
+                    SUM(CASE WHEN stock_type='IN' THEN quantity ELSE -quantity END)
+                    stock
+                    FROM stock_details
+                    GROUP BY product_id
+                ) x
+
+            ";
+
+        $row = $this->db->query($sql)->row();
+
+        return $row->total_stock;
+    }
+
+    public function today_material_issue()
+    {
+        $today = date('Y-m-d');
+
+        $this->db->where('DATE(issue_date)', $today);
+
+        return $this->db->count_all_results('material_issue');
+    }
+
+    public function today_stock_in()
+    {
+        $today = date('Y-m-d');
+
+        $this->db->where('stock_type', 'IN');
+        $this->db->where('DATE(created_date)', $today);
+
+        return $this->db->count_all_results('stock_details');
+    }
+
+    public function today_stock_out()
+    {
+        $today = date('Y-m-d');
+
+        $this->db->where('stock_type', 'OUT');
+        $this->db->where('DATE(created_date)', $today);
+
+        return $this->db->count_all_results('stock_details');
+    }
+
+    public function today_stock_adjustment()
+    {
+        $today = date('Y-m-d');
+
+        $this->db->where('DATE(created_date)', $today);
+
+        return $this->db->count_all_results('stock_adjustment');
+    }
+
+    public function recent_material_issue()
+    {
+        $this->db->select('
+            mi.mi_code,
+            mi.issue_date,
+            mi.customer_name,
+            w.warehouse_name,
+            mi.status
+        ');
+
+        $this->db->from('material_issue mi');
+
+        $this->db->join(
+            'warehouse_master w',
+            'w.warehouse_id = mi.warehouse_id',
+            'left'
+        );
+
+        $this->db->order_by('mi.mi_id', 'DESC');
+
+        $this->db->limit(10);
+
+        return $this->db->get()->result();
+    }
+
+    public function recent_stock_ledger()
+    {
+        $this->db->select('
+            s.created_date,
+            i.product_code,
+            i.product_name,
+            s.stock_type,
+            s.quantity,
+            w.warehouse_name
+        ');
+
+        $this->db->from('stock_details s');
+
+        $this->db->join(
+            'item_master i',
+            'i.product_id=s.product_id',
+            'left'
+        );
+
+        $this->db->join(
+            'warehouse_master w',
+            'w.warehouse_id=s.warehouse_id',
+            'left'
+        );
+
+        $this->db->order_by('s.stock_id', 'DESC');
+
+        $this->db->limit(10);
+
+        return $this->db->get()->result();
+    }
+
+    public function low_stock_items()
+    {
+        $sql = "
+            SELECT
+                i.product_code,
+                i.product_name,
+                i.reorder_level,
+                IFNULL(stock.stock_qty,0) stock_qty
+            FROM item_master i
+            LEFT JOIN
+            (
+                SELECT
+                    product_id,
+                    SUM(CASE
+                        WHEN stock_type='IN'
+                        THEN quantity
+                        ELSE -quantity
+                    END)
+                    stock_qty
+                FROM stock_details
+                GROUP BY product_id
+            ) stock
+            ON stock.product_id=i.product_id
+            HAVING stock_qty<=reorder_level
+            ORDER BY stock_qty ASC
+            LIMIT 10
+            ";
+
+        return $this->db->query($sql)->result();
+    }
+
+    public function warehouse_summary()
+    {
+        $sql = "
+            SELECT
+                w.warehouse_name,
+                COUNT(DISTINCT s.product_id) total_items,
+                SUM(CASE
+                        WHEN s.stock_type='IN'
+                        THEN s.quantity
+                        ELSE -s.quantity
+                    END) available_stock,
+                SUM(s.allocation) reserved_stock
+            FROM warehouse_master w
+            LEFT JOIN stock_details s
+                ON s.warehouse_id=w.warehouse_id
+            GROUP BY w.warehouse_id
+            ORDER BY w.warehouse_name
+            ";
+
+        return $this->db->query($sql)->result();
+    }
+    ///////////////////// Inventory Dashboard Code End ///////////////////////////
 
     public function get_reserved_stock($product_id, $mr_id)
     {

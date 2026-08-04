@@ -8,7 +8,7 @@ class Dashboard extends CI_Controller
         $data['title'] = "Accounts Dashboard";
 
         $this->load->model('Accounts_model');
-    
+
         $data['ledger_count']       = $this->Accounts_model->get_ledger_count();
         $data['receipt_count']      = $this->Accounts_model->get_receipt_count();
         $data['payment_count']      = $this->Accounts_model->get_payment_count();
@@ -72,7 +72,31 @@ class Dashboard extends CI_Controller
 
     public function inventory_dashboard()
     {
+        $this->load->model('Inventory_model');
+
         $data['title'] = "Inventory Dashboard";
+
+        $data['product_count']          = $this->Inventory_model->get_product_count();
+        $data['material_issue_count']   = $this->Inventory_model->get_material_issue_count();
+        $data['ledger_count']           = $this->Inventory_model->get_stock_ledger_count();
+        $data['minimum_stock_count']    = $this->Inventory_model->get_minimum_stock_count();
+
+        $data['stock_in']               = $this->Inventory_model->get_total_stock_in();
+        $data['stock_out']              = $this->Inventory_model->get_total_stock_out();
+        $data['reserved_stock']         = $this->Inventory_model->get_reserved_stock_total();
+        $data['available_stock']        = $this->Inventory_model->get_available_stock();
+
+        $data['today_issue']            = $this->Inventory_model->today_material_issue();
+        $data['today_stockin']          = $this->Inventory_model->today_stock_in();
+        $data['today_stockout']         = $this->Inventory_model->today_stock_out();
+        $data['today_adjustment']       = $this->Inventory_model->today_stock_adjustment();
+
+        $data['recent_issue']           = $this->Inventory_model->recent_material_issue();
+        $data['recent_stock']           = $this->Inventory_model->recent_stock_ledger();
+
+        $data['low_stock']              = $this->Inventory_model->low_stock_items();
+
+        $data['warehouse_summary']      = $this->Inventory_model->warehouse_summary();
 
         $data['main_content'] = "dashboard/inventory_dashboard";
 

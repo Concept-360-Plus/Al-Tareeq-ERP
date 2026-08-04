@@ -1479,6 +1479,7 @@ class Purchase_Model extends CI_Model
 			/* ===== INSERT REMAINING STOCK ===== */
 			for ($s = 0; $s < $rec_qty; $s++) {
 				$this->db->insert('stock_details', [
+					'grn_id'       => $insert_id,
 					'trans_id'     => $insert_id,
 					'stock_date'   => date('Y-m-d', strtotime($this->input->post('grn_date'))),
 					'year'         => date('Y', strtotime($this->input->post('grn_date'))),
@@ -1566,6 +1567,7 @@ class Purchase_Model extends CI_Model
 		$this->db->trans_commit();
 		return $insert_id;
 	}
+
 	function add_grn_records_old()
 	{
 		$po_id = $this->input->post('po_id');
@@ -1771,16 +1773,25 @@ class Purchase_Model extends CI_Model
 			im.product_code,
 			im.product_name,
 			um.unit_name,
+
 			(
 				SELECT COALESCE(SUM(prt.return_qty),0)
 				FROM purchase_return_transaction prt
 				WHERE prt.grn_transaction_id = gt.trans_id
-			) AS returned_qty
+			) AS returned_qty,
+
+			(
+				SELECT COALESCE(SUM(sd.balance_qty),0)
+				FROM stock_details sd
+				WHERE sd.grn_id = gt.grn_master_id
+				AND sd.product_id = gt.product_id
+				AND sd.stock_type = 'IN'
+			) AS available_qty
 		");
 
 		$this->db->from('purchase_grn_transaction gt');
-		$this->db->join('item_master im', 'im.product_id=gt.product_id');
-		$this->db->join('unit_master um', 'um.unit_id=gt.unit');
+		$this->db->join('item_master im', 'im.product_id = gt.product_id');
+		$this->db->join('unit_master um', 'um.unit_id = gt.unit');
 
 		$this->db->where('gt.grn_master_id', $grn_id);
 
@@ -1789,79 +1800,75 @@ class Purchase_Model extends CI_Model
 
 	public function get_purchase_return_list()
 	{
-		$this->db->select("
-			prm.*,
-			pgm.grn_code,
-			sm.supplier_name,
-			wm.warehouse_name,
-			stm.store_name
+		$query = $this->db->query("
+			SELECT
+				prm.*,
+				pgm.grn_code,
+				sm.supplier_name,
+				wm.warehouse_name,
+				stm.store_name,
+				COALESCE(SUM(prt.return_qty),0) AS total_return_qty
+			FROM purchase_return_master prm
+			LEFT JOIN purchase_grn_master pgm
+				ON pgm.grn_id = prm.grn_id
+			LEFT JOIN supplier_master sm
+				ON sm.supplier_id = prm.supplier_id
+			LEFT JOIN warehouse_master wm
+				ON wm.warehouse_id = prm.warehouse_id
+			LEFT JOIN store_master stm
+				ON stm.store_id = prm.store_id
+			LEFT JOIN purchase_return_transaction prt
+				ON prt.return_master_id = prm.return_id
+			GROUP BY prm.return_id
+			ORDER BY prm.return_id DESC
 		");
 
-		$this->db->from('purchase_return_master prm');
-
-		$this->db->join(
-			'purchase_grn_master pgm',
-			'pgm.grn_id=prm.grn_id'
-		);
-
-		$this->db->join(
-			'supplier_master sm',
-			'sm.supplier_id=prm.supplier_id'
-		);
-
-		$this->db->join(
-			'warehouse_master wm',
-			'wm.warehouse_id=prm.warehouse_id',
-			'left'
-		);
-
-		$this->db->join(
-			'store_master stm',
-			'stm.store_id=prm.store_id',
-			'left'
-		);
-
-		$this->db->order_by('prm.return_id', 'DESC');
-
-		return $this->db->get()->result();
+		return $query->result();
 	}
 
-	public function get_purchase_return_master($id)
+	// public function get_purchase_return_master($id)
+	// {
+	// 	return $this->db
+	// 		->where('return_id', $id)
+	// 		->get('purchase_return_master')
+	// 		->row();
+	// }
+
+	public function get_purchase_return_items($return_id)
 	{
 		return $this->db
-			->where('return_id', $id)
-			->get('purchase_return_master')
-			->row();
+			->select("
+            prt.*,
+
+            pm.product_code,
+            pm.product_name,
+
+            um.unit_name
+        ")
+
+			->from('purchase_return_transaction prt')
+
+			->join(
+				'item_master pm',
+				'pm.product_id = prt.product_id',
+				'left'
+			)
+
+			->join(
+				'unit_master um',
+				'um.unit_id = prt.unit_id',
+				'left'
+			)
+
+			->where(
+				'prt.return_master_id',
+				$return_id
+			)
+
+			->get()
+			->result();
 	}
 
-	public function get_purchase_return_items($id)
-	{
-		$this->db->select("
-        prt.*,
-        im.product_code,
-        im.product_name,
-        um.unit_name
-    ");
-
-		$this->db->from('purchase_return_transaction prt');
-
-		$this->db->join(
-			'item_master im',
-			'im.product_id=prt.product_id'
-		);
-
-		$this->db->join(
-			'unit_master um',
-			'um.unit_id=im.unit_id'
-		);
-
-		$this->db->where(
-			'prt.return_master_id',
-			$id
-		);
-
-		return $this->db->get()->result();
-	}
 	function get_grn_tr_by_id($grn_id)
 	{
 		$query = $this->db->query("select * from purchase_grn_transaction tr left join item_master pm on tr.product_id = pm.product_id left join unit_master um on pm.unit_id = um.unit_id  where  grn_master_id=$grn_id ");
@@ -1872,99 +1879,150 @@ class Purchase_Model extends CI_Model
 	{
 		$this->db->trans_begin();
 
-		$this->load->model('Setup_model');
-
-		$prefix = 'AVE/PRN/';
-		$num = $this->Setup_model->get_next_code($prefix, 'return_code', 'purchase_return_master', 12) + 1;
-
-		$digit = sprintf("%05d", $num);
-		$return_code = $prefix . date('y') . '/' . $digit;
-
 		$master = array(
-			'return_code'  => $return_code,
-			'return_date'  => $this->input->post('return_date'),
-			'grn_id'       => $this->input->post('grn_id'),
-			'supplier_id'  => $this->input->post('supplier_id'),
+			'return_code' => $this->input->post('return_code'),
+			'return_date' => $this->input->post('return_date'),
+			'grn_id' => $this->input->post('grn_id'),
+			'supplier_id' => $this->input->post('supplier_id'),
 			'warehouse_id' => $this->input->post('warehouse_id'),
-			'store_id'     => $this->input->post('store_id'),
-			'remarks'      => $this->input->post('remarks'),
-			'created_by'   => $this->session->userdata('user_id'),
+			'store_id' => $this->input->post('store_id'),
+			'remarks' => $this->input->post('remarks'),
+			'created_by' => $this->session->userdata('user_id'),
 			'created_date' => date('Y-m-d H:i:s')
 		);
 
-		$this->db->insert('purchase_return_master', $master);
-		$return_id = $this->db->insert_id();
+		$this->db->insert(
+			'purchase_return_master',
+			$master
+		);
 
-		for ($i = 0; $i < count($_POST['product_id']); $i++) {
-			if ($_POST['return_qty'][$i] <= 0)
+		$return_id = $this->db->insert_id();
+		$product_id = $this->input->post('product_id');
+		$grn_transaction_id = $this->input->post('grn_transaction_id');
+		$return_qty = $this->input->post('return_qty');
+
+		foreach ($product_id as $i => $pid) {
+			if ($return_qty[$i] <= 0)
 				continue;
-			$tr = array(
+			$detail = array(
 				'return_master_id' => $return_id,
-				'grn_transaction_id' => $_POST['grn_transaction_id'][$i],
-				'product_id' => $_POST['product_id'][$i],
-				'return_qty' => $_POST['return_qty'][$i]
+				'grn_transaction_id' => $grn_transaction_id[$i],
+				'product_id' => $pid,
+				'return_qty' => $return_qty[$i]
 			);
 
 			$this->db->insert(
 				'purchase_return_transaction',
-				$tr
+				$detail
 			);
 
 			$this->reduce_stock(
-				$_POST['product_id'][$i],
-				$_POST['return_qty'][$i],
-				$return_id, $this->input->post('warehouse_id'), $this->input->post('store_id')
+				$pid,
+				$return_qty[$i],
+				$return_id,
+				$this->input->post('warehouse_id'),
+				$this->input->post('store_id')
 			);
 		}
 
 		if ($this->db->trans_status() == FALSE) {
 			$this->db->trans_rollback();
-			return false;
+			return FALSE;
 		}
 
 		$this->db->trans_commit();
-		return true;
+
+		return $return_id;
 	}
 
 	public function reduce_stock($product_id, $qty, $return_id, $warehouse_id, $store_id)
 	{
+		$remaining = $qty;
 
-		$rows = $this->db
+		$stocks = $this->db
 			->where('product_id', $product_id)
 			->where('warehouse_id', $warehouse_id)
 			->where('store_id', $store_id)
 			->where('stock_type', 'IN')
 			->where('balance_qty >', 0)
-			->order_by('stock_id', 'ASC')
-			->limit($qty)
+			->order_by('stock_id', 'ASC')      // FIFO
 			->get('stock_details')
 			->result();
 
-		foreach ($rows as $row) {
+		foreach ($stocks as $stock) {
 
+			if ($remaining <= 0)
+				break;
+
+			// Quantity to deduct from this stock layer
+			$deduct = min($remaining, $stock->balance_qty);
+
+			// Update remaining balance
 			$this->db
-				->where('stock_id', $row->stock_id)
+				->where('stock_id', $stock->stock_id)
 				->update('stock_details', [
-					'balance_qty' => 0
+					'balance_qty' => $stock->balance_qty - $deduct
 				]);
 
+			// Insert OUT stock transaction
 			$this->db->insert('stock_details', [
-				'trans_id' => $return_id,
-				'stock_date' => date('Y-m-d'),
-				'year' => date('Y'),
-				'stock_type' => 'OUT',
-				'warehouse_id' => $row->warehouse_id,
-				'store_id' => $row->store_id,
-				'product_id' => $product_id,
-				'unit_id' => $row->unit_id,
-				'quantity' => 1,
-				'balance_qty' => 0,
-				'price' => $row->price,
-				'remark' => 'Purchase Return',
-				'created_by' => $this->session->userdata('user_id'),
-				'created_date' => date('Y-m-d H:i:s')
+				'grn_id'            => $stock->grn_id,
+				'warehouse_id'      => $warehouse_id,
+				'store_id'          => $store_id,
+				'stock_type'        => 'OUT',
+				'trans_id'          => $return_id,
+				'stock_date'        => date('Y-m-d'),
+				'year'              => date('Y'),
+				'product_id'        => $product_id,
+				'unit_id'           => $stock->unit_id,
+				'quantity'          => $deduct,
+				'balance_qty'       => 0,
+				'price'             => $stock->price,
+				'stock_value'       => $deduct * $stock->price,
+				'item_desc'         => $stock->item_desc,
+				'packing'           => $stock->packing,
+				'storage_location'  => $stock->storage_location,
+				'expirydate'        => $stock->expirydate,
+				'remark'            => 'Purchase Return',
+				'created_by'        => $this->session->userdata('user_id'),
+				'created_date'      => date('Y-m-d H:i:s')
 			]);
+
+			$remaining -= $deduct;
 		}
+
+		if ($remaining > 0) {
+			log_message(
+				'error',
+				'Purchase Return : Not enough stock. Product ID : ' . $product_id
+			);
+			return false;
+		}
+
+		return true;
+	}
+
+	public function get_purchase_return_master($return_id)
+	{
+		return $this->db
+			->select('
+            prm.*,
+            pgm.grn_code,
+            sm.supplier_name,
+			sm.billing_address,
+            sm.contact_number,
+            sm.supplier_email,
+            wm.warehouse_name,
+            stm.store_name
+        ')
+			->from('purchase_return_master prm')
+			->join('purchase_grn_master pgm', 'pgm.grn_id=prm.grn_id')
+			->join('supplier_master sm', 'sm.supplier_id=prm.supplier_id')
+			->join('warehouse_master wm', 'wm.warehouse_id=prm.warehouse_id')
+			->join('store_master stm', 'stm.store_id=prm.store_id')
+			->where('prm.return_id', $return_id)
+			->get()
+			->row();
 	}
 
 	function delete_grn($grn_id)

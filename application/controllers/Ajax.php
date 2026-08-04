@@ -373,6 +373,38 @@ class Ajax extends CI_Controller
         $data['records2']               = $this->Purchase_Model->get_po_tr_by_id($po_id);
         $this->load->view('ajax/purchase_po_items_for_grn', $data);
     }
+
+    public function ajax_get_grn_info()
+    {
+        $grn_id = $this->input->post('grn_id');
+        $this->load->model('Purchase_Model');
+        $records = $this->Purchase_Model->get_grn_master_by_id($grn_id);
+        foreach ($records as $row) {
+            $value = array(
+                'supplier_id' => $row->supplier_id,
+                'supplier_name' => $row->supplier_name,
+                'warehouse_id' => $row->warehouse_id,
+                'warehouse_name' => $row->warehouse_name,
+                'store_id' => $row->store_id,
+                'store_name' => $row->store_name,
+                'grn_date' => $row->grn_date,
+                'grn_code' => $row->grn_code
+            );
+        }
+        echo json_encode($value);
+    }
+
+    public function get_grn_items_for_return()
+    {
+        $grn_id = $this->input->post('grn_id');
+        $this->load->model('Purchase_Model');
+        $data['items'] = $this->Purchase_Model->get_grn_items_by_id($grn_id);
+        $this->load->view(
+            'ajax/grn_items_for_purchase_return',
+            $data
+        );
+    }
+
     function add_new_customer()
     {
         $this->load->model('Company_model');
