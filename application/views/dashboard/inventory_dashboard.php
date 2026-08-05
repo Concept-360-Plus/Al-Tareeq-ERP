@@ -331,7 +331,7 @@
                         <?php foreach ($recent_stock as $row) { ?>
                             <tr>
                                 <td>
-                                    <?= date('d-m-Y', strtotime($row->timestamp)); ?>
+                                    <?= date('d-m-Y', strtotime($row->created_date)); ?>
                                 </td>
 
                                 <td>
@@ -523,7 +523,7 @@
                 Stock Inventory Report
             </a>
 
-            <a href="<?= base_url() ?>index.php/Reports/item_wise_stock_ledger"
+            <a href="<?= base_url() ?>index.php/Inventory/stock_ledger"
                 class="quick-btn">
                 <i class="fa fa-book"></i>
                 Stock Ledger
