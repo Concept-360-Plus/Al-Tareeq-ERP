@@ -530,6 +530,39 @@ class Inventory_model extends CI_Model
         return $this->db->get_where('material_issue_items', ['mi_id' => $mi_id])->result_array();
     }
 
+    public function delete_material_issue($mi_id)
+    {
+        $this->db->trans_begin();
+
+        $stocks = $this->db
+            ->where('trans_id', $mi_id)
+            ->where('stock_type', 'OUT')
+            ->get('stock_details')
+            ->result();
+
+        foreach ($stocks as $out) {
+            if ($out->parent_stock_id != NULL) {
+                $this->db
+                    ->set('balance_qty','balance_qty + ' . $out->quantity,FALSE)
+                    ->where('stock_id',$out->parent_stock_id)
+                    ->update('stock_details');
+            }
+
+            $this->db->where('stock_id', $out->stock_id)->delete('stock_details');
+        }
+
+        $this->db->where('mi_id', $mi_id)->delete('material_issue_items');
+        $this->db->where('mi_id', $mi_id)->delete('material_issue');
+
+        if ($this->db->trans_status() == FALSE) {
+            $this->db->trans_rollback();
+            return false;
+        }
+
+        $this->db->trans_commit();
+        return true;
+    }
+
     public function get_stock_ledger()
     {
         $this->db->select("

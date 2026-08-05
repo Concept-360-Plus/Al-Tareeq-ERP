@@ -447,6 +447,39 @@ class Inventory extends CI_Controller
         }
     }
 
+    // public function delete_material_issue($mi_id = null)
+    // {
+    //     if (!$mi_id) {
+    //         $this->session->set_flashdata('error', 'Invalid Material Issue ID.');
+    //         redirect('Inventory/list_material_issue');
+    //     }
+
+    //     $this->db->trans_start();
+
+    //     // Optionally: revert allocated stock before deleting items
+    //     $items = $this->db->get_where('material_issue_items', ['mi_id' => $mi_id])->result();
+    //     foreach ($items as $item) {
+    //         // Revert stock (if you track stock allocations)
+    //         // $this->Inventory_model->revert_stock($item->product_id, $item->issued_qty, $this->db->get_where('material_issue', ['mi_id'=>$mi_id])->row()->mr_id);
+    //     }
+
+    //     // Delete child items
+    //     $this->db->where('mi_id', $mi_id)->delete('material_issue_items');
+
+    //     // Delete master MI record
+    //     $this->db->where('mi_id', $mi_id)->delete('material_issue');
+
+    //     $this->db->trans_complete();
+
+    //     if ($this->db->trans_status() === FALSE) {
+    //         $this->session->set_flashdata('error', 'Failed to delete Material Issue.');
+    //     } else {
+    //         $this->session->set_flashdata('success', 'Material Issue deleted successfully.');
+    //     }
+
+    //     redirect('Inventory/list_material_issue');
+    // }
+
     public function delete_material_issue($mi_id = null)
     {
         if (!$mi_id) {
@@ -454,27 +487,18 @@ class Inventory extends CI_Controller
             redirect('Inventory/list_material_issue');
         }
 
-        $this->db->trans_start();
+        $result = $this->Inventory_model->delete_material_issue($mi_id);
 
-        // Optionally: revert allocated stock before deleting items
-        $items = $this->db->get_where('material_issue_items', ['mi_id' => $mi_id])->result();
-        foreach ($items as $item) {
-            // Revert stock (if you track stock allocations)
-            // $this->Inventory_model->revert_stock($item->product_id, $item->issued_qty, $this->db->get_where('material_issue', ['mi_id'=>$mi_id])->row()->mr_id);
-        }
-
-        // Delete child items
-        $this->db->where('mi_id', $mi_id)->delete('material_issue_items');
-
-        // Delete master MI record
-        $this->db->where('mi_id', $mi_id)->delete('material_issue');
-
-        $this->db->trans_complete();
-
-        if ($this->db->trans_status() === FALSE) {
-            $this->session->set_flashdata('error', 'Failed to delete Material Issue.');
+        if ($result) {
+            $this->session->set_flashdata(
+                'success',
+                'Material Issue deleted successfully.'
+            );
         } else {
-            $this->session->set_flashdata('success', 'Material Issue deleted successfully.');
+            $this->session->set_flashdata(
+                'error',
+                'Unable to delete Material Issue.'
+            );
         }
 
         redirect('Inventory/list_material_issue');

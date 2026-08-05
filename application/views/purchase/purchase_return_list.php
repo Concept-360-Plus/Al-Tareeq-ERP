@@ -9,30 +9,21 @@
 
                 <?php if ($this->session->flashdata('success')): ?>
                     <div class="alert alert-success alert-dismissible fade in" role="alert">
-                        <button type="button" class="close" data-dismiss="alert">
-                            <span>&times;</span>
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
                         </button>
-
-                        <strong>
-                            <i class="fa fa-check-circle"></i>
-                        </strong>
-
-                        <?= $this->session->flashdata('success'); ?>
+                        <strong><i class="fa fa-check-circle"></i></strong>
+                        <?php echo $this->session->flashdata('success'); ?>
                     </div>
                 <?php endif; ?>
 
-
                 <?php if ($this->session->flashdata('error')): ?>
                     <div class="alert alert-danger alert-dismissible fade in" role="alert">
-                        <button type="button" class="close" data-dismiss="alert">
-                            <span>&times;</span>
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
                         </button>
-
-                        <strong>
-                            <i class="fa fa-exclamation-triangle"></i>
-                        </strong>
-
-                        <?= $this->session->flashdata('error'); ?>
+                        <strong><i class="fa fa-exclamation-triangle"></i></strong>
+                        <?php echo $this->session->flashdata('error'); ?>
                     </div>
                 <?php endif; ?>
 
@@ -59,8 +50,8 @@
 
                             <tbody>
                                 <?php
-                                    $i = 1;
-                                    foreach ($purchase_returns as $row) :
+                                $i = 1;
+                                foreach ($purchase_returns as $row) :
                                 ?>
                                     <tr>
                                         <td><?= $i++; ?></td>

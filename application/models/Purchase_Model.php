@@ -1966,6 +1966,7 @@ class Purchase_Model extends CI_Model
 
 			// Insert OUT stock transaction
 			$this->db->insert('stock_details', [
+				'parent_stock_id'   => $stock->stock_id,
 				'grn_id'            => $stock->grn_id,
 				'warehouse_id'      => $warehouse_id,
 				'store_id'          => $store_id,
@@ -2025,19 +2026,137 @@ class Purchase_Model extends CI_Model
 			->row();
 	}
 
-	function delete_grn($grn_id)
+	public function delete_grn($grn_id)
 	{
-		$this->db->query("delete from purchase_grn_transaction where grn_master_id='$grn_id'");
-		$this->db->query("delete from purchase_grn_master where grn_id='$grn_id'");
-		$this->db->query("delete from stock_details where trans_id='$grn_id'");
-		$this->db->query("update purchase_order_master set grn_status=0 where grn_id='$grn_id'");
-		// $user_se_id=$this->session->userdata('user_id');
-		// $page_name=explode('index.php/', $_SERVER['PHP_SELF']);
-		// $ci = get_instance();
-		// $ci->load->helper('log');
-		// $log_msg=add_log_entry($user_se_id,3,$page_name[1],'grn_master','grn_id',$grn_id);
-		// return 1;
+		$this->db->trans_begin();
+
+		$returnExists = $this->db
+			->where('grn_id', $grn_id)
+			->count_all_results('purchase_return_master');
+
+		if ($returnExists > 0) {
+			$this->db->trans_rollback();
+			return [
+				'success' => false,
+				'message' => 'Cannot delete. Purchase Return already exists.'
+			];
+		}
+
+		$issueExists = $this->db
+			->where('grn_id', $grn_id)
+			->where('stock_type', 'OUT')
+			->where('remark', 'Material Issue')
+			->count_all_results('stock_details');
+
+		if ($issueExists > 0) {
+			$this->db->trans_rollback();
+			return [
+				'success' => false,
+				'message' => 'Cannot delete. Material Issue already exists.'
+			];
+		}
+
+		$stockRows = $this->db
+			->where('grn_id', $grn_id)
+			->where('stock_type', 'IN')
+			->get('stock_details')
+			->result();
+
+		foreach ($stockRows as $row) {
+			if ($row->balance_qty < $row->quantity) {
+				$this->db->trans_rollback();
+				return [
+					'success' => false,
+					'message' => 'Cannot delete. Stock has already been consumed.'
+				];
+			}
+		}
+
+
+		$grn = $this->db->where('grn_id', $grn_id)->get('purchase_grn_master')->row();
+
+		$this->db->where('grn_id', $grn_id)->delete('stock_details');
+		$this->db->where('grn_master_id', $grn_id)->delete('purchase_grn_transaction');
+		$this->db->where('grn_id', $grn_id)->delete('purchase_grn_master');
+
+		if ($grn) {
+			$this->db
+				->where('po_id', $grn->po_id)
+				->update('purchase_order_master', [
+					'grn_status' => 0,
+					'grn_id' => 0
+				]);
+		}
+
+		if ($this->db->trans_status() == FALSE) {
+			$this->db->trans_rollback();
+			return [
+				'success' => false,
+				'message' => 'Unable to delete GRN.'
+			];
+		}
+
+		$this->db->trans_commit();
+
+		return [
+			'success' => true,
+			'message' => 'GRN deleted successfully.'
+		];
 	}
+
+	public function delete_purchase_return($return_id)
+	{
+		$this->db->trans_begin();
+
+		$stocks = $this->db
+			->where('trans_id', $return_id)
+			->where('stock_type', 'OUT')
+			->where('remark', 'Purchase Return')
+			->get('stock_details')
+			->result();
+
+		foreach ($stocks as $stock) {
+			$this->db->set(
+				'balance_qty',
+				'balance_qty + ' . $stock->quantity,
+				FALSE
+			)
+				->where('stock_id', $stock->parent_stock_id)
+				->update('stock_details');
+		}
+
+		$this->db
+			->where('trans_id', $return_id)
+			->where('stock_type', 'OUT')
+			->where('remark', 'Purchase Return')
+			->delete('stock_details');
+
+		$this->db
+			->where('return_master_id', $return_id)
+			->delete('purchase_return_transaction');
+
+		$this->db
+			->where('return_id', $return_id)
+			->delete('purchase_return_master');
+
+		if ($this->db->trans_status() == FALSE) {
+
+			$this->db->trans_rollback();
+
+			return [
+				'success' => false,
+				'message' => 'Unable to delete Purchase Return.'
+			];
+		}
+
+		$this->db->trans_commit();
+
+		return [
+			'success' => true,
+			'message' => 'Purchase Return deleted successfully.'
+		];
+	}
+
 	function get_po_details_by_id($po_id)
 	{
 		// Always use query bindings to prevent SQL injection

@@ -349,7 +349,7 @@ class Purchase extends CI_Controller
             return;
         }
         $data['title'] = 'Purchase Order';
-        $prifix = 'ALA/POD/';
+        $prifix = 'AVE/POD/';
         $this->load->model('Setup_model');
         $num = $this->Setup_model->get_next_code($prifix, 'po_code', 'purchase_order_master', 12) + 1;
         $digit = sprintf("%1$04d", $num);
@@ -647,7 +647,7 @@ class Purchase extends CI_Controller
         $this->load->model('Setup_model');
         error_reporting(0);
         $data['title']              = 'Purchase Order-Stock';
-        $prifix                     = 'ALA/POD/';
+        $prifix                     = 'AVE/POD/';
         $num                        = $this->Setup_model->get_next_code($prifix, 'po_code', 'purchase_order_master', 12) + 1;
         $digit                      = sprintf("%1$04d", $num);
         $data['Code']               = $prifix . date("y") . '/' . $digit;
@@ -770,12 +770,12 @@ class Purchase extends CI_Controller
         // }
     }
 
-    function delete_grn()
+    public function delete_grn()
     {
         $grn_id = $this->input->post('grn_id');
         $this->load->model('Purchase_Model');
-        $this->Purchase_Model->delete_grn($grn_id);
-        redirect('Purchase/purchase_grn_list');
+        $result = $this->Purchase_Model->delete_grn($grn_id);
+        echo json_encode($result);
     }
 
     //////////// PURCHASE RETURN CODE START /////////////////
@@ -815,7 +815,7 @@ class Purchase extends CI_Controller
                 $prefix,
                 'return_code',
                 'purchase_return_master',
-                12
+                13
             ) + 1;
 
         $digit = sprintf("%05d", $num);
@@ -879,6 +879,17 @@ class Purchase extends CI_Controller
         $data['company'] = $this->Setup_model->get_company_details();
 
         $this->load->view('purchase/print/purchase_return_print', $data);
+    }
+
+    public function delete_purchase_return()
+    {
+        $return_id = $this->input->post('return_id');
+
+        $this->load->model('Purchase_Model');
+
+        $result = $this->Purchase_Model->delete_purchase_return($return_id);
+
+        echo json_encode($result);
     }
     //////////// PURCHASE RETURN CODE END /////////////////
 
