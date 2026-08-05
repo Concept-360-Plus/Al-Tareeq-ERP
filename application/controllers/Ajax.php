@@ -729,6 +729,97 @@ class Ajax extends CI_Controller
         echo json_encode($data);
     }
 
+    public function get_mr_details_ajax()
+    {
+        $mr_id = $this->input->post('mr_id');
+        $this->load->model('Project_model');
+        $mr = $this->Project_model->get_mr_by_id($mr_id);
+        $items = $this->Project_model->get_mr_items($mr_id);
+
+        $result_items = [];
+
+        foreach ($items as $item) {
+
+            // project_material_items column
+            $product_id = $item['fk_item_id'];
+
+            // Get unit from item_master
+            $unit = $this->db
+                ->select('um.unit_name')
+                ->from('item_master im')
+                ->join('unit_master um', 'um.unit_id = im.unit_id', 'left')
+                ->where('im.product_id', $product_id)
+                ->get()
+                ->row();
+
+            $item_unit = $unit ? $unit->unit_name : '';
+
+            // Available Stock
+            $row = $this->db
+                ->select_sum('balance_qty')
+                ->where('product_id', $product_id)
+                ->where('stock_type', 'IN')
+                ->get('stock_details')
+                ->row();
+
+            $available_qty = (float)($row->balance_qty ?? 0);
+
+            // Reserved Stock
+            $reserved_qty = (float)($this->db
+                ->select_sum('reserved_quantity')
+                ->where('product_id', $product_id)
+                ->where('allocation_id', $mr_id)
+                ->where('stock_type', 'RESERVE')
+                ->get('stock_details')
+                ->row()->reserved_quantity ?? 0);
+
+            $requested_qty = (float)$item['item_qty'];
+
+            $total_issued = $this->Project_model->get_total_issued_qty($mr_id, $product_id);
+
+            $result_items[] = [
+                'product_id'       => $product_id,
+                'product_name'     => $item['product_name'],
+                'item_unit'        => $item_unit,
+                'requested_qty'    => $requested_qty,
+                'available_qty'    => $available_qty,
+                'reserved_qty'     => $reserved_qty,
+                'issue_qty'        => $reserved_qty,
+                'pending_qty'      => max(0, $requested_qty - $reserved_qty),
+                'issued_qty_total' => $total_issued,
+            ];
+        }
+
+        echo json_encode([
+            'mr'    => $mr,
+            'items' => $result_items
+        ]);
+    }
+
+    public function get_available_stock_ajax()
+    {
+        $warehouse_id = $this->input->post('warehouse_id');
+        $store_id     = $this->input->post('store_id');
+        $product_ids  = $this->input->post('product_ids');
+
+        $result = [];
+
+        foreach ($product_ids as $product_id) {
+            $available = $this->db
+                ->select_sum('balance_qty')
+                ->where('warehouse_id', $warehouse_id)
+                ->where('store_id', $store_id)
+                ->where('product_id', $product_id)
+                ->where('stock_type', 'IN')
+                ->get('stock_details')
+                ->row();
+                
+            $result[$product_id] = (float)($available->balance_qty ?? 0);
+        }
+
+        echo json_encode($result);
+    }
+
     public function get_mi_items_ajax()
     {
         $mi_id = $this->input->post('mi_id');
