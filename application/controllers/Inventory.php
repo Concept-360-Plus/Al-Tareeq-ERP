@@ -46,74 +46,72 @@ class Inventory extends CI_Controller
         $this->load->view('includes/template', $data);
     }
 
-    public function get_mr_details_ajax()
-    {
-        $mr_id = $this->input->post('mr_id');
-        $mr = $this->Project_model->get_mr_by_id($mr_id);
-        $items = $this->Project_model->get_mr_items($mr_id);
-
-        $result_items = [];
-
-        foreach ($items as $item) {
-
-            // project_material_items column
-            $product_id = $item['fk_item_id'];
-
-            // Get unit from item_master
-            $unit = $this->db
-                ->select('um.unit_name')
-                ->from('item_master im')
-                ->join('unit_master um', 'um.unit_id = im.unit_id', 'left')
-                ->where('im.product_id', $product_id)
-                ->get()
-                ->row();
-
-            $item_unit = $unit ? $unit->unit_name : '';
-
-            // Available Stock
-            $available_qty = (float)($this->db
-                ->select_sum('quantity')
-                ->where('product_id', $product_id)
-                ->where('stock_type', 'IN')
-                ->get('stock_details')
-                ->row()->quantity ?? 0);
-
-            // Reserved Stock
-            $reserved_qty = (float)($this->db
-                ->select_sum('reserved_quantity')
-                ->where('product_id', $product_id)
-                ->where('allocation_id', $mr_id)
-                ->where('stock_type', 'RESERVE')
-                ->get('stock_details')
-                ->row()->reserved_quantity ?? 0);
-
-            $requested_qty = (float)$item['item_qty'];
-
-            $total_issued = $this->Project_model->get_total_issued_qty($mr_id, $product_id);
-
-            $result_items[] = [
-                'product_id'       => $product_id,
-                'product_name'     => $item['product_name'],
-                'item_unit'        => $item_unit,
-                'requested_qty'    => $requested_qty,
-                'available_qty'    => $available_qty,
-                'reserved_qty'     => $reserved_qty,
-                'issue_qty'        => $reserved_qty,
-                'pending_qty'      => max(0, $requested_qty - $reserved_qty),
-                'issued_qty_total' => $total_issued,
-            ];
-        }
-
-        echo json_encode([
-            'mr'    => $mr,
-            'items' => $result_items
-        ]);
-    }
-
-
     public function save_material_issue()
     {
-        $this->db->trans_start();
+        $warehouse_id = $this->input->post('warehouse_id');
+        $store_id     = $this->input->post('store_id');
+
+        $products            = $this->input->post('product_id');
+        $units               = $this->input->post('unit_id');
+        $requested_qtys      = $this->input->post('requested_qty');
+        $issue_qtys          = $this->input->post('issue_qty');
+        $pending_qtys        = $this->input->post('pending_qty');
+        $previously_issued   = $this->input->post('previously_issued');
+        $item_checks         = $this->input->post('item_check');
+
+        if (empty($warehouse_id) || empty($store_id)) {
+
+            $this->session->set_flashdata(
+                'error',
+                'Please select Warehouse and Store.'
+            );
+
+            redirect('Inventory/create_material_issue');
+            return;
+        }
+
+        if (!empty($item_checks)) {
+            $checked_indexes = array_keys($item_checks);
+
+            foreach ($checked_indexes as $i) {
+                $product_id = $products[$i];
+                $issue_qty  = (float)$issue_qtys[$i];
+
+                if ($issue_qty <= 0)
+                    continue;
+
+                $available = $this->db
+                    ->select_sum('balance_qty')
+                    ->where('warehouse_id', $warehouse_id)
+                    ->where('store_id', $store_id)
+                    ->where('product_id', $product_id)
+                    ->where('stock_type', 'IN')
+                    ->get('stock_details')
+                    ->row();
+
+                $available_qty = (float)($available->balance_qty ?? 0);
+
+                if ($issue_qty > $available_qty) {
+                    $product = $this->db
+                        ->select('product_name')
+                        ->where('product_id', $product_id)
+                        ->get('item_master')
+                        ->row();
+                    $product_name = $product ? $product->product_name : 'Selected Product';
+                    $this->session->set_flashdata(
+                        'error',
+                        $product_name .
+                            ' has only ' .
+                            $available_qty .
+                            ' Qty available in the selected Warehouse/Store.'
+                    );
+                    redirect('Inventory/create_material_issue');
+                    return;
+                }
+            }
+        }
+
+        $this->db->trans_begin();
 
         $miData = [
             'mr_id'         => $this->input->post('mr_id'),
@@ -121,70 +119,73 @@ class Inventory extends CI_Controller
             'project_code'  => $this->input->post('project_code'),
             'customer_name' => $this->input->post('customer_name'),
             'branch_name'   => $this->input->post('branch_name'),
-            'warehouse_id'  => $this->input->post('warehouse_id'),
-            'store_id'      => $this->input->post('store_id'),
+            'warehouse_id'  => $warehouse_id,
+            'store_id'      => $store_id,
             'issued_by'     => $this->session->userdata('user_id'),
             'issue_date'    => date('Y-m-d H:i:s'),
             'status'        => 'Issued'
         ];
 
-        // Insert MI master
         $this->db->insert('material_issue', $miData);
         $mi_id = $this->db->insert_id();
-
-        // Generate MI code
         $mi_code = 'MI-' . str_pad($mi_id, 6, '0', STR_PAD_LEFT);
-        $this->db->where('mi_id', $mi_id)->update('material_issue', ['mi_code' => $mi_code]);
 
-        // Get all arrays
-        $products = $this->input->post('product_id');
-        $units = $this->input->post('unit_id');
-        $requested_qtys = $this->input->post('requested_qty');
-        $issue_qtys = $this->input->post('issue_qty');
-        $pending_qtys = $this->input->post('pending_qty');
-        $previously_issued = $this->input->post('previously_issued');
-        $item_checks = $this->input->post('item_check');
+        $this->db
+            ->where('mi_id', $mi_id)
+            ->update('material_issue', [
+                'mi_code' => $mi_code
+            ]);
 
         if (!empty($item_checks)) {
-            // Get checked row indexes
             $checked_indexes = array_keys($item_checks);
-
             foreach ($checked_indexes as $i) {
                 $itemData = [
-                    'mi_id' => $mi_id,
-                    'product_id' => $products[$i] ?? null,
-                    'unit_id' => $units[$i] ?? null,
-                    'requested_qty' => $requested_qtys[$i] ?? 0,
-                    'issued_qty' => $issue_qtys[$i] ?? 0,
-                    'pending_qty' => $pending_qtys[$i] ?? 0,
-                    'previously_issued_qty' => $previously_issued[$i] ?? 0,
+                    'mi_id'                    => $mi_id,
+                    'product_id'               => $products[$i],
+                    'unit_id'                  => $units[$i],
+                    'requested_qty'            => $requested_qtys[$i],
+                    'issued_qty'               => $issue_qtys[$i],
+                    'pending_qty'              => $pending_qtys[$i],
+                    'previously_issued_qty'    => $previously_issued[$i]
                 ];
 
-                // Skip if product_id or issued_qty is null
-                if (!$itemData['product_id'] || $itemData['issued_qty'] === null) continue;
+                $this->db->insert(
+                    'material_issue_items',
+                    $itemData
+                );
 
-                $this->db->insert('material_issue_items', $itemData);
+                $result = $this->Inventory_model->allocate_stock_for_mi(
+                    $products[$i],
+                    $issue_qtys[$i],
+                    $mi_id,
+                    $warehouse_id,
+                    $store_id
+                );
 
-                // Allocate stock
-                $result = $this->Inventory_model->allocate_stock_for_mi($products[$i], $issue_qtys[$i], $mi_id, $this->input->post('warehouse_id'), $this->input->post('store_id'));
                 if (!$result) {
                     $this->db->trans_rollback();
                     $this->session->set_flashdata(
                         'error',
-                        'Insufficient stock for the selected product.'
+                        'Stock allocation failed.'
                     );
-                    redirect('Inventory/add_material_issue');
+                    redirect('Inventory/create_material_issue');
                     return;
                 }
             }
         }
 
-        $this->db->trans_complete();
-
-        if ($this->db->trans_status() === FALSE) {
-            $this->session->set_flashdata('error', 'Failed to create Material Issue');
+        if ($this->db->trans_status() == FALSE) {
+            $this->db->trans_rollback();
+            $this->session->set_flashdata(
+                'error',
+                'Failed to create Material Issue.'
+            );
         } else {
-            $this->session->set_flashdata('success', 'Material Issue created successfully');
+            $this->db->trans_commit();
+            $this->session->set_flashdata(
+                'success',
+                'Material Issue created successfully.'
+            );
         }
 
         redirect('Inventory/list_material_issue');

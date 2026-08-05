@@ -1,6 +1,29 @@
 <form id="mi_form" action="<?= base_url('index.php/Inventory/save_material_issue') ?>" method="post">
     <div class="container">
 
+        <?php if ($this->session->flashdata('error')): ?>
+            <div class="alert alert-danger alert-dismissible fade show mt-3" role="alert">
+                <strong>Error!</strong>
+                <?= $this->session->flashdata('error'); ?>
+
+                <button type="button" class="close" data-dismiss="alert">
+                    <span>&times;</span>
+                </button>
+            </div>
+        <?php endif; ?>
+
+        <?php if ($this->session->flashdata('success')): ?>
+            <div class="alert alert-success alert-dismissible fade show mt-3" role="alert">
+                <strong>Success!</strong>
+                <?= $this->session->flashdata('success'); ?>
+
+                <button type="button" class="close" data-dismiss="alert">
+                    <span>&times;</span>
+                </button>
+            </div>
+        <?php endif; ?>
+
+
         <!-- Material Request Selection -->
         <div class="mb-3">
             <label>Select Material Request</label>
@@ -111,7 +134,7 @@
             let mr_id = $(this).val();
             if (!mr_id) return;
 
-            $.post('<?= base_url("index.php/Inventory/get_mr_details_ajax") ?>', {
+            $.post('<?= base_url("index.php/Ajax/get_mr_details_ajax") ?>', {
                 mr_id: mr_id
             }, function(res) {
 
@@ -196,7 +219,7 @@
                     </td>
 
                     <!-- Hidden Product ID -->
-                    <input type="hidden" name="product_id[]" value="${item.product_id}">
+                    <input type="hidden" class="product_id" name="product_id[]" value="${item.product_id}">
                 </tr>`;
                 });
 
@@ -271,12 +294,47 @@
             }
         });
     }
+
+    $('#store_id').change(function() {
+        refreshAvailableStock();
+    });
+
+    function refreshAvailableStock() {
+        let warehouse_id = $('#warehouse_id').val();
+        let store_id = $('#store_id').val();
+
+        if (warehouse_id == '' || store_id == '')
+            return;
+
+        let product_ids = [];
+        $('.product_id').each(function() {
+            product_ids.push($(this).val());
+        });
+
+        $.ajax({
+            url: "<?= base_url('index.php/Ajax/get_available_stock_ajax'); ?>",
+            type: "POST",
+            data: {
+                warehouse_id: warehouse_id,
+                store_id: store_id,
+                product_ids: product_ids
+            },
+            dataType: "json",
+            success: function(stock) {
+                $('#items_table tbody tr').each(function() {
+                    let product_id = $(this).find('.product_id').val();
+                    let available = parseFloat(stock[product_id]) || 0;
+
+                    $(this).find('.available').val(available);
+
+                    let requested = parseFloat($(this).find('.requested_qty').val()) || 0;
+                    let issue = Math.min(requested, available);
+
+                    $(this).find('.issue_qty').val(issue);
+                    $(this).find('.issue_qty').attr('max', available);
+                    $(this).find('.pending_qty').val(requested - issue);
+                });
+            }
+        });
+    }
 </script>
-
-
-
-<!-- Reserved -->
-<!-- <td>
-                        <input type="number" class="form-control reserved_qty"
-                               value="${item.reserved_qty}" readonly>
-                    </td> -->

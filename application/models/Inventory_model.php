@@ -344,25 +344,27 @@ class Inventory_model extends CI_Model
 
             // Create NEW OUT transaction
             $this->db->insert('stock_details', [
-                'warehouse_id'   => $stock->warehouse_id,
-                'store_id'       => $stock->store_id,
-                'stock_type'     => 'OUT',
-                'trans_id'       => $mi_id,
-                'stock_date'     => date('Y-m-d'),
-                'year'           => date('Y'),
-                'product_id'     => $stock->product_id,
-                'unit_id'        => $stock->unit_id,
-                'quantity'       => $deduct,
-                'balance_qty'    => 0,
-                'price'          => $stock->price,
-                'stock_value'    => $deduct * $stock->price,
-                'remark'         => 'Material Issue',
-                'item_remark'    => 'MI',
-                'created_by'     => $user_id,
-                'created_date'   => date('Y-m-d H:i:s'),
-                'status'         => 1,
-                'allocation_for' => 'MI',
-                'allocation_id'  => $mi_id
+                'parent_stock_id' => $stock->stock_id,
+                'grn_id'          => $stock->grn_id,
+                'warehouse_id'    => $stock->warehouse_id,
+                'store_id'        => $stock->store_id,
+                'stock_type'      => 'OUT',
+                'trans_id'        => $mi_id,
+                'stock_date'      => date('Y-m-d'),
+                'year'            => date('Y'),
+                'product_id'      => $stock->product_id,
+                'unit_id'         => $stock->unit_id,
+                'quantity'        => $deduct,
+                'balance_qty'     => 0,
+                'price'           => $stock->price,
+                'stock_value'     => $deduct * $stock->price,
+                'remark'          => 'Material Issue',
+                'item_remark'     => 'MI',
+                'created_by'      => $user_id,
+                'created_date'    => date('Y-m-d H:i:s'),
+                'status'          => 1,
+                'allocation_for'  => 'MI',
+                'allocation_id'   => $mi_id
             ]);
 
             $remaining -= $deduct;
