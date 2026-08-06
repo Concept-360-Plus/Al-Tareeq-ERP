@@ -545,8 +545,8 @@ class Inventory_model extends CI_Model
         foreach ($stocks as $out) {
             if ($out->parent_stock_id != NULL) {
                 $this->db
-                    ->set('balance_qty','balance_qty + ' . $out->quantity,FALSE)
-                    ->where('stock_id',$out->parent_stock_id)
+                    ->set('balance_qty', 'balance_qty + ' . $out->quantity, FALSE)
+                    ->where('stock_id', $out->parent_stock_id)
                     ->update('stock_details');
             }
 
@@ -572,20 +572,44 @@ class Inventory_model extends CI_Model
             im.product_code,
             im.product_name,
             wm.warehouse_name,
+            sm.store_name,
+            um.unit_name,
             u.user_name
         ");
 
         $this->db->from('stock_details sd');
 
-        $this->db->join('item_master im', 'im.product_id = sd.product_id');
+        $this->db->join(
+            'item_master im',
+            'im.product_id=sd.product_id',
+            'left'
+        );
 
-        $this->db->join('warehouse_master wm', 'wm.warehouse_id = sd.warehouse_id', 'left');
+        $this->db->join(
+            'warehouse_master wm',
+            'wm.warehouse_id=sd.warehouse_id',
+            'left'
+        );
 
-        $this->db->join('users u', 'u.user_id = sd.created_by', 'left');
+        $this->db->join(
+            'store_master sm',
+            'sm.store_id=sd.store_id',
+            'left'
+        );
 
-        $this->db->order_by('sd.stock_date', 'DESC');
+        $this->db->join(
+            'unit_master um',
+            'um.unit_id=sd.unit_id',
+            'left'
+        );
 
-        $this->db->order_by('sd.stock_id', 'DESC');
+        $this->db->join(
+            'users u',
+            'u.user_id=sd.created_by',
+            'left'
+        );
+
+        $this->db->order_by('sd.created_date', 'DESC');
 
         return $this->db->get()->result();
     }
