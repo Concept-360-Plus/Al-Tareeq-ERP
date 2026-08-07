@@ -474,6 +474,83 @@ class Inventory extends CI_Controller
     }
     /////////////////////// DIRECT MATERIAL ISSUE END ////////////////////////
 
+    /////////////////////// STOCK TRANFSER CODE START ////////////////////////
+
+    public function list_stock_transfer()
+    {
+        $user = $this->session->userdata('user_id');
+
+        if (!has_access($user, 'Inventory/list_stock_transfer', 'A')) {
+            $data['title'] = 'Access Denied';
+            $data['main_content'] = 'errors/access_control.php';
+            $this->load->view('includes/template', $data);
+            return;
+        }
+
+        $this->load->model('Inventory_model');
+
+        $data['title'] = 'Stock Transfer';
+
+        $data['records'] = $this->Inventory_model->get_stock_transfer_list();
+
+        $data['main_content'] = 'inventory/list_stock_transfer';
+
+        $this->load->view('includes/template', $data);
+    }
+
+    public function add_stock_transfer()
+    {
+        $user = $this->session->userdata('user_id');
+
+        if (!has_access($user, 'Inventory/list_stock_transfer', 'A')) {
+            $data['title'] = 'Access Denied';
+            $data['main_content'] = 'errors/access_control.php';
+            $this->load->view('includes/template', $data);
+            return;
+        }
+
+        $this->load->model('Company_model');
+        $this->load->model('Setup_model');
+
+        $data['title'] = 'Stock Transfer';
+
+        $data['branch_records'] = $this->Company_model->get_all_branches();
+        $data['warehouse_list'] = $this->Setup_model->get_warehouse_list();
+        $data['store_list'] = [];
+
+        $data['products'] = $this->Setup_model->get_active_item_list();
+        $data['units'] = $this->Setup_model->get_active_unit_list();
+        $data['main_content'] = 'inventory/add_stock_transfer';
+
+        $this->load->view('includes/template', $data);
+    }
+
+    public function save_stock_transfer()
+    {
+        $this->db->trans_begin();
+
+        // We'll implement saving logic after designing the UI.
+
+        if ($this->db->trans_status() == FALSE) {
+            $this->db->trans_rollback();
+
+            $this->session->set_flashdata(
+                'error',
+                'Failed to save Stock Transfer.'
+            );
+        } else {
+            $this->db->trans_commit();
+
+            $this->session->set_flashdata(
+                'success',
+                'Stock Transfer created successfully.'
+            );
+        }
+
+        redirect('Inventory/list_stock_transfer');
+    }
+    /////////////////////// STOCK TRANFSER CODE END  ////////////////////////
+
     public function itemwise_stock_summary()
     {
         $data['stock'] = $this->Inventory_model->get_itemwise_stock_summary();
@@ -698,5 +775,4 @@ class Inventory extends CI_Controller
 
         $this->load->view('includes/template', $data);
     }
-    
 }

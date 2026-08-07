@@ -135,38 +135,30 @@
 
 <script>
     $(document).ready(function() {
-
         const products = <?= json_encode($products); ?>;
         const units = <?= json_encode($units); ?>;
-
         let rowIndex = 0;
 
         $('#addRow').click(function() {
-
             rowIndex++;
-
             let productOption = '<option value="">-- Select Product --</option>';
-            productOption += '<option value="new">+ Add New Product</option>';
-
-            products.forEach(function(item) {
-                productOption += `
-                <option value="${item.product_id}">
-                    ${item.product_name}
-                </option>
-                `;
+                products.forEach(function(item) {
+                    productOption += `
+                    <option value="${item.product_id}">
+                        ${item.product_name}
+                    </option>
+                    `;
             });
 
             let unitOption = `
                 <option value="">-- Select Unit --</option>
-            `;
-
-            units.forEach(function(unit) {
-
-                unitOption += `
-            <option value="${unit.unit_id}">
-                ${unit.unit_name}
-            </option>
-        `;
+                    `;
+                units.forEach(function(unit) {
+                    unitOption += `
+                    <option value="${unit.unit_id}">
+                        ${unit.unit_name}
+                    </option>
+                `;
 
             });
 
@@ -279,33 +271,25 @@
 
     function updateSlNo() {
         $('#items_table tbody tr').each(function(index) {
-
             $(this).find('.slno').html(index + 1);
-
         });
     }
+
     $(document).on('click', '.removeRow', function() {
-
         $(this).closest('tr').remove();
-
         updateSlNo();
-
     });
 
     document.getElementById("mi_form").addEventListener("submit", function(e) {
-
         var btn = document.getElementById("saveBtn");
-
         // Prevent multiple submissions
         if (btn.disabled) {
             e.preventDefault();
             return false;
         }
-
         // Disable immediately
         btn.disabled = true;
         btn.innerHTML = "Processing...";
-
     });
 
     function loadStores() {
@@ -387,11 +371,9 @@
             },
             dataType: "json",
             success: function(res) {
-
                 $('#unit' + row).val(res.unit_id);
                 $('#available' + row).val(res.available_stock);
                 $('#previous' + row).val(res.previously_issued);
-
             }
         });
     }
