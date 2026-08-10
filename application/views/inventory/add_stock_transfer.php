@@ -179,63 +179,42 @@
                         id="items_table">
 
                         <thead>
-
                             <tr>
-
                                 <th width="5%">Sl.No</th>
-
                                 <th width="30%">Product</th>
-
                                 <th width="10%">Unit</th>
-
                                 <th width="12%">Available Qty</th>
-
                                 <th width="12%">Transfer Qty</th>
-
                                 <th>Remarks</th>
-
                                 <th width="5%">Action</th>
-
                             </tr>
-
                         </thead>
 
                         <tbody>
-
                         </tbody>
-
                     </table>
-
                 </div>
-
             </div>
 
             <div class="text-center">
-
                 <button
                     type="submit"
                     class="btn btn-success btn-lg"
                     id="saveBtn">
-
                     <i class="fa fa-save"></i>
-
                     Save Stock Transfer
-
                 </button>
 
                 <button
                     type="reset"
                     class="btn btn-default btn-lg">
-
                     Reset
-
                 </button>
-
             </div>
-
+        </div>
+    </div>
 </form>
-</div>
-</div>
+
 
 <script>
     const products = <?= json_encode($products); ?>;
@@ -267,17 +246,20 @@
 
                 <td>
                     <select
-                    class="form-control product_id select2"
-                    name="product_id[]"
-                    required>
-                    ${productOption}
+                        class="form-control product_id select2"
+                        name="product_id[]"
+                        id="product${rowIndex}"
+                        onchange="get_product_details(${rowIndex})"
+                        required>
+                        ${productOption}
                     </select>
                 </td>
 
                 <td>
                     <select
-                    class="form-control unit_id"
+                    class="form-control"
                     name="unit_id[]"
+                    id="unit${rowIndex}"
                     required>
                     ${unitOption}
                     </select>
@@ -285,9 +267,11 @@
 
                 <td>
                     <input
-                    type="text"
-                    class="form-control available_qty"
-                    readonly>
+                        type="text"
+                        class="form-control"
+                        id="available${rowIndex}"
+                        readonly>
+
                 </td>
 
                 <td>
@@ -295,6 +279,7 @@
                     type="number"
                     class="form-control transfer_qty"
                     name="transfer_qty[]"
+                    id="transfer${rowIndex}"
                     min="1"
                     value="1"
                     required>
@@ -304,6 +289,7 @@
                     <input
                     type="text"
                     class="form-control"
+                    id="remark${rowIndex}"
                     name="item_remark[]">
                 </td>
 
@@ -316,13 +302,71 @@
                 </td>
             </tr>`;
         $('#items_table tbody').append(html);
+
         $('#items_table tbody tr:last .product_id').select2({
             width: '100%',
             placeholder: 'Search Product',
             allowClear: true
         });
+
         updateSlNo();
     });
+
+    function get_product_details(row) {
+        var warehouse_id = $('#from_warehouse_id').val();
+        var store_id = $('#from_store_id').val();
+        var product_id = $('#product' + row).val();
+
+        if (warehouse_id == '') {
+            alert('Please select From Warehouse first.');
+            $('#product' + row).val('');
+            $('#product' + row).select2('val', '');
+            return;
+        }
+
+        if (store_id == '') {
+            alert('Please select From Store first.');
+            $('#product' + row).val(null).trigger('change.select2');
+            return;
+        }
+
+        // Duplicate Validation
+        var duplicate = false;
+        $('.product_id').each(function() {
+            if ($(this).attr('id') != 'product' + row) {
+                if ($(this).val() == product_id && product_id != '') {
+                    duplicate = true;
+                }
+            }
+        });
+
+        if (duplicate) {
+            alert('Product already added.');
+            $('#product' + row).val(null).trigger('change.select2');
+            return;
+        }
+
+        $.ajax({
+            url: "<?= base_url('index.php/Ajax/get_direct_issue_product_details'); ?>",
+            type: "POST",
+            data: {
+                warehouse_id: warehouse_id,
+                store_id: store_id,
+                product_id: product_id
+            },
+            dataType: "json",
+            success: function(res) {
+                console.log(res);
+                $('#unit' + row).val(res.unit_id);
+                $('#available' + row).val(res.available_stock);
+                $('#transfer' + row).attr('max', res.available_stock);
+            },
+
+            error: function(xhr) {
+                console.log(xhr.responseText);
+            }
+        });
+    }
 
     function updateSlNo() {
         $('#items_table tbody tr').each(function(index) {
@@ -334,41 +378,6 @@
         $(this).closest('tr').remove();
         updateSlNo();
     });
-
-    $(document).on('change', '.product_id', function() {
-        var row = $(this).closest('tr');
-        var product_id = $(this).val();
-        var warehouse_id = $('#from_warehouse_id').val();
-        var store_id = $('#from_store_id').val();
-
-        if (warehouse_id == '') {
-            alert('Please select From Warehouse first.');
-            $(this).val('');
-            return;
-        }
-
-        if (store_id == '') {
-            alert('Please select From Store first.');
-            $(this).val('');
-            return;
-        }
-        getProductDetails(row, product_id);
-    });
-
-    function getProductDetails(row, product_id) {
-        $.ajax({
-            url: "<?= base_url('index.php/Ajax/get_direct_issue_product_details'); ?>",
-            type: "POST",
-            data: {
-                product_id: product_id
-            },
-            dataType: "json",
-            success: function(res) {
-                row.find('.unit_id').val(res.unit_id);
-                getAvailableStock(row, product_id);
-            }
-        });
-    }
 
     function loadFromStores() {
         var warehouse_id = $('#from_warehouse_id').val();
@@ -410,46 +419,12 @@
         });
     }
 
-    function getAvailableStock(row, product_id) {
-        $.ajax({
-            url: "<?= base_url('index.php/Ajax/get_available_stock_ajax'); ?>",
-            type: "POST",
-            data: {
-                warehouse_id: $('#from_warehouse_id').val(),
-                store_id: $('#from_store_id').val(),
-                product_ids: [product_id]
-            },
-            dataType: "json",
-            success: function(res) {
-                row.find('.available_qty').val(res[product_id]);
-            }
-        });
-    }
-
-    $(document).on('change', '.product_id', function() {
-        var current = $(this).val();
-        var count = 0;
-
-        $('.product_id').each(function() {
-            if ($(this).val() == current && current != '') {
-                count++;
-            }
-        });
-
-        if (count > 1) {
-            alert('This product is already added.');
-            $(this).val('');
-            $(this).closest('tr').find('.unit_id').val('');
-            $(this).closest('tr').find('.available_qty').val('');
-            return false;
-        }
-    });
-
     $(document).on('keyup change', '.transfer_qty', function() {
         var row = $(this).closest('tr');
-        var available = parseFloat(row.find('.available_qty').val()) || 0;
+        var available = parseFloat(row.find('#available').val()) || 0;
         var qty = parseFloat($(this).val()) || 0;
-
+        console.log("Available:", available);
+        console.log("Qty:", qty);
         if (qty <= 0) {
             qty = 1;
         }

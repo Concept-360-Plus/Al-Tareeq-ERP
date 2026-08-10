@@ -528,22 +528,159 @@ class Inventory extends CI_Controller
     public function save_stock_transfer()
     {
         $this->db->trans_begin();
+        $from_branch_id     = $this->input->post('from_branch_id');
+        $from_warehouse_id  = $this->input->post('from_warehouse_id');
+        $from_store_id      = $this->input->post('from_store_id');
+        $to_branch_id       = $this->input->post('to_branch_id');
+        $to_warehouse_id    = $this->input->post('to_warehouse_id');
+        $to_store_id        = $this->input->post('to_store_id');
+        $transfer_date      = $this->input->post('transfer_date');
+        $remarks            = $this->input->post('remarks');
+        $product_ids        = $this->input->post('product_id');
+        $unit_ids           = $this->input->post('unit_id');
+        $transfer_qty       = $this->input->post('transfer_qty');
+        $item_remarks       = $this->input->post('item_remark');
 
-        // We'll implement saving logic after designing the UI.
+
+        if (
+            empty($from_warehouse_id) ||
+            empty($from_store_id) ||
+            empty($to_warehouse_id) ||
+            empty($to_store_id)
+        ) {
+            $this->session->set_flashdata(
+                'error',
+                'Please select all Warehouse and Store details.'
+            );
+            redirect('Inventory/add_stock_transfer');
+            return;
+        }
+
+        if (
+            $from_warehouse_id == $to_warehouse_id &&
+            $from_store_id == $to_store_id
+        ) {
+            $this->session->set_flashdata(
+                'error',
+                'Source and Destination cannot be same.'
+            );
+            redirect('Inventory/add_stock_transfer');
+            return;
+        }
+
+        if (empty($product_ids)) {
+            $this->session->set_flashdata(
+                'error',
+                'Please add at least one product.'
+            );
+            redirect('Inventory/add_stock_transfer');
+            return;
+        }
+
+        foreach ($product_ids as $i => $product_id) {
+            $qty = (float)$transfer_qty[$i];
+            $available = $this->Inventory_model
+                ->get_available_stock_by_location(
+                    $product_id,
+                    $from_warehouse_id,
+                    $from_store_id
+                );
+
+            if ($qty > $available) {
+                $product = $this->db
+                    ->select('product_name')
+                    ->where('product_id', $product_id)
+                    ->get('item_master')
+                    ->row();
+
+                $this->session->set_flashdata(
+                    'error',
+                    $product->product_name .
+                        ' has only ' .
+                        $available .
+                        ' Qty available.'
+                );
+
+                redirect('Inventory/add_stock_transfer');
+                return;
+            }
+        }
+
+        $master = [
+            'transfer_date'      => $transfer_date,
+            'from_branch_id'     => $from_branch_id,
+            'from_warehouse_id'  => $from_warehouse_id,
+            'from_store_id'      => $from_store_id,
+            'to_branch_id'       => $to_branch_id,
+            'to_warehouse_id'    => $to_warehouse_id,
+            'to_store_id'        => $to_store_id,
+            'remarks'            => $remarks,
+            'status'             => 'Completed',
+            'created_by'         => $this->session->userdata('user_id'),
+            'created_at'         => date('Y-m-d H:i:s')
+
+        ];
+
+        $transfer_id = $this->Inventory_model->insert_stock_transfer_master($master);
+
+        $transfer_code = 'ST-' .
+            str_pad($transfer_id, 6, '0', STR_PAD_LEFT);
+
+        $this->db
+            ->where('transfer_id', $transfer_id)
+            ->update(
+                'stock_transfer_master',
+                [
+                    'transfer_code' => $transfer_code
+                ]
+            );
+
+        foreach ($product_ids as $i => $product_id) {
+            $item = [
+                'transfer_id'   => $transfer_id,
+                'product_id'    => $product_id,
+                'unit_id'       => $unit_ids[$i],
+                'available_qty' => $this->Inventory_model->get_available_stock_by_location($product_id,$from_warehouse_id,$from_store_id),
+                'transfer_qty'  => $transfer_qty[$i],
+                'remarks'       => $item_remarks[$i]
+            ];
+
+            $this->Inventory_model
+                ->insert_stock_transfer_item($item);
+
+            $result = $this->Inventory_model->transfer_stock(
+                $transfer_id,
+                $product_id,
+                $unit_ids[$i],
+                $transfer_qty[$i],
+                $from_warehouse_id,
+                $from_store_id,
+                $to_warehouse_id,
+                $to_store_id
+            );
+
+            if (!$result) {
+                $this->db->trans_rollback();
+                $this->session->set_flashdata(
+                    'error',
+                    'Stock transfer failed.'
+                );
+                redirect('Inventory/add_stock_transfer');
+                return;
+            }
+        }
 
         if ($this->db->trans_status() == FALSE) {
             $this->db->trans_rollback();
-
             $this->session->set_flashdata(
                 'error',
-                'Failed to save Stock Transfer.'
+                'Stock Transfer failed.'
             );
         } else {
             $this->db->trans_commit();
-
             $this->session->set_flashdata(
                 'success',
-                'Stock Transfer created successfully.'
+                'Stock Transfer completed successfully.'
             );
         }
 
