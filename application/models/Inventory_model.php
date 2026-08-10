@@ -886,66 +886,91 @@ class Inventory_model extends CI_Model
 
         return $this->db->get()->result();
     }
-
-    public function reverse_stock_transfer($transfer_id)
+    public function cancel_stock_transfer($transfer_id)
     {
+        $this->db->trans_begin();
 
-        $movements = $this->db
-            ->where('trans_id', $transfer_id)
-            ->where_in('stock_type', ['IN', 'OUT'])
-            ->get('stock_details')
-            ->result();
+        $transfer = $this->db
+            ->where('transfer_id', $transfer_id)
+            ->get('stock_transfer_master')
+            ->row();
 
-        if (empty($movements)) {
+        if (!$transfer) {
+            $this->db->trans_rollback();
 
             return [
-                'status'  => true,
-                'message' => 'No previous stock movement found.'
+                'status'  => false,
+                'message' => 'Stock Transfer not found.'
             ];
         }
 
-        foreach ($movements as $movement) {
-            if ($movement->stock_type == 'IN') {
-                $child = $this->db
-                    ->where(
-                        'parent_stock_id',
-                        $movement->stock_id
-                    )
-                    ->count_all_results('stock_details');
-                if ($child > 0) {
-                    return [
-                        'status' => false,
-                        'message' =>
-                        'This Stock Transfer cannot be edited because ' .
-                            'some of the transferred stock has already been used.'
-                    ];
-                }
+        if ($transfer->status == 'Cancelled') {
+            $this->db->trans_rollback();
+            return [
+                'status'  => false,
+                'message' => 'This Stock Transfer is already cancelled.'
+            ];
+        }
 
-                if (
-                    (float)$movement->balance_qty <
-                    (float)$movement->quantity
-                ) {
-                    return [
-                        'status' => false,
-                        'message' =>
-                        'This Stock Transfer cannot be edited because ' .
-                            'the transferred stock has already been used.'
-                    ];
-                }
+
+        $in_movements = $this->db
+            ->where('trans_id', $transfer_id)
+            ->where('stock_type', 'IN')
+            ->where('allocation_for', 'TRANSFER')
+            ->where('allocation_id', $transfer_id)
+            ->get('stock_details')
+            ->result();
+
+        if (empty($in_movements)) {
+            $this->db->trans_rollback();
+            return [
+                'status'  => false,
+                'message' => 'No stock movement found for this transfer.'
+            ];
+        }
+
+        foreach ($in_movements as $movement) {
+
+            if ((float)$movement->balance_qty < (float)$movement->quantity) {
+                $this->db->trans_rollback();
+                return [
+                    'status'  => false,
+                    'message' =>
+                    'Stock Transfer cannot be cancelled because ' .
+                        'some of the transferred stock has already been used.'
+                ];
+            }
+
+            $child = $this->db
+                ->where('parent_stock_id', $movement->stock_id)
+                ->where('status', 1)
+                ->count_all_results('stock_details');
+
+            if ($child > 0) {
+                $this->db->trans_rollback();
+                return [
+                    'status'  => false,
+                    'message' =>
+                    'Stock Transfer cannot be cancelled because ' .
+                        'the transferred stock has already been used.'
+                ];
             }
         }
 
-        foreach ($movements as $movement) {
-            if (
-                $movement->stock_type == 'OUT' &&
-                !empty($movement->parent_stock_id)
-            ) {
-                $restore_qty = (float)$movement->quantity;
+        $out_movements = $this->db
+            ->where('trans_id', $transfer_id)
+            ->where('stock_type', 'OUT')
+            ->where('allocation_for', 'TRANSFER')
+            ->where('allocation_id', $transfer_id)
+            ->get('stock_details')
+            ->result();
 
+        foreach ($out_movements as $movement) {
+            if (!empty($movement->parent_stock_id)) {
                 $this->db
                     ->set(
                         'balance_qty',
-                        'balance_qty + ' . $restore_qty,
+                        'balance_qty + ' . (float)$movement->quantity,
                         false
                     )
                     ->where(
@@ -958,15 +983,31 @@ class Inventory_model extends CI_Model
 
         $this->db
             ->where('trans_id', $transfer_id)
-            ->where_in(
-                'stock_type',
-                ['IN', 'OUT']
-            )
-            ->delete('stock_details');
+            ->where('allocation_for', 'TRANSFER')
+            ->where('allocation_id', $transfer_id)
+            ->update('stock_details', [
+                'status' => 0
+            ]);
+
+        $this->db
+            ->where('transfer_id', $transfer_id)
+            ->update('stock_transfer_master', [
+                'status' => 'Cancelled'
+            ]);
+
+        if ($this->db->trans_status() === FALSE) {
+            $this->db->trans_rollback();
+            return [
+                'status'  => false,
+                'message' => 'Unable to cancel Stock Transfer.'
+            ];
+        }
+
+        $this->db->trans_commit();
 
         return [
             'status'  => true,
-            'message' => 'Previous stock movement reversed.'
+            'message' => 'Stock Transfer cancelled successfully.'
         ];
     }
 }

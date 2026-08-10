@@ -63,26 +63,29 @@
                                     </td>
 
                                     <td>
-                                        <a href="<?= base_url('index.php/Inventory/view_stock_transfer/' . $row->transfer_id); ?>"
+                                        <a href="<?= base_url('index.php/Inventory/view_stock_transfer/' . $row->transfer_id) ?>"
+                                            class="btn btn-info btn-sm"
                                             title="View">
                                             <i class="fa fa-eye"></i>
                                         </a>
 
-                                        &nbsp;
-
-                                        <a href="<?= base_url('index.php/Inventory/edit_stock_transfer/' . $row->transfer_id); ?>"
-                                            title="Edit">
-                                            <i class="fa fa-pencil"></i>
+                                        <a href="<?= base_url('index.php/Inventory/print_stock_transfer/' . $row->transfer_id) ?>"
+                                            target="_blank"
+                                            class="btn btn-primary btn-sm"
+                                            title="Print">
+                                            <i class="fa fa-print"></i>
                                         </a>
 
-                                        &nbsp;
+                                        <?php if ($row->status != 'Cancelled') { ?>
 
-                                        <a href="#"
-                                            class="delete-transfer"
-                                            data-id="<?= $row->transfer_id; ?>"
-                                            title="Delete">
-                                            <i class="glyphicon glyphicon-trash"></i>
-                                        </a>
+                                            <a href="<?= base_url('index.php/Inventory/cancel_stock_transfer/' . $row->transfer_id) ?>"
+                                                class="btn btn-danger btn-sm"
+                                                title="Cancel"
+                                                onclick="return confirm('Are you sure you want to cancel this Stock Transfer? The stock will be returned to the source location.')">
+                                                <i class="fa fa-times"></i>
+                                            </a>
+
+                                        <?php } ?>
 
                                     </td>
                                 </tr>
