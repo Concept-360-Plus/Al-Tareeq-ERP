@@ -414,8 +414,6 @@ class Inventory_model extends CI_Model
         return $issues;
     }
 
-
-
     public function get_itemwise_stock_summary()
     {
         return $this->db
@@ -830,5 +828,145 @@ class Inventory_model extends CI_Model
             ->row();
 
         return (float)($row->balance_qty ?? 0);
+    }
+
+    public function get_stock_transfer_master($transfer_id)
+    {
+        $this->db->select("
+            stm.*,
+            fb.branch_name AS from_branch,
+            tb.branch_name AS to_branch,
+            fw.warehouse_name AS from_warehouse,
+            tw.warehouse_name AS to_warehouse,
+            fs.store_name AS from_store,
+            ts.store_name AS to_store,
+            u.user_name
+        ");
+
+        $this->db->from('stock_transfer_master stm');
+        $this->db->join('branch_master fb', 'fb.branch_id=stm.from_branch_id', 'left');
+        $this->db->join('branch_master tb', 'tb.branch_id=stm.to_branch_id', 'left');
+        $this->db->join('warehouse_master fw', 'fw.warehouse_id=stm.from_warehouse_id', 'left');
+        $this->db->join('warehouse_master tw', 'tw.warehouse_id=stm.to_warehouse_id', 'left');
+        $this->db->join('store_master fs', 'fs.store_id=stm.from_store_id', 'left');
+        $this->db->join('store_master ts', 'ts.store_id=stm.to_store_id', 'left');
+        $this->db->join('users u', 'u.user_id=stm.created_by', 'left');
+        $this->db->where('stm.transfer_id', $transfer_id);
+
+        return $this->db->get()->row();
+    }
+
+    public function get_stock_transfer_items($transfer_id)
+    {
+        $this->db->select("
+            sti.*,
+            im.product_code,
+            im.product_name,
+            um.unit_name
+        ");
+
+        $this->db->from('stock_transfer_items sti');
+
+        $this->db->join(
+            'item_master im',
+            'im.product_id=sti.product_id',
+            'left'
+        );
+
+        $this->db->join(
+            'unit_master um',
+            'um.unit_id=sti.unit_id',
+            'left'
+        );
+
+        $this->db->where(
+            'sti.transfer_id',
+            $transfer_id
+        );
+
+        return $this->db->get()->result();
+    }
+
+    public function reverse_stock_transfer($transfer_id)
+    {
+
+        $movements = $this->db
+            ->where('trans_id', $transfer_id)
+            ->where_in('stock_type', ['IN', 'OUT'])
+            ->get('stock_details')
+            ->result();
+
+        if (empty($movements)) {
+
+            return [
+                'status'  => true,
+                'message' => 'No previous stock movement found.'
+            ];
+        }
+
+        foreach ($movements as $movement) {
+            if ($movement->stock_type == 'IN') {
+                $child = $this->db
+                    ->where(
+                        'parent_stock_id',
+                        $movement->stock_id
+                    )
+                    ->count_all_results('stock_details');
+                if ($child > 0) {
+                    return [
+                        'status' => false,
+                        'message' =>
+                        'This Stock Transfer cannot be edited because ' .
+                            'some of the transferred stock has already been used.'
+                    ];
+                }
+
+                if (
+                    (float)$movement->balance_qty <
+                    (float)$movement->quantity
+                ) {
+                    return [
+                        'status' => false,
+                        'message' =>
+                        'This Stock Transfer cannot be edited because ' .
+                            'the transferred stock has already been used.'
+                    ];
+                }
+            }
+        }
+
+        foreach ($movements as $movement) {
+            if (
+                $movement->stock_type == 'OUT' &&
+                !empty($movement->parent_stock_id)
+            ) {
+                $restore_qty = (float)$movement->quantity;
+
+                $this->db
+                    ->set(
+                        'balance_qty',
+                        'balance_qty + ' . $restore_qty,
+                        false
+                    )
+                    ->where(
+                        'stock_id',
+                        $movement->parent_stock_id
+                    )
+                    ->update('stock_details');
+            }
+        }
+
+        $this->db
+            ->where('trans_id', $transfer_id)
+            ->where_in(
+                'stock_type',
+                ['IN', 'OUT']
+            )
+            ->delete('stock_details');
+
+        return [
+            'status'  => true,
+            'message' => 'Previous stock movement reversed.'
+        ];
     }
 }
