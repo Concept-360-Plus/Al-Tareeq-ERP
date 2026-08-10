@@ -640,7 +640,7 @@ class Inventory extends CI_Controller
                 'transfer_id'   => $transfer_id,
                 'product_id'    => $product_id,
                 'unit_id'       => $unit_ids[$i],
-                'available_qty' => $this->Inventory_model->get_available_stock_by_location($product_id,$from_warehouse_id,$from_store_id),
+                'available_qty' => $this->Inventory_model->get_available_stock_by_location($product_id, $from_warehouse_id, $from_store_id),
                 'transfer_qty'  => $transfer_qty[$i],
                 'remarks'       => $item_remarks[$i]
             ];
@@ -686,6 +686,108 @@ class Inventory extends CI_Controller
 
         redirect('Inventory/list_stock_transfer');
     }
+
+    public function view_stock_transfer($transfer_id)
+    {
+        $user = $this->session->userdata('user_id');
+
+        if (!has_access($user, 'Inventory/list_stock_transfer', 'A')) {
+            $data['title'] = 'Access Denied';
+            $data['main_content'] = 'errors/access_control.php';
+            $this->load->view('includes/template', $data);
+            return;
+        }
+
+        $data['title'] = 'View Stock Transfer';
+        $data['master'] = $this->Inventory_model->get_stock_transfer_master($transfer_id);
+
+        if (!$data['master']) {
+            show_404();
+        }
+
+        $data['items'] = $this->Inventory_model->get_stock_transfer_items($transfer_id);
+        $data['main_content'] = 'inventory/view_stock_transfer';
+
+        $this->load->view('includes/template', $data);
+    }
+
+    public function cancel_stock_transfer($transfer_id)
+    {
+        $user = $this->session->userdata('user_id');
+
+        if (!has_access($user, 'Inventory/list_stock_transfer', 'D')) {
+            $data['title'] = 'Access Denied';
+            $data['main_content'] = 'errors/access_control.php';
+
+            $this->load->view(
+                'includes/template',
+                $data
+            );
+            return;
+        }
+
+        if (empty($transfer_id)) {
+            $this->session->set_flashdata(
+                'error',
+                'Invalid Stock Transfer.'
+            );
+            redirect('Inventory/list_stock_transfer');
+            return;
+        }
+
+        $result = $this->Inventory_model->cancel_stock_transfer($transfer_id);
+
+        if ($result['status']) {
+            $this->session->set_flashdata(
+                'success',
+                $result['message']
+            );
+        } else {
+            $this->session->set_flashdata(
+                'error',
+                $result['message']
+            );
+        }
+
+        redirect('Inventory/list_stock_transfer');
+    }
+
+    public function print_stock_transfer($transfer_id)
+    {
+        $user = $this->session->userdata('user_id');
+
+        if (!has_access($user, 'Inventory/list_stock_transfer', 'A')) {
+            $data['title'] = 'Access Denied';
+            $data['main_content'] = 'errors/access_control.php';
+
+            $this->load->view(
+                'includes/template',
+                $data
+            );
+
+            return;
+        }
+
+        $master = $this->Inventory_model->get_stock_transfer_master($transfer_id);
+
+        if (!$master) {
+            show_404();
+            return;
+        }
+
+        $items = $this->Inventory_model
+            ->get_stock_transfer_items($transfer_id);
+
+        $data['master'] = $master;
+        $data['items']  = $items;
+
+        $this->load->view(
+            'Print/print_stock_transfer',
+            $data
+        );
+    }
+
+
     /////////////////////// STOCK TRANFSER CODE END  ////////////////////////
 
     public function itemwise_stock_summary()
