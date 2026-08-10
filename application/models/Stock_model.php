@@ -259,72 +259,57 @@ class Stock_Model extends CI_Model
         }
 
         $sql = "
-        SELECT
-            zero.*,
-            COALESCE(one.in_qty,0) - COALESCE(two.out_qty,0) AS stock,
-            COALESCE(four.allocation,0) AS allocation
-
-        FROM
-        (
             SELECT
-                s.product_id,
-                s.price,
-                i.product_code,
-                i.product_name
-            FROM stock_details s
-            INNER JOIN item_master i
-                ON i.product_id = s.product_id
-            WHERE 1=1
-            $condition
-            GROUP BY s.product_id
-        ) AS zero
+                zero.*,
+                COALESCE(one.stock,0) AS stock,
+                COALESCE(four.allocation,0) AS allocation
 
-        LEFT JOIN
-        (
-            SELECT
-                product_id,
-                SUM(quantity) AS in_qty
-            FROM stock_details
-            WHERE stock_type='IN'
-            " . ($warehouse_id != '' ? "AND warehouse_id='$warehouse_id'" : "") . "
-            " . ($store_id != '' ? "AND store_id='$store_id'" : "") . "
-            GROUP BY product_id
-        ) AS one
-        ON zero.product_id = one.product_id
+            FROM
+            (
+                SELECT
+                    s.product_id,
+                    MAX(s.price) AS price,
+                    i.product_code,
+                    i.product_name
+                FROM stock_details s
+                INNER JOIN item_master i
+                    ON i.product_id = s.product_id
+                WHERE 1=1
+                $condition
+                GROUP BY s.product_id
+            ) AS zero
 
-        LEFT JOIN
-        (
-            SELECT
-                product_id,
-                SUM(quantity) AS out_qty
-            FROM stock_details
-            WHERE stock_type='OUT'
-            " . ($warehouse_id != '' ? "AND warehouse_id='$warehouse_id'" : "") . "
-            " . ($store_id != '' ? "AND store_id='$store_id'" : "") . "
-            GROUP BY product_id
-        ) AS two
-        ON zero.product_id = two.product_id
+            LEFT JOIN
+            (
+                SELECT
+                    product_id,
+                    SUM(balance_qty) AS stock
+                FROM stock_details
+                WHERE stock_type='IN'
+                " . ($warehouse_id != '' ? "AND warehouse_id='$warehouse_id'" : "") . "
+                " . ($store_id != '' ? "AND store_id='$store_id'" : "") . "
+                GROUP BY product_id
+            ) AS one
+            ON zero.product_id = one.product_id
 
-        LEFT JOIN
-        (
-            SELECT
-                product_id,
-                SUM(allocation) AS allocation
-            FROM stock_details
-            WHERE stock_type='IN'
-            AND status='0'
-            " . ($warehouse_id != '' ? "AND warehouse_id='$warehouse_id'" : "") . "
-            " . ($store_id != '' ? "AND store_id='$store_id'" : "") . "
-            GROUP BY product_id
-        ) AS four
-        ON zero.product_id = four.product_id
-
-        ORDER BY zero.product_name
-        ";
+            LEFT JOIN
+            (
+                SELECT
+                    product_id,
+                    SUM(allocation) AS allocation
+                FROM stock_details
+                WHERE stock_type='IN'
+                AND status='0'
+                " . ($warehouse_id != '' ? "AND warehouse_id='$warehouse_id'" : "") . "
+                " . ($store_id != '' ? "AND store_id='$store_id'" : "") . "
+                GROUP BY product_id
+            ) AS four
+            ON zero.product_id = four.product_id
+            ORDER BY zero.product_name
+            ";
 
         return $this->db->query($sql)->result();
     }
-
 
     //Stock Allocation
     function get_all_stock_allocations()

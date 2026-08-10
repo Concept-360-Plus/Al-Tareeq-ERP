@@ -545,8 +545,8 @@ class Inventory_model extends CI_Model
         foreach ($stocks as $out) {
             if ($out->parent_stock_id != NULL) {
                 $this->db
-                    ->set('balance_qty','balance_qty + ' . $out->quantity,FALSE)
-                    ->where('stock_id',$out->parent_stock_id)
+                    ->set('balance_qty', 'balance_qty + ' . $out->quantity, FALSE)
+                    ->where('stock_id', $out->parent_stock_id)
                     ->update('stock_details');
             }
 
@@ -565,6 +565,7 @@ class Inventory_model extends CI_Model
         return true;
     }
 
+    ///// Stock Ledger /////
     public function get_stock_ledger()
     {
         $this->db->select("
@@ -572,21 +573,262 @@ class Inventory_model extends CI_Model
             im.product_code,
             im.product_name,
             wm.warehouse_name,
+            sm.store_name,
+            um.unit_name,
             u.user_name
         ");
 
         $this->db->from('stock_details sd');
 
-        $this->db->join('item_master im', 'im.product_id = sd.product_id');
+        $this->db->join(
+            'item_master im',
+            'im.product_id=sd.product_id',
+            'left'
+        );
 
-        $this->db->join('warehouse_master wm', 'wm.warehouse_id = sd.warehouse_id', 'left');
+        $this->db->join(
+            'warehouse_master wm',
+            'wm.warehouse_id=sd.warehouse_id',
+            'left'
+        );
 
-        $this->db->join('users u', 'u.user_id = sd.created_by', 'left');
+        $this->db->join(
+            'store_master sm',
+            'sm.store_id=sd.store_id',
+            'left'
+        );
 
-        $this->db->order_by('sd.stock_date', 'DESC');
+        $this->db->join(
+            'unit_master um',
+            'um.unit_id=sd.unit_id',
+            'left'
+        );
 
-        $this->db->order_by('sd.stock_id', 'DESC');
+        $this->db->join(
+            'users u',
+            'u.user_id=sd.created_by',
+            'left'
+        );
+
+        $this->db->order_by('sd.created_date', 'DESC');
 
         return $this->db->get()->result();
+    }
+
+    ///// Stock Transfer /////
+    public function get_stock_transfer_list()
+    {
+        $this->db->select("
+            stm.*,
+
+            fw.warehouse_name AS from_warehouse,
+            tw.warehouse_name AS to_warehouse,
+
+            fs.store_name AS from_store,
+            ts.store_name AS to_store,
+
+            fb.branch_name AS from_branch,
+            tb.branch_name AS to_branch,
+
+            u.user_name
+        ");
+
+        $this->db->from('stock_transfer_master stm');
+
+        // From Warehouse
+        $this->db->join(
+            'warehouse_master fw',
+            'fw.warehouse_id = stm.from_warehouse_id',
+            'left'
+        );
+
+        // To Warehouse
+        $this->db->join(
+            'warehouse_master tw',
+            'tw.warehouse_id = stm.to_warehouse_id',
+            'left'
+        );
+
+        // From Store
+        $this->db->join(
+            'store_master fs',
+            'fs.store_id = stm.from_store_id',
+            'left'
+        );
+
+        // To Store
+        $this->db->join(
+            'store_master ts',
+            'ts.store_id = stm.to_store_id',
+            'left'
+        );
+
+        // From Branch
+        $this->db->join(
+            'branch_master fb',
+            'fb.branch_id = stm.from_branch_id',
+            'left'
+        );
+
+        // To Branch
+        $this->db->join(
+            'branch_master tb',
+            'tb.branch_id = stm.to_branch_id',
+            'left'
+        );
+
+        // User
+        $this->db->join(
+            'users u',
+            'u.user_id = stm.created_by',
+            'left'
+        );
+
+        $this->db->order_by('stm.transfer_id', 'DESC');
+
+        return $this->db->get()->result();
+    }
+
+    public function insert_stock_transfer_master($data)
+    {
+        $this->db->insert('stock_transfer_master', $data);
+
+        return $this->db->insert_id();
+    }
+
+    public function insert_stock_transfer_item($data)
+    {
+        return $this->db->insert(
+            'stock_transfer_items',
+            $data
+        );
+    }
+
+    public function transfer_stock(
+        $transfer_id,
+        $product_id,
+        $unit_id,
+        $transfer_qty,
+        $from_warehouse_id,
+        $from_store_id,
+        $to_warehouse_id,
+        $to_store_id
+    ) {
+        if ($transfer_qty <= 0) {
+            return false;
+        }
+
+        $user_id = $this->session->userdata('user_id');
+
+        $stocks = $this->db
+            ->where('warehouse_id', $from_warehouse_id)
+            ->where('store_id', $from_store_id)
+            ->where('product_id', $product_id)
+            ->where('stock_type', 'IN')
+            ->where('balance_qty >', 0)
+            ->order_by('stock_id', 'ASC')
+            ->get('stock_details')
+            ->result();
+
+        $remaining = $transfer_qty;
+
+        foreach ($stocks as $stock) {
+
+            if ($remaining <= 0) {
+                break;
+            }
+
+            $available = (float)$stock->balance_qty;
+
+            if ($available <= 0) {
+                continue;
+            }
+
+            $deduct = min($available, $remaining);
+
+            $this->db
+                ->where('stock_id', $stock->stock_id)
+                ->update('stock_details', [
+                    'balance_qty' => $available - $deduct
+                ]);
+
+            $this->db->insert('stock_details', [
+                'parent_stock_id' => $stock->stock_id,
+                'grn_id'          => $stock->grn_id,
+                'warehouse_id'    => $from_warehouse_id,
+                'store_id'        => $from_store_id,
+                'stock_type'      => 'OUT',
+                'trans_id'        => $transfer_id,
+                'stock_date'      => date('Y-m-d'),
+                'year'            => date('Y'),
+                'product_id'      => $product_id,
+                'unit_id'         => $unit_id,
+                'quantity'        => $deduct,
+                'balance_qty'     => 0,
+                'price'           => $stock->price,
+                'stock_value'     => $deduct * $stock->price,
+                'remark'          => 'Stock Transfer OUT',
+                'item_remark'     => 'Transfer',
+                'created_by'      => $user_id,
+                'created_date'    => date('Y-m-d H:i:s'),
+                'status'          => 1,
+                'allocation_for'  => 'TRANSFER',
+                'allocation_id'   => $transfer_id
+            ]);
+
+            $this->db->insert('stock_details', [
+                'parent_stock_id' => $stock->stock_id,
+                'grn_id'          => $stock->grn_id,
+                'warehouse_id'    => $to_warehouse_id,
+                'store_id'        => $to_store_id,
+                'stock_type'      => 'IN',
+                'trans_id'        => $transfer_id,
+                'stock_date'      => date('Y-m-d'),
+                'year'            => date('Y'),
+                'product_id'      => $product_id,
+                'unit_id'         => $unit_id,
+                'quantity'        => $deduct,
+                'balance_qty'     => $deduct,
+                'price'           => $stock->price,
+                'stock_value'     => $deduct * $stock->price,
+                'remark'          => 'Stock Transfer IN',
+                'item_remark'     => 'Transfer',
+                'created_by'      => $user_id,
+                'created_date'    => date('Y-m-d H:i:s'),
+                'status'          => 1,
+                'allocation_for'  => 'TRANSFER',
+                'allocation_id'   => $transfer_id
+
+            ]);
+            $remaining -= $deduct;
+        }
+
+        if ($remaining > 0) {
+            log_message(
+                'error',
+                'Stock Transfer failed. Product : '
+                    . $product_id .
+                    ' Required : '
+                    . $transfer_qty .
+                    ' Available : '
+                    . ($transfer_qty - $remaining)
+            );
+            return false;
+        }
+        return true;
+    }
+
+    public function get_available_stock_by_location($product_id, $warehouse_id, $store_id)
+    {
+        $row = $this->db
+            ->select_sum('balance_qty')
+            ->where('warehouse_id', $warehouse_id)
+            ->where('store_id', $store_id)
+            ->where('product_id', $product_id)
+            ->where('stock_type', 'IN')
+            ->get('stock_details')
+            ->row();
+
+        return (float)($row->balance_qty ?? 0);
     }
 }
