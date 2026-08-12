@@ -195,12 +195,46 @@ class Stock_Model extends CI_Model
         $query = $this->db->query("SELECT * FROM min_stock_qty a left join item_master b on a.item_id=b.product_id;");
         return $query->result();
     }
+    function get_min_stock_by_id($item_id)
+    {
+        $this->db->select('
+            ms.item_id,
+            ms.min_stock_qty,
+            im.product_name,
+            im.description
+        ');
+        $this->db->from('min_stock_qty ms');
+        $this->db->join(
+            'item_master im',
+            'im.product_id = ms.item_id',
+            'left'
+        );
+        $this->db->where('ms.item_id', $item_id);
+
+        return $this->db->get()->row();
+    }
+
+    function update_min_stock_records()
+    {
+        $item_id = $this->input->post('item');
+        $min_stock_qty = $this->input->post('min_stock_qty');
+
+        $data = array(
+            'min_stock_qty' => $min_stock_qty
+        );
+
+        $this->db->where('item_id', $item_id);
+
+        return $this->db->update('min_stock_qty', $data);
+    }
+
     function get_reorder_stock_list()
     {
         $warehouse_id = $this->input->post("warehouse_id");
         $query = $this->db->query("SELECT * FROM (SELECT two.item_desc,ONE.item_id, ONE.min_stock_qty,COALESCE(two.inv_stock, 0) AS invstock, COALESCE(three.po_stock, 0) AS postock, COALESCE(COALESCE(two.inv_stock, 0) + COALESCE(three.po_stock, 0), 0) AS total_stock FROM min_stock_qty AS ONE LEFT JOIN( SELECT SUM(quantity) AS inv_stock, product_id,item_desc FROM stock_details WHERE stock_type = 'IN' AND STATUS = '0' GROUP BY product_id, item_desc ) AS two ON ONE.item_id = two.product_id LEFT JOIN(SELECT COALESCE(SUM(quantity), 0) AS po_stock, product_id FROM purchase_order_master p JOIN purchase_order_transaction tr ON p.po_id = tr.po_master_id WHERE p.grn_status = 0 AND p.cancelled = 0 GROUP BY product_id) AS three ON ONE.item_id = three.product_id) AS tmp LEFT JOIN item_master pm ON tmp.item_id = pm.product_id WHERE tmp.total_stock <= tmp.min_stock_qty;");
         return $query->result();
     }
+
     function get_reorder_stock_for_PO()
     {
         $model_code = $this->input->post("selected_tr");
@@ -214,6 +248,7 @@ class Stock_Model extends CI_Model
         $query = $this->db->query("select r.order_code, p.description from reorder_stock_qty r, item_master p where r.product_id=p.product_id and r.product_id in($model_code)");
         return $query->result();
     }
+
     function delete_min_stock($id)
     {
         $this->db->where('item_id', $id);
