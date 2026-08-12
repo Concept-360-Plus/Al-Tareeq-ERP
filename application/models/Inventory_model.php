@@ -424,7 +424,7 @@ class Inventory_model extends CI_Model
 
                 SUM(
                     CASE
-                        WHEN sd.stock_type='IN' AND sd.status=1
+                        WHEN sd.stock_type='IN'
                         THEN sd.quantity
                         ELSE 0
                     END
@@ -986,7 +986,8 @@ class Inventory_model extends CI_Model
             ->where('allocation_for', 'TRANSFER')
             ->where('allocation_id', $transfer_id)
             ->update('stock_details', [
-                'status' => 0
+                'status'      => 0,
+                'balance_qty' => 0
             ]);
 
         $this->db

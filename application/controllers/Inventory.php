@@ -757,6 +757,7 @@ class Inventory extends CI_Controller
         $user = $this->session->userdata('user_id');
 
         if (!has_access($user, 'Inventory/list_stock_transfer', 'A')) {
+
             $data['title'] = 'Access Denied';
             $data['main_content'] = 'errors/access_control.php';
 
@@ -768,7 +769,8 @@ class Inventory extends CI_Controller
             return;
         }
 
-        $master = $this->Inventory_model->get_stock_transfer_master($transfer_id);
+        $master = $this->Inventory_model
+            ->get_stock_transfer_master($transfer_id);
 
         if (!$master) {
             show_404();
@@ -778,6 +780,28 @@ class Inventory extends CI_Controller
         $items = $this->Inventory_model
             ->get_stock_transfer_items($transfer_id);
 
+
+        $branch = $this->Setup_model->get_branch_by_id(1);
+
+        $data['headerPath'] = '';
+
+        if (!empty($branch->branch_header)) {
+
+            $data['headerPath'] = base_url(
+                ltrim($branch->branch_header, '/')
+            );
+        }
+
+        $data['footerPath'] = '';
+
+        if (!empty($branch->branch_footer)) {
+
+            $data['footerPath'] = base_url(
+                ltrim($branch->branch_footer, '/')
+            );
+        }
+
+        $data['branch'] = $branch;
         $data['master'] = $master;
         $data['items']  = $items;
 
