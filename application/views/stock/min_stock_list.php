@@ -58,7 +58,7 @@
                            <span class="glyphicon glyphicon-pencil"
                              aria-hidden="true"></span>
                          </a>
-                         
+
                          <a href="<?php echo base_url() . 'index.php/Stock/delete_min_stock/' . $row->item_id; ?>"
                            title="Delete"
                            class="delete">

@@ -94,7 +94,18 @@ class Stock extends CI_Controller
     {
         $data['title'] = 'Minimum Stock';
         $this->Stock_model->min_stock_add_records();
-        $this->session->set_flashdata('success', 'Data Saved Successfully..');
+        if ($result) {
+            $this->session->set_flashdata(
+                'success',
+                'Minimum stock added successfully.'
+            );
+        } else {
+            $this->session->set_flashdata(
+                'error',
+                'Minimum stock is already configured for this product.'
+            );
+        }
+
         redirect('Stock/list_min_stock');
     }
 

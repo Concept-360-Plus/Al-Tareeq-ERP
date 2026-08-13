@@ -115,52 +115,249 @@
                    </tr>
                  </thead>
                  <tbody>
-                   <tr>
-                     <td>
-                       <select class="form-control" name="item_id[]" id='item0' onchange='get_item_by_id(0)'>
-                         <option value=''>Select</option>
-                         <option value="new">+ Add New Product</option>
-                         <?php foreach ($active_items as $item) { ?>
-                           <option value='<?php echo $item->product_id ?>'><?php echo $item->product_name; ?></option>
-                         <?php } ?>
-                       </select>
-                     </td>
-                     <!-- <td><input class="form-control" type="text" name="item_brand[]" id="brand0"></td> -->
-                     <td><input class="form-control" type="text" name="item_description[]" id="description0"></td>
-                     <td>
-                       <select class="form-control" name="item_unit[]" id='unit0'>
-                         <option value=''>Select</option>
-                         <?php foreach ($active_units as $unit) { ?>
-                           <option value='<?php echo $unit->unit_id ?>'><?php echo $unit->unit_name; ?></option>
-                         <?php } ?>
-                       </select>
-                     </td>
 
-                     <td>
-                       <input class="form-control quantity" type="number" name="item_quantity[]" id="quantity0">
-                     </td>
-                     <td>
-                       <input type="number" class="form-control unit_price" name="unit_price[]" step='any' id="unit_price0" />
-                     </td>
-                     <!-- <td>
-                    <input type="number" class="form-control dis_per" id="discount_per0" step='any' name="dis_per[]" />
-                  </td>
-                  <td>
-                    <input type="number" class="form-control dis_amt" id="discount_amt0" step='any' name="dis_amt[]" />
-                  </td>
-                  <td>
-                    <input type="number" class="form-control final_unit_price" name="final_unit_price[]" step='any' id="final_unit_price0" />
-                  </td> -->
-                     <td>
-                       <input type="number" class="form-control total_price" id="total_price0" step='any' name="total_price[]" />
-                     </td>
-                     <td>
-                       <!-- <a href="#" class="addRow" title="Add"><i class="fa fa-plus-circle text-success"></i></a>
-                       <a href="#" class="deleteRow" title="Delete"><i class="fa fa-trash text-danger"></i></a> -->
-                        <button type="button" class="btn btn-success addRow" title="Add"><i class="fa fa-plus"></i></button>
-                        <button type="button" class="btn btn-danger deleteRow" title="Delete"><i class="fa fa-minus"></i></button>
-                     </td>
-                   </tr>
+                   <?php if (!empty($reorder_list)) { ?>
+
+                     <?php foreach ($reorder_list as $index => $item) { ?>
+
+                       <tr>
+
+                         <!-- Product -->
+                         <td>
+                           <select
+                             class="form-control"
+                             name="item_id[]"
+                             id="item<?php echo $index; ?>"
+                             onchange="get_item_by_id(<?php echo $index; ?>)">
+
+                             <option value="">Select</option>
+
+                             <option value="new">+ Add New Product</option>
+
+                             <?php foreach ($active_items as $active_item) { ?>
+
+                               <option
+                                 value="<?php echo $active_item->product_id; ?>"
+                                 <?php echo ($active_item->product_id == $item->product_id) ? 'selected' : ''; ?>>
+                                 <?php echo $active_item->product_name; ?>
+                               </option>
+
+                             <?php } ?>
+
+                           </select>
+                         </td>
+
+
+                         <!-- Description -->
+                         <td>
+                           <input
+                             class="form-control"
+                             type="text"
+                             name="item_description[]"
+                             id="description<?php echo $index; ?>"
+                             value="<?php echo htmlspecialchars($item->item_description); ?>">
+                         </td>
+
+
+                         <!-- Unit -->
+                         <td>
+
+                           <select
+                             class="form-control"
+                             name="item_unit[]"
+                             id="unit<?php echo $index; ?>">
+
+                             <option value="">Select</option>
+
+                             <?php foreach ($active_units as $unit) { ?>
+
+                               <option
+                                 value="<?php echo $unit->unit_id; ?>"
+                                 <?php echo ($unit->unit_id == $item->unit_id) ? 'selected' : ''; ?>>
+                                 <?php echo $unit->unit_name; ?>
+                               </option>
+
+                             <?php } ?>
+
+                           </select>
+
+                         </td>
+
+
+                         <!-- Quantity -->
+                         <td>
+
+                           <input
+                             class="form-control quantity"
+                             type="number"
+                             name="item_quantity[]"
+                             id="quantity<?php echo $index; ?>"
+                             value="<?php echo $item->reorder_qty; ?>"
+                             step="any"
+                             min="0">
+
+                         </td>
+
+
+                         <!-- Price -->
+                         <td>
+
+                           <input
+                             type="number"
+                             class="form-control unit_price"
+                             name="unit_price[]"
+                             step="any"
+                             id="unit_price<?php echo $index; ?>"
+                             value="<?php echo $item->unit_price; ?>">
+
+                         </td>
+
+
+                         <!-- Total -->
+                         <td>
+
+                           <input
+                             type="number"
+                             class="form-control total_price"
+                             name="total_price[]"
+                             step="any"
+                             id="total_price<?php echo $index; ?>"
+                             value="<?php echo number_format(
+                                      $item->reorder_qty * $item->unit_price,
+                                      2,
+                                      '.',
+                                      ''
+                                    ); ?>"
+                             readonly>
+
+                         </td>
+
+
+                         <!-- Actions -->
+                         <td>
+
+                           <button
+                             type="button"
+                             class="btn btn-success addRow"
+                             title="Add">
+                             <i class="fa fa-plus"></i>
+                           </button>
+
+                           <button
+                             type="button"
+                             class="btn btn-danger deleteRow"
+                             title="Delete">
+                             <i class="fa fa-minus"></i>
+                           </button>
+
+                         </td>
+
+                       </tr>
+
+                     <?php } ?>
+
+                   <?php } else { ?>
+
+                     <!-- Normal blank row when no reorder products were selected -->
+
+                     <tr>
+
+                       <td>
+                         <select
+                           class="form-control"
+                           name="item_id[]"
+                           id="item0"
+                           onchange="get_item_by_id(0)">
+                           <option value="">Select</option>
+                           <option value="new">+ Add New Product</option>
+
+                           <?php foreach ($active_items as $item) { ?>
+
+                             <option value="<?php echo $item->product_id; ?>">
+                               <?php echo $item->product_name; ?>
+                             </option>
+
+                           <?php } ?>
+
+                         </select>
+                       </td>
+
+                       <td>
+                         <input
+                           class="form-control"
+                           type="text"
+                           name="item_description[]"
+                           id="description0">
+                       </td>
+
+                       <td>
+
+                         <select
+                           class="form-control"
+                           name="item_unit[]"
+                           id="unit0">
+
+                           <option value="">Select</option>
+
+                           <?php foreach ($active_units as $unit) { ?>
+
+                             <option value="<?php echo $unit->unit_id; ?>">
+                               <?php echo $unit->unit_name; ?>
+                             </option>
+
+                           <?php } ?>
+
+                         </select>
+
+                       </td>
+
+                       <td>
+                         <input
+                           class="form-control quantity"
+                           type="number"
+                           name="item_quantity[]"
+                           id="quantity0">
+                       </td>
+
+                       <td>
+                         <input
+                           type="number"
+                           class="form-control unit_price"
+                           name="unit_price[]"
+                           step="any"
+                           id="unit_price0" />
+                       </td>
+
+                       <td>
+                         <input
+                           type="number"
+                           class="form-control total_price"
+                           id="total_price0"
+                           step="any"
+                           name="total_price[]"
+                           readonly />
+                       </td>
+
+                       <td>
+
+                         <button
+                           type="button"
+                           class="btn btn-success addRow">
+                           <i class="fa fa-plus"></i>
+                         </button>
+
+                         <button
+                           type="button"
+                           class="btn btn-danger deleteRow">
+                           <i class="fa fa-minus"></i>
+                         </button>
+
+                       </td>
+
+                     </tr>
+
+                   <?php } ?>
+
                  </tbody>
                </table>
 
@@ -178,7 +375,7 @@
                  </div>
                  <div class="col-md-2">
                    <input type="text" class="form-control" name="sub_total" id="sub_total"
-                     value="<?php echo $records1[0]->sub_total; ?>" readonly>
+                     value="0.00" readonly>
                  </div>
 
                  <div class="col-md-1">
@@ -186,12 +383,12 @@
                  </div>
                  <div class="col-md-1">
                    <input type="text" class="form-control" name="discount_per" id="discount_per"
-                     value="<?php echo $records1[0]->discount_percent; ?>">
+                     value="0">
                  </div>
 
                  <div class="col-md-2">
                    <input type="text" class="form-control" name="discount_amt" id="discount_amt"
-                     value="<?php echo $records1[0]->discount; ?>">
+                     value="0">
                  </div>
 
                  <div class="col-md-2">
@@ -199,7 +396,7 @@
                  </div>
                  <div class="col-md-2">
                    <input type="number" class="form-control" name="transportation_charge" id="transportation_charge"
-                     value="<?php echo $records1[0]->trans_charge; ?>" step="any">
+                     value="0" step="any">
                  </div>
                </div>
 
@@ -210,7 +407,7 @@
                  </div>
                  <div class="col-md-2">
                    <input type="number" class="form-control" name="customs_charge" id="customs_charge"
-                     value="<?php echo $records1[0]->cust_charge; ?>" step="any">
+                     value="0" step="any">
                  </div>
 
                  <div class="col-md-2">
@@ -218,7 +415,7 @@
                  </div>
                  <div class="col-md-2">
                    <input type="number" class="form-control" name="other_charge" id="other_charge"
-                     value="<?php echo $records1[0]->add_charge; ?>" step="any">
+                     value="0" step="any">
                  </div>
 
                  <div class="col-md-2">
@@ -236,12 +433,12 @@
                  </div>
                  <div class="col-md-1">
                    <input type="text" class="form-control" name="vat_per" id="vat_per"
-                     value="<?php echo $records1[0]->vat_percent; ?>">
+                     value="0">
                  </div>
 
                  <div class="col-md-2">
                    <input type="text" class="form-control" name="vat_amount" id="vat_amount"
-                     value="<?php echo $records1[0]->vat_amt; ?>" readonly>
+                     value="0.00" readonly>
                  </div>
 
                  <div class="col-md-2">
@@ -249,7 +446,7 @@
                  </div>
                  <div class="col-md-2">
                    <input type="text" class="form-control" name="grand_total" id="grand_total"
-                     value="<?php echo $records1[0]->grand_total; ?>" readonly>
+                     value="0.00" readonly>
                  </div>
                </div>
 
@@ -282,13 +479,13 @@
                  <div class="col-md-6">
                    <label class="control-label">Validity</label>
                    <input type="text" class="form-control" name="validity" id="validity"
-                     value="<?php echo $records1[0]->validity ?? ''; ?>">
+                     value="">
                  </div>
 
                  <div class="col-md-6">
                    <label class="control-label">Payment Terms</label>
                    <input type="text" class="form-control" name="payment_terms" id="payment_terms"
-                     value="<?php echo $records1[0]->payment_term; ?>">
+                     value="">
                  </div>
                </div>
 
@@ -296,12 +493,12 @@
                <div class="row mb-3 mt-3">
                  <div class="col-md-6">
                    <label class="control-label">Delivery Terms</label>
-                   <textarea class="form-control" name="delivery_terms" id="delivery_terms" rows="4"><?php echo $records1[0]->delivery_term; ?></textarea>
+                   <textarea class="form-control" name="delivery_terms" id="delivery_terms" rows="4"></textarea>
                  </div>
 
                  <div class="col-md-6">
                    <label class="control-label">General Terms</label>
-                   <textarea class="form-control" name="general_terms" id="general_terms" rows="4"><?php echo $records1[0]->general_term; ?></textarea>
+                   <textarea class="form-control" name="general_terms" id="general_terms" rows="4"></textarea>
                  </div>
                </div>
 
@@ -439,7 +636,7 @@
          }
        });
 
-       let rowIndex = 1; // start from 1 (row 0 exists in HTML)
+       let rowIndex = <?php echo !empty($reorder_list) ? count($reorder_list) : 1; ?>; // start from 1 (row 0 exists in HTML)
        // Add new row
        $(document).on('click', '.addRow', function(e) {
          e.preventDefault();
@@ -582,6 +779,7 @@
          var grandTotal = totalBeforeVAT + vatAmt;
          $('#grand_total').val(grandTotal.toFixed(2));
        }
+       calculateAll();
      }); // end ready
 
      // get_item_by_id stays outside ready (your original function)
@@ -606,7 +804,7 @@
            }
          });
        } else {
-        //  $('#brand' + row_no).text('');
+         //  $('#brand' + row_no).text('');
          $('#description' + row_no).text('');
          $('#unit' + row_no).val('').change();
          $('#actual_price' + row_no).val('');

@@ -645,8 +645,21 @@ class Purchase extends CI_Controller
         $this->load->model('Purchase_Model');
         $this->load->model('Company_model');
         $this->load->model('Setup_model');
-        error_reporting(0);
         $data['title']              = 'Purchase Order-Stock';
+
+        $selected_tr = $this->input->post('selected_tr');
+        $selected_ids = array();
+        if (!empty($selected_tr)) {
+            $selected_ids = array_filter(
+                array_map('intval', explode(',', $selected_tr))
+            );
+        }
+
+        $data['reorder_list'] = array();
+        if (!empty($selected_ids)) {
+            $data['reorder_list'] = $this->Stock_model->get_reorder_stock_for_PO($selected_ids);
+        }
+
         $prifix                     = 'AVE/POD/';
         $num                        = $this->Setup_model->get_next_code($prifix, 'po_code', 'purchase_order_master', 12) + 1;
         $digit                      = sprintf("%1$04d", $num);
@@ -657,7 +670,6 @@ class Purchase extends CI_Controller
         $data['active_units']       = $this->Setup_model->get_active_unit_list();
 
         $data['supplier_records']   = $this->Setup_model->get_active_supplier_list();
-        $data['reorder_list']       = $this->Stock_model->get_reorder_stock_for_PO();
         $data['prepared_by'] = $this->session->userdata('user_name');
         $this->load->model('Hr_model');
         $data['employees'] = $this->Hr_model->get_employee_list();
