@@ -797,27 +797,26 @@
              // $('#brand' + row_no).val(response.brand_name);
              $('#description' + row_no).val(response.item_description);
              $('#unit' + row_no).val(response.item_unit).change();
-             $('#actual_price' + row_no).val(response.mrp_aed);
+             $('#unit_price' + row_no).val(response.mrp_aed);
              $('#unit' + row_no).prop('required', true);
              $('#quantity' + row_no).prop('required', true);
-             $('#actual_price' + row_no).prop('required', true);
+             $('#unit_price' + row_no).prop('required', true);
            }
          });
        } else {
          //  $('#brand' + row_no).text('');
          $('#description' + row_no).text('');
          $('#unit' + row_no).val('').change();
-         $('#actual_price' + row_no).val('');
+         $('#unit_price' + row_no).val('');
          $('#unit' + row_no).prop('required', false);
          $('#quantity' + row_no).prop('required', false);
-         $('#actual_price' + row_no).prop('required', false);
+         $('#unit_price' + row_no).prop('required', false);
        }
      }
 
      $(document).ready(function() {
        // Form validation before submit
        $("#main").on("submit", function(e) {
-         alert("Validating form..."); // Debug alert
          let isValid = true;
          let errorMsg = "";
 
@@ -929,7 +928,6 @@
              console.log($('#addItemModalContent').find('#addItemForm').length);
              $('#addItemModal').modal('show');
              $('#addItemModalContent').find('#addItemForm').off('submit').on('submit', function(e) {
-               alert(11);
                e.preventDefault();
                const currentSelect = $('#addItemModal').data('currentSelect');
                const formData = new FormData(this);
