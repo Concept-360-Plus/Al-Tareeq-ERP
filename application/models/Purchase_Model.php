@@ -4,6 +4,53 @@ class Purchase_Model extends CI_Model
 {
 	///////////////DASHBOARD CODES START //////////////
 
+	public function get_purchase_today()
+	{
+		$this->db->select_sum('grand_total');
+		$this->db->where('grn_date', date('Y-m-d'));
+		$query = $this->db->get('purchase_grn_master');
+
+		return $query->row()->grand_total ?? 0;
+	}
+
+	public function get_monthly_purchase()
+	{
+		$this->db->select_sum('grand_total');
+		$this->db->where('YEAR(grn_date)', date('Y'));
+		$this->db->where('MONTH(grn_date)', date('m'));
+
+		$query = $this->db->get('purchase_grn_master');
+
+		return $query->row()->grand_total ?? 0;
+	}
+
+	public function get_purchase_return_summary()
+	{
+		$this->db->select("
+        COUNT(DISTINCT prm.return_id) AS total_returns,
+        COALESCE(SUM(prt.return_qty), 0) AS total_return_qty
+    ");
+
+		$this->db->from('purchase_return_master prm');
+
+		$this->db->join(
+			'purchase_return_transaction prt',
+			'prt.return_master_id = prm.return_id',
+			'left'
+		);
+
+		$query = $this->db->get();
+
+		return $query->row();
+	}
+
+	public function get_average_purchase_cost()
+	{
+		$this->db->select_avg('landing_price');
+		$query = $this->db->get('purchase_grn_transaction');
+
+		return $query->row()->landing_price ?? 0;
+	}
 	/* ===========================
 	DASHBOARD COUNT FUNCTIONS
 	=========================== */
@@ -104,7 +151,7 @@ class Purchase_Model extends CI_Model
 		$this->db->select_sum('grand_total');
 		$query = $this->db->get('purchase_order_master');
 
-		return $query->row()->grand_total;
+		return $query->row()->grand_total ?? 0;
 	}
 
 	public function total_grn_value()
@@ -112,7 +159,7 @@ class Purchase_Model extends CI_Model
 		$this->db->select_sum('grand_total');
 		$query = $this->db->get('purchase_grn_master');
 
-		return $query->row()->grand_total;
+		return $query->row()->grand_total ?? 0;
 	}
 
 	public function total_quotation_value()
@@ -120,7 +167,7 @@ class Purchase_Model extends CI_Model
 		$this->db->select_sum('grand_total');
 		$query = $this->db->get('purchase_quotation_master');
 
-		return $query->row()->grand_total;
+		return $query->row()->grand_total ?? 0;
 	}
 
 

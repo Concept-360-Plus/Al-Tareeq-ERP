@@ -63,6 +63,12 @@ class Dashboard extends CI_Controller
         $data['recent_rfq']          = $this->Purchase_model->get_recent_rfq();
         $data['recent_po']           = $this->Purchase_model->get_recent_po();
 
+        $data['purchase_today'] = $this->Purchase_model->get_purchase_today();
+        $data['monthly_purchase'] = $this->Purchase_model->get_monthly_purchase();
+        $data['purchase_return_summary'] = $this->Purchase_model->get_purchase_return_summary();
+        $data['average_purchase_cost'] = $this->Purchase_model->get_average_purchase_cost();
+
+        $data['monthly_purchase_chart'] = $this->Purchase_model->get_monthly_po();
         $data['top_suppliers']       = $this->Purchase_model->get_top_suppliers();
 
         $data['main_content'] = 'dashboard/purchase_dashboard';
