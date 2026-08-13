@@ -169,25 +169,27 @@ class Stock_Model extends CI_Model
 
     function min_stock_add_records()
     {
+        $item_id = $this->input->post('item');
+        $min_stock_qty = $this->input->post('min_stock_qty');
+
+        // Check duplicate product
+        $existing = $this->db
+            ->where('item_id', $item_id)
+            ->get('min_stock_qty')
+            ->row();
+
+        if ($existing) {
+            return false;
+        }
 
         $data = array(
-            'item_id' => $this->input->post("item"),
-            'min_stock_qty' => $this->input->post("min_stock_qty"),
+            'item_id'       => $item_id,
+            'min_stock_qty' => $min_stock_qty,
             'created_by'    => $this->session->userdata('user_id'),
-            'created_on' =>  date('Y-m-d H:i:s'),
+            'created_on'    => date('Y-m-d H:i:s')
         );
-        $this->db->insert('min_stock_qty', $data);
-        $insert_id = $this->db->insert_id();
-        // if($insert_id)
-        // {
-        //     $user_se_id=$this->session->userdata('user_id');
-        //     $page_name=explode('index.php/', $_SERVER['PHP_SELF']);
-        //     $ci = get_instance();
-        //     $ci->load->helper('log');
-        //     $log_msg=add_log_entry($user_se_id,1,$page_name[1],'min_stock_qty','sno',$insert_id);
 
-        // }
-        return $insert_id;
+        return $this->db->insert('min_stock_qty', $data);
     }
 
     function get_min_stock_list()
@@ -195,25 +197,188 @@ class Stock_Model extends CI_Model
         $query = $this->db->query("SELECT * FROM min_stock_qty a left join item_master b on a.item_id=b.product_id;");
         return $query->result();
     }
+    function get_min_stock_by_id($item_id)
+    {
+        $this->db->select('
+            ms.item_id,
+            ms.min_stock_qty,
+            im.product_name,
+            im.description
+        ');
+        $this->db->from('min_stock_qty ms');
+        $this->db->join(
+            'item_master im',
+            'im.product_id = ms.item_id',
+            'left'
+        );
+        $this->db->where('ms.item_id', $item_id);
+
+        return $this->db->get()->row();
+    }
+
+    function update_min_stock_records()
+    {
+        $item_id = $this->input->post('item');
+        $min_stock_qty = $this->input->post('min_stock_qty');
+
+        $data = array(
+            'min_stock_qty' => $min_stock_qty
+        );
+
+        $this->db->where('item_id', $item_id);
+
+        return $this->db->update('min_stock_qty', $data);
+    }
+
     function get_reorder_stock_list()
     {
         $warehouse_id = $this->input->post("warehouse_id");
-        $query = $this->db->query("SELECT * FROM (SELECT two.item_desc,ONE.item_id, ONE.min_stock_qty,COALESCE(two.inv_stock, 0) AS invstock, COALESCE(three.po_stock, 0) AS postock, COALESCE(COALESCE(two.inv_stock, 0) + COALESCE(three.po_stock, 0), 0) AS total_stock FROM min_stock_qty AS ONE LEFT JOIN( SELECT SUM(quantity) AS inv_stock, product_id,item_desc FROM stock_details WHERE stock_type = 'IN' AND STATUS = '0' GROUP BY product_id, item_desc ) AS two ON ONE.item_id = two.product_id LEFT JOIN(SELECT COALESCE(SUM(quantity), 0) AS po_stock, product_id FROM purchase_order_master p JOIN purchase_order_transaction tr ON p.po_id = tr.po_master_id WHERE p.grn_status = 0 AND p.cancelled = 0 GROUP BY product_id) AS three ON ONE.item_id = three.product_id) AS tmp LEFT JOIN item_master pm ON tmp.item_id = pm.product_id WHERE tmp.total_stock <= tmp.min_stock_qty;");
-        return $query->result();
-    }
-    function get_reorder_stock_for_PO()
-    {
-        $model_code = $this->input->post("selected_tr");
-        $tmp = '';
-        $x = explode(',', $model_code);
-        for ($k = 0; $k < count($x); $k++) {
-            $tmp = $tmp . "'" . $x[$k] . "',";
-        }
-        $model_code = $tmp . "' '";
 
-        $query = $this->db->query("select r.order_code, p.description from reorder_stock_qty r, item_master p where r.product_id=p.product_id and r.product_id in($model_code)");
-        return $query->result();
+        $warehouse_condition_stock = '';
+
+        if (!empty($warehouse_id)) {
+            $warehouse_condition_stock = " AND sd.warehouse_id = " . $this->db->escape($warehouse_id);
+        }
+
+        $sql = "
+            SELECT
+                ms.item_id,
+                im.product_code AS item_code,
+                im.product_name,
+                im.description AS item_description,
+                im.unit_id,
+                ms.min_stock_qty,
+                COALESCE(stock.inv_stock, 0) AS invstock,
+                COALESCE(po.po_stock, 0) AS postock,
+                (
+                    COALESCE(stock.inv_stock, 0)
+                    +
+                    COALESCE(po.po_stock, 0)
+                ) AS total_stock,
+                GREATEST(
+                    ms.min_stock_qty
+                    -
+                    (
+                        COALESCE(stock.inv_stock, 0)
+                        +
+                        COALESCE(po.po_stock, 0)
+                    ),
+                    0
+                ) AS reorder_qty
+            FROM min_stock_qty ms
+            INNER JOIN item_master im
+                ON im.product_id = ms.item_id
+            LEFT JOIN
+            (
+                SELECT
+                    sd.product_id,
+                    SUM(sd.balance_qty) AS inv_stock
+                FROM stock_details sd
+                WHERE sd.stock_type = 'IN'
+                AND sd.status = '0'
+                $warehouse_condition_stock
+                GROUP BY sd.product_id
+            ) stock
+                ON stock.product_id = ms.item_id
+            LEFT JOIN
+            (
+                SELECT
+                    pot.product_id,
+                    SUM(pot.quantity) AS po_stock
+                FROM purchase_order_transaction pot
+                INNER JOIN purchase_order_master pom
+                    ON pom.po_id = pot.po_master_id
+                WHERE pom.grn_status = 0
+                AND pom.cancelled = 0
+                GROUP BY pot.product_id
+            ) po
+                ON po.product_id = ms.item_id
+            WHERE
+                (
+                    COALESCE(stock.inv_stock, 0)
+                    +
+                    COALESCE(po.po_stock, 0)
+                ) < ms.min_stock_qty
+            ORDER BY im.product_name ASC
+        ";
+
+        return $this->db->query($sql)->result();
     }
+
+    function get_reorder_stock_for_PO($product_ids = array())
+    {
+        if (empty($product_ids)) {
+            return [];
+        }
+
+        $product_ids = array_filter(
+            array_map('intval', $product_ids)
+        );
+
+        if (empty($product_ids)) {
+            return [];
+        }
+
+        $sql = "
+                SELECT
+                    ms.item_id AS product_id,
+                    im.product_code,
+                    im.product_name,
+                    im.description AS item_description,
+                    im.unit_id,
+                    COALESCE(stock.inv_stock, 0) AS invstock,
+                    COALESCE(po.po_stock, 0) AS postock,
+                    (
+                        COALESCE(stock.inv_stock, 0)
+                        +
+                        COALESCE(po.po_stock, 0)
+                    ) AS total_stock,
+                    ms.min_stock_qty,
+                    GREATEST(
+                        ms.min_stock_qty
+                        -
+                        (
+                            COALESCE(stock.inv_stock, 0)
+                            +
+                            COALESCE(po.po_stock, 0)
+                        ),
+                        0
+                    ) AS reorder_qty,
+                    COALESCE(im.retail_price, 0) AS unit_price
+                FROM min_stock_qty ms
+                INNER JOIN item_master im
+                    ON im.product_id = ms.item_id
+                LEFT JOIN
+                (
+                    SELECT
+                        sd.product_id,
+                        SUM(sd.balance_qty) AS inv_stock
+                    FROM stock_details sd
+                    WHERE sd.stock_type = 'IN'
+                    AND sd.status = '0'
+                    GROUP BY sd.product_id
+                ) stock
+                    ON stock.product_id = ms.item_id
+                LEFT JOIN
+                (
+                    SELECT
+                        pot.product_id,
+                        SUM(pot.quantity) AS po_stock
+                    FROM purchase_order_transaction pot
+                    INNER JOIN purchase_order_master pom
+                        ON pom.po_id = pot.po_master_id
+                    WHERE pom.grn_status = 0
+                    AND pom.cancelled = 0
+                    GROUP BY pot.product_id
+                ) po
+                    ON po.product_id = ms.item_id
+                WHERE ms.item_id IN (" . implode(',', $product_ids) . ")
+                ORDER BY im.product_name ASC
+            ";
+
+        return $this->db->query($sql)->result();
+    }
+
     function delete_min_stock($id)
     {
         $this->db->where('item_id', $id);
