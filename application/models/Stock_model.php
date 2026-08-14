@@ -1,95 +1,108 @@
 <?php
+
 defined('BASEPATH') or exit('No direct script access allowed');
+
 class Stock_Model extends CI_Model
 {
     function stock_adjustment_details()
     {
+        $this->db->trans_begin();
+
         $d1 = date('Y');
-        $prifix = 'Adj/' . $d1 . '/';
+        $prefix = 'Adj/' . $d1 . '/';
         $this->load->model('Setup_model');
-        $num = $this->Setup_model->get_next_code($prifix, 'stock_code', 'stock_adjustment', 10) + 1;
+
+        $num = $this->Setup_model->get_next_code($prefix, 'stock_code', 'stock_adjustment', 10) + 1;
+
         $digit = sprintf("%1$04d", $num);
-        $data['Code'] = $prifix . $digit;
-        //echo '<pre>';print_r($_POST);exit;
-        $data = array(
-            'stock_code' => $data['Code'],
-            'stock_date'  => date('Y-m-d', strtotime($this->input->post('date'))),
-            'warehouse_id'  => $this->input->post("warehouse_id"),
-            'stock_type' => $this->input->post("inward_type"),
-            'product_id'  => $this->input->post("product_id"),
-            //'order_code'  => $this->input->post("order_code"),
-            'item_desc'  => $this->input->post("desc"),
-            //'brand'  => $this->input->post("brand"),
-            // 'model_code'  => $this->input->post("stock_code"),
-            'remark'  => $this->input->post("remark"),
-            'created_by'    => $this->session->userdata('user_id'),
-            'created_date' =>  date('Y-m-d H:i:s'),
-        );
-        $this->db->insert('stock_adjustment', $data);
-        $insert_id = $this->db->insert_id();
+        $stock_code = $prefix . $digit;
+        $user_id = $this->session->userdata('user_id');
 
-        if ($this->input->post("min_stock_qty") > 0) {
-            $this->add_min_stock_qty();
+        $master_data = array(
+            'stock_code'   => $stock_code,
+            'stock_date'   => date('Y-m-d', strtotime($this->input->post('date'))),
+            'warehouse_id' => $this->input->post('warehouse_id'),
+            'stock_type'   => $this->input->post('inward_type'),
+            'product_id'   => $this->input->post('product_id'),
+            'item_desc'    => $this->input->post('desc'),
+            'remark'       => $this->input->post('remark'),
+            'created_by'   => $user_id,
+            'created_date' => date('Y-m-d H:i:s'),
+            'status'       => 0
+        );
+
+        $this->db->insert(
+            'stock_adjustment',
+            $master_data
+        );
+
+        $adjustment_id = $this->db->insert_id();
+        if (!$adjustment_id) {
+            $this->db->trans_rollback();
+            return false;
         }
 
-        if ($this->input->post("inward_type") == 'Opening' ||  $this->input->post("inward_type") == 'IN')
-            $intype = 'IN';
-        else
-            $intype = 'OUT';
-        //for ($i = 0; $i < count($_POST["bill_entry"]); $i++)
-        //{
-        //for($k = 0; $k < $_POST['qty'][$i]; $k++)
-        //{
-        $data2 = array(
-            'trans_id' => $insert_id,
-            'stock_date' => date('Y-m-d', strtotime($this->input->post('date'))),
-            'stock_type' => $intype,
-            'warehouse_id' => $this->input->post("warehouse_id"),
-            'product_id'  => $this->input->post("product_id"),
-            //'year'  => $_POST['year'][$i],
-            //'order_code'  => $this->input->post("order_code"),
-            'item_desc'  => $this->input->post("desc"),
-            //'brand'  => $this->input->post("brand"),
-            //'model_code'  => $this->input->post("stock_code"),
-            'bill_no'  => $_POST['bill_entry'], // $_POST['bill_entry'][$i],
-            'order_ref_no'  => $_POST['ref_no'], //$_POST['ref_no'][$i],
-            //'box_no'  => $_POST['box_no'][$i],
-            'quantity'  => $_POST['qty'], //1,
-            'price'  => $_POST['price'], //$_POST['price'][$i],
-            'storage_location' => $_POST['storage_location'], //$_POST['storage_location'][$i],
-            'item_remark' =>  $_POST['item_remark'], //$_POST['item_remark'][$i],
-            'remark' => 'stock adjustment-' . $this->input->post("inward_type"),
-            'created_by'    => $this->session->userdata('user_id'),
-            'created_date' =>  date('Y-m-d H:i:s'),
+        $bill_no = $this->input->post('bill_entry');
+        $ref_no  = $this->input->post('ref_no');
+        $qty     = $this->input->post('qty');
+        $price   = $this->input->post('price');
+
+        $storage_location = $this->input->post('storage_location');
+        $item_remark      = $this->input->post('item_remark');
+
+        $detail_data = array(
+            'adjustment_id'     => $adjustment_id,
+            'product_id'        => $this->input->post('product_id'),
+            'bill_no'           => $bill_no,
+            'order_ref_no'      => $ref_no,
+            'quantity'          => $qty,
+            'price'             => $price,
+            'storage_location'  => $storage_location,
+            'item_remark'       => $item_remark,
+            'created_by'        => $user_id,
+            'created_date'      => date('Y-m-d H:i:s')
         );
-        $this->db->insert('stock_details', $data2);
-        //}
-        //}//end for
-        if ($insert_id) {
-            $user_se_id = $this->session->userdata('user_id');
-            $page_name = explode('index.php/', $_SERVER['PHP_SELF']);
-            $ci = get_instance();
-            $ci->load->helper('log');
-            $log_msg = add_log_entry($user_se_id, 1, $page_name[1], 'stock_adjustment', 'sno', $insert_id);
+
+        $this->db->insert(
+            'stock_adjustment_details',
+            $detail_data
+        );
+
+        if ($this->db->trans_status() === FALSE) {
+            $this->db->trans_rollback();
+            return false;
         }
-        return $insert_id;
+
+        $this->db->trans_commit();
+
+        return $adjustment_id;
     }
-    //end for
-    // if($insert_id)
-    //     {
-    //         $user_se_id=$this->session->userdata('user_id');
-    //         $page_name=explode('index.php/', $_SERVER['PHP_SELF']);
-    //         $ci = get_instance();
-    //         $ci->load->helper('log');
-    //         $log_msg=add_log_entry($user_se_id,1,$page_name[1],'stock_adjustment','sno',$insert_id);
-
-    //     }
 
     function get_stock_adjustment_list()
     {
-        $query = $this->db->query("SELECT a.*,i.product_code,i.product_name FROM stock_adjustment a left join item_master i on a.product_id=i.product_id order by a.stock_date desc");
+        $query = $this->db->query("
+            SELECT
+                a.*,
+                i.product_code,
+                i.product_name,
+                u.user_name AS created_user,
+                au.user_name AS approved_user,
+                w.warehouse_name
+            FROM stock_adjustment a
+            LEFT JOIN item_master i
+                ON a.product_id = i.product_id
+            LEFT JOIN users u
+                ON a.created_by = u.user_id
+            LEFT JOIN users au
+                ON a.approved_by = au.user_id
+            LEFT JOIN warehouse_master w
+                ON a.warehouse_id = w.warehouse_id
+            ORDER BY a.sno DESC
+        ");
+
         return $query->result();
     }
+
     // function get_stock_adjustment_by_id($doc_id){
     //     $query = $this->db->query("select * from stock_adjustment where sno =$doc_id");
     //     return $query->result();
@@ -113,8 +126,137 @@ class Stock_Model extends CI_Model
 
     function get_stock_adjustment_tr($id)
     {
-        $query = $this->db->query("select *, coalesce(sum(quantity),0)as total_qty from stock_details where trans_id =$id and remark like 'stock adjustment%' group by bill_no,order_ref_no");
-        return $query->result();
+        $this->db->select('
+            sad.*,
+            im.product_code,
+            im.product_name,
+            um.unit_name
+        ');
+
+        $this->db->from('stock_adjustment_details sad');
+
+        $this->db->join(
+            'item_master im',
+            'im.product_id = sad.product_id',
+            'left'
+        );
+
+        $this->db->join(
+            'unit_master um',
+            'um.unit_id = im.unit_id',
+            'left'
+        );
+
+        $this->db->where(
+            'sad.adjustment_id',
+            $id
+        );
+
+        return $this->db->get()->result();
+    }
+
+    function approve_stock_adjustment($adjustment_id)
+    {
+        $this->db->trans_begin();
+        $user_id = $this->session->userdata('user_id');
+        $adjustment = $this->db
+            ->where('sno', $adjustment_id)
+            ->get('stock_adjustment')
+            ->row();
+
+        if (!$adjustment) {
+            $this->db->trans_rollback();
+            return array(
+                'success' => false,
+                'message' => 'Stock Adjustment not found.'
+            );
+        }
+
+        if ((int)$adjustment->status !== 0) {
+            $this->db->trans_rollback();
+            return array(
+                'success' => false,
+                'message' => 'This Stock Adjustment has already been processed.'
+            );
+        }
+
+        $details = $this->db
+            ->where('adjustment_id', $adjustment_id)
+            ->get('stock_adjustment_details')
+            ->result();
+
+        if (empty($details)) {
+            $this->db->trans_rollback();
+            return array(
+                'success' => false,
+                'message' => 'No adjustment items found.'
+            );
+        }
+
+        if (
+            $adjustment->stock_type == 'Opening' ||
+            $adjustment->stock_type == 'IN'
+        ) {
+            $stock_type = 'IN';
+        } else {
+            $stock_type = 'OUT';
+        }
+
+        foreach ($details as $detail) {
+
+            $stock_data = array(
+                'trans_id'          => $adjustment_id,
+                'adjustment_id'     => $adjustment_id,
+                'stock_date'        => $adjustment->stock_date,
+                'stock_type'        => $stock_type,
+                'warehouse_id'      => $adjustment->warehouse_id,
+                'product_id'        => $detail->product_id,
+                'item_desc'         => $adjustment->item_desc,
+                'bill_no'           => $detail->bill_no,
+                'order_ref_no'      => $detail->order_ref_no,
+                'quantity'          => $detail->quantity,
+                'balance_qty'       => ($stock_type == 'IN') ? $detail->quantity : 0,
+                'price'             => $detail->price,
+                'storage_location'  => $detail->storage_location,
+                'item_remark'       => $detail->item_remark,
+                'remark'            => 'Stock Adjustment',
+                'created_by'        => $user_id,
+                'created_date'      => date('Y-m-d H:i:s')
+            );
+
+            $this->db->insert(
+                'stock_details',
+                $stock_data
+            );
+        }
+
+        $this->db
+            ->where('sno', $adjustment_id)
+            ->update(
+                'stock_adjustment',
+                array(
+                    'status'       => 1,
+                    'approved_by'  => $user_id,
+                    'approved_date' => date('Y-m-d H:i:s')
+                )
+            );
+
+        if ($this->db->trans_status() === FALSE) {
+
+            $this->db->trans_rollback();
+
+            return array(
+                'success' => false,
+                'message' => 'Unable to approve Stock Adjustment.'
+            );
+        }
+
+        $this->db->trans_commit();
+
+        return array(
+            'success' => true,
+            'message' => 'Stock Adjustment approved successfully.'
+        );
     }
 
     function update_stock_adjustment_records()
