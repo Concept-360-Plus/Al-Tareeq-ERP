@@ -1385,82 +1385,48 @@
             }
         );
 
-
         var purchaseTrendElement =
             document.getElementById(
                 'purchaseTrendChart'
             );
 
-
         if (purchaseTrendElement) {
-
             var purchaseTrendCtx =
                 purchaseTrendElement
                 .getContext('2d');
 
-
             new Chart(
                 purchaseTrendCtx, {
-
                     type: 'bar',
-
-
                     data: {
-
                         labels: monthlyLabels,
-
-
                         datasets: [{
-
                             label: 'Purchase Value',
-
                             data: monthlyValues,
-
                             borderWidth: 1
-
                         }]
-
                     },
 
-
                     options: {
-
                         responsive: true,
-
                         maintainAspectRatio: false,
-
-
                         legend: {
-
                             display: false
-
                         },
-
-
                         scales: {
-
                             yAxes: [{
-
                                 ticks: {
-
                                     beginAtZero: true
-
                                 }
-
                             }]
-
                         },
-
 
                         tooltips: {
-
                             callbacks: {
-
                                 label: function(
                                     tooltipItem,
                                     data
                                 ) {
-
                                     return 'Purchase: ' +
                                     Number(
                                         tooltipItem.yLabel
@@ -1470,112 +1436,69 @@
                                             maximumFractionDigits: 2
                                         }
                                     );
-
                                 }
-
                             }
-
                         }
-
                     }
-
                 }
             );
-
         }
-
 
         /* =====================================================
            PURCHASE WORKFLOW DOUGHNUT CHART
         ===================================================== */
-
 
         var workflowElement =
             document.getElementById(
                 'purchaseWorkflowChart'
             );
 
-
         if (workflowElement) {
-
             var workflowCtx =
                 workflowElement
                 .getContext('2d');
 
-
             new Chart(
                 workflowCtx, {
-
                     type: 'doughnut',
 
-
                     data: {
-
                         labels: [
-
                             'RFQs',
-
                             'Supplier Quotations',
-
                             'Purchase Orders',
-
                             'GRNs'
-
                         ],
 
-
                         datasets: [{
-
                             data: [
-
                                 <?= (int)$rfq_count ?>,
-
                                 <?= (int)$quotation_count ?>,
-
                                 <?= (int)$po_count ?>,
-
                                 <?= (int)$grn_count ?>
-
                             ],
-
                             borderWidth: 2
-
                         }]
-
                     },
 
-
                     options: {
-
                         responsive: true,
-
                         maintainAspectRatio: false,
-
-
                         cutoutPercentage: 60,
-
-
                         legend: {
-
                             position: 'bottom'
-
                         },
 
-
                         tooltips: {
-
                             callbacks: {
-
                                 label: function(
                                     tooltipItem,
                                     data
                                 ) {
-
                                     var label =
                                         data.labels[
                                             tooltipItem.index
                                         ];
-
 
                                     var value =
                                         data.datasets[0]
@@ -1583,31 +1506,18 @@
                                             tooltipItem.index
                                         ];
 
-
-                                    return
-                                    label +
-                                        ': ' +
-                                        value;
-
+                                    return label + ': ' + value;
                                 }
-
                             }
-
                         }
-
                     }
-
                 }
             );
-
         }
-
 
         /* =====================================================
            VENDOR PURCHASE PERFORMANCE
         ===================================================== */
-
-
         var vendorData =
             <?= json_encode(
                 !empty($top_suppliers)
@@ -1615,106 +1525,67 @@
                     : array()
             ) ?>;
 
-
         var vendorLabels = [];
-
         var vendorValues = [];
-
 
         $.each(
             vendorData,
             function(index, supplier) {
-
                 vendorLabels.push(
                     supplier.supplier_name
                 );
-
 
                 vendorValues.push(
                     parseFloat(
                         supplier.total_amount || 0
                     )
                 );
-
             }
         );
-
 
         var vendorElement =
             document.getElementById(
                 'vendorPurchaseChart'
             );
 
-
         if (vendorElement) {
-
             var vendorCtx =
                 vendorElement
                 .getContext('2d');
 
-
             new Chart(
                 vendorCtx, {
-
                     type: 'horizontalBar',
-
-
                     data: {
-
                         labels: vendorLabels,
-
-
                         datasets: [{
-
                             label: 'Total Purchase',
-
                             data: vendorValues,
-
                             borderWidth: 1
-
                         }]
-
                     },
 
-
                     options: {
-
                         responsive: true,
-
                         maintainAspectRatio: false,
-
-
                         legend: {
-
                             display: false
-
                         },
-
 
                         scales: {
-
                             xAxes: [{
-
                                 ticks: {
-
                                     beginAtZero: true
-
                                 }
-
                             }]
-
                         },
 
-
                         tooltips: {
-
                             callbacks: {
-
                                 label: function(
                                     tooltipItem,
                                     data
                                 ) {
-
                                     return 'Purchase: ' +
                                     Number(
                                         tooltipItem.xLabel
@@ -1724,19 +1595,12 @@
                                             maximumFractionDigits: 2
                                         }
                                     );
-
                                 }
-
                             }
-
                         }
-
                     }
-
                 }
             );
-
         }
-
     });
 </script>
