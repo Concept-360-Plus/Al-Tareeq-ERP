@@ -261,52 +261,87 @@ class Stock_Model extends CI_Model
 
     function update_stock_adjustment_records()
     {
-        $stock_code = $this->input->post("stock_code");
-        $sno = $this->input->post("sno");
-        $data = array(
+        $adjustment_id = (int)$this->input->post('sno');
+        $user_id       = $this->session->userdata('user_id');
 
-            'stock_date'  => date('Y-m-d', strtotime($this->input->post('stock_date'))),
-            'warehouse_id'  => $this->input->post("warehouse_id"),
-            'stock_type' => $this->input->post("inward_type"),
-            'product_id'  => $this->input->post("item"),
-            'item_desc'  => $this->input->post("description"),
-            'remark'  => $this->input->post("remark"),
+        if ($adjustment_id <= 0) {
+            return false;
+        }
+        $this->db->trans_begin();
+
+        $adjustment = $this->db
+            ->where('sno', $adjustment_id)
+            ->get('stock_adjustment')
+            ->row();
+
+        if (!$adjustment) {
+            $this->db->trans_rollback();
+            return false;
+        }
+
+        if ((int)$adjustment->status !== 0) {
+            $this->db->trans_rollback();
+            return false;
+        }
+
+        $master_data = array(
+            'warehouse_id' => $this->input->post('warehouse_id'),
+            'remark'       => $this->input->post('remark')
         );
 
-        $this->db->where('sno', $sno);
-        $res = $this->db->update('stock_adjustment', $data);
-        $query = $this->db->query("delete from stock_details where trans_id=$sno and status=0;");
-        // if($this->input->post("min_stock_qty")>0)
-        // {
-        //     $this->add_min_stock_qty();
-        // }
+        $this->db->where('sno', $adjustment_id)->update('stock_adjustment', $master_data);
+        $detail_ids = $this->input->post('adjustment_detail_id');
 
-        if ($this->input->post("inward_type") == 'Opening' ||  $this->input->post("inward_type") == 'IN')
-            $intype = 'IN';
-        else
-            $intype = 'OUT';
-        for ($i = 0; $i < count($_POST["bill_entry"]); $i++) {
-            for ($k = 0; $k < $_POST['qty'][$i]; $k++) {
-                $data2 = array(
-                    'trans_id'      => $insert_id,
-                    'stock_date'    => date('Y-m-d', strtotime($this->input->post('date'))),
-                    'stock_type'    => $intype,
-                    'warehouse_id'  => $this->input->post("warehouse_id"),
-                    'product_id'    => $this->input->post("item"),
-                    'item_desc'     => $this->input->post("description"),
-                    'bill_no'       => $_POST['bill_entry'][$i],
-                    'order_ref_no'  => $_POST['ref_no'][$i],
-                    'quantity'      => $_POST['qty'][$i],
-                    'price'         => $_POST['price'][$i],
-                    'storage_location' => $_POST['storage_location'][$i],
-                    'item_remark'   =>  $_POST['item_remark'][$i],
-                    'remark'        => 'stock adjustment-' . $this->input->post("inward_type"),
-                    'created_by'    => $this->session->userdata('user_id'),
-                    'created_date'  =>  date('Y-m-d H:i:s'),
+        if (!empty($detail_ids) && is_array($detail_ids)) {
+
+            $bill_entries        = $this->input->post('bill_entry');
+            $ref_nos             = $this->input->post('ref_no');
+            $quantities          = $this->input->post('qty');
+            $prices              = $this->input->post('price');
+            $storage_locations   = $this->input->post('storage_location');
+            $item_remarks        = $this->input->post('item_remark');
+
+            foreach ($detail_ids as $i => $detail_id) {
+                $detail_id = (int)$detail_id;
+
+                if ($detail_id <= 0) {
+                    continue;
+                }
+
+                $existing_detail = $this->db
+                    ->where('adjustment_detail_id', $detail_id)
+                    ->where('adjustment_id', $adjustment_id)
+                    ->get('stock_adjustment_details')
+                    ->row();
+
+                if (!$existing_detail) {
+                    continue;
+                }
+
+                $detail_data = array(
+                    'bill_no'          => isset($bill_entries[$i]) ? trim($bill_entries[$i]) : null,
+                    'order_ref_no'     => isset($ref_nos[$i]) ? trim($ref_nos[$i]) : null,
+                    'quantity'         => isset($quantities[$i]) ? (float)$quantities[$i] : 0,
+                    'price'            => (isset($prices[$i]) && $prices[$i] !== '') ? (float)$prices[$i] : null,
+                    'storage_location' => isset($storage_locations[$i]) ? trim($storage_locations[$i]) : null,
+                    'item_remark'      => isset($item_remarks[$i]) ? trim($item_remarks[$i]) : null
                 );
-                $this->db->insert('stock_details', $data2);
+
+                $this->db->where('adjustment_detail_id', $detail_id)->where('adjustment_id', $adjustment_id)
+                    ->update(
+                        'stock_adjustment_details',
+                        $detail_data
+                    );
             }
         }
+
+        if ($this->db->trans_status() === FALSE) {
+            $this->db->trans_rollback();
+            return false;
+        }
+
+        $this->db->trans_commit();
+        return true;
     }
 
     function min_stock_add_records()

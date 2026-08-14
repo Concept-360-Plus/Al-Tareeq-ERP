@@ -16,7 +16,7 @@
 				<select name="warehouse_id" id="warehouse_id" class="form-control select2" required tabindex='1'>
 					<option value="">Select warehouse</option>
 					<?php foreach ($store_records as $g) { ?>
-						<option selected value="<?php echo $g->warehouse_id; ?>"><?php echo $g->warehouse_name; ?></option>
+						<option value="<?php echo $g->warehouse_id; ?>"><?php echo $g->warehouse_name; ?></option>
 					<?php } ?>
 				</select>
 			</div>
