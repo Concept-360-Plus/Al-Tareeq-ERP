@@ -166,7 +166,7 @@ class Stock extends CI_Controller
     function add_min_stock_records()
     {
         $data['title'] = 'Minimum Stock';
-        $this->Stock_model->min_stock_add_records();
+        $result = $this->Stock_model->min_stock_add_records();
         if ($result) {
             $this->session->set_flashdata(
                 'success',
