@@ -158,7 +158,9 @@ class Stock_Model extends CI_Model
     function approve_stock_adjustment($adjustment_id)
     {
         $this->db->trans_begin();
+
         $user_id = $this->session->userdata('user_id');
+
         $adjustment = $this->db
             ->where('sno', $adjustment_id)
             ->get('stock_adjustment')
@@ -204,30 +206,166 @@ class Stock_Model extends CI_Model
 
         foreach ($details as $detail) {
 
-            $stock_data = array(
-                'trans_id'          => $adjustment_id,
-                'adjustment_id'     => $adjustment_id,
-                'stock_date'        => $adjustment->stock_date,
-                'stock_type'        => $stock_type,
-                'warehouse_id'      => $adjustment->warehouse_id,
-                'product_id'        => $detail->product_id,
-                'item_desc'         => $adjustment->item_desc,
-                'bill_no'           => $detail->bill_no,
-                'order_ref_no'      => $detail->order_ref_no,
-                'quantity'          => $detail->quantity,
-                'balance_qty'       => ($stock_type == 'IN') ? $detail->quantity : 0,
-                'price'             => $detail->price,
-                'storage_location'  => $detail->storage_location,
-                'item_remark'       => $detail->item_remark,
-                'remark'            => 'Stock Adjustment',
-                'created_by'        => $user_id,
-                'created_date'      => date('Y-m-d H:i:s')
-            );
+            $quantity = (float)$detail->quantity;
+            if ($quantity <= 0) {
+                $this->db->trans_rollback();
+                return array(
+                    'success' => false,
+                    'message' => 'Adjustment quantity must be greater than zero.'
+                );
+            }
 
-            $this->db->insert(
-                'stock_details',
-                $stock_data
-            );
+            if ($stock_type == 'IN') {
+                $stock_data = array(
+                    'trans_id'          => $adjustment_id,
+                    'adjustment_id'     => $adjustment_id,
+                    'stock_date'        => $adjustment->stock_date,
+                    'stock_type'        => 'IN',
+                    'warehouse_id'      => $adjustment->warehouse_id,
+                    'product_id'        => $detail->product_id,
+                    'item_desc'         => $adjustment->item_desc,
+                    'bill_no'           => $detail->bill_no,
+                    'order_ref_no'      => $detail->order_ref_no,
+                    'quantity'          => $quantity,
+                    'balance_qty'       => $quantity,
+                    'price'             => $detail->price,
+                    'storage_location'  => $detail->storage_location,
+                    'item_remark'       => $detail->item_remark,
+                    'remark'            => 'Stock Adjustment',
+                    'created_by'        => $user_id,
+                    'created_date'      => date('Y-m-d H:i:s'),
+                    'status'            => 0
+                );
+
+                $this->db->insert('stock_details',$stock_data);
+
+                if ($this->db->trans_status() === FALSE) {
+                    $this->db->trans_rollback();
+                    return array(
+                        'success' => false,
+                        'message' => 'Unable to create IN stock record.'
+                    );
+                }
+            } else {
+
+                $remaining_qty = $quantity;
+
+                $available_stock = $this->db->query("
+                    SELECT
+                        stock_id,
+                        balance_qty
+                    FROM stock_details
+                    WHERE product_id = ?
+                    AND warehouse_id = ?
+                    AND stock_type = 'IN'
+                    AND status = '0'
+                    AND balance_qty > 0
+                    ORDER BY stock_date ASC, stock_id ASC
+                    FOR UPDATE
+                ", array(
+                        $detail->product_id,
+                        $adjustment->warehouse_id
+                    ))->result();
+
+                $available_qty = 0;
+
+                foreach ($available_stock as $stock) {
+                    $available_qty += (float)$stock->balance_qty;
+                }
+
+                if ($available_qty < $quantity) {
+
+                    $this->db->trans_rollback();
+
+                    return array(
+                        'success' => false,
+                        'message' =>
+                        'Insufficient stock available. ' .
+                            'Available: ' . number_format($available_qty, 2) .
+                            ', Requested: ' . number_format($quantity, 2)
+                    );
+                }
+
+                foreach ($available_stock as $stock) {
+                    if ($remaining_qty <= 0) {
+                        break;
+                    }
+
+                    $current_balance = (float)$stock->balance_qty;
+                    if ($current_balance <= 0) {
+                        continue;
+                    }
+
+                    $consume_qty = min($remaining_qty,$current_balance);
+                    $new_balance = $current_balance - $consume_qty;
+
+                    // Avoid tiny decimal values
+                    if (abs($new_balance) < 0.000001) {
+                        $new_balance = 0;
+                    }
+
+                    $this->db
+                        ->where('stock_id', $stock->stock_id)
+                        ->update(
+                            'stock_details',
+                            array(
+                                'balance_qty' => $new_balance
+                            )
+                        );
+
+                    if ($this->db->trans_status() === FALSE) {
+                        $this->db->trans_rollback();
+                        return array(
+                            'success' => false,
+                            'message' => 'Unable to update existing stock balance.'
+                        );
+                    }
+
+                    $remaining_qty -= $consume_qty;
+                }
+
+                if ($remaining_qty > 0.000001) {
+                    $this->db->trans_rollback();
+                    return array(
+                        'success' => false,
+                        'message' => 'Unable to allocate sufficient stock.'
+                    );
+                }
+
+                $stock_data = array(
+                    'trans_id'          => $adjustment_id,
+                    'adjustment_id'     => $adjustment_id,
+                    'stock_date'        => $adjustment->stock_date,
+                    'stock_type'        => 'OUT',
+                    'warehouse_id'      => $adjustment->warehouse_id,
+                    'product_id'        => $detail->product_id,
+                    'item_desc'         => $adjustment->item_desc,
+                    'bill_no'           => $detail->bill_no,
+                    'order_ref_no'      => $detail->order_ref_no,
+                    'quantity'          => $quantity,
+                    'balance_qty'       => 0,
+                    'price'             => $detail->price,
+                    'storage_location'  => $detail->storage_location,
+                    'item_remark'       => $detail->item_remark,
+                    'remark'            => 'Stock Adjustment',
+                    'created_by'        => $user_id,
+                    'created_date'      => date('Y-m-d H:i:s'),
+                    'status'            => 0
+                );
+
+                $this->db->insert(
+                    'stock_details',
+                    $stock_data
+                );
+
+                if ($this->db->trans_status() === FALSE) {
+                    $this->db->trans_rollback();
+                    return array(
+                        'success' => false,
+                        'message' => 'Unable to create OUT stock record.'
+                    );
+                }
+            }
         }
 
         $this->db
@@ -235,8 +373,8 @@ class Stock_Model extends CI_Model
             ->update(
                 'stock_adjustment',
                 array(
-                    'status'       => 1,
-                    'approved_by'  => $user_id,
+                    'status'        => 1,
+                    'approved_by'   => $user_id,
                     'approved_date' => date('Y-m-d H:i:s')
                 )
             );

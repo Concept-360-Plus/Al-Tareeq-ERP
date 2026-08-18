@@ -1,8 +1,5 @@
 <style>
-    /* =========================================================
-       DASHBOARD COMMON STYLES
-    ========================================================= */
-
+    /* DASHBOARD COMMON STYLES */
     .kpi-card {
         border-radius: 12px;
         padding: 20px;
@@ -28,11 +25,7 @@
         font-weight: 600;
     }
 
-
-    /* =========================================================
-       KPI COLORS
-    ========================================================= */
-
+    /* KPI COLORS */
     .bg1 {
         background: #3498db;
     }
@@ -57,11 +50,7 @@
         background: #c0392b;
     }
 
-
-    /* =========================================================
-       MODERN PANEL
-    ========================================================= */
-
+    /* MODERN PANEL */
     .panel-modern {
         background: #fff;
         border-radius: 10px;
@@ -77,11 +66,7 @@
         color: #607d9f;
     }
 
-
-    /* =========================================================
-       QUICK ACTION BUTTON
-    ========================================================= */
-
+    /* QUICK ACTION BUTTON */
     .quick-btn {
         display: block;
         padding: 10px;
@@ -98,11 +83,7 @@
         text-decoration: none;
     }
 
-
-    /* =========================================================
-       PURCHASE PROCESS
-    ========================================================= */
-
+    /* PURCHASE PROCESS */
     .pipeline-box {
         text-align: center;
         padding: 15px 5px;
