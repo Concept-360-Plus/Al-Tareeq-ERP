@@ -141,6 +141,26 @@ class Setup_model extends CI_Model
         return $query;
     }
 
+    function get_active_user_list_with_employee_code()
+    {
+        $this->db->select('
+            u.*,
+            em.user_code AS employee_code
+        ');
+
+        $this->db->from('users u');
+        $this->db->join(
+            'employee_master em',
+            'em.employee_id = u.employee_id',
+            'left'
+        );
+
+        $this->db->where('u.active', 1);
+        $this->db->order_by('u.user_name', 'ASC');
+
+        return $this->db->get()->result();
+    }
+
     public function get_all_user_list()
     {
         $this->db->select('*');

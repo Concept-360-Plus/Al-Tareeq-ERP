@@ -179,26 +179,25 @@ class Inventory_model extends CI_Model
                 i.product_code,
                 i.product_name,
                 i.reorder_level,
-                IFNULL(stock.stock_qty,0) stock_qty
+                COALESCE(
+                    SUM(s.balance_qty),
+                    0
+                ) AS available_qty
             FROM item_master i
-            LEFT JOIN
-            (
-                SELECT
-                    product_id,
-                    SUM(CASE
-                        WHEN stock_type='IN'
-                        THEN quantity
-                        ELSE -quantity
-                    END)
-                    stock_qty
-                FROM stock_details
-                GROUP BY product_id
-            ) stock
-            ON stock.product_id=i.product_id
-            HAVING stock_qty<=reorder_level
-            ORDER BY stock_qty ASC
+            LEFT JOIN stock_details s
+                ON s.product_id = i.product_id
+            GROUP BY
+                i.product_id,
+                i.product_code,
+                i.product_name,
+                i.reorder_level
+            HAVING
+                available_qty <= reorder_level
+                AND reorder_level > 0
+            ORDER BY
+                available_qty ASC
             LIMIT 10
-            ";
+        ";
 
         return $this->db->query($sql)->result();
     }
@@ -208,21 +207,324 @@ class Inventory_model extends CI_Model
         $sql = "
             SELECT
                 w.warehouse_name,
-                COUNT(DISTINCT s.product_id) total_items,
-                SUM(CASE
-                        WHEN s.stock_type='IN'
-                        THEN s.quantity
-                        ELSE -s.quantity
-                    END) available_stock,
-                SUM(s.allocation) reserved_stock
+                COUNT(
+                    DISTINCT
+                    CASE
+                        WHEN s.balance_qty > 0
+                        THEN s.product_id
+                    END
+                ) AS total_items,
+                COALESCE(
+                    SUM(
+                        CASE
+                            WHEN s.balance_qty > 0
+                            THEN s.balance_qty
+                            ELSE 0
+                        END
+                    ),
+                    0
+                ) AS available_stock,
+                COALESCE(
+                    SUM(
+                        s.reserved_quantity
+                    ),
+                    0
+                ) AS reserved_stock
             FROM warehouse_master w
             LEFT JOIN stock_details s
-                ON s.warehouse_id=w.warehouse_id
-            GROUP BY w.warehouse_id
-            ORDER BY w.warehouse_name
-            ";
+                ON s.warehouse_id = w.warehouse_id
+            GROUP BY
+                w.warehouse_id,
+                w.warehouse_name
+            ORDER BY
+                w.warehouse_name
+        ";
 
         return $this->db->query($sql)->result();
+    }
+
+    public function get_inventory_stock_summary()
+    {
+        $sql = "
+            SELECT
+                COALESCE(SUM(balance_qty), 0) AS available_stock,
+                COALESCE(SUM(reserved_quantity), 0) AS reserved_stock,
+                COALESCE(SUM(pending_quantity), 0) AS pending_stock
+            FROM stock_details
+        ";
+        return $this->db->query($sql)->row();
+    }
+
+    public function get_inventory_value()
+    {
+        $sql = "
+            SELECT
+                COALESCE(
+                    SUM(balance_qty * price),
+                    0
+                ) AS inventory_value
+            FROM stock_details
+            WHERE balance_qty > 0
+        ";
+
+        $row = $this->db->query($sql)->row();
+        return $row->inventory_value ?? 0;
+    }
+
+    public function get_low_stock_count()
+    {
+        $sql = "
+            SELECT COUNT(*) AS total
+            FROM
+            (
+                SELECT
+                    i.product_id,
+                    i.reorder_level,
+                    COALESCE(
+                        SUM(s.balance_qty),
+                        0
+                    ) AS available_qty
+                FROM item_master i
+                LEFT JOIN stock_details s
+                    ON s.product_id = i.product_id
+                GROUP BY
+                    i.product_id,
+                    i.reorder_level
+
+            ) x
+            WHERE x.reorder_level > 0
+            AND x.available_qty <= x.reorder_level
+        ";
+
+        $row = $this->db->query($sql)->row();
+        return $row->total ?? 0;
+    }
+
+    public function get_out_of_stock_count()
+    {
+        $sql = "
+            SELECT COUNT(*) AS total
+            FROM
+            (
+                SELECT
+                    i.product_id,
+                    COALESCE(
+                        SUM(s.balance_qty),
+                        0
+                    ) AS available_qty
+                FROM item_master i
+                LEFT JOIN stock_details s
+                    ON s.product_id = i.product_id
+                GROUP BY i.product_id
+
+            ) x
+            WHERE x.available_qty <= 0
+        ";
+
+        $row = $this->db->query($sql)->row();
+        return $row->total ?? 0;
+    }
+
+    public function get_overstock_count()
+    {
+        $sql = "
+            SELECT COUNT(*) AS total
+            FROM
+            (
+                SELECT
+                    i.product_id,
+                    i.max_level,
+                    COALESCE(
+                        SUM(
+                            CASE
+                                WHEN s.stock_type = 'IN'
+                                THEN s.balance_qty
+                                ELSE 0
+                            END
+                        ), 0
+                    ) AS available_qty
+                FROM item_master i
+                LEFT JOIN stock_details s
+                    ON s.product_id = i.product_id
+                WHERE i.max_level > 0
+                GROUP BY
+                    i.product_id,
+                    i.max_level
+            ) x
+            WHERE x.available_qty > x.max_level
+        ";
+
+        $row = $this->db->query($sql)->row();
+
+        return $row->total ?? 0;
+    }
+
+    public function get_today_stock_movement()
+    {
+        $today = date('Y-m-d');
+
+        $sql = "
+            SELECT
+                COALESCE(SUM(CASE
+                    WHEN stock_type = 'IN'
+                    THEN quantity
+                    ELSE 0
+                END), 0) AS stock_in,
+                COALESCE(SUM(CASE
+                    WHEN stock_type = 'OUT'
+                    THEN quantity
+                    ELSE 0
+                END), 0) AS stock_out
+            FROM stock_details
+            WHERE DATE(created_date) = ?
+        ";
+
+        return $this->db->query($sql, [$today])->row();
+    }
+
+    public function get_monthly_stock_movement()
+    {
+        $sql = "
+            SELECT
+                MONTH(created_date) AS month,
+                SUM(
+                    CASE
+                        WHEN stock_type = 'IN'
+                        THEN quantity
+                        ELSE 0
+                    END
+                ) AS stock_in,
+                SUM(
+                    CASE
+                        WHEN stock_type = 'OUT'
+                        THEN quantity
+                        ELSE 0
+                    END
+                ) AS stock_out
+            FROM stock_details
+            WHERE YEAR(created_date) = ?
+            GROUP BY MONTH(created_date)
+            ORDER BY MONTH(created_date)
+        ";
+
+        return $this->db
+            ->query($sql, [date('Y')])
+            ->result();
+    }
+
+    public function get_inventory_value_trend()
+    {
+        $sql = "
+            SELECT
+                DATE_FORMAT(created_date, '%Y-%m') AS month,
+                COALESCE(
+                    SUM(
+                        CASE
+                            WHEN stock_type = 'IN'
+                            THEN quantity * price
+                            ELSE 0
+                        END
+                    ), 0
+                ) AS stock_in_value,
+                COALESCE(
+                    SUM(
+                        CASE
+                            WHEN stock_type = 'OUT'
+                            THEN quantity * price
+                            ELSE 0
+                        END
+                    ), 0
+                ) AS stock_out_value
+            FROM stock_details
+            WHERE YEAR(created_date) = ?
+            GROUP BY DATE_FORMAT(created_date, '%Y-%m')
+            ORDER BY month
+        ";
+
+        return $this->db
+            ->query($sql, [date('Y')])
+            ->result();
+    }
+
+    public function get_stock_status_summary()
+    {
+        $sql = "
+            SELECT
+                COALESCE(
+                    SUM(balance_qty),
+                    0
+                ) AS available,
+                COALESCE(
+                    SUM(reserved_quantity),
+                    0
+                ) AS reserved,
+                COALESCE(
+                    SUM(pending_quantity),
+                    0
+                ) AS pending
+            FROM stock_details
+        ";
+
+        return $this->db->query($sql)->row();
+    }
+
+    public function get_fast_moving_items($limit = 5)
+    {
+        $sql = "
+            SELECT
+                i.product_code,
+                i.product_name,
+                COALESCE(SUM(s.quantity), 0) AS issued_qty
+            FROM stock_details s
+            INNER JOIN item_master i
+                ON i.product_id = s.product_id
+            WHERE s.stock_type = 'OUT'
+            AND s.created_date >= DATE_SUB(CURDATE(), INTERVAL 90 DAY)
+            GROUP BY
+                s.product_id,
+                i.product_code,
+                i.product_name
+            ORDER BY issued_qty DESC
+            LIMIT ?
+        ";
+
+        return $this->db->query($sql, [$limit])->result();
+    }
+
+    public function get_dead_stock_items($limit = 5)
+    {
+        $sql = "
+            SELECT
+                i.product_code,
+                i.product_name,
+                COALESCE(SUM(
+                    CASE
+                        WHEN s.stock_type = 'IN'
+                        THEN s.balance_qty
+                        ELSE 0
+                    END
+                ), 0) AS available_qty
+            FROM item_master i
+            LEFT JOIN stock_details s
+                ON s.product_id = i.product_id
+            GROUP BY
+                i.product_id,
+                i.product_code,
+                i.product_name
+            HAVING available_qty > 0
+            AND NOT EXISTS
+            (
+                SELECT 1
+                FROM stock_details so
+                WHERE so.product_id = i.product_id
+                AND so.stock_type = 'OUT'
+                AND so.created_date >= DATE_SUB(CURDATE(), INTERVAL 90 DAY)
+            )
+            ORDER BY available_qty DESC
+            LIMIT ?
+        ";
+
+        return $this->db->query($sql, [$limit])->result();
     }
     ///////////////////// Inventory Dashboard Code End ///////////////////////////
 
