@@ -10,6 +10,130 @@ class Reports extends CI_Controller
     $this->load->model('Reports_model');
   }
 
+  ///////////////////// PURCHASE REQUEST REPORT START /////////////////////
+
+  public function purchase_request_report()
+  {
+    $data['from'] = date('Y-m-01');
+    $data['to']   = date('Y-m-d');
+
+    $data['title'] = 'Purchase Request Report';
+
+    $data['records'] = array();
+
+    $data['supplier_id'] = '';
+    $data['created_by']  = '';
+
+    // Use the same User source as RFQ / PO / GRN reports
+    $data['user_list'] = $this->Setup_model->get_active_user_list_with_employee_code();
+
+    // Supplier list
+    $data['supplier_records'] = $this->Setup_model->get_active_supplier_list();
+
+    $data['main_content'] = 'Reports/Purchase/purchase_request_report.php';
+
+    $this->load->view('includes/template.php', $data);
+  }
+
+
+  public function get_purchase_request_report()
+  {
+    $data['from'] = $this->input->post('from_date');
+    $data['to']   = $this->input->post('to_date');
+
+    $data['title'] = 'Purchase Request Report';
+
+    $data['created_by'] = $this->input->post('created_by');
+    $data['supplier_id'] = $this->input->post('supplier_id');
+
+    // Dropdown data
+    $data['user_list'] = $this->Setup_model->get_active_user_list_with_employee_code();
+
+    $data['supplier_records'] = $this->Setup_model->get_active_supplier_list();
+
+    // Report records
+    $data['records'] = $this->Reports_model->get_purchase_request_report_records();
+
+    $data['main_content'] = 'Reports/Purchase/purchase_request_report.php';
+
+    $this->load->view('includes/template.php', $data);
+  }
+
+
+  public function print_purchase_request_report()
+  {
+    $from_date  = $this->input->get('from_date');
+    $to_date    = $this->input->get('to_date');
+    $supplier_id = $this->input->get('supplier_id');
+    $created_by  = $this->input->get('created_by');
+
+    $data['from'] = $from_date;
+    $data['to'] = $to_date;
+
+    $data['supplier_id'] = $supplier_id;
+    $data['created_by'] = $created_by;
+
+    // Fetch filtered records again
+    $data['records'] = $this->Reports_model->get_purchase_request_report_records();
+
+    // Branch header - same pattern as other purchase reports
+    $this->load->model('Company_model');
+
+    $branch_id = 1;
+
+    $branch = $this->Setup_model->get_branch_by_id($branch_id);
+
+    $data['headerPath'] = !empty($branch->branch_header)
+      ? base_url(ltrim($branch->branch_header, '/'))
+      : '';
+
+    $this->load->view(
+      'Reports/Purchase/Print/print_purchase_request_report',
+      $data
+    );
+  }
+
+  public function export_purchase_request_excel()
+  {
+    $data['from'] = $this->input->get('from_date');
+    $data['to'] = $this->input->get('to_date');
+
+    $data['supplier_id'] =
+      $this->input->get('supplier_id');
+
+    $data['created_by'] =
+      $this->input->get('created_by');
+
+    // Fetch filtered records
+    $data['records'] =
+      $this->Reports_model
+      ->get_purchase_request_report_records();
+
+    $filename =
+      'Purchase_Request_Report_' .
+      date('Y-m-d_H-i-s') .
+      '.xls';
+
+    header(
+      'Content-Type: application/vnd.ms-excel'
+    );
+
+    header(
+      'Content-Disposition: attachment; filename="' .
+        $filename .
+        '"'
+    );
+
+    header('Pragma: no-cache');
+    header('Expires: 0');
+
+    $this->load->view(
+      'Reports/Purchase/Export/export_purchase_request_report',
+      $data
+    );
+  }
+  ///////////////////// PURCHASE REQUEST REPORT END /////////////////////
+
 
   ///////////////  RFQ Report ////////////////////
   function rfq_report()

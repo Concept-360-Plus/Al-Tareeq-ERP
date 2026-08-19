@@ -82,31 +82,134 @@ class Dashboard extends CI_Controller
 
         $data['title'] = "Inventory Dashboard";
 
-        $data['product_count']          = $this->Inventory_model->get_product_count();
-        $data['material_issue_count']   = $this->Inventory_model->get_material_issue_count();
-        $data['ledger_count']           = $this->Inventory_model->get_stock_ledger_count();
-        $data['minimum_stock_count']    = $this->Inventory_model->get_minimum_stock_count();
+        /* =========================
+       BASIC COUNTS
+    ========================= */
 
-        $data['stock_in']               = $this->Inventory_model->get_total_stock_in();
-        $data['stock_out']              = $this->Inventory_model->get_total_stock_out();
-        $data['reserved_stock']         = $this->Inventory_model->get_reserved_stock_total();
-        $data['available_stock']        = $this->Inventory_model->get_available_stock();
+        $data['product_count'] =
+            $this->Inventory_model->get_product_count();
 
-        $data['today_issue']            = $this->Inventory_model->today_material_issue();
-        $data['today_stockin']          = $this->Inventory_model->today_stock_in();
-        $data['today_stockout']         = $this->Inventory_model->today_stock_out();
-        $data['today_adjustment']       = $this->Inventory_model->today_stock_adjustment();
+        $data['material_issue_count'] =
+            $this->Inventory_model->get_material_issue_count();
 
-        $data['recent_issue']           = $this->Inventory_model->recent_material_issue();
-        $data['recent_stock']           = $this->Inventory_model->recent_stock_ledger();
+        $data['ledger_count'] =
+            $this->Inventory_model->get_stock_ledger_count();
 
-        $data['low_stock']              = $this->Inventory_model->low_stock_items();
 
-        $data['warehouse_summary']      = $this->Inventory_model->warehouse_summary();
+        /* =========================
+       STOCK SUMMARY
+    ========================= */
 
-        $data['main_content'] = "dashboard/inventory_dashboard";
+        $stock_summary =
+            $this->Inventory_model->get_inventory_stock_summary();
 
-        $this->load->view('includes/template', $data);
+        $data['available_stock'] =
+            $stock_summary->available_stock ?? 0;
+
+        $data['reserved_stock'] =
+            $stock_summary->reserved_stock ?? 0;
+
+        $data['pending_stock'] =
+            $stock_summary->pending_stock ?? 0;
+
+
+        /* =========================
+       INVENTORY KPIs
+    ========================= */
+
+        $data['inventory_value'] =
+            $this->Inventory_model->get_inventory_value();
+
+        $data['low_stock_count'] =
+            $this->Inventory_model->get_low_stock_count();
+
+        $data['out_of_stock_count'] =
+            $this->Inventory_model->get_out_of_stock_count();
+
+        $data['overstock_count'] =
+            $this->Inventory_model->get_overstock_count();
+
+
+        /* =========================
+       TOTAL MOVEMENT
+    ========================= */
+
+        $data['stock_in'] =
+            $this->Inventory_model->get_total_stock_in();
+
+        $data['stock_out'] =
+            $this->Inventory_model->get_total_stock_out();
+
+
+        /* =========================
+       TODAY
+    ========================= */
+
+        $today_movement =
+            $this->Inventory_model->get_today_stock_movement();
+
+        $data['today_stock_in'] =
+            $today_movement->stock_in ?? 0;
+
+        $data['today_stock_out'] =
+            $today_movement->stock_out ?? 0;
+
+        $data['today_issue'] =
+            $this->Inventory_model->today_material_issue();
+
+        $data['today_adjustment'] =
+            $this->Inventory_model->today_stock_adjustment();
+
+
+        /* =========================
+       CHART DATA
+    ========================= */
+
+        $data['monthly_stock_movement'] =
+            $this->Inventory_model->get_monthly_stock_movement();
+
+        $data['inventory_value_trend'] =
+            $this->Inventory_model->get_inventory_value_trend();
+
+        $data['stock_status_summary'] =
+            $this->Inventory_model->get_stock_status_summary();
+
+
+        /* =========================
+       ANALYTICAL DATA
+    ========================= */
+
+        $data['fast_moving_items'] =
+            $this->Inventory_model->get_fast_moving_items();
+
+        $data['dead_stock_items'] =
+            $this->Inventory_model->get_dead_stock_items();
+
+
+        /* =========================
+       EXISTING TABLES
+    ========================= */
+
+        $data['recent_issue'] =
+            $this->Inventory_model->recent_material_issue();
+
+        $data['recent_stock'] =
+            $this->Inventory_model->recent_stock_ledger();
+
+        $data['low_stock'] =
+            $this->Inventory_model->low_stock_items();
+
+        $data['warehouse_summary'] =
+            $this->Inventory_model->warehouse_summary();
+
+
+        $data['main_content'] =
+            "dashboard/inventory_dashboard";
+
+        $this->load->view(
+            'includes/template',
+            $data
+        );
     }
 
     public function hr_dashboard()
