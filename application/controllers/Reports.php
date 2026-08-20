@@ -194,6 +194,7 @@ class Reports extends CI_Controller
     $data['created_by'] = $this->input->post('created_by');
     $data['supplier_id'] = $this->input->post('supplier_id');
 
+    $data['user_list'] = $this->Setup_model->get_active_user_list_with_employee_code();
     $data['supplier_records'] = $this->Setup_model->get_active_supplier_list();
     $data['records'] = $this->Reports_model->get_po_report_records();
     $data['main_content'] = 'Reports/Purchase/po_report.php';
@@ -216,7 +217,7 @@ class Reports extends CI_Controller
 
     $this->load->model('Company_model');
 
-    $branch_id = 1; // replace with dynamic branch_id if available
+    $branch_id = 8; // replace with dynamic branch_id if available
     $branch = $this->Setup_model->get_branch_by_id($branch_id);
     $data['headerPath'] = !empty($branch->branch_header) ? base_url(ltrim($branch->branch_header, '/')) : '';
 
@@ -231,7 +232,21 @@ class Reports extends CI_Controller
     $data['supplier_id'] = $this->input->get('supplier_id');
     $data['created_by'] = $this->input->get('created_by');
     $data['records'] = $this->Reports_model->get_po_report_records();
-
+    $data['branch_name'] = '-';
+    if (!empty($data['records'])) {
+      $branch_id =
+        $data['records'][0]->branch_id;
+      if (!empty($branch_id)) {
+        $branch =
+          $this->Setup_model
+          ->get_branch_by_id($branch_id);
+        if (!empty($branch)) {
+          $data['branch_name'] =
+            $branch->branch_name;
+        }
+      }
+    }
+    $data['company_name'] = $this->Setup_model->get_company_details();
     $filename = 'Purchase_Order_Report_' . date('Y-m-d_H-i-s') . '.xls';
     header('Content-Type: application/vnd.ms-excel');
     header('Content-Disposition: attachment; filename="' . $filename . '"');
