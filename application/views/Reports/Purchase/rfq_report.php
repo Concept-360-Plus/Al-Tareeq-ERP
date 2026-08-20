@@ -11,18 +11,20 @@ $user = $this->session->userdata('user_id');
 
       <div class="x_content">
 
-
-
         <div class="well" style="overflow: auto">
+
           <div class="col-md-12">
+
             <label class="control-label col-md-1 col-sm-3 col-xs-3">Date From:</label>
             <div class="col-md-2">
               <input type="date" name="from_date" class="form-control" value="<?php echo $from; ?>" />
             </div>
+
             <label class="control-label col-md-1 col-sm-3 col-xs-3">Date To:</label>
             <div class="col-md-2">
               <input type="date" name="to_date" class="form-control" value="<?php echo $to; ?>" />
             </div>
+
             <label class="control-label col-md-1 col-sm-3 col-xs-3">Supplier:</label>
             <div class="col-md-2">
               <select name="supplier_id" id="supplier_id" class="form-control select2" tabindex="2">
@@ -34,13 +36,52 @@ $user = $this->session->userdata('user_id');
               </select>
             </div>
 
+            <label class="control-label col-md-1 col-sm-3 col-xs-3">
+              Created By:
+            </label>
 
+            <div class="col-md-2">
+              <select
+                name="created_by"
+                id="created_by"
+                class="form-control select2">
+                <option value="">
+                  -select-
+                </option>
+                <?php foreach ($user_list as $u) { ?>
+                  <option value="<?php echo $u->user_id; ?>"
+                    <?php
+                    echo ($created_by == $u->user_id)
+                      ? 'selected'
+                      : '';
+                    ?>>
+
+                    <?php
+                    if (!empty($u->employee_code)) {
+                      echo $u->employee_code . ' ' . $u->user_name;
+                    } else {
+                      echo $u->user_name;
+                    }
+                    ?>
+                  </option>
+                <?php } ?>
+              </select>
+            </div>
 
             <div class="col-md-3 text-nowrap">
-
               <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> Go</button>
+
               <a href="javascript:void(0);" class="btn btn-warning" onclick="printRFQReport(event)" style="color:#000;"><i class="fa fa-print"></i> Print</a>
+
+              <a
+                href="javascript:void(0);"
+                class="btn btn-success"
+                onclick="exportRFQExcel(event)">
+                <i class="fa fa-file-excel-o"></i>
+                Excel
+              </a>
             </div>
+
           </div>
         </div>
       </div>
@@ -50,7 +91,7 @@ $user = $this->session->userdata('user_id');
         <table id="basic-btn" class="table table-striped table-bordered nowrap">
           <thead>
             <tr>
-              <th>Sr. No</th>
+              <th>Sl. No</th>
               <th>RFQ Code</th>
               <th>RFQ Date</th>
               <th>Supplier</th>
@@ -71,7 +112,7 @@ $user = $this->session->userdata('user_id');
             <?php endforeach; ?>
           </tbody>
           <tfoot>
-            <th>Sr. No</th>
+            <th>Sl. No</th>
             <th>RFQ Code</th>
             <th>RFQ Date</th>
 
@@ -95,22 +136,91 @@ $user = $this->session->userdata('user_id');
 </form>
 <script>
   function printRFQReport(event) {
+    if (event) {
+      event.preventDefault();
+    }
 
-    if (event) event.preventDefault(); // 🔥 stop any default action
+    const fromDate =
+      document.querySelector(
+        'input[name="from_date"]'
+      ).value;
 
-    const fromDate = document.querySelector('input[name="from_date"]').value;
-    const toDate = document.querySelector('input[name="to_date"]').value;
-    const supplierId = document.querySelector('select[name="supplier_id"]').value;
+    const toDate =
+      document.querySelector(
+        'input[name="to_date"]'
+      ).value;
 
-    const baseUrl = "<?= base_url('index.php/Reports/print_rfq_report'); ?>";
+    const supplierId =
+      document.querySelector(
+        'select[name="supplier_id"]'
+      ).value;
+
+    const createdBy =
+      document.querySelector(
+        'select[name="created_by"]'
+      ).value;
+
+
+    const baseUrl =
+      "<?= base_url('index.php/Reports/print_rfq_report'); ?>";
+
 
     const params = new URLSearchParams({
       from_date: fromDate,
       to_date: toDate,
-      supplier_id: supplierId
+      supplier_id: supplierId,
+      created_by: createdBy
     });
 
-    window.open(baseUrl + "?" + params.toString(), '_blank');
+
+    window.open(
+      baseUrl + "?" + params.toString(),
+      '_blank'
+    );
+
+    return false;
+  }
+
+  function exportRFQExcel(event) {
+    if (event) {
+      event.preventDefault();
+    }
+
+    const fromDate =
+      document.querySelector(
+        'input[name="from_date"]'
+      ).value;
+
+    const toDate =
+      document.querySelector(
+        'input[name="to_date"]'
+      ).value;
+
+    const supplierId =
+      document.querySelector(
+        'select[name="supplier_id"]'
+      ).value;
+
+    const createdBy =
+      document.querySelector(
+        'select[name="created_by"]'
+      ).value;
+
+
+    const baseUrl =
+      "<?= base_url('index.php/Reports/export_rfq_excel'); ?>";
+
+
+    const params = new URLSearchParams({
+      from_date: fromDate,
+      to_date: toDate,
+      supplier_id: supplierId,
+      created_by: createdBy
+    });
+
+
+    window.location.href =
+      baseUrl + "?" + params.toString();
 
     return false;
   }
