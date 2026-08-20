@@ -466,7 +466,7 @@ class Setup_model extends CI_Model
 
     function get_company_master_list()
     {
-        $query = $this->db->query("select * from company_master ");
+        $query = $this->db->query("select * from company_master");
         return $query->result();
     }
 

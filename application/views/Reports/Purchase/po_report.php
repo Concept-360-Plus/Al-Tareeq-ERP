@@ -64,7 +64,7 @@ $user = $this->session->userdata('user_id');
               </select>
             </div>
 
-            <div class="col-md-2">
+            <div class="col-md-3 text-nowrap">
 
               <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> Go</button>
 
@@ -89,6 +89,7 @@ $user = $this->session->userdata('user_id');
             <tr>
               <th>Sl. No</th>
               <th>PO Code</th>
+              <th>PO Type</th>
               <th>PO Date</th>
               <th>Supplier</th>
               <th>Grand Total</th>
@@ -105,7 +106,13 @@ $user = $this->session->userdata('user_id');
                 <td> <a target="_blank"
                     href="<?= base_url('index.php/Purchase/edit_po/' . $row->po_id . '/0/' . ($row->po_type == 'direct' ? 2 : 1)) ?>">
                     <?= $row->po_code; ?>
-                  </a></td>
+                  </a>
+                </td>
+                <td>
+                  <?php
+                  echo strtoupper($row->po_type);
+                  ?>
+                </td>
                 <td><?php echo date('d-M-Y', strtotime($row->po_date)); ?></td>
                 <td><?php echo $row->supplier_name; ?></td>
                 <td><?php echo $row->grand_total; ?></td>
@@ -116,6 +123,7 @@ $user = $this->session->userdata('user_id');
           <tfoot>
             <th>Sl. No</th>
             <th>PO Code</th>
+            <th>PO Type</th>
             <th>PO Date</th>
             <th>Supplier</th>
             <th>Grand Total</th>
