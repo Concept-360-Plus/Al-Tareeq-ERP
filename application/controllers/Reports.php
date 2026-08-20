@@ -107,7 +107,7 @@ class Reports extends CI_Controller
     $data['from'] = date('Y-m-01'); // First day of current month
     $data['to']   = date('Y-m-d');  // Today's date
     $data['status'] = "";
-    $data['title'] = "RFQ Report";
+    $data['title'] = "Direct RFQ Report";
     $data['records'] = array();
     $data['supplier_id'] = "";
     $data['created_by']  = "";
@@ -157,7 +157,7 @@ class Reports extends CI_Controller
     $data['from'] = $this->input->get('from_date');
     $data['to'] = $this->input->get('to_date');
     $data['supplier_id'] = $this->input->get('supplier_id');
-    $data['created_by'] =$this->input->get('created_by');
+    $data['created_by'] = $this->input->get('created_by');
 
     $data['records'] = $this->Reports_model->get_rfq_report_records();
 
@@ -167,20 +167,21 @@ class Reports extends CI_Controller
     header('Pragma: no-cache');
     header('Expires: 0');
 
-    $this->load->view('Reports/Purchase/Export/export_rfq_report',$data);
+    $this->load->view('Reports/Purchase/Export/export_rfq_report', $data);
   }
 
 
   ///////////////  PO Report ////////////////////
   function po_report()
   {
-    $data['from'] = date('01-m-Y');
-    $data['to'] = date('d-m-Y');
+    $data['from'] = date('Y-m-01');
+    $data['to']   = date('Y-m-d');
     $data['status'] = "";
     $data['title'] = "Purchase Order Report";
     $data['supplier_id'] = "";
+    $data['created_by'] = "";
     $data['records'] = array();
-    $data['user_list'] = $this->Setup_model->get_active_user_list();
+    $data['user_list'] = $this->Setup_model->get_active_user_list_with_employee_code();
     $data['supplier_records'] = $this->Setup_model->get_active_supplier_list();
     $data['main_content'] = 'Reports/Purchase/po_report.php';
     $this->load->view('includes/template.php', $data);
@@ -203,9 +204,11 @@ class Reports extends CI_Controller
     $from_date = $this->input->get('from_date');
     $to_date = $this->input->get('to_date');
     $supplier_id = $this->input->get('supplier_id');
+    $created_by = $this->input->get('created_by');
     $data['from'] = $from_date;
     $data['to'] = $to_date;
     $data['supplier_id'] = $supplier_id;
+    $data['created_by'] = $created_by;
     // Fetch filtered records again
     $data['records'] = $this->Reports_model->get_po_report_records();
 
@@ -219,6 +222,23 @@ class Reports extends CI_Controller
 
 
     $this->load->view('Reports/Purchase/Print/print_po_report', $data);
+  }
+
+  public function export_po_excel()
+  {
+    $data['from'] = $this->input->get('from_date');
+    $data['to'] = $this->input->get('to_date');
+    $data['supplier_id'] = $this->input->get('supplier_id');
+    $data['created_by'] = $this->input->get('created_by');
+    $data['records'] = $this->Reports_model->get_po_report_records();
+
+    $filename = 'Purchase_Order_Report_' . date('Y-m-d_H-i-s') . '.xls';
+    header('Content-Type: application/vnd.ms-excel');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+
+    $this->load->view('Reports/Purchase/Export/export_po_report', $data);
   }
   ///////////////  GRN Report ////////////////////
   function grn_report()

@@ -43,13 +43,9 @@
 
                         <div class="col-md-3">
                             <label>Created By:</label>
-
                             <select name="created_by" class="form-control select2">
-
                                 <option value="">All Users</option>
-
                                 <?php foreach ($user_list as $user) { ?>
-
                                     <option value="<?php echo $user->user_id; ?>"
                                         <?php
                                         echo ($created_by == $user->user_id)
@@ -64,11 +60,8 @@
                                             echo $user->user_name;
                                         }
                                         ?>
-
                                     </option>
-
                                 <?php } ?>
-
                             </select>
                         </div>
                     </div>
@@ -131,9 +124,7 @@
                                     <?php foreach ($records as $row) { ?>
                                         <tr>
                                             <td><?php echo $i++; ?></td>
-                                            <td>
-                                                <?php echo $row->pr_code; ?>
-                                            </td>
+                                            <td><a target='blank' title="RFQ Details" href="<?php echo base_url() . 'index.php/Purchase/edit_pr_from_mi/' . $row->pr_id; ?>"><?php echo $row->pr_code; ?></a></td>
                                             <td>
                                                 <?php echo date(
                                                     'd-m-Y',

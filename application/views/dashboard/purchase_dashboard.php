@@ -1,93 +1,142 @@
 <style>
-    /* DASHBOARD COMMON STYLES */
+    /* =========================================================
+   DASHBOARD COMMON
+========================================================= */
+
     .kpi-card {
         border-radius: 12px;
         padding: 20px;
         color: #fff;
         margin-bottom: 20px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, .15);
         min-height: 135px;
+
+        box-shadow:
+            0 5px 15px rgba(0, 0, 0, .14);
+
+        position: relative;
+        overflow: hidden;
+
+        transition:
+            transform .2s ease,
+            box-shadow .2s ease;
+    }
+
+    .kpi-card:hover {
+        transform: translateY(-3px);
+
+        box-shadow:
+            0 8px 20px rgba(0, 0, 0, .20);
     }
 
     .kpi-card i {
-        font-size: 34px;
+        font-size: 38px;
         float: right;
-        opacity: .30;
+        opacity: .22;
     }
 
     .kpi-card h4 {
         margin-top: 0;
         font-weight: 500;
+        font-size: 16px;
     }
 
     .kpi-card h2 {
         margin-bottom: 0;
-        font-weight: 600;
+        font-size: 28px;
+        font-weight: 700;
     }
 
-    /* KPI COLORS */
+
+    /* =========================================================
+   STRONG KPI COLORS
+========================================================= */
+
     .bg1 {
-        background: #3498db;
+        background: linear-gradient(135deg,
+                #1565C0,
+                #2196F3);
     }
 
     .bg2 {
-        background: #27ae60;
+        background: linear-gradient(135deg,
+                #00897B,
+                #26A69A);
     }
 
     .bg3 {
-        background: #e67e22;
+        background: linear-gradient(135deg,
+                #EF6C00,
+                #FB8C00);
     }
 
     .bg4 {
-        background: #8e44ad;
+        background: linear-gradient(135deg,
+                #6A1B9A,
+                #8E44AD);
     }
 
     .bg5 {
-        background: #16a085;
+        background: linear-gradient(135deg,
+                #2E7D32,
+                #43A047);
     }
 
     .bg6 {
-        background: #c0392b;
+        background: linear-gradient(135deg,
+                #C62828,
+                #E53935);
     }
 
-    /* MODERN PANEL */
+
+    /* =========================================================
+   MODERN PANEL
+========================================================= */
+
     .panel-modern {
         background: #fff;
-        border-radius: 10px;
-        padding: 15px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
+
+        border-radius: 12px;
+
+        padding: 18px;
+
+        box-shadow:
+            0 3px 12px rgba(0, 0, 0, .08);
+
         margin-bottom: 20px;
+
+        border: 1px solid #f0f0f0;
     }
 
     .panel-modern h4 {
         margin-top: 0;
-        margin-bottom: 15px;
-        font-weight: 600;
-        color: #607d9f;
+        margin-bottom: 18px;
+
+        font-weight: 700;
+
+        color: #34495E;
+
+        font-size: 19px;
     }
 
-    /* QUICK ACTION BUTTON */
-    .quick-btn {
-        display: block;
-        padding: 10px;
-        margin: 8px 0;
-        border: 1px solid #ddd;
-        border-radius: 6px;
-        color: #333;
-        text-decoration: none;
-        transition: all .2s ease;
+    .panel-modern h4 i {
+        color: #2878B5;
+
+        margin-right: 7px;
     }
 
-    .quick-btn:hover {
-        background: #f5f5f5;
-        text-decoration: none;
-    }
 
-    /* PURCHASE PROCESS */
+    /* =========================================================
+   PURCHASE PROCESS
+========================================================= */
+
     .pipeline-box {
         text-align: center;
-        padding: 15px 5px;
-        border-right: 1px solid #eee;
+
+        padding: 18px 5px;
+
+        border-right: 1px solid #eeeeee;
+
+        position: relative;
     }
 
     .pipeline-box:last-child {
@@ -95,74 +144,300 @@
     }
 
     .pipeline-count {
-        font-size: 26px;
-        font-weight: 600;
+        font-size: 28px;
+
+        font-weight: 700;
+
         margin-bottom: 5px;
-        color: #607d9f;
+
+        color: #2878B5;
     }
 
     .pipeline-title {
-        color: #777;
+        color: #6B7280;
+
         font-size: 13px;
+
+        font-weight: 500;
+    }
+
+
+    /* Different colors for process stages */
+
+    .pipeline-box:nth-child(1) .pipeline-count {
+        color: #1976D2;
+    }
+
+    .pipeline-box:nth-child(2) .pipeline-count {
+        color: #8E44AD;
+    }
+
+    .pipeline-box:nth-child(3) .pipeline-count {
+        color: #EF6C00;
+    }
+
+    .pipeline-box:nth-child(4) .pipeline-count {
+        color: #2E7D32;
     }
 
 
     /* =========================================================
-       ACTIVITIES
-    ========================================================= */
+   PENDING WORK CARDS
+========================================================= */
 
-    .activity-list {
-        padding-left: 20px;
+    .pending-card {
+        border-radius: 10px;
+
+        border: none;
+
+        margin-bottom: 20px;
+
+        box-shadow:
+            0 3px 10px rgba(0, 0, 0, .08);
+
+        overflow: hidden;
+    }
+
+    .pending-card .panel-body {
+        padding: 18px;
+    }
+
+    .pending-card h3 {
+        margin-top: 0;
+
+        font-size: 30px;
+
+        font-weight: 700;
+    }
+
+    .pending-card h4 {
         margin-bottom: 0;
+
+        color: #555;
+
+        font-size: 15px;
     }
 
-    .activity-list li {
-        padding: 6px 0;
+
+    /* Individual pending colors */
+
+    .pending-rfq {
+        border-top: 4px solid #1976D2;
+    }
+
+    .pending-rfq h3 {
+        color: #1976D2;
+    }
+
+
+    .pending-quotation {
+        border-top: 4px solid #8E44AD;
+    }
+
+    .pending-quotation h3 {
+        color: #8E44AD;
+    }
+
+
+    .pending-po {
+        border-top: 4px solid #EF6C00;
+    }
+
+    .pending-po h3 {
+        color: #EF6C00;
+    }
+
+
+    .pending-grn {
+        border-top: 4px solid #2E7D32;
+    }
+
+    .pending-grn h3 {
+        color: #2E7D32;
     }
 
 
     /* =========================================================
-       TABLES
-    ========================================================= */
-
-    .empty-row {
-        text-align: center;
-        color: #999;
-        padding: 15px !important;
-    }
-
-    .status-label {
-        font-size: 11px;
-    }
-
-
-    /* =========================================================
-       VALUE BOX
-    ========================================================= */
+   VALUE BOXES
+========================================================= */
 
     .value-box {
         text-align: center;
-        padding: 15px;
+
+        padding: 20px;
+
+        position: relative;
+
+        overflow: hidden;
+    }
+
+    .value-box p {
+        color: #6B7280;
+
+        margin-bottom: 8px;
+
+        font-size: 14px;
+
+        font-weight: 500;
     }
 
     .value-box h2 {
         margin: 5px 0;
-        font-weight: 600;
-        color: #607d9f;
+
+        font-weight: 700;
+
+        color: #2878B5;
+
+        font-size: 25px;
     }
 
-    .value-box p {
-        color: #777;
-        margin-bottom: 0;
+
+    /* Different value colors */
+
+    .value-box:nth-child(1) h2 {
+        color: #8E44AD;
+    }
+
+    .value-box:nth-child(2) h2 {
+        color: #EF6C00;
+    }
+
+    .value-box:nth-child(3) h2 {
+        color: #2E7D32;
     }
 
 
     /* =========================================================
-       CHART
-    ========================================================= */
+   QUICK ACTION BUTTON
+========================================================= */
+
+    .quick-btn {
+        display: block;
+
+        padding: 11px 13px;
+
+        margin: 9px 0;
+
+        border: 1px solid #E1E5EA;
+
+        border-radius: 7px;
+
+        color: #34495E;
+
+        text-decoration: none;
+
+        background: #fff;
+
+        transition: all .2s ease;
+    }
+
+    .quick-btn i {
+        color: #2878B5;
+
+        width: 22px;
+
+        margin-right: 4px;
+    }
+
+    .quick-btn:hover {
+        background: #F5F9FC;
+
+        border-color: #2878B5;
+
+        color: #2878B5;
+
+        text-decoration: none;
+
+        transform: translateX(3px);
+    }
+
+
+    /* =========================================================
+   PENDING ACTIONS
+========================================================= */
+
+    .panel-modern table tr td {
+        vertical-align: middle;
+    }
+
+    .panel-modern table tr td strong {
+        display: inline-block;
+
+        min-width: 30px;
+
+        padding: 4px 9px;
+
+        border-radius: 12px;
+
+        background: #EAF3FB;
+
+        color: #2878B5;
+
+        text-align: center;
+    }
+
+
+    /* =========================================================
+   TABLES
+========================================================= */
+
+    .panel-modern .table {
+        margin-bottom: 0;
+    }
+
+    .panel-modern .table thead th {
+        background: #F5F7FA;
+
+        color: #34495E;
+
+        font-size: 13px;
+
+        font-weight: 700;
+
+        border-bottom: 1px solid #DDE3EA;
+    }
+
+    .panel-modern .table tbody td {
+        color: #455A64;
+
+        font-size: 13px;
+
+        vertical-align: middle;
+    }
+
+    .panel-modern .table tbody tr:hover {
+        background: #F8FBFD;
+    }
+
+    .empty-row {
+        text-align: center;
+
+        color: #999;
+
+        padding: 15px !important;
+    }
+
+
+    /* =========================================================
+   STATUS LABEL
+========================================================= */
+
+    .status-label {
+        font-size: 11px;
+
+        padding: 5px 9px;
+
+        border-radius: 12px;
+    }
+
+
+    /* =========================================================
+   CHART
+========================================================= */
 
     .chart-container {
         position: relative;
+
         height: 300px;
     }
 
@@ -172,13 +447,14 @@
 
 
     /* =========================================================
-       SMALL RESPONSIVE FIX
-    ========================================================= */
+   RESPONSIVE
+========================================================= */
 
     @media (max-width: 767px) {
 
         .pipeline-box {
             border-right: none;
+
             border-bottom: 1px solid #eee;
         }
 
@@ -457,13 +733,9 @@
 <div class="row">
 
     <!-- Pending RFQ -->
-
     <div class="col-md-3 col-sm-6">
-
-        <div class="panel panel-default">
-
+        <div class="panel panel-default pending-card pending-rfq">
             <div class="panel-body text-center">
-
                 <h3>
                     <?= (int)$pending_rfq ?>
                 </h3>
@@ -471,22 +743,14 @@
                 <h4>
                     Pending RFQ
                 </h4>
-
             </div>
-
         </div>
-
     </div>
 
-
     <!-- Pending Quotation -->
-
     <div class="col-md-3 col-sm-6">
-
-        <div class="panel panel-default">
-
+        <div class="panel panel-default pending-card pending-quotation">
             <div class="panel-body text-center">
-
                 <h3>
                     <?= (int)$pending_quotation ?>
                 </h3>
@@ -494,22 +758,16 @@
                 <h4>
                     Pending Quotation
                 </h4>
-
             </div>
-
         </div>
-
     </div>
 
 
     <!-- PO Awaiting GRN -->
 
     <div class="col-md-3 col-sm-6">
-
-        <div class="panel panel-default">
-
+        <div class="panel panel-default pending-card pending-po">
             <div class="panel-body text-center">
-
                 <h3>
                     <?= (int)$pending_po ?>
                 </h3>
@@ -517,22 +775,15 @@
                 <h4>
                     POs Awaiting GRN
                 </h4>
-
             </div>
-
         </div>
-
     </div>
 
 
     <!-- Pending GRN -->
-
     <div class="col-md-3 col-sm-6">
-
-        <div class="panel panel-default">
-
+        <div class="panel panel-default pending-card pending-grn">
             <div class="panel-body text-center">
-
                 <h3>
                     <?= (int)$pending_grn ?>
                 </h3>
@@ -540,11 +791,8 @@
                 <h4>
                     Pending GRN
                 </h4>
-
             </div>
-
         </div>
-
     </div>
 
 </div>
@@ -1276,20 +1524,113 @@
 
 
 <!-- =========================================================
-     11. CHART.JS
+     11. PURCHASE DASHBOARD CHARTS
 ========================================================= -->
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"></script>
 
 <script>
     $(document).ready(function() {
 
+        /* =========================================================
+           CHECK CHART.JS
+        ========================================================= */
 
-        /* =====================================================
-           MONTHLY PURCHASE BAR CHART
-        ===================================================== */
+        if (typeof Chart === 'undefined') {
+
+            console.error('Chart.js is not loaded.');
+
+            return;
+        }
+
+
+        /* =========================================================
+           COMMON COLORS
+        ========================================================= */
+
+        var colors = {
+
+            blue: '#1976D2',
+            blueLight: 'rgba(25, 118, 210, 0.18)',
+
+            purple: '#8E44AD',
+            purpleLight: 'rgba(142, 68, 173, 0.18)',
+
+            orange: '#EF6C00',
+            orangeLight: 'rgba(239, 108, 0, 0.18)',
+
+            green: '#2E7D32',
+            greenLight: 'rgba(46, 125, 50, 0.18)'
+        };
+
+
+        /* =========================================================
+           COMMON OPTIONS
+        ========================================================= */
+
+        var commonOptions = {
+
+            responsive: true,
+
+            maintainAspectRatio: false,
+
+            animation: {
+
+                duration: 900,
+
+                easing: 'easeOutQuart'
+
+            },
+
+            legend: {
+
+                position: 'top',
+
+                labels: {
+
+                    fontSize: 12,
+
+                    fontColor: '#5B6B7A',
+
+                    padding: 15,
+
+                    usePointStyle: true
+
+                }
+
+            },
+
+            tooltips: {
+
+                backgroundColor: 'rgba(34, 45, 57, 0.92)',
+
+                titleFontSize: 13,
+
+                bodyFontSize: 12,
+
+                cornerRadius: 6,
+
+                xPadding: 12,
+
+                yPadding: 10
+
+            }
+
+        };
+
+
+        /* =========================================================
+           1. MONTHLY PURCHASE TREND
+           ---------------------------------------------------------
+           Data:
+           month
+           total_po
+           total_amount
+        ========================================================= */
 
         var monthlyPurchaseData =
             <?= json_encode(
-                isset($monthly_purchase_chart)
+                !empty($monthly_purchase_chart)
                     ? $monthly_purchase_chart
                     : array()
             ) ?>;
@@ -1298,6 +1639,8 @@
         var monthlyLabels = [];
 
         var monthlyValues = [];
+
+        var monthlyPOs = [];
 
 
         var monthNames = [
@@ -1336,7 +1679,7 @@
             function(index, item) {
 
                 var monthNumber =
-                    parseInt(item.month);
+                    parseInt(item.month, 10);
 
 
                 if (
@@ -1363,119 +1706,314 @@
                     )
                 );
 
+
+                monthlyPOs.push(
+                    parseInt(
+                        item.total_po || 0
+                    )
+                );
+
             }
         );
+
 
         var purchaseTrendElement =
             document.getElementById(
                 'purchaseTrendChart'
             );
 
+
         if (purchaseTrendElement) {
+
             var purchaseTrendCtx =
                 purchaseTrendElement
                 .getContext('2d');
 
+
             new Chart(
                 purchaseTrendCtx, {
+
                     type: 'bar',
+
                     data: {
+
                         labels: monthlyLabels,
+
                         datasets: [{
+
                             label: 'Purchase Value',
+
                             data: monthlyValues,
-                            borderWidth: 1
+
+                            backgroundColor: colors.blueLight,
+
+                            borderColor: colors.blue,
+
+                            borderWidth: 2,
+
+                            hoverBackgroundColor: 'rgba(25, 118, 210, 0.32)',
+
+                            barPercentage: 0.65,
+
+                            categoryPercentage: 0.72
+
                         }]
+
                     },
 
                     options: {
+
                         responsive: true,
+
                         maintainAspectRatio: false,
-                        legend: {
-                            display: false
+
+                        animation: {
+
+                            duration: 900,
+
+                            easing: 'easeOutQuart'
+
                         },
+
+                        legend: {
+
+                            display: false
+
+                        },
+
                         scales: {
+
                             yAxes: [{
+
                                 ticks: {
-                                    beginAtZero: true
+
+                                    beginAtZero: true,
+
+                                    fontColor: '#7A8793',
+
+                                    callback: function(value) {
+
+                                        return Number(value)
+                                            .toLocaleString();
+
+                                    }
+
+                                },
+
+                                gridLines: {
+
+                                    color: 'rgba(52, 73, 94, 0.07)',
+
+                                    drawBorder: false
+
                                 }
+
+                            }],
+
+                            xAxes: [{
+
+                                ticks: {
+
+                                    fontColor: '#7A8793',
+
+                                    fontSize: 11
+
+                                },
+
+                                gridLines: {
+
+                                    display: false,
+
+                                    drawBorder: false
+
+                                }
+
                             }]
+
                         },
 
                         tooltips: {
+
+                            backgroundColor: 'rgba(34, 45, 57, 0.92)',
+
+                            titleFontSize: 13,
+
+                            bodyFontSize: 12,
+
+                            cornerRadius: 6,
+
                             callbacks: {
+
                                 label: function(
                                     tooltipItem,
                                     data
                                 ) {
-                                    return 'Purchase: ' +
-                                    Number(
-                                        tooltipItem.yLabel
-                                    ).toLocaleString(
-                                        undefined, {
-                                            minimumFractionDigits: 2,
-                                            maximumFractionDigits: 2
-                                        }
-                                    );
+
+                                    var index =
+                                        tooltipItem.index;
+
+                                    var amount =
+                                        monthlyValues[index];
+
+                                    var poCount =
+                                        monthlyPOs[index];
+
+                                    return [
+
+                                        'Purchase: ' +
+                                        Number(amount)
+                                        .toLocaleString(
+                                            undefined, {
+                                                minimumFractionDigits: 2,
+                                                maximumFractionDigits: 2
+                                            }
+                                        ),
+
+                                        'POs: ' + poCount
+
+                                    ];
+
                                 }
+
                             }
+
                         }
+
                     }
+
                 }
             );
+
         }
 
-        /* =====================================================
-           PURCHASE WORKFLOW DOUGHNUT CHART
-        ===================================================== */
+
+        /* =========================================================
+           2. PURCHASE WORKFLOW
+           ---------------------------------------------------------
+           RFQ → Quotation → PO → GRN
+        ========================================================= */
 
         var workflowElement =
             document.getElementById(
                 'purchaseWorkflowChart'
             );
 
+
         if (workflowElement) {
+
             var workflowCtx =
                 workflowElement
                 .getContext('2d');
 
+
             new Chart(
                 workflowCtx, {
+
                     type: 'doughnut',
 
                     data: {
+
                         labels: [
+
                             'RFQs',
+
                             'Supplier Quotations',
+
                             'Purchase Orders',
+
                             'GRNs'
+
                         ],
 
                         datasets: [{
+
                             data: [
+
                                 <?= (int)$rfq_count ?>,
+
                                 <?= (int)$quotation_count ?>,
+
                                 <?= (int)$po_count ?>,
+
                                 <?= (int)$grn_count ?>
+
                             ],
+
+                            backgroundColor: [
+
+                                'rgba(25, 118, 210, 0.75)',
+
+                                'rgba(142, 68, 173, 0.75)',
+
+                                'rgba(239, 108, 0, 0.75)',
+
+                                'rgba(46, 125, 50, 0.75)'
+
+                            ],
+
+                            borderColor: [
+
+                                colors.blue,
+
+                                colors.purple,
+
+                                colors.orange,
+
+                                colors.green
+
+                            ],
+
                             borderWidth: 2
+
                         }]
+
                     },
 
                     options: {
+
                         responsive: true,
+
                         maintainAspectRatio: false,
+
                         cutoutPercentage: 60,
+
+                        animation: {
+
+                            animateRotate: true,
+
+                            duration: 900
+
+                        },
+
                         legend: {
-                            position: 'bottom'
+
+                            position: 'bottom',
+
+                            labels: {
+
+                                fontSize: 11,
+
+                                fontColor: '#5B6B7A',
+
+                                padding: 10,
+
+                                usePointStyle: true
+
+                            }
+
                         },
 
                         tooltips: {
+
+                            backgroundColor: 'rgba(34, 45, 57, 0.92)',
+
                             callbacks: {
+
                                 label: function(
                                     tooltipItem,
                                     data
                                 ) {
+
                                     var label =
                                         data.labels[
                                             tooltipItem.index
@@ -1487,18 +2025,30 @@
                                             tooltipItem.index
                                         ];
 
-                                    return label + ': ' + value;
+                                    return label +
+                                        ': ' +
+                                        value;
+
                                 }
+
                             }
+
                         }
+
                     }
+
                 }
             );
+
         }
 
-        /* =====================================================
-           VENDOR PURCHASE PERFORMANCE
-        ===================================================== */
+
+        /* =========================================================
+           3. VENDOR PURCHASE PERFORMANCE
+           ---------------------------------------------------------
+           Supplier vs Total Purchase
+        ========================================================= */
+
         var vendorData =
             <?= json_encode(
                 !empty($top_suppliers)
@@ -1506,82 +2056,186 @@
                     : array()
             ) ?>;
 
+
         var vendorLabels = [];
+
         var vendorValues = [];
+
 
         $.each(
             vendorData,
             function(index, supplier) {
+
                 vendorLabels.push(
-                    supplier.supplier_name
+                    supplier.supplier_name ||
+                    'Unknown Supplier'
                 );
+
 
                 vendorValues.push(
                     parseFloat(
                         supplier.total_amount || 0
                     )
                 );
+
             }
         );
+
 
         var vendorElement =
             document.getElementById(
                 'vendorPurchaseChart'
             );
 
+
         if (vendorElement) {
+
             var vendorCtx =
                 vendorElement
                 .getContext('2d');
 
+
             new Chart(
                 vendorCtx, {
+
                     type: 'horizontalBar',
+
                     data: {
+
                         labels: vendorLabels,
+
                         datasets: [{
+
                             label: 'Total Purchase',
+
                             data: vendorValues,
-                            borderWidth: 1
+
+                            backgroundColor: colors.purpleLight,
+
+                            borderColor: colors.purple,
+
+                            borderWidth: 2,
+
+                            hoverBackgroundColor: 'rgba(142, 68, 173, 0.35)',
+
+                            barPercentage: 0.65,
+
+                            categoryPercentage: 0.70
+
                         }]
+
                     },
 
                     options: {
+
                         responsive: true,
+
                         maintainAspectRatio: false,
+
+                        animation: {
+
+                            duration: 900,
+
+                            easing: 'easeOutQuart'
+
+                        },
+
                         legend: {
+
                             display: false
+
                         },
 
                         scales: {
+
                             xAxes: [{
+
                                 ticks: {
-                                    beginAtZero: true
+
+                                    beginAtZero: true,
+
+                                    fontColor: '#7A8793',
+
+                                    callback: function(value) {
+
+                                        return Number(value)
+                                            .toLocaleString();
+
+                                    }
+
+                                },
+
+                                gridLines: {
+
+                                    color: 'rgba(52, 73, 94, 0.07)',
+
+                                    drawBorder: false
+
                                 }
+
+                            }],
+
+                            yAxes: [{
+
+                                ticks: {
+
+                                    fontColor: '#5B6B7A',
+
+                                    fontSize: 11
+
+                                },
+
+                                gridLines: {
+
+                                    display: false,
+
+                                    drawBorder: false
+
+                                }
+
                             }]
+
                         },
 
                         tooltips: {
+
+                            backgroundColor: 'rgba(34, 45, 57, 0.92)',
+
+                            titleFontSize: 13,
+
+                            bodyFontSize: 12,
+
+                            cornerRadius: 6,
+
                             callbacks: {
+
                                 label: function(
-                                    tooltipItem,
-                                    data
+                                    tooltipItem
                                 ) {
+
                                     return 'Purchase: ' +
-                                    Number(
-                                        tooltipItem.xLabel
-                                    ).toLocaleString(
-                                        undefined, {
-                                            minimumFractionDigits: 2,
-                                            maximumFractionDigits: 2
-                                        }
-                                    );
+                                        Number(
+                                            tooltipItem.xLabel
+                                        ).toLocaleString(
+                                            undefined, {
+                                                minimumFractionDigits: 2,
+                                                maximumFractionDigits: 2
+                                            }
+                                        );
+
                                 }
+
                             }
+
                         }
+
                     }
+
                 }
             );
+
         }
+
+
     });
 </script>

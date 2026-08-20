@@ -28,8 +28,7 @@ $user = $this->session->userdata('user_id');
             <label class="control-label col-md-1 col-sm-3 col-xs-3">Supplier:</label>
             <div class="col-md-2">
               <select name="supplier_id" id="supplier_id" class="form-control select2" tabindex="2">
-                <option value="">-select-</option>
-
+                <option value="">All Suppliers</option>
                 <?php foreach ($supplier_records as $g) { ?>
                   <option <?php if ($supplier_id == $g->supplier_id) echo 'selected'; ?> value="<?php echo $g->supplier_id; ?>"><?php echo $g->supplier_code . ' ' . $g->supplier_name; ?> </option>
                 <?php } ?>
@@ -45,9 +44,7 @@ $user = $this->session->userdata('user_id');
                 name="created_by"
                 id="created_by"
                 class="form-control select2">
-                <option value="">
-                  -select-
-                </option>
+                <option value="">All Users</option>
                 <?php foreach ($user_list as $u) { ?>
                   <option value="<?php echo $u->user_id; ?>"
                     <?php
@@ -115,9 +112,7 @@ $user = $this->session->userdata('user_id');
             <th>Sl. No</th>
             <th>RFQ Code</th>
             <th>RFQ Date</th>
-
             <th>Supplier</th>
-
             <th>Created By</th>
           </tfoot>
         </table>
