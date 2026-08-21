@@ -260,7 +260,8 @@ class Reports extends CI_Controller
     $data['from'] = $from_date;
     $data['to']   = $to_date;
 
-    $this->load->view('Reports/Purchase/Print/print_po_report',
+    $this->load->view(
+      'Reports/Purchase/Print/print_po_report',
       $data
     );
   }
@@ -944,31 +945,161 @@ class Reports extends CI_Controller
 
   function print_stock_inventory_report()
   {
-    $data['title'] = 'Stock Inventory Report';
-    $data['warehouse_id'] = $this->input->post('warehouse_id');
-    $data['product_id'] = $this->input->post('product_id');
-    $data['store_id'] = $this->input->post('store_id');
+    // =====================================================
+    // LOAD MODELS
+    // =====================================================
 
     $this->load->model('Setup_model');
-    $data['comapny_records'] = $this->Setup_model->get_company_master_list();
-
-    $this->load->model('Setup_model');
-    $data['store_records'] = $this->Setup_model->get_warehouse_list();
-
     $this->load->model('Stock_Model');
-    $data['records'] = $this->Stock_Model->get_stock_inventory_report();
 
-    $this->load->view('Print/print_stock_inventory_report.php', $data);
+
+    // =====================================================
+    // FILTERS
+    // =====================================================
+
+    $data['title'] =
+      'Stock Inventory Report';
+
+    $data['warehouse_id'] =
+      $this->input->post('warehouse_id');
+
+    $data['store_id'] =
+      $this->input->post('store_id');
+
+    $data['product_id'] =
+      $this->input->post('product_id');
+
+
+    // =====================================================
+    // COMPANY
+    // =====================================================
+
+    $data['comapny_records'] =
+      $this->Setup_model
+      ->get_company_master_list();
+
+
+    // =====================================================
+    // WAREHOUSE NAME
+    // =====================================================
+
+    $data['warehouse_name'] =
+      'All Warehouses';
+
+    if (!empty($data['warehouse_id'])) {
+
+      $warehouse =
+        $this->db
+        ->where(
+          'warehouse_id',
+          $data['warehouse_id']
+        )
+        ->get('warehouse_master')
+        ->row();
+
+      if (!empty($warehouse)) {
+
+        $data['warehouse_name'] =
+          $warehouse->warehouse_name;
+      }
+    }
+
+
+    // =====================================================
+    // STORE NAME
+    // =====================================================
+
+    $data['store_name'] =
+      'All Stores';
+
+    if (!empty($data['store_id'])) {
+
+      $store =
+        $this->db
+        ->where(
+          'store_id',
+          $data['store_id']
+        )
+        ->get('store_master')
+        ->row();
+
+      if (!empty($store)) {
+
+        $data['store_name'] =
+          $store->store_name;
+      }
+    }
+
+
+    // =====================================================
+    // PRODUCT NAME
+    // =====================================================
+
+    $data['product_name'] =
+      'All Products';
+
+    if (!empty($data['product_id'])) {
+
+      $product =
+        $this->db
+        ->where(
+          'product_id',
+          $data['product_id']
+        )
+        ->get('item_master')
+        ->row();
+
+      if (!empty($product)) {
+
+        $data['product_name'] =
+          $product->product_name;
+      }
+    }
+
+
+    // =====================================================
+    // PREPARED BY
+    // =====================================================
+
+    $data['prepared_by'] =
+      $this->session->userdata('user_name');
+
+    if (empty($data['prepared_by'])) {
+
+      $data['prepared_by'] =
+        'Admin';
+    }
+
+
+    // =====================================================
+    // STOCK RECORDS
+    // =====================================================
+
+    $data['records'] =
+      $this->Stock_Model
+      ->get_stock_inventory_report();
+
+
+    // =====================================================
+    // LOAD PRINT VIEW
+    // =====================================================
+
+    $this->load->view(
+      'Print/print_stock_inventory_report.php',
+      $data
+    );
   }
 
   public function export_stock_inventory_report()
   {
+    $this->load->model('Setup_model');
+    $this->load->model('Stock_model');
+
     $data['title']        = 'Stock Inventory Report';
     $data['warehouse_id'] = $this->input->post('warehouse_id');
     $data['store_id']     = $this->input->post('store_id');
     $data['product_id']   = $this->input->post('product_id');
 
-    // Company details
     $data['company_name'] = '';
     $company = $this->Setup_model->get_company_details();
 
@@ -979,23 +1110,23 @@ class Reports extends CI_Controller
       $data['company_name'] = $company->company_name ?? '';
     }
 
-    // Branch
     $data['branch_name'] = '';
-
     $branch_id = 8;
-
     $branch = $this->Setup_model->get_branch_by_id($branch_id);
 
     if (!empty($branch)) {
-      $data['branch_name'] = $branch->branch_name ?? '';
+      $data['branch_name'] =
+        $branch->branch_name ?? '';
     }
 
-    // Warehouse
-    $data['warehouse_name'] = '';
 
+    $data['warehouse_name'] = '';
     if (!empty($data['warehouse_id'])) {
-      $warehouse = $this->db
-        ->where('warehouse_id', $data['warehouse_id'])
+
+      $warehouse = $this->db->where(
+        'warehouse_id',
+        $data['warehouse_id']
+      )
         ->get('warehouse_master')
         ->row();
 
@@ -1005,12 +1136,14 @@ class Reports extends CI_Controller
       }
     }
 
-    // Store
-    $data['store_name'] = '';
 
+    $data['store_name'] = '';
     if (!empty($data['store_id'])) {
       $store = $this->db
-        ->where('store_id', $data['store_id'])
+        ->where(
+          'store_id',
+          $data['store_id']
+        )
         ->get('store_master')
         ->row();
 
@@ -1020,12 +1153,14 @@ class Reports extends CI_Controller
       }
     }
 
-    // Product
-    $data['product_name'] = 'All Products';
 
+    $data['product_name'] = 'All Products';
     if (!empty($data['product_id'])) {
       $product = $this->db
-        ->where('product_id', $data['product_id'])
+        ->where(
+          'product_id',
+          $data['product_id']
+        )
         ->get('item_master')
         ->row();
 
@@ -1035,18 +1170,16 @@ class Reports extends CI_Controller
       }
     }
 
-    // Get filtered stock records
-    $this->load->model('Stock_model');
     $data['records'] = $this->Stock_model->get_stock_inventory_report();
-
-    // Prepared by
-    $user_id = $this->session->userdata('user_id');
-
     $data['prepared_by'] = 'Admin';
+    $user_id = $this->session->userdata('user_id');
 
     if (!empty($user_id)) {
       $user = $this->db
-        ->where('user_id', $user_id)
+        ->where(
+          'user_id',
+          $user_id
+        )
         ->get('users')
         ->row();
 
@@ -1062,8 +1195,140 @@ class Reports extends CI_Controller
     header('Pragma: no-cache');
     header('Expires: 0');
 
+    $this->load->view('Reports/Stock/Export/export_stock_inventory_report', $data);
+  }
+
+  /////////////////// STOCK MOVEMENT REPORT ////////////////////
+
+  function stock_movement_report()
+  {
+    $data['title'] = 'Stock Movement Report';
+
+    $data['from']          = date('Y-m-01');
+    $data['to']            = date('Y-m-d');
+    $data['warehouse_id']  = '';
+    $data['store_id']      = '';
+    $data['product_id']    = '';
+    $data['movement_type'] = '';
+
+    $this->load->model('Stock_model');
+    $data['products'] = $this->Stock_model->get_stock_code_list();
+
+    $this->load->model('Setup_model');
+    $data['warehouse_records'] = $this->Setup_model->get_warehouse_list();
+
+    $data['records'] = array();
+    $data['main_content'] = 'Reports/Stock/stock_movement_report.php';
+
+    $this->load->view('includes/template.php', $data);
+  }
+
+  function get_stock_movement_report()
+  {
+    $data['title'] = 'Stock Movement Report';
+
+    $data['from'] = $this->input->post('from_date');
+    $data['to'] = $this->input->post('to_date');
+    $data['warehouse_id'] = $this->input->post('warehouse_id');
+    $data['store_id'] = $this->input->post('store_id');
+    $data['product_id'] = $this->input->post('product_id');
+    $data['movement_type'] = $this->input->post('movement_type');
+
+    $this->load->model('Stock_model');
+    $data['products'] = $this->Stock_model->get_stock_code_list();
+
+    $this->load->model('Setup_model');
+    $data['warehouse_records'] = $this->Setup_model->get_warehouse_list();
+
+    $data['records'] = $this->Reports_model->get_stock_movement_report();
+
+    $data['main_content'] = 'Reports/Stock/stock_movement_report.php';
+    $this->load->view('includes/template.php', $data);
+  }
+
+  public function print_stock_movement_report()
+  {
+    $from_date = $this->input->get('from_date');
+    $to_date = $this->input->get('to_date');
+    $warehouse_id = $this->input->get('warehouse_id');
+    $store_id = $this->input->get('store_id');
+    $product_id = $this->input->get('product_id');
+    $movement_type = $this->input->get('movement_type');
+
+    $data['title'] = 'Stock Movement Report';
+    $data['from'] = $from_date;
+    $data['to'] = $to_date;
+    $data['warehouse_id'] = $warehouse_id;
+    $data['store_id'] = $store_id;
+    $data['product_id'] = $product_id;
+    $data['movement_type'] = $movement_type;
+
+    $this->load->model('Reports_model');
+
+    $data['records'] =
+      $this->Reports_model->get_stock_movement_report(
+        $from_date,
+        $to_date,
+        $warehouse_id,
+        $store_id,
+        $product_id,
+        $movement_type
+      );
+
+    $this->load->model('Setup_model');
+
+    $branch_id = 1;
+
+    $branch =  $this->Setup_model->get_branch_by_id($branch_id);
+
+    $data['headerPath'] =
+      !empty($branch->branch_header)
+      ? base_url(
+        ltrim(
+          $branch->branch_header,
+          '/'
+        )
+      )
+      : '';
+
+    $this->load->view('Reports/Stock/Print/print_stock_movement_report', $data);
+  }
+
+  public function export_stock_movement_excel()
+  {
+    $from_date = $this->input->get('from_date');
+    $to_date = $this->input->get('to_date');
+    $warehouse_id = $this->input->get('warehouse_id');
+    $store_id = $this->input->get('store_id');
+    $product_id = $this->input->get('product_id');
+    $movement_type = $this->input->get('movement_type');
+    
+    $data['title'] = 'Stock Movement Report';
+    $data['from'] = $from_date;
+    $data['to'] = $to_date;
+    $data['warehouse_id'] = $warehouse_id;
+    $data['store_id'] = $store_id;
+    $data['product_id'] = $product_id;
+    $data['movement_type'] = $movement_type;
+
+    $this->load->model('Reports_model');
+    $data['records'] = $this->Reports_model->get_stock_movement_report(
+        $from_date,
+        $to_date,
+        $warehouse_id,
+        $store_id,
+        $product_id,
+        $movement_type
+      );
+
+    $filename = 'Stock_Movement_Report_' . date('Y-m-d_H-i-s') . '.xls';
+    header('Content-Type: application/vnd.ms-excel');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+
     $this->load->view(
-      'Reports/Stock/Export/export_stock_inventory_report',
+      'Reports/Stock/Export/export_stock_movement_report',
       $data
     );
   }
