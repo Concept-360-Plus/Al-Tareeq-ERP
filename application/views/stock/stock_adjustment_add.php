@@ -11,51 +11,163 @@
 <div class="card-body">
 	<form id="main" method="post" action="<?php echo base_url() . 'index.php/'; ?>Stock/stock_adjustment_details" id="addform" autocomplete="off" enctype="multipart/form-data" onSubmit="formsubmit();">
 		<div class="form-group row">
-			<label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">Warehouse <span style="color: red;"> * </span></label>
-			<div class="col-xs-12 col-sm-2 col-md-4 col-lg-4">
-				<select name="warehouse_id" id="warehouse_id" class="form-control select2" required tabindex='1'>
-					<option value="">Select warehouse</option>
+
+			<!-- Warehouse -->
+			<label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">
+				Warehouse <span style="color:red;">*</span>
+			</label>
+
+			<div class="col-xs-12 col-sm-4 col-md-4 col-lg-4">
+				<select name="warehouse_id"
+					id="warehouse_id"
+					class="form-control select2"
+					required
+					tabindex="1">
+
+					<option value="">Select Warehouse</option>
+
 					<?php foreach ($store_records as $g) { ?>
-						<option value="<?php echo $g->warehouse_id; ?>"><?php echo $g->warehouse_name; ?></option>
+
+						<option value="<?php echo $g->warehouse_id; ?>">
+							<?php echo $g->warehouse_name; ?>
+						</option>
+
 					<?php } ?>
+
 				</select>
 			</div>
-			<label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">Stock Date<span style="color: red;"> * </span></label>
-			<div class="col-xs-12 col-sm-9 col-md-2 col-lg-2">
-				<input type="text" name="date" id="date" class="form-control" tabindex='2' value="<?php echo date('d-M-Y'); ?>" required>
+
+
+			<!-- Store -->
+			<label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">
+				Store <span style="color:red;">*</span>
+			</label>
+
+			<div class="col-xs-12 col-sm-4 col-md-4 col-lg-4">
+
+				<select name="store_id"
+					id="store_id"
+					class="form-control select2"
+					required
+					tabindex="2">
+
+					<option value="">Select Store</option>
+
+				</select>
+
 			</div>
+
 		</div>
+
+
 		<div class="form-group row">
-			<label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">Remark</label>
-			<div class="col-xs-12 col-sm-10 col-md-4 col-lg-4">
-				<textarea name="remark" id="remark" class="form-control" rows="1" cols="2" placeholder="enter remark" tabindex='3'></textarea>
+
+			<!-- Stock Date -->
+			<label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">
+				Stock Date <span style="color:red;">*</span>
+			</label>
+
+			<div class="col-xs-12 col-sm-4 col-md-4 col-lg-4">
+
+				<input type="text"
+					name="date"
+					id="date"
+					class="form-control"
+					tabindex="3"
+					value="<?php echo date('d-M-Y'); ?>"
+					required>
+
 			</div>
-			<label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">Stock Type<span style="color: red;"> * </span></label>
-			<div class="col-xs-12 col-sm-10 col-md-4 col-lg-4">
-				<select tabindex="11" class="form-select form-control-sm select2" id="inward_type" name="inward_type" required tabindex='4'>
+
+
+			<!-- Stock Type -->
+			<label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">
+				Stock Type <span style="color:red;">*</span>
+			</label>
+
+			<div class="col-xs-12 col-sm-4 col-md-4 col-lg-4">
+
+				<select class="form-control select2"
+					id="inward_type"
+					name="inward_type"
+					required
+					tabindex="4">
+
 					<option value="">Select</option>
 					<option value="Opening">Opening Stock</option>
 					<option value="IN">Stock Inward</option>
 					<option value="OUT">Stock Outward</option>
+
 				</select>
+
 			</div>
+
 		</div>
 
 
 		<div class="form-group row">
-			<label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">Select Item</label>
-			<div class="col-xs-12 col-sm-10 col-md-4 col-lg-4">
-				<select tabindex="5" class="form-select form-control-sm select2 " required id="product_id" name="product_id" onchange="get_product_info()">
-					<option value="">Select Code</option>
-					<?php foreach ($products as $s) { ?>
-						<option value="<?php echo $s->product_id; ?>"><?php echo $s->product_code . ' ' . $s->product_name; ?></option>
-					<?php } ?>
-				</select>
+
+			<!-- Remark -->
+			<label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">
+				Remark
+			</label>
+
+			<div class="col-xs-12 col-sm-4 col-md-4 col-lg-4">
+
+				<textarea name="remark"
+					id="remark"
+					class="form-control"
+					rows="1"
+					placeholder="Enter remark"
+					tabindex="5"></textarea>
+
 			</div>
 
-			<label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">Description</label>
-			<div class="col-xs-12 col-sm-10 col-md-4 col-lg-4">
-				<textarea rows='4' cols='26' name="desc" id="desc" style="font-size:11px; font-weight:bold;" class="form-control form-control-sm" tabindex='7' placeholder="Description"></textarea>
+
+			<!-- Select Item -->
+			<label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">
+				Select Item <span style="color:red;">*</span>
+			</label>
+
+			<div class="col-xs-12 col-sm-4 col-md-4 col-lg-4">
+
+				<select tabindex="6"
+					class="form-control select2"
+					required
+					id="product_id"
+					name="product_id"
+					onchange="get_product_info()">
+
+					<option value="">Select Code</option>
+
+					<?php foreach ($products as $s) { ?>
+
+						<option value="<?php echo $s->product_id; ?>">
+							<?php echo $s->product_code . ' ' . $s->product_name; ?>
+						</option>
+
+					<?php } ?>
+
+				</select>
+
+			</div>
+
+		</div>
+
+
+		<div class="form-group row">
+			<!-- Description -->
+			<label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">
+				Description
+			</label>
+
+			<div class="col-xs-12 col-sm-10 col-md-10 col-lg-10">
+				<textarea rows="3"
+					name="desc"
+					id="desc"
+					class="form-control form-control-sm"
+					placeholder="Description"
+					></textarea>
 			</div>
 		</div>
 
@@ -189,4 +301,49 @@
 			document.getElementById("desc").value = '';
 		}
 	}
+
+	$('#warehouse_id').on('change', function() {
+
+		var warehouse_id = $(this).val();
+
+		$('#store_id').html(
+			'<option value="">Select Store</option>'
+		);
+
+		if (warehouse_id === '') {
+			return;
+		}
+
+		$.ajax({
+			url: "<?php echo site_url('Ajax/get_store_by_warehouse'); ?>",
+			type: "POST",
+			data: {
+				warehouse_id: warehouse_id
+			},
+			dataType: "json",
+
+			success: function(response) {
+
+				$.each(response, function(index, store) {
+
+					$('#store_id').append(
+						$('<option>', {
+							value: store.store_id,
+							text: store.store_name
+						})
+					);
+
+				});
+
+				$('#store_id').trigger('change');
+			},
+
+			error: function() {
+
+				alert('Unable to load stores.');
+
+			}
+		});
+
+	});
 </script>

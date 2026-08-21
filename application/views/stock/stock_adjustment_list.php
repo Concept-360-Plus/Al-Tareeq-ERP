@@ -18,6 +18,7 @@
                 <th>Adjustment No</th>
                 <th>Item Details</th>
                 <th>Warehouse</th>
+                <th>Store</th>
                 <th>Stock Date</th>
                 <th>Stock Type</th>
                 <th>Remark</th>
@@ -67,6 +68,15 @@
                     </td>
 
                     <!-- Warehouse -->
+                    <td>
+                      <?php
+                      echo !empty($row->warehouse_name)
+                        ? htmlspecialchars($row->warehouse_name)
+                        : '-';
+                      ?>
+                    </td>
+
+                    <!-- Store -->
                     <td>
                       <?php
                       echo !empty($row->warehouse_name)

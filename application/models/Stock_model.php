@@ -22,6 +22,7 @@ class Stock_Model extends CI_Model
             'stock_code'   => $stock_code,
             'stock_date'   => date('Y-m-d', strtotime($this->input->post('date'))),
             'warehouse_id' => $this->input->post('warehouse_id'),
+            'store_id'     => $this->input->post('store_id'),
             'stock_type'   => $this->input->post('inward_type'),
             'product_id'   => $this->input->post('product_id'),
             'item_desc'    => $this->input->post('desc'),
@@ -97,6 +98,8 @@ class Stock_Model extends CI_Model
                 ON a.approved_by = au.user_id
             LEFT JOIN warehouse_master w
                 ON a.warehouse_id = w.warehouse_id
+            LEFT JOIN store_master sm
+                ON a.store_id = sm.store_id
             ORDER BY a.sno DESC
         ");
 
@@ -222,6 +225,7 @@ class Stock_Model extends CI_Model
                     'stock_date'        => $adjustment->stock_date,
                     'stock_type'        => 'IN',
                     'warehouse_id'      => $adjustment->warehouse_id,
+                    'store_id'          => $adjustment->store_id,
                     'product_id'        => $detail->product_id,
                     'item_desc'         => $adjustment->item_desc,
                     'bill_no'           => $detail->bill_no,
@@ -237,7 +241,7 @@ class Stock_Model extends CI_Model
                     'status'            => 0
                 );
 
-                $this->db->insert('stock_details',$stock_data);
+                $this->db->insert('stock_details', $stock_data);
 
                 if ($this->db->trans_status() === FALSE) {
                     $this->db->trans_rollback();
@@ -257,15 +261,17 @@ class Stock_Model extends CI_Model
                     FROM stock_details
                     WHERE product_id = ?
                     AND warehouse_id = ?
+                    AND store_id = ?
                     AND stock_type = 'IN'
                     AND status = '0'
                     AND balance_qty > 0
                     ORDER BY stock_date ASC, stock_id ASC
                     FOR UPDATE
                 ", array(
-                        $detail->product_id,
-                        $adjustment->warehouse_id
-                    ))->result();
+                    $detail->product_id,
+                    $adjustment->warehouse_id,
+                    $adjustment->store_id
+                ))->result();
 
                 $available_qty = 0;
 
@@ -296,7 +302,7 @@ class Stock_Model extends CI_Model
                         continue;
                     }
 
-                    $consume_qty = min($remaining_qty,$current_balance);
+                    $consume_qty = min($remaining_qty, $current_balance);
                     $new_balance = $current_balance - $consume_qty;
 
                     // Avoid tiny decimal values
@@ -338,6 +344,7 @@ class Stock_Model extends CI_Model
                     'stock_date'        => $adjustment->stock_date,
                     'stock_type'        => 'OUT',
                     'warehouse_id'      => $adjustment->warehouse_id,
+                    'store_id'          => $adjustment->store_id,
                     'product_id'        => $detail->product_id,
                     'item_desc'         => $adjustment->item_desc,
                     'bill_no'           => $detail->bill_no,
@@ -424,6 +431,7 @@ class Stock_Model extends CI_Model
 
         $master_data = array(
             'warehouse_id' => $this->input->post('warehouse_id'),
+            'store_id'     => $this->input->post('store_id'),
             'remark'       => $this->input->post('remark')
         );
 

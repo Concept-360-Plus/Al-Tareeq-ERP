@@ -91,6 +91,7 @@ class Stock extends CI_Controller
         $data['products'] = $this->Setup_model->get_active_item_list();
         $data['active_units'] = $this->Setup_model->get_active_unit_list();
         $data['store_records'] = $this->Setup_model->get_warehouse_list();
+        $data['store_list'] = $this->db->where('warehouse_id', $adjustment[0]->warehouse_id)->get('store_master')->result();
         $data['records1'] = $adjustment;
         $data['records2'] = $this->Stock_model->get_stock_adjustment_tr($doc_id);
 
