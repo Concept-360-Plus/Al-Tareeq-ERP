@@ -262,93 +262,62 @@
         <tbody>
 
             <?php
-
             $sl = 1;
             $total_grand = 0;
-
             ?>
-
 
             <?php if (!empty($records)) { ?>
 
-
                 <?php foreach ($records as $row) { ?>
-
 
                     <?php
 
-                    $grand_total =
-                        (float) $row->grand_total;
-
-                    $total_grand +=
-                        $grand_total;
-
+                    $grand_total = (float) $row->grand_total;
+                    $total_grand += $grand_total;
 
                     $status =
                         isset($row->report_status)
                         ? $row->report_status
                         : 'Pending';
-
-
                     ?>
 
 
                     <tr>
-
                         <!-- Sl No -->
-
                         <td class="center">
-
                             <?= $sl++; ?>
-
                         </td>
 
-
                         <!-- PO Code -->
-
                         <td>
-
                             <?= htmlspecialchars(
                                 $row->po_code
                             ); ?>
-
                         </td>
 
-
                         <!-- PO Type -->
-
                         <td class="center">
-
                             <?php
-
                             if (
                                 $row->po_type ==
                                 'direct'
                             ) {
-
                                 echo 'DIRECT';
                             } elseif (
                                 $row->po_type ==
                                 'quotation'
                             ) {
-
                                 echo 'QUOTATION';
                             } else {
-
                                 echo strtoupper(
                                     $row->po_type
                                 );
                             }
-
                             ?>
-
                         </td>
 
-
                         <!-- PO Date -->
-
                         <td class="center">
-
                             <?= !empty($row->po_date)
                                 ? date(
                                     'd-M-Y',
@@ -358,62 +327,46 @@
                                 )
                                 : '-';
                             ?>
-
                         </td>
 
-
                         <!-- Supplier -->
-
                         <td>
-
                             <?= !empty($row->supplier_name)
                                 ? htmlspecialchars(
                                     $row->supplier_name
                                 )
                                 : '-';
                             ?>
-
                         </td>
 
-
                         <!-- Grand Total -->
-
                         <td class="right">
-
                             <?= number_format(
                                 $grand_total,
                                 2
                             ); ?>
-
                         </td>
-
 
                         <!-- Status -->
-
-                        <td class="center">
-
-                            <?= htmlspecialchars(
-                                $status
-                            ); ?>
-
+                        <td>
+                            <?= !empty($row->report_status)
+                                ? htmlspecialchars(
+                                    $row->report_status
+                                )
+                                : 'Pending';
+                            ?>
                         </td>
 
-
                         <!-- Created By -->
-
                         <td>
-
                             <?= !empty($row->rfq_created_by)
                                 ? htmlspecialchars(
                                     $row->rfq_created_by
                                 )
                                 : '-';
                             ?>
-
                         </td>
-
                     </tr>
-
 
                 <?php } ?>
 
@@ -447,60 +400,41 @@
 
                 </tr>
 
-
             <?php } else { ?>
 
-
                 <tr>
-
                     <td
                         colspan="8"
                         class="center">
-
                         No Purchase Orders
                         found for the selected
                         criteria.
-
                     </td>
-
                 </tr>
-
 
             <?php } ?>
 
-
         </tbody>
-
     </table>
 
-
     <br>
-
 
     <!-- =========================
          FOOTER
     ========================== -->
 
     <div class="footer">
-
         <div class="footer-left">
-
             &copy; <?= date('Y'); ?>
-
             Al Tareeq Kitchen Equipment Industry LLC
-
         </div>
 
 
         <div class="footer-right">
-
             Designed & Developed by
             Concepts 360 Plus
-
         </div>
-
     </div>
-
 
 </body>
 

@@ -15,43 +15,89 @@
 				method="post"
 				action="<?php echo base_url(); ?>index.php/Stock/update_stock_adjustment_records"
 				autocomplete="off">
-				
+
 				<!-- Hidden Adjustment ID -->
 				<input type="hidden"
 					name="sno"
 					value="<?php echo $row->sno; ?>">
 
 				<div class="form-group row">
+
 					<!-- Warehouse -->
 					<label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">
 						Warehouse <span style="color:red;">*</span>
 					</label>
 
-					<div class="col-xs-12 col-sm-2 col-md-3 col-lg-3">
+					<div class="col-xs-12 col-sm-4 col-md-4 col-lg-4">
+
 						<select name="warehouse_id"
 							id="warehouse_id"
 							class="form-control select2"
 							required>
-							<option value="">Select warehouse</option>
+
+							<option value="">Select Warehouse</option>
+
 							<?php foreach ($store_records as $g) { ?>
+
 								<option value="<?php echo $g->warehouse_id; ?>"
-									<?php
-									if ($g->warehouse_id == $row->warehouse_id) {
-										echo 'selected';
-									}
-									?>>
+									<?php echo ($g->warehouse_id == $row->warehouse_id) ? 'selected' : ''; ?>>
+
 									<?php echo $g->warehouse_name; ?>
+
 								</option>
+
 							<?php } ?>
+
 						</select>
+
 					</div>
+
+
+					<!-- Store -->
+					<label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">
+						Store <span style="color:red;">*</span>
+					</label>
+
+					<div class="col-xs-12 col-sm-4 col-md-4 col-lg-4">
+
+						<select name="store_id"
+							id="store_id"
+							class="form-control select2"
+							required>
+
+							<option value="">Select Store</option>
+
+							<?php if (!empty($store_list)) { ?>
+
+								<?php foreach ($store_list as $store) { ?>
+
+									<option value="<?php echo $store->store_id; ?>"
+										<?php echo ($store->store_id == $row->store_id) ? 'selected' : ''; ?>>
+
+										<?php echo $store->store_name; ?>
+
+									</option>
+
+								<?php } ?>
+
+							<?php } ?>
+
+						</select>
+
+					</div>
+
+				</div>
+
+
+				<div class="form-group row">
 
 					<!-- Stock Date -->
 					<label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">
 						Stock Date <span style="color:red;">*</span>
 					</label>
 
-					<div class="col-xs-12 col-sm-9 col-md-2 col-lg-2">
+					<div class="col-xs-12 col-sm-4 col-md-4 col-lg-4">
+
 						<input type="text"
 							name="stock_date"
 							id="stock_date"
@@ -59,10 +105,49 @@
 							value="<?php echo date('d-m-Y', strtotime($row->stock_date)); ?>"
 							readonly
 							required>
+
 					</div>
+
+
+					<!-- Stock Type -->
+					<label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">
+						Stock Type <span style="color:red;">*</span>
+					</label>
+
+					<div class="col-xs-12 col-sm-4 col-md-4 col-lg-4">
+
+						<select class="form-control bg-soft-gray"
+							id="inward_type"
+							disabled>
+
+							<option value="">Select</option>
+
+							<option value="Opening"
+								<?php echo ($row->stock_type == 'Opening') ? 'selected' : ''; ?>>
+								Opening Stock
+							</option>
+
+							<option value="IN"
+								<?php echo ($row->stock_type == 'IN') ? 'selected' : ''; ?>>
+								Stock Inward
+							</option>
+
+							<option value="OUT"
+								<?php echo ($row->stock_type == 'OUT') ? 'selected' : ''; ?>>
+								Stock Outward
+							</option>
+
+						</select>
+
+						<input type="hidden"
+							name="inward_type"
+							value="<?php echo htmlspecialchars($row->stock_type); ?>">
+
+					</div>
+
 				</div>
 
-				<!-- Remark + Stock Type -->
+
 				<div class="form-group row">
 
 					<!-- Remark -->
@@ -70,48 +155,18 @@
 						Remark
 					</label>
 
-					<div class="col-xs-12 col-sm-10 col-md-3 col-lg-3">
+					<div class="col-xs-12 col-sm-4 col-md-4 col-lg-4">
+
 						<textarea name="remark"
 							id="remark"
 							class="form-control"
 							rows="1"
-							placeholder="Enter remark"><?php echo htmlspecialchars($row->remark); ?></textarea>
+							placeholder="Enter remark"><?php
+														echo htmlspecialchars($row->remark ?? '');
+														?></textarea>
+
 					</div>
 
-					<!-- Stock Type -->
-					<label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">
-						Stock Type <span style="color:red;">*</span>
-					</label>
-
-					<div class="col-xs-12 col-sm-10 col-md-4 col-lg-2">
-						<select class="form-control bg-soft-gray"
-							id="inward_type"
-							name="inward_type"
-							required
-							disabled>
-							<option value="">Select</option>
-
-							<option value="Opening"
-								<?php if ($row->stock_type == 'Opening') echo 'selected'; ?>>
-								Opening Stock
-							</option>
-
-							<option value="IN"
-								<?php if ($row->stock_type == 'IN') echo 'selected'; ?>>
-								Stock Inward
-							</option>
-
-							<option value="OUT"
-								<?php if ($row->stock_type == 'OUT') echo 'selected'; ?>>
-								Stock Outward
-							</option>
-						</select>
-
-						<!-- Because disabled fields are NOT submitted -->
-						<input type="hidden"
-							name="inward_type"
-							value="<?php echo htmlspecialchars($row->stock_type); ?>">
-					</div>
 				</div>
 
 
@@ -245,3 +300,50 @@
 		</div>
 	<?php } ?>
 </div>
+
+<script>
+	$('#warehouse_id').on('change', function() {
+
+		var warehouse_id = $(this).val();
+
+		$('#store_id').html(
+			'<option value="">Select Store</option>'
+		);
+
+		if (warehouse_id === '') {
+			return;
+		}
+
+		$.ajax({
+			url: "<?php echo site_url('Ajax/get_store_by_warehouse'); ?>",
+			type: "POST",
+			data: {
+				warehouse_id: warehouse_id
+			},
+			dataType: "json",
+
+			success: function(response) {
+
+				$.each(response, function(index, store) {
+
+					$('#store_id').append(
+						$('<option>', {
+							value: store.store_id,
+							text: store.store_name
+						})
+					);
+
+				});
+
+				$('#store_id').trigger('change');
+			},
+
+			error: function() {
+
+				alert('Unable to load stores.');
+
+			}
+		});
+
+	});
+</script>

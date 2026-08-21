@@ -172,6 +172,10 @@
                 </th>
 
                 <th>
+                    Status
+                </th>
+
+                <th>
                     Created By
                 </th>
             </tr>
