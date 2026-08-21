@@ -3,7 +3,7 @@ class Reports_model extends CI_Model
 {
 
     public function __construct() {}
-    
+
     public function get_rfq_report_records()
     {
         $from = isset($_REQUEST['from_date']) ? date('Y-m-d', strtotime($_REQUEST['from_date'])) : '';
@@ -728,5 +728,112 @@ class Reports_model extends CI_Model
         $res = $this->db->get()->result();
 
         return $res;
+    }
+
+    ///////////////////// Stock Movement Report //////////////////////
+
+    public function get_stock_movement_report()
+    {
+        $from          = $this->input->post('from_date');
+        $to            = $this->input->post('to_date');
+        $warehouse_id  = $this->input->post('warehouse_id');
+        $store_id      = $this->input->post('store_id');
+        $product_id    = $this->input->post('product_id');
+        $movement_type = $this->input->post('movement_type');
+
+        $condition = '';
+
+        // Date
+        if (!empty($from)) {
+            $condition .= " AND DATE(sd.stock_date) >= "
+                . $this->db->escape($from);
+        }
+
+        if (!empty($to)) {
+            $condition .= " AND DATE(sd.stock_date) <= "
+                . $this->db->escape($to);
+        }
+
+        // Warehouse
+        if ($warehouse_id != '') {
+            $condition .= " AND sd.warehouse_id = "
+                . $this->db->escape($warehouse_id);
+        }
+
+        // Store
+        if ($store_id != '') {
+            $condition .= " AND sd.store_id = "
+                . $this->db->escape($store_id);
+        }
+
+        // Product
+        if ($product_id != '') {
+            $condition .= " AND sd.product_id = "
+                . $this->db->escape($product_id);
+        }
+
+        // Movement Type
+        if ($movement_type != '') {
+            $condition .= " AND sd.stock_type = "
+                . $this->db->escape($movement_type);
+        }
+
+        $sql = "
+            SELECT
+                sd.stock_id,
+                sd.stock_date,
+
+                sd.product_id,
+                im.product_code,
+                im.product_name,
+
+                sd.stock_type,
+                sd.quantity,
+                sd.price,
+
+                sd.bill_no,
+                sd.order_ref_no,
+
+                sd.warehouse_id,
+                wm.warehouse_name,
+
+                sd.store_id,
+                sm.store_name,
+
+                sd.storage_location,
+                sd.item_remark,
+                sd.remark,
+
+                sd.trans_id,
+                sd.adjustment_id,
+
+                sd.created_by,
+                u.user_name AS created_user,
+                sd.created_date
+
+            FROM stock_details sd
+
+            LEFT JOIN item_master im
+                ON im.product_id = sd.product_id
+
+            LEFT JOIN warehouse_master wm
+                ON wm.warehouse_id = sd.warehouse_id
+
+            LEFT JOIN store_master sm
+                ON sm.store_id = sd.store_id
+
+            LEFT JOIN users u
+                ON u.user_id = sd.created_by
+
+            WHERE 1 = 1
+
+            $condition
+
+            ORDER BY
+                sd.stock_date ASC,
+                sd.stock_id ASC
+        ";
+
+        return $this->db->query($sql)->result();
     }
 }
