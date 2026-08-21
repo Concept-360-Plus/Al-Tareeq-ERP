@@ -208,12 +208,12 @@ $user = $this->session->userdata('user_id');
 
               <option value="quotation"
                 <?php echo ($po_type == 'quotation') ? 'selected' : ''; ?>>
-                RFQ Purchase
+                Quotation Purchase
               </option>
 
               <option value="direct"
                 <?php echo ($po_type == 'direct') ? 'selected' : ''; ?>>
-                Direct Purchase
+                Direct RFQ
               </option>
 
             </select>
@@ -337,7 +337,7 @@ $user = $this->session->userdata('user_id');
                       if ($row->po_type == 'direct') {
                         echo 'DIRECT';
                       } elseif ($row->po_type == 'quotation') {
-                        echo 'RFQ';
+                        echo 'QUOTATION';
                       } else {
                         echo strtoupper($row->po_type);
                       }

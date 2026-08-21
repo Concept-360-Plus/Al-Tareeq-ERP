@@ -203,34 +203,66 @@ class Reports extends CI_Controller
     $data['user_list'] = $this->Setup_model->get_active_user_list_with_employee_code();
     $data['supplier_records'] = $this->Setup_model->get_active_supplier_list();
     $data['records'] = $this->Reports_model->get_po_report_records(
-      $data['from'],$data['to'],$data['supplier_id'],$data['created_by'],$data['report_type'],$data['po_type']
+      $data['from'],
+      $data['to'],
+      $data['supplier_id'],
+      $data['created_by'],
+      $data['report_type'],
+      $data['po_type']
     );
     $data['main_content'] = 'Reports/Purchase/po_report.php';
     $this->load->view('includes/template.php', $data);
   }
+
+  // public function print_po_report()
+  // {
+  //   $from_date = $this->input->get('from_date');
+  //   $to_date = $this->input->get('to_date');
+  //   $supplier_id = $this->input->get('supplier_id');
+  //   $created_by = $this->input->get('created_by');
+  //   $data['from'] = $from_date;
+  //   $data['to'] = $to_date;
+  //   $data['supplier_id'] = $supplier_id;
+  //   $data['created_by'] = $created_by;
+  //   // Fetch filtered records again
+  //   $data['records'] = $this->Reports_model->get_po_report_records();
+
+  //   $data['supplier_id'] = $supplier_id;
+
+  //   $this->load->model('Company_model');
+
+  //   $branch_id = 8; // replace with dynamic branch_id if available
+  //   $branch = $this->Setup_model->get_branch_by_id($branch_id);
+  //   $data['headerPath'] = !empty($branch->branch_header) ? base_url(ltrim($branch->branch_header, '/')) : '';
+
+
+  //   $this->load->view('Reports/Purchase/Print/print_po_report', $data);
+  // }
+
   public function print_po_report()
   {
-    $from_date = $this->input->get('from_date');
-    $to_date = $this->input->get('to_date');
+    $from_date   = $this->input->get('from_date');
+    $to_date     = $this->input->get('to_date');
     $supplier_id = $this->input->get('supplier_id');
-    $created_by = $this->input->get('created_by');
+    $created_by  = $this->input->get('created_by');
+    $report_type = $this->input->get('report_type');
+    $po_type     = $this->input->get('po_type');
+
+    $data['records'] = $this->Reports_model->get_po_report_records(
+      $from_date,
+      $to_date,
+      $supplier_id,
+      $created_by,
+      $report_type,
+      $po_type
+    );
+
     $data['from'] = $from_date;
-    $data['to'] = $to_date;
-    $data['supplier_id'] = $supplier_id;
-    $data['created_by'] = $created_by;
-    // Fetch filtered records again
-    $data['records'] = $this->Reports_model->get_po_report_records();
+    $data['to']   = $to_date;
 
-    $data['supplier_id'] = $supplier_id;
-
-    $this->load->model('Company_model');
-
-    $branch_id = 8; // replace with dynamic branch_id if available
-    $branch = $this->Setup_model->get_branch_by_id($branch_id);
-    $data['headerPath'] = !empty($branch->branch_header) ? base_url(ltrim($branch->branch_header, '/')) : '';
-
-
-    $this->load->view('Reports/Purchase/Print/print_po_report', $data);
+    $this->load->view('Reports/Purchase/Print/print_po_report',
+      $data
+    );
   }
 
   public function export_po_excel()
@@ -857,28 +889,43 @@ class Reports extends CI_Controller
     }
   }
 
-
+  ///////////////////STOCK INVENTORY REPORT////////////////////
   function stock_inventory_report()
   {
-    $data['title'] = 'Inventory Report';
-    $data['warehouse_id'] = 3;
-    $data['item_id'] = 1;
+    $data['title'] = 'Stock Inventory Report';
+
+    // Empty filters when opening the report
+    $data['warehouse_id'] = '';
+    $data['store_id']     = '';
+    $data['product_id']   = '';
 
     $this->load->model('Stock_model');
-    $data['products'] = $this->Stock_model->get_stock_code_list();
+
+    // Product dropdown
+    $data['products'] =
+      $this->Stock_model->get_stock_code_list();
 
     $this->load->model('Setup_model');
-    $data['store_records'] = $this->Setup_model->get_warehouse_list();
 
-    $data['records'] = $this->Stock_model->get_stock_inventory_report();
+    // Warehouse dropdown
+    $data['warehouse_records'] =
+      $this->Setup_model->get_warehouse_list();
 
-    $data['main_content'] = 'Reports/Stock/stock_inventory_report.php';
-    $this->load->view('includes/template.php', $data);
+    // Do not load stock initially
+    $data['records'] = array();
+
+    $data['main_content'] =
+      'Reports/Stock/stock_inventory_report.php';
+
+    $this->load->view(
+      'includes/template.php',
+      $data
+    );
   }
 
   function get_stock_inventory_report()
   {
-    $data['title'] = 'Inventory Report';
+    $data['title'] = 'Stock Inventory Report';
     $data['warehouse_id'] = $this->input->post('warehouse_id');
     $data['store_id']     = $this->input->post('store_id');
     $data['product_id']   = $this->input->post('product_id');
@@ -897,9 +944,10 @@ class Reports extends CI_Controller
 
   function print_stock_inventory_report()
   {
-    $data['title'] = 'Inventory Report';
+    $data['title'] = 'Stock Inventory Report';
     $data['warehouse_id'] = $this->input->post('warehouse_id');
     $data['product_id'] = $this->input->post('product_id');
+    $data['store_id'] = $this->input->post('store_id');
 
     $this->load->model('Setup_model');
     $data['comapny_records'] = $this->Setup_model->get_company_master_list();
@@ -911,5 +959,112 @@ class Reports extends CI_Controller
     $data['records'] = $this->Stock_Model->get_stock_inventory_report();
 
     $this->load->view('Print/print_stock_inventory_report.php', $data);
+  }
+
+  public function export_stock_inventory_report()
+  {
+    $data['title']        = 'Stock Inventory Report';
+    $data['warehouse_id'] = $this->input->post('warehouse_id');
+    $data['store_id']     = $this->input->post('store_id');
+    $data['product_id']   = $this->input->post('product_id');
+
+    // Company details
+    $data['company_name'] = '';
+    $company = $this->Setup_model->get_company_details();
+
+    if (!empty($company)) {
+      if (is_array($company)) {
+        $company = $company[0];
+      }
+      $data['company_name'] = $company->company_name ?? '';
+    }
+
+    // Branch
+    $data['branch_name'] = '';
+
+    $branch_id = 8;
+
+    $branch = $this->Setup_model->get_branch_by_id($branch_id);
+
+    if (!empty($branch)) {
+      $data['branch_name'] = $branch->branch_name ?? '';
+    }
+
+    // Warehouse
+    $data['warehouse_name'] = '';
+
+    if (!empty($data['warehouse_id'])) {
+      $warehouse = $this->db
+        ->where('warehouse_id', $data['warehouse_id'])
+        ->get('warehouse_master')
+        ->row();
+
+      if (!empty($warehouse)) {
+        $data['warehouse_name'] =
+          $warehouse->warehouse_name ?? '';
+      }
+    }
+
+    // Store
+    $data['store_name'] = '';
+
+    if (!empty($data['store_id'])) {
+      $store = $this->db
+        ->where('store_id', $data['store_id'])
+        ->get('store_master')
+        ->row();
+
+      if (!empty($store)) {
+        $data['store_name'] =
+          $store->store_name ?? '';
+      }
+    }
+
+    // Product
+    $data['product_name'] = 'All Products';
+
+    if (!empty($data['product_id'])) {
+      $product = $this->db
+        ->where('product_id', $data['product_id'])
+        ->get('item_master')
+        ->row();
+
+      if (!empty($product)) {
+        $data['product_name'] =
+          $product->product_name ?? '';
+      }
+    }
+
+    // Get filtered stock records
+    $this->load->model('Stock_model');
+    $data['records'] = $this->Stock_model->get_stock_inventory_report();
+
+    // Prepared by
+    $user_id = $this->session->userdata('user_id');
+
+    $data['prepared_by'] = 'Admin';
+
+    if (!empty($user_id)) {
+      $user = $this->db
+        ->where('user_id', $user_id)
+        ->get('users')
+        ->row();
+
+      if (!empty($user)) {
+        $data['prepared_by'] =
+          $user->user_name ?? 'Admin';
+      }
+    }
+
+    $filename = 'Stock_Inventory_Report_' . date('Y-m-d_H-i-s') . '.xls';
+    header('Content-Type: application/vnd.ms-excel');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+
+    $this->load->view(
+      'Reports/Stock/Export/export_stock_inventory_report',
+      $data
+    );
   }
 }

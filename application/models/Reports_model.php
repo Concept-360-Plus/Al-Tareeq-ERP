@@ -3,12 +3,12 @@ class Reports_model extends CI_Model
 {
 
     public function __construct() {}
+    
     public function get_rfq_report_records()
     {
         $from = isset($_REQUEST['from_date']) ? date('Y-m-d', strtotime($_REQUEST['from_date'])) : '';
         $to = isset($_REQUEST['to_date']) ? date('Y-m-d', strtotime($_REQUEST['to_date'])) : '';
 
-        // Fail early if no date filters
         if (empty($from) || empty($to)) {
             return [];
         }
@@ -66,7 +66,6 @@ class Reports_model extends CI_Model
         $from = date('Y-m-d', strtotime($from_date));
         $to   = date('Y-m-d', strtotime($to_date));
 
-
         $this->db->select('
             r.po_id,
             r.po_code,
@@ -82,8 +81,15 @@ class Reports_model extends CI_Model
 
             r.created_by,
 
-            em.user_name AS rfq_created_by
-        ');
+            em.user_name AS rfq_created_by,
+
+            CASE
+                WHEN r.po_status = 0 THEN "Pending"
+                WHEN r.po_status = 1 AND r.grn_status = 0 THEN "Awaiting GRN"
+                WHEN r.po_status = 1 AND r.grn_status = 1 THEN "Completed"
+                ELSE "Pending"
+            END AS report_status
+        ', false);
 
         $this->db->from('purchase_order_master r');
 
@@ -99,8 +105,6 @@ class Reports_model extends CI_Model
             'left'
         );
 
-
-        // DATE FILTER
         $this->db->where(
             'r.po_date >=',
             $from
@@ -111,90 +115,60 @@ class Reports_model extends CI_Model
             $to
         );
 
-
-        // SUPPLIER FILTER
         if (!empty($supplier_id)) {
-
             $this->db->where(
                 'r.supplier_id',
                 $supplier_id
             );
         }
 
-
-        // CREATED BY FILTER
         if (!empty($created_by)) {
-
             $this->db->where(
                 'r.created_by',
                 $created_by
             );
         }
 
-
-        // PO TYPE FILTER
         if (!empty($po_type)) {
-
             $this->db->where(
                 'r.po_type',
                 $po_type
             );
         }
 
-
-        /*
-     * REPORT TYPE
-     */
-
         switch ($report_type) {
-
             case 'pending':
-
-                // PO created but not approved
                 $this->db->where(
                     'r.po_status',
                     0
                 );
-
                 break;
 
-
             case 'awaiting_grn':
-
-                // Approved PO but GRN not completed
                 $this->db->where(
                     'r.po_status',
                     1
                 );
-
                 $this->db->where(
                     'r.grn_status',
                     0
                 );
-
                 break;
-
 
             case 'completed':
 
-                // Approved PO and GRN completed
                 $this->db->where(
                     'r.po_status',
                     1
                 );
-
                 $this->db->where(
                     'r.grn_status',
                     1
                 );
-
                 break;
-
 
             case 'all':
             default:
-
-                // No status filter
                 break;
         }
 

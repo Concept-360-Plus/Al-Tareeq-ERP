@@ -1521,7 +1521,7 @@
                 </a>
 
 
-                <a href="<?= base_url() ?>index.php/Reports/stock_inventory_report"
+                <a href="<?= base_url() ?>index.php/Reports/get_stock_inventory_report"
                     class="quick-action">
 
                     <i class="fa fa-cubes"></i>
