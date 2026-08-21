@@ -51,34 +51,307 @@ class Reports_model extends CI_Model
         return $query->result();
     }
 
-    function get_po_report_records()
-    {
-        $from = isset($_REQUEST['from_date']) ? date('Y-m-d', strtotime($_REQUEST['from_date'])) : '';
-        $to = isset($_REQUEST['to_date']) ? date('Y-m-d', strtotime($_REQUEST['to_date'])) : '';
-
-        // Fail early if no date filters
-        if (empty($from) || empty($to)) {
+    public function get_po_report_records(
+        $from_date = null,
+        $to_date = null,
+        $supplier_id = '',
+        $created_by = '',
+        $report_type = '',
+        $po_type = ''
+    ) {
+        if (empty($from_date) || empty($to_date)) {
             return [];
         }
 
-        $created_by = isset($_REQUEST['created_by']) ? $_REQUEST['created_by'] : '';
-        $supplier_id = isset($_REQUEST['supplier_id']) ? $_REQUEST['supplier_id'] : '';
+        $from = date('Y-m-d', strtotime($from_date));
+        $to   = date('Y-m-d', strtotime($to_date));
 
-        $user_condition = '';
-        $supplier_condition = '';
 
-        if ($created_by != '') {
-            $user_condition = " AND r.created_by = '$created_by'";
+        $this->db->select('
+            r.po_id,
+            r.po_code,
+            r.po_date,
+            r.po_type,
+            r.grand_total,
+            r.po_status,
+            r.grn_status,
+            r.supplier_id,
+
+            s.supplier_code,
+            s.supplier_name,
+
+            r.created_by,
+
+            em.user_name AS rfq_created_by
+        ');
+
+        $this->db->from('purchase_order_master r');
+
+        $this->db->join(
+            'users em',
+            'em.user_id = r.created_by',
+            'left'
+        );
+
+        $this->db->join(
+            'supplier_master s',
+            's.supplier_id = r.supplier_id',
+            'left'
+        );
+
+
+        // DATE FILTER
+        $this->db->where(
+            'r.po_date >=',
+            $from
+        );
+
+        $this->db->where(
+            'r.po_date <=',
+            $to
+        );
+
+
+        // SUPPLIER FILTER
+        if (!empty($supplier_id)) {
+
+            $this->db->where(
+                'r.supplier_id',
+                $supplier_id
+            );
         }
 
-        if ($supplier_id != '') {
-            $supplier_condition = " AND r.supplier_id = '$supplier_id'";
+
+        // CREATED BY FILTER
+        if (!empty($created_by)) {
+
+            $this->db->where(
+                'r.created_by',
+                $created_by
+            );
         }
 
 
-        $query = $this->db->query("select r.po_id,r.po_code,r.po_date,r.po_type, concat(em.user_name)as rfq_created_by, supplier_name,r.grand_total,r.po_status from purchase_order_master r, users em, supplier_master s where r.grn_status=0 and r.created_by=em.user_id and r.supplier_id=s.supplier_id and r.po_date between '$from' and '$to'  $user_condition $supplier_condition order by r.po_date desc;");
-        return $query->result();
+        // PO TYPE FILTER
+        if (!empty($po_type)) {
+
+            $this->db->where(
+                'r.po_type',
+                $po_type
+            );
+        }
+
+
+        /*
+     * REPORT TYPE
+     */
+
+        switch ($report_type) {
+
+            case 'pending':
+
+                // PO created but not approved
+                $this->db->where(
+                    'r.po_status',
+                    0
+                );
+
+                break;
+
+
+            case 'awaiting_grn':
+
+                // Approved PO but GRN not completed
+                $this->db->where(
+                    'r.po_status',
+                    1
+                );
+
+                $this->db->where(
+                    'r.grn_status',
+                    0
+                );
+
+                break;
+
+
+            case 'completed':
+
+                // Approved PO and GRN completed
+                $this->db->where(
+                    'r.po_status',
+                    1
+                );
+
+                $this->db->where(
+                    'r.grn_status',
+                    1
+                );
+
+                break;
+
+
+            case 'all':
+            default:
+
+                // No status filter
+                break;
+        }
+
+        $this->db->order_by('r.po_date', 'DESC');
+        $this->db->order_by('r.po_id', 'DESC');
+
+        return $this->db->get()->result();
     }
+
+    ///////////////////  PURCHASE RETURN REPORT  ///////////////////////
+
+    public function get_purchase_return_report_records(
+        $from_date = null,
+        $to_date = null,
+        $supplier_id = ''
+    ) {
+
+        /*
+     * Convert dates if they are supplied in d-m-Y format.
+     */
+
+        if (!empty($from_date)) {
+
+            $from_date_db =
+                date(
+                    'Y-m-d',
+                    strtotime($from_date)
+                );
+        } else {
+
+            $from_date_db =
+                date('Y-m-01');
+        }
+
+
+        if (!empty($to_date)) {
+
+            $to_date_db =
+                date(
+                    'Y-m-d',
+                    strtotime($to_date)
+                );
+        } else {
+
+            $to_date_db =
+                date('Y-m-d');
+        }
+
+
+        $this->db->select("
+            prm.return_id,
+            prm.return_code,
+            prm.return_date,
+            prm.remarks,
+            pgm.grn_code,
+            sm.supplier_name,
+            wm.warehouse_name,
+            stm.store_name,
+            im.product_code,
+            im.product_name,
+            um.unit_name,
+            prt.return_qty
+        ");
+
+
+        $this->db->from(
+            'purchase_return_master prm'
+        );
+
+
+        $this->db->join(
+            'purchase_return_transaction prt',
+            'prt.return_master_id = prm.return_id',
+            'left'
+        );
+
+
+        $this->db->join(
+            'purchase_grn_master pgm',
+            'pgm.grn_id = prm.grn_id',
+            'left'
+        );
+
+
+        $this->db->join(
+            'supplier_master sm',
+            'sm.supplier_id = prm.supplier_id',
+            'left'
+        );
+
+
+        $this->db->join(
+            'warehouse_master wm',
+            'wm.warehouse_id = prm.warehouse_id',
+            'left'
+        );
+
+
+        $this->db->join(
+            'store_master stm',
+            'stm.store_id = prm.store_id',
+            'left'
+        );
+
+
+        $this->db->join(
+            'item_master im',
+            'im.product_id = prt.product_id',
+            'left'
+        );
+
+
+        $this->db->join(
+            'unit_master um',
+            'um.unit_id = im.unit_id',
+            'left'
+        );
+
+
+        $this->db->where(
+            'prm.return_date >=',
+            $from_date_db
+        );
+
+
+        $this->db->where(
+            'prm.return_date <=',
+            $to_date_db
+        );
+
+
+        if (!empty($supplier_id)) {
+
+            $this->db->where(
+                'prm.supplier_id',
+                $supplier_id
+            );
+        }
+
+
+        $this->db->order_by(
+            'prm.return_date',
+            'DESC'
+        );
+
+
+        $this->db->order_by(
+            'prm.return_id',
+            'DESC'
+        );
+
+
+        return $this->db
+            ->get()
+            ->result();
+    }
+
     function get_grn_report_records()
     {
         $from = isset($_REQUEST['from_date']) ? date('Y-m-d', strtotime($_REQUEST['from_date'])) : '';

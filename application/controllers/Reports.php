@@ -180,12 +180,15 @@ class Reports extends CI_Controller
     $data['title'] = "Purchase Order Report";
     $data['supplier_id'] = "";
     $data['created_by'] = "";
+    $data['report_type'] = "";
+    $data['po_type']     = "";
     $data['records'] = array();
     $data['user_list'] = $this->Setup_model->get_active_user_list_with_employee_code();
     $data['supplier_records'] = $this->Setup_model->get_active_supplier_list();
     $data['main_content'] = 'Reports/Purchase/po_report.php';
     $this->load->view('includes/template.php', $data);
   }
+
   function get_po_report()
   {
     $data['from'] = $this->input->post('from_date');
@@ -194,9 +197,14 @@ class Reports extends CI_Controller
     $data['created_by'] = $this->input->post('created_by');
     $data['supplier_id'] = $this->input->post('supplier_id');
 
+    $data['report_type'] = $this->input->post('report_type');
+    $data['po_type'] = $this->input->post('po_type');
+
     $data['user_list'] = $this->Setup_model->get_active_user_list_with_employee_code();
     $data['supplier_records'] = $this->Setup_model->get_active_supplier_list();
-    $data['records'] = $this->Reports_model->get_po_report_records();
+    $data['records'] = $this->Reports_model->get_po_report_records(
+      $data['from'],$data['to'],$data['supplier_id'],$data['created_by'],$data['report_type'],$data['po_type']
+    );
     $data['main_content'] = 'Reports/Purchase/po_report.php';
     $this->load->view('includes/template.php', $data);
   }
@@ -255,6 +263,7 @@ class Reports extends CI_Controller
 
     $this->load->view('Reports/Purchase/Export/export_po_report', $data);
   }
+
   ///////////////  GRN Report ////////////////////
   function grn_report()
   {
@@ -340,6 +349,174 @@ class Reports extends CI_Controller
       $this->load->view('includes/template', $data);
     else
       $this->load->view('Reports/Sales/print/enquiry_report.php', $data);
+  }
+
+  //////////////////// PURCHASE RETURN REPORT /////////////////////
+
+  public function purchase_return_report()
+  {
+    $data['from'] = date('01-m-Y');
+    $data['to']   = date('d-m-Y');
+
+    $data['supplier_id'] = '';
+    $data['title'] = "Purchase Return Report";
+    $data['records'] = array();
+    $this->load->model('Setup_model');
+
+    $data['supplier_records'] = $this->Setup_model->get_active_supplier_list();
+    $data['main_content'] = 'Reports/Purchase/purchase_return_report.php';
+
+    $this->load->view('includes/template.php', $data);
+  }
+
+
+  public function get_purchase_return_report()
+  {
+    $data['from'] = $this->input->post('from_date');
+    $data['to'] = $this->input->post('to_date');
+    $data['supplier_id'] = $this->input->post('supplier_id');
+    $data['title'] = "Purchase Return Report";
+
+    $this->load->model('Setup_model');
+    $data['supplier_records'] = $this->Setup_model->get_active_supplier_list();
+
+    $this->load->model('Reports_model');
+    $data['records'] = $this->Reports_model->get_purchase_return_report_records(
+      $data['from'],
+      $data['to'],
+      $data['supplier_id']
+    );
+
+
+    $data['main_content'] = 'Reports/Purchase/purchase_return_report.php';
+
+    $this->load->view('includes/template.php', $data);
+  }
+
+
+  public function print_purchase_return_report()
+  {
+    $from_date =
+      $this->input->get('from_date');
+
+    $to_date =
+      $this->input->get('to_date');
+
+    $supplier_id =
+      $this->input->get('supplier_id');
+
+
+    $data['from'] =
+      $from_date;
+
+    $data['to'] =
+      $to_date;
+
+    $data['supplier_id'] =
+      $supplier_id;
+
+    $data['title'] =
+      "Purchase Return Report";
+
+
+    $this->load->model('Reports_model');
+
+    $data['records'] =
+      $this->Reports_model->get_purchase_return_report_records(
+        $from_date,
+        $to_date,
+        $supplier_id
+      );
+
+
+    $this->load->model('Setup_model');
+
+    $branch_id = 1;
+
+    $branch =
+      $this->Setup_model->get_branch_by_id(
+        $branch_id
+      );
+
+
+    $data['headerPath'] =
+      !empty($branch->branch_header)
+      ? base_url(
+        ltrim(
+          $branch->branch_header,
+          '/'
+        )
+      )
+      : '';
+
+
+    $this->load->view(
+      'Reports/Purchase/Print/print_purchase_return_report',
+      $data
+    );
+  }
+
+
+  public function export_purchase_return_excel()
+  {
+    $from_date =
+      $this->input->get('from_date');
+
+    $to_date =
+      $this->input->get('to_date');
+
+    $supplier_id =
+      $this->input->get('supplier_id');
+
+
+    $data['from'] =
+      $from_date;
+
+    $data['to'] =
+      $to_date;
+
+    $data['supplier_id'] =
+      $supplier_id;
+
+    $data['title'] =
+      "Purchase Return Report";
+
+
+    $this->load->model('Reports_model');
+
+    $data['records'] =
+      $this->Reports_model->get_purchase_return_report_records(
+        $from_date,
+        $to_date,
+        $supplier_id
+      );
+
+
+    $filename =
+      'Purchase_Return_Report_' .
+      date('Y-m-d_H-i-s') .
+      '.xls';
+
+
+    header(
+      'Content-Type: application/vnd.ms-excel'
+    );
+
+    header(
+      'Content-Disposition: attachment; filename="' .
+        $filename .
+        '"'
+    );
+
+    header('Pragma: no-cache');
+
+    header('Expires: 0');
+
+
+    $this->load->view(
+      'Reports/Purchase/Export/export_purchase_return_report',
+      $data
+    );
   }
 
   ///////////////////QUOTATION REPORT////////////////////
