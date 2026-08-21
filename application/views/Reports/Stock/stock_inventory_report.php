@@ -146,12 +146,12 @@
 				<input type="hidden" name="product_id" value="<?= $product_id; ?>">
 
 				<button
-					type="submit"
+					type="button"
 					id="export"
-					class="btn btn-success">
-
-					<i class="fa fa-file-excel-o"></i> Export to Excel
-
+					class="btn btn-success"
+					onclick="export_stock_inventory_report();">
+					<i class="fa fa-file-excel-o"></i>
+					Export to Excel
 				</button>
 
 			</form>
@@ -175,33 +175,103 @@
 			</thead>
 
 			<tbody>
-				<?php $i = 1;
+
+				<?php
+
+				$i = 1;
 				$tot1 = 0;
 				$st = 0;
-				foreach ($records as $row) : ?>
+
+				?>
+
+				<?php if (!empty($records)) { ?>
+
+					<?php foreach ($records as $row) : ?>
+
+						<tr>
+
+							<td>
+								<?= $i++; ?>
+							</td>
+
+							<td>
+								<a target="_blank"
+									href="<?= base_url('index.php/Reports/item_wise_ledger/')
+												. $row->product_code . '/' . $warehouse_id; ?>">
+
+									<?= $row->product_name; ?>
+
+								</a>
+							</td>
+
+							<td>
+								<?php
+								echo $row->stock;
+								$st += $row->stock;
+								?>
+							</td>
+
+							<td>
+								<?= $row->price; ?>
+							</td>
+
+							<td align="right">
+
+								<?php
+
+								$tot = $row->stock * $row->price;
+
+								echo number_format($tot, 2);
+
+								$tot1 += $tot;
+
+								?>
+
+							</td>
+
+							<td>
+								<?= $row->allocation; ?>
+							</td>
+
+						</tr>
+
+					<?php endforeach; ?>
+
+					<tr class="bg-soft-primary">
+
+						<th>Total</th>
+						<th></th>
+
+						<th>
+							<?= $st; ?>
+						</th>
+
+						<th></th>
+
+						<th align="right">
+							<?= number_format($tot1, 2); ?>
+						</th>
+
+						<th></th>
+
+					</tr>
+
+				<?php } else { ?>
+
 					<tr>
-						<td><?php echo $i;
-							$i++; ?></td>
-						<td>
-							<a target='_blank' href="<?php echo base_url() . 'index.php/'; ?>Reports/item_wise_ledger/<?php echo $row->product_code . '/' . $warehouse_id; ?>"><?php echo $row->product_name; ?></a>
+
+						<td colspan="6"
+							class="text-center text-muted">
+
+							Please select a Warehouse and click
+							<strong>Go</strong> to view the stock inventory.
+
 						</td>
 
-						<td><?php echo $row->stock;
-							$st = $st + $row->stock; ?></td>
-						<td><?php echo $row->price; ?></td>
-						<td align='right'><?php echo $tot = sprintf("%0.2f", $row->stock * $row->price);
-											$tot1 = $tot1 + $tot; ?></td>
-						<td><?php echo $row->allocation; ?></td>
 					</tr>
-				<?php endforeach; ?>
-				<tr class="bg-soft-primary">
-					<th>Total</th>
-					<th></th>
-					<th><?php echo $st; ?></th>
-					<th></th>
-					<th align='right'><?php echo sprintf("%0.2f", $tot1); ?></th>
-					<th></th>
-				</tr>
+
+				<?php } ?>
+
 			</tbody>
 		</table>
 	</div>
@@ -250,4 +320,55 @@
 			$('#warehouse_id').trigger('change');
 		}
 	});
+
+
+
+	function export_stock_inventory_report() {
+		var rowCount = document.querySelectorAll("#basic-btn tbody tr").length;
+
+		if (rowCount <= 1) {
+			alert(
+				"No data available to export. Please check your filter criteria."
+			);
+			return false;
+		}
+
+		var warehouse_id = $('#warehouse_id').val();
+		var store_id = $('#store_id').val();
+		var product_id = $('#product_id').val();
+
+		if (warehouse_id === '') {
+			alert("Please select a Warehouse.");
+			return false;
+		}
+
+		var form = $('<form>', {
+			method: 'POST',
+			action: '<?= base_url("index.php/Reports/export_stock_inventory_report"); ?>'
+		});
+
+		$('<input>', {
+			type: 'hidden',
+			name: 'warehouse_id',
+			value: warehouse_id
+		}).appendTo(form);
+
+		$('<input>', {
+			type: 'hidden',
+			name: 'store_id',
+			value: store_id
+		}).appendTo(form);
+
+		$('<input>', {
+			type: 'hidden',
+			name: 'product_id',
+			value: product_id
+		}).appendTo(form);
+
+		$('body').append(form);
+
+		form.submit();
+		form.remove();
+		return true;
+	}
 </script>
