@@ -841,9 +841,37 @@
 
 
 <script>
-    /* =========================================================
-   PRINT STOCK MOVEMENT REPORT
-========================================================= */
+    $(document).ready(function() {
+        $('#warehouse_id').change(function() {
+            var warehouse_id = $(this).val();
+            $('#store_id').html('<option value="">Loading...</option>');
+            $.ajax({
+                url: "<?= base_url('index.php/Ajax/get_store_by_warehouse'); ?>",
+                type: "POST",
+                data: {
+                    warehouse_id: warehouse_id
+                },
+                dataType: "json",
+                success: function(result) {
+                    var selectedStore = "<?= $store_id ?>";
+                    var html = '<option value="">Select Store</option>';
+                    $.each(result, function(i, row) {
+                        var selected = (row.store_id == selectedStore) ? 'selected' : '';
+                        html += '<option value="' + row.store_id + '" ' + selected + '>' +
+                            row.store_name +
+                            '</option>';
+                    });
+                    $('#store_id').html(html);
+                    // Refresh Select2
+                    $('#store_id').trigger('change.select2');
+                }
+            });
+        });
+        // Trigger AFTER binding
+        if ($('#warehouse_id').val() != '') {
+            $('#warehouse_id').trigger('change');
+        }
+    });
 
     function printStockMovementReport(event) {
         if (event) {
@@ -932,42 +960,35 @@
             event.preventDefault();
         }
 
-
         const fromDate =
             document.querySelector(
                 'input[name="from_date"]'
             ).value;
-
 
         const toDate =
             document.querySelector(
                 'input[name="to_date"]'
             ).value;
 
-
         const warehouseId =
             document.querySelector(
                 'select[name="warehouse_id"]'
             ).value;
-
 
         const storeId =
             document.querySelector(
                 'select[name="store_id"]'
             ).value;
 
-
         const productId =
             document.querySelector(
                 'select[name="product_id"]'
             ).value;
 
-
         const movementType =
             document.querySelector(
                 'select[name="movement_type"]'
             ).value;
-
 
         const baseUrl =
             "<?php
@@ -976,28 +997,17 @@
                 );
                 ?>";
 
-
         const params =
             new URLSearchParams({
-
                 from_date: fromDate,
-
                 to_date: toDate,
-
                 warehouse_id: warehouseId,
-
                 store_id: storeId,
-
                 product_id: productId,
-
                 movement_type: movementType
-
             });
 
-
-        window.location.href =
-            baseUrl + "?" + params.toString();
-
+        window.location.href = baseUrl + "?" + params.toString();
 
         return false;
     }

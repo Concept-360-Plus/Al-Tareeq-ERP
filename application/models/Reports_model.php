@@ -838,7 +838,7 @@ class Reports_model extends CI_Model
     }
 
     ///////////////////// STOCK LEDGER REPORT /////////////////////
-
+    
     public function get_stock_ledger_report(
         $from_date = null,
         $to_date = null,
@@ -1087,5 +1087,127 @@ class Reports_model extends CI_Model
 
 
         return $records;
+    }
+
+    ///////////////////// STOCK VALUATION REPORT /////////////////////
+    public function get_stock_valuation_report($warehouse_id = '', $store_id = '', $product_id = '')
+    {
+        $condition = '';
+        $allocation_condition = '';
+
+        if (!empty($warehouse_id)) {
+            $condition .= ' AND sd.warehouse_id = ' . $this->db->escape($warehouse_id);
+            $allocation_condition .= ' AND sa.warehouse_id = ' . $this->db->escape($warehouse_id);
+        }
+
+        if (!empty($store_id)) {
+            $condition .= ' AND sd.store_id = ' . $this->db->escape($store_id);
+            $allocation_condition .= ' AND sa.store_id = ' . $this->db->escape($store_id);
+        }
+
+        if (!empty($product_id)) {
+            $condition .= ' AND sd.product_id = ' . $this->db->escape($product_id);
+            $allocation_condition .= ' AND sa.product_id = ' . $this->db->escape($product_id);
+        }
+
+        $sql = "
+            SELECT
+                stock.product_id,
+                im.product_code,
+                im.product_name,
+                stock.warehouse_id,
+                wm.warehouse_name,
+                stock.store_id,
+                sm.store_name,
+                stock.stock_qty,
+                COALESCE(
+                    allocation.allocated_qty,
+                    0
+                ) AS allocated_qty,
+                (
+                    stock.stock_qty -
+                    COALESCE(
+                        allocation.allocated_qty,
+                        0
+                    )
+                ) AS available_qty,
+                stock.unit_price,
+                (
+                    stock.stock_qty *
+                    stock.unit_price
+                ) AS stock_value
+            FROM
+            (
+                SELECT
+                    sd.product_id,
+                    sd.warehouse_id,
+                    sd.store_id,
+                    SUM(
+                        CASE
+                            WHEN sd.stock_type = 'IN'
+                            THEN COALESCE(
+                                sd.balance_qty,
+                                0
+                            )
+                            ELSE 0
+                        END
+                    ) AS stock_qty,
+                    MAX(
+                        CASE
+                            WHEN sd.stock_type = 'IN'
+                            THEN sd.price
+                            ELSE 0
+                        END
+                    ) AS unit_price
+                FROM stock_details sd
+                WHERE 1 = 1
+                $condition
+                GROUP BY
+                    sd.product_id,
+                    sd.warehouse_id,
+                    sd.store_id
+            ) stock
+            INNER JOIN item_master im
+                ON im.product_id = stock.product_id
+            LEFT JOIN warehouse_master wm
+                ON wm.warehouse_id = stock.warehouse_id
+            LEFT JOIN store_master sm
+                ON sm.store_id = stock.store_id
+            LEFT JOIN
+            (
+                SELECT
+                    sa.product_id,
+                    sa.warehouse_id,
+                    sa.store_id,
+                    SUM(
+                        COALESCE(
+                            sa.allocation,
+                            0
+                        )
+                    ) AS allocated_qty
+                FROM stock_details sa
+                WHERE
+                    sa.stock_type = 'IN'
+                    AND sa.status = '0'
+                    $allocation_condition
+                GROUP BY
+                    sa.product_id,
+                    sa.warehouse_id,
+                    sa.store_id
+            ) allocation
+                ON allocation.product_id =
+                stock.product_id
+                AND allocation.warehouse_id =
+                    stock.warehouse_id
+                AND allocation.store_id =
+                    stock.store_id
+            WHERE
+                stock.stock_qty > 0
+            ORDER BY
+                im.product_name ASC,
+                im.product_code ASC
+        ";
+
+        return $this->db->query($sql)->result();
     }
 }
