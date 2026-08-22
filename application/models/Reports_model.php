@@ -836,4 +836,256 @@ class Reports_model extends CI_Model
 
         return $this->db->query($sql)->result();
     }
+
+    ///////////////////// STOCK LEDGER REPORT /////////////////////
+
+    public function get_stock_ledger_report(
+        $from_date = null,
+        $to_date = null,
+        $warehouse_id = '',
+        $store_id = '',
+        $product_id = ''
+    ) {
+        if (empty($from_date)) {
+            $from_date = date('Y-m-01');
+        }
+
+        if (empty($to_date)) {
+            $to_date = date('Y-m-d');
+        }
+
+        $from = date(
+            'Y-m-d',
+            strtotime($from_date)
+        );
+
+        $to = date(
+            'Y-m-d',
+            strtotime($to_date)
+        );
+
+
+        $this->db->select("
+            COALESCE(
+                SUM(
+                    CASE
+                        WHEN stock_type = 'IN'
+                        THEN quantity
+                        WHEN stock_type = 'OUT'
+                        THEN -quantity
+                        ELSE 0
+                    END
+                ),
+                0
+            ) AS opening_balance
+        ", false);
+
+        $this->db->from('stock_details');
+
+        $this->db->where(
+            'DATE(stock_date) <',
+            $from
+        );
+
+
+        if (!empty($warehouse_id)) {
+
+            $this->db->where(
+                'warehouse_id',
+                $warehouse_id
+            );
+        }
+
+
+        if (!empty($store_id)) {
+
+            $this->db->where(
+                'store_id',
+                $store_id
+            );
+        }
+
+
+        if (!empty($product_id)) {
+
+            $this->db->where(
+                'product_id',
+                $product_id
+            );
+        }
+
+
+        $opening_query =
+            $this->db->get()
+            ->row();
+
+
+        $opening_balance =
+            !empty($opening_query)
+            ? (float)$opening_query->opening_balance
+            : 0;
+
+
+        $this->db->select("
+            sd.stock_id,
+            sd.stock_date,
+
+            sd.product_id,
+
+            im.product_code,
+            im.product_name,
+
+            sd.stock_type,
+            sd.quantity,
+            sd.price,
+
+            sd.bill_no,
+            sd.order_ref_no,
+
+            sd.warehouse_id,
+            wm.warehouse_name,
+
+            sd.store_id,
+            sm.store_name,
+
+            sd.storage_location,
+
+            sd.item_remark,
+            sd.remark,
+
+            sd.trans_id,
+            sd.adjustment_id,
+
+            sd.created_by,
+            u.user_name AS created_user,
+
+            sd.created_date
+        ", false);
+
+
+        $this->db->from(
+            'stock_details sd'
+        );
+
+        $this->db->join(
+            'item_master im',
+            'im.product_id = sd.product_id',
+            'left'
+        );
+
+        $this->db->join(
+            'warehouse_master wm',
+            'wm.warehouse_id = sd.warehouse_id',
+            'left'
+        );
+
+        $this->db->join(
+            'store_master sm',
+            'sm.store_id = sd.store_id',
+            'left'
+        );
+
+        $this->db->join(
+            'users u',
+            'u.user_id = sd.created_by',
+            'left'
+        );
+
+        $this->db->where(
+            'DATE(sd.stock_date) >=',
+            $from
+        );
+
+        $this->db->where(
+            'DATE(sd.stock_date) <=',
+            $to
+        );
+
+        if (!empty($warehouse_id)) {
+            $this->db->where(
+                'sd.warehouse_id',
+                $warehouse_id
+            );
+        }
+
+
+        if (!empty($store_id)) {
+            $this->db->where(
+                'sd.store_id',
+                $store_id
+            );
+        }
+
+
+        if (!empty($product_id)) {
+            $this->db->where(
+                'sd.product_id',
+                $product_id
+            );
+        }
+
+
+        $this->db->order_by(
+            'sd.stock_date',
+            'ASC'
+        );
+
+        $this->db->order_by(
+            'sd.stock_id',
+            'ASC'
+        );
+
+        $transactions = $this->db->get()->result();
+        $balance = $opening_balance;
+        $records = array();
+
+        foreach ($transactions as $row) {
+            $stock_in = 0;
+            $stock_out = 0;
+
+            if (
+                strtoupper($row->stock_type) == 'IN'
+            ) {
+                $stock_in = (float)$row->quantity;
+                $balance += $stock_in;
+            } elseif (
+                strtoupper($row->stock_type) == 'OUT'
+            ) {
+                $stock_out = (float)$row->quantity;
+                $balance -= $stock_out;
+            }
+
+
+            $reference = '-';
+
+            if (
+                !empty($row->bill_no)
+            ) {
+                $reference = $row->bill_no;
+            } elseif (
+                !empty($row->order_ref_no)
+            ) {
+                $reference = $row->order_ref_no;
+            } elseif (
+                !empty($row->trans_id)
+            ) {
+                $reference = 'Transaction: ' . $row->trans_id;
+            } elseif (
+                !empty($row->adjustment_id)
+            ) {
+                $reference = 'Adjustment: ' . $row->adjustment_id;
+            }
+
+            $row->opening_balance = $opening_balance;
+            $row->stock_in = $stock_in;
+            $row->stock_out = $stock_out;
+            $row->closing_balance =  $balance;
+            $row->reference = $reference;
+            $opening_balance = $balance;
+            $records[] = $row;
+        }
+
+
+        return $records;
+    }
 }

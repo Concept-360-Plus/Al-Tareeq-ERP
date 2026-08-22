@@ -1302,7 +1302,7 @@ class Reports extends CI_Controller
     $store_id = $this->input->get('store_id');
     $product_id = $this->input->get('product_id');
     $movement_type = $this->input->get('movement_type');
-    
+
     $data['title'] = 'Stock Movement Report';
     $data['from'] = $from_date;
     $data['to'] = $to_date;
@@ -1313,13 +1313,13 @@ class Reports extends CI_Controller
 
     $this->load->model('Reports_model');
     $data['records'] = $this->Reports_model->get_stock_movement_report(
-        $from_date,
-        $to_date,
-        $warehouse_id,
-        $store_id,
-        $product_id,
-        $movement_type
-      );
+      $from_date,
+      $to_date,
+      $warehouse_id,
+      $store_id,
+      $product_id,
+      $movement_type
+    );
 
     $filename = 'Stock_Movement_Report_' . date('Y-m-d_H-i-s') . '.xls';
     header('Content-Type: application/vnd.ms-excel');
@@ -1331,5 +1331,195 @@ class Reports extends CI_Controller
       'Reports/Stock/Export/export_stock_movement_report',
       $data
     );
+  }
+
+  /////////////////// STOCK LEDGER REPORT ////////////////////
+
+  function stock_ledger_report()
+  {
+    $data['title'] = 'Stock Ledger Report';
+
+    $data['from'] = date('Y-m-01');
+    $data['to']   = date('Y-m-d');
+
+    $data['warehouse_id'] = '';
+    $data['store_id']     = '';
+    $data['product_id']   = '';
+
+    // Product dropdown
+    $this->load->model('Stock_model');
+
+    $data['products'] =
+      $this->Stock_model->get_stock_code_list();
+
+    // Warehouse dropdown
+    $this->load->model('Setup_model');
+
+    $data['warehouse_records'] =
+      $this->Setup_model->get_warehouse_list();
+
+    // Empty records initially
+    $data['records'] = array();
+
+    $data['main_content'] =
+      'Reports/Stock/stock_ledger_report.php';
+
+    $this->load->view(
+      'includes/template.php',
+      $data
+    );
+  }
+
+
+  function get_stock_ledger_report()
+  {
+    $data['title'] = 'Stock Ledger Report';
+
+    $data['from'] =
+      $this->input->post('from_date');
+
+    $data['to'] =
+      $this->input->post('to_date');
+
+    $data['warehouse_id'] =
+      $this->input->post('warehouse_id');
+
+    $data['store_id'] =
+      $this->input->post('store_id');
+
+    $data['product_id'] =
+      $this->input->post('product_id');
+
+    // Dropdown data
+    $this->load->model('Stock_model');
+
+    $data['products'] =
+      $this->Stock_model->get_stock_code_list();
+
+    $this->load->model('Setup_model');
+
+    $data['warehouse_records'] =
+      $this->Setup_model->get_warehouse_list();
+
+    // Ledger records
+    $data['records'] =
+      $this->Reports_model->get_stock_ledger_report(
+        $data['from'],
+        $data['to'],
+        $data['warehouse_id'],
+        $data['store_id'],
+        $data['product_id']
+      );
+
+    $data['main_content'] =
+      'Reports/Stock/stock_ledger_report.php';
+
+    $this->load->view(
+      'includes/template.php',
+      $data
+    );
+  }
+
+
+  public function print_stock_ledger_report()
+  {
+    $from_date =
+      $this->input->get('from_date');
+
+    $to_date =
+      $this->input->get('to_date');
+
+    $warehouse_id =
+      $this->input->get('warehouse_id');
+
+    $store_id =
+      $this->input->get('store_id');
+
+    $product_id =
+      $this->input->get('product_id');
+
+
+    $data['title'] =
+      'Stock Ledger Report';
+
+    $data['from'] =
+      $from_date;
+
+    $data['to'] =
+      $to_date;
+
+    $data['warehouse_id'] =
+      $warehouse_id;
+
+    $data['store_id'] =
+      $store_id;
+
+    $data['product_id'] =
+      $product_id;
+
+
+    // Get ledger records
+    $data['records'] =
+      $this->Reports_model->get_stock_ledger_report(
+        $from_date,
+        $to_date,
+        $warehouse_id,
+        $store_id,
+        $product_id
+      );
+
+
+    // Branch header
+    $this->load->model('Setup_model');
+
+    $branch_id = 1;
+
+    $branch =
+      $this->Setup_model->get_branch_by_id(
+        $branch_id
+      );
+
+    $data['headerPath'] =
+      !empty($branch->branch_header)
+      ? base_url(
+        ltrim(
+          $branch->branch_header,
+          '/'
+        )
+      )
+      : '';
+
+
+    $this->load->view(
+      'Reports/Stock/Print/print_stock_ledger_report',
+      $data
+    );
+  }
+
+
+  public function export_stock_ledger_excel()
+  {
+    $from_date = $this->input->get('from_date');
+    $to_date = $this->input->get('to_date');
+    $warehouse_id = $this->input->get('warehouse_id');
+    $store_id = $this->input->get('store_id');
+    $product_id = $this->input->get('product_id');
+
+    $data['title'] = 'Stock Ledger Report';
+    $data['from'] = $from_date;
+    $data['to'] = $to_date;
+    $data['warehouse_id'] = $warehouse_id;
+    $data['store_id'] = $store_id;
+    $data['product_id'] = $product_id;
+
+    $data['records'] = $this->Reports_model->get_stock_ledger_report($from_date, $to_date, $warehouse_id, $store_id, $product_id);
+
+    $filename = 'Stock_Ledger_Report_' . date('Y-m-d_H-i-s') . '.xls';
+
+    header('Content-Type: application/vnd.ms-excel');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+    $this->load->view('Reports/Stock/Export/export_stock_ledger_report', $data);
   }
 }
