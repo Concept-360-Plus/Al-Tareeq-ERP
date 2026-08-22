@@ -1423,6 +1423,130 @@ class Reports extends CI_Controller
 
   public function print_stock_ledger_report()
   {
+    $from_date = $this->input->get('from_date');
+    $to_date = $this->input->get('to_date');
+    $warehouse_id = $this->input->get('warehouse_id');
+    $store_id = $this->input->get('store_id');
+    $product_id = $this->input->get('product_id');
+    $data['title'] = 'Stock Ledger Report';
+    $data['from'] = $from_date;
+    $data['to'] = $to_date;
+    $data['warehouse_id'] = $warehouse_id;
+    $data['store_id'] = $store_id;
+    $data['product_id'] = $product_id;
+
+    $data['records'] =
+      $this->Reports_model->get_stock_ledger_report(
+        $from_date,
+        $to_date,
+        $warehouse_id,
+        $store_id,
+        $product_id
+      );
+
+
+    $this->load->model('Setup_model');
+    $data['company_name'] = '';
+    $company = $this->Setup_model->get_company_details();
+
+    if (!empty($company)) {
+      if (is_array($company)) {
+        $company = $company[0];
+      }
+
+      if (is_object($company)) {
+        $data['company_name'] =
+          $company->company_name ?? '';
+      }
+    }
+
+    $branch_id = 8;
+    $branch = $this->Setup_model->get_branch_by_id($branch_id);
+    $data['branch_name'] = '';
+    if (!empty($branch)) {
+      $data['branch_name'] = $branch->branch_name ?? '';
+    }
+
+    $data['headerPath'] = '';
+
+    if (
+      !empty($branch) &&
+      !empty($branch->branch_header)
+    ) {
+      $data['headerPath'] =
+        base_url(
+          ltrim(
+            $branch->branch_header,
+            '/'
+          )
+        );
+    }
+
+    $data['warehouse_name'] = 'All Warehouses';
+    if (!empty($warehouse_id)) {
+      $warehouse =
+        $this->db
+        ->where(
+          'warehouse_id',
+          $warehouse_id
+        )
+        ->get('warehouse_master')
+        ->row();
+
+      if (!empty($warehouse)) {
+        $data['warehouse_name'] =
+          $warehouse->warehouse_name;
+      }
+    }
+
+    $data['store_name'] = 'All Stores';
+    if (!empty($store_id)) {
+      $store =
+        $this->db
+        ->where(
+          'store_id',
+          $store_id
+        )
+        ->get('store_master')
+        ->row();
+
+      if (!empty($store)) {
+        $data['store_name'] =
+          $store->store_name;
+      }
+    }
+
+    $data['product_name'] = 'All Products';
+    if (!empty($product_id)) {
+      $product =
+        $this->db
+        ->where(
+          'product_id',
+          $product_id
+        )
+        ->get('item_master')
+        ->row();
+
+      if (!empty($product)) {
+        $data['product_name'] =
+          $product->product_name;
+      }
+    }
+
+    $data['prepared_by'] = $this->session->userdata('user_name');
+    if (empty($data['prepared_by'])) {
+      $data['prepared_by'] = 'Admin';
+    }
+
+    $this->load->view('Reports/Stock/Print/print_stock_ledger_report', $data);
+  }
+
+  public function export_stock_ledger_excel()
+  {
+    // =====================================================
+    // FILTERS
+    // =====================================================
+
     $from_date =
       $this->input->get('from_date');
 
@@ -1438,6 +1562,10 @@ class Reports extends CI_Controller
     $product_id =
       $this->input->get('product_id');
 
+
+    // =====================================================
+    // BASIC DATA
+    // =====================================================
 
     $data['title'] =
       'Stock Ledger Report';
@@ -1458,19 +1586,39 @@ class Reports extends CI_Controller
       $product_id;
 
 
-    // Get ledger records
-    $data['records'] =
-      $this->Reports_model->get_stock_ledger_report(
-        $from_date,
-        $to_date,
-        $warehouse_id,
-        $store_id,
-        $product_id
-      );
+    // =====================================================
+    // MODELS
+    // =====================================================
 
-
-    // Branch header
     $this->load->model('Setup_model');
+
+
+    // =====================================================
+    // COMPANY NAME
+    // =====================================================
+
+    $data['company_name'] = '';
+
+    $company =
+      $this->Setup_model->get_company_details();
+
+    if (!empty($company)) {
+
+      if (is_array($company)) {
+        $company = $company[0];
+      }
+
+      if (is_object($company)) {
+
+        $data['company_name'] =
+          $company->company_name ?? '';
+      }
+    }
+
+
+    // =====================================================
+    // BRANCH NAME
+    // =====================================================
 
     $branch_id = 1;
 
@@ -1479,47 +1627,247 @@ class Reports extends CI_Controller
         $branch_id
       );
 
-    $data['headerPath'] =
-      !empty($branch->branch_header)
-      ? base_url(
-        ltrim(
-          $branch->branch_header,
-          '/'
+    $data['branch_name'] = '';
+
+    if (!empty($branch)) {
+
+      $data['branch_name'] =
+        $branch->branch_name ?? '';
+    }
+
+
+    // =====================================================
+    // WAREHOUSE NAME
+    // =====================================================
+
+    $data['warehouse_name'] =
+      'All Warehouses';
+
+    if (!empty($warehouse_id)) {
+
+      $warehouse =
+        $this->db
+        ->where(
+          'warehouse_id',
+          $warehouse_id
         )
-      )
-      : '';
+        ->get('warehouse_master')
+        ->row();
 
+      if (!empty($warehouse)) {
+        $data['warehouse_name'] = $warehouse->warehouse_name;
+      }
+    }
 
-    $this->load->view(
-      'Reports/Stock/Print/print_stock_ledger_report',
-      $data
-    );
-  }
+    $data['store_name'] = 'All Stores';
+    if (!empty($store_id)) {
+      $store = $this->db->where('store_id', $store_id)->get('store_master')->row();
+      if (!empty($store)) {
+        $data['store_name'] = $store->store_name;
+      }
+    }
 
+    $data['product_name'] = 'All Products';
+    if (!empty($product_id)) {
+      $product = $this->db->where('product_id', $product_id)->get('item_master')->row();
+      if (!empty($product)) {
+        $data['product_name'] = $product->product_name;
+      }
+    }
 
-  public function export_stock_ledger_excel()
-  {
-    $from_date = $this->input->get('from_date');
-    $to_date = $this->input->get('to_date');
-    $warehouse_id = $this->input->get('warehouse_id');
-    $store_id = $this->input->get('store_id');
-    $product_id = $this->input->get('product_id');
-
-    $data['title'] = 'Stock Ledger Report';
-    $data['from'] = $from_date;
-    $data['to'] = $to_date;
-    $data['warehouse_id'] = $warehouse_id;
-    $data['store_id'] = $store_id;
-    $data['product_id'] = $product_id;
+    $data['prepared_by'] = $this->session->userdata('user_name');
+    if (empty($data['prepared_by'])) {
+      $data['prepared_by'] =
+        'Admin';
+    }
 
     $data['records'] = $this->Reports_model->get_stock_ledger_report($from_date, $to_date, $warehouse_id, $store_id, $product_id);
-
     $filename = 'Stock_Ledger_Report_' . date('Y-m-d_H-i-s') . '.xls';
-
     header('Content-Type: application/vnd.ms-excel');
     header('Content-Disposition: attachment; filename="' . $filename . '"');
     header('Pragma: no-cache');
     header('Expires: 0');
     $this->load->view('Reports/Stock/Export/export_stock_ledger_report', $data);
+  }
+
+  ///////////////////// STOCK VALUATION REPORT /////////////////////
+
+  function stock_valuation_report()
+  {
+    $data['title'] = 'Stock Valuation Report';
+
+    $data['warehouse_id'] = '';
+    $data['store_id']     = '';
+    $data['product_id']   = '';
+
+    $this->load->model('Stock_model');
+    $data['products'] = $this->Stock_model->get_stock_code_list();
+
+    $this->load->model('Setup_model');
+    $data['warehouse_records'] =  $this->Setup_model->get_warehouse_list();
+
+    $data['records'] = array();
+    $data['main_content'] = 'Reports/Stock/stock_valuation_report.php';
+
+    $this->load->view('includes/template.php', $data);
+  }
+
+
+  function get_stock_valuation_report()
+  {
+    $data['title'] = 'Stock Valuation Report';
+    $data['warehouse_id'] = $this->input->post('warehouse_id');
+    $data['store_id'] = $this->input->post('store_id');
+    $data['product_id'] = $this->input->post('product_id');
+
+    $this->load->model('Stock_model');
+    $data['products'] = $this->Stock_model->get_stock_code_list();
+
+    $this->load->model('Setup_model');
+    $data['warehouse_records'] = $this->Setup_model->get_warehouse_list();
+
+    $data['records'] = $this->Reports_model->get_stock_valuation_report($data['warehouse_id'], $data['store_id'], $data['product_id']);
+
+    $data['main_content'] = 'Reports/Stock/stock_valuation_report.php';
+    $this->load->view('includes/template.php', $data);
+  }
+
+  public function print_stock_valuation_report()
+  {
+    $warehouse_id = $this->input->get('warehouse_id');
+    $store_id = $this->input->get('store_id');
+    $product_id = $this->input->get('product_id');
+    $data['title'] = 'Stock Valuation Report';
+    $data['warehouse_id'] = $warehouse_id;
+    $data['store_id'] = $store_id;
+    $data['product_id'] = $product_id;
+    $data['records'] = $this->Reports_model->get_stock_valuation_report($warehouse_id, $store_id, $product_id);
+
+    $this->load->model('Setup_model');
+    $data['company_name'] = '';
+    $company = $this->Setup_model->get_company_details();
+
+    if (!empty($company)) {
+      if (is_array($company)) {
+        $company = $company[0];
+      }
+      if (is_object($company)) {
+        $data['company_name'] = $company->company_name ?? '';
+      }
+    }
+
+    $branch_id = 1;
+    $branch = $this->Setup_model->get_branch_by_id($branch_id);
+    $data['branch_name'] = '';
+    if (!empty($branch)) {
+      $data['branch_name'] = $branch->branch_name ?? '';
+    }
+
+    $data['headerPath'] = '';
+    if (!empty($branch) && !empty($branch->branch_header)) {
+      $data['headerPath'] = base_url(ltrim($branch->branch_header, '/'));
+    }
+
+    $data['warehouse_name'] = 'All Warehouses';
+    if (!empty($warehouse_id)) {
+      $warehouse = $this->db->where('warehouse_id', $warehouse_id)->get('warehouse_master')->row();
+      if (!empty($warehouse)) {
+        $data['warehouse_name'] = $warehouse->warehouse_name;
+      }
+    }
+
+    $data['store_name'] = 'All Stores';
+    if (!empty($store_id)) {
+      $store = $this->db->where('store_id', $store_id)->get('store_master')->row();
+      if (!empty($store)) {
+        $data['store_name'] = $store->store_name;
+      }
+    }
+
+    $data['product_name'] = 'All Products';
+    if (!empty($product_id)) {
+      $product = $this->db->where('product_id', $product_id)->get('item_master')->row();
+      if (!empty($product)) {
+        $data['product_name'] = $product->product_name;
+      }
+    }
+
+    $data['prepared_by'] = $this->session->userdata('user_name');
+    if (empty($data['prepared_by'])) {
+      $data['prepared_by'] = 'Admin';
+    }
+
+    $this->load->view('Reports/Stock/Print/print_stock_valuation_report', $data);
+  }
+
+  public function export_stock_valuation_excel()
+  {
+    $warehouse_id = $this->input->get('warehouse_id');
+    $store_id = $this->input->get('store_id');
+    $product_id = $this->input->get('product_id');
+
+    $data['title'] = 'Stock Valuation Report';
+    $data['warehouse_id'] = $warehouse_id;
+    $data['store_id'] = $store_id;
+    $data['product_id'] = $product_id;
+
+    $this->load->model('Setup_model');
+    $data['company_name'] = '';
+
+    $company = $this->Setup_model->get_company_details();
+
+    if (!empty($company)) {
+      if (is_array($company)) {
+        $company = $company[0];
+      }
+      if (is_object($company)) {
+        $data['company_name'] = $company->company_name ?? '';
+      }
+    }
+
+    $branch_id = 1;
+    $branch = $this->Setup_model->get_branch_by_id($branch_id);
+
+    $data['branch_name'] = '';
+    if (!empty($branch)) {
+      $data['branch_name'] = $branch->branch_name ?? '';
+    }
+
+    $data['warehouse_name'] = 'All Warehouses';
+    if (!empty($warehouse_id)) {
+      $warehouse = $this->db->where('warehouse_id', $warehouse_id)->get('warehouse_master')->row();
+      if (!empty($warehouse)) {
+        $data['warehouse_name'] = $warehouse->warehouse_name;
+      }
+    }
+
+    $data['store_name'] = 'All Stores';
+    if (!empty($store_id)) {
+      $store = $this->db->where('store_id', $store_id)->get('store_master')->row();
+      if (!empty($store)) {
+        $data['store_name'] = $store->store_name;
+      }
+    }
+
+    $data['product_name'] = 'All Products';
+    if (!empty($product_id)) {
+      $product = $this->db->where('product_id', $product_id)->get('item_master')->row();
+      if (!empty($product)) {
+        $data['product_name'] = $product->product_name;
+      }
+    }
+
+    $data['prepared_by'] = $this->session->userdata('user_name');
+    if (empty($data['prepared_by'])) {
+      $data['prepared_by'] = 'Admin';
+    }
+
+    $data['records'] = $this->Reports_model->get_stock_valuation_report($warehouse_id,$store_id,$product_id);
+    $filename = 'Stock_Valuation_Report_' . date('Y-m-d_H-i-s') . '.xls';
+    header('Content-Type: application/vnd.ms-excel');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+    $this->load->view('Reports/Stock/Export/export_stock_valuation_report', $data);
   }
 }

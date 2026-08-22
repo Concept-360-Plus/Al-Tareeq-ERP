@@ -720,36 +720,51 @@ class Inventory_model extends CI_Model
     {
         return $this->db
             ->select("
-                im.product_id,
-                im.product_code,
-                im.product_name,
+            im.product_id,
+            im.product_code,
+            im.product_name,
 
+            COALESCE(
                 SUM(
                     CASE
-                        WHEN sd.stock_type='IN'
-                        THEN sd.quantity
+                        WHEN sd.stock_type = 'IN'
+                        THEN sd.balance_qty
                         ELSE 0
                     END
-                ) AS total_stock,
+                ),
+                0
+            ) AS total_stock,
 
+            COALESCE(
                 SUM(
                     CASE
-                        WHEN sd.stock_type='RESERVE' AND sd.status=1
+                        WHEN sd.stock_type = 'RESERVE'
+                        AND sd.status = 1
                         THEN sd.reserved_quantity
                         ELSE 0
                     END
-                ) AS total_reserved,
+                ),
+                0
+            ) AS total_reserved,
 
+            COALESCE(
                 SUM(
                     CASE
-                        WHEN sd.stock_type='RESERVE' AND sd.status=1
+                        WHEN sd.stock_type = 'RESERVE'
+                        AND sd.status = 1
                         THEN sd.pending_quantity
                         ELSE 0
                     END
-                ) AS total_pending
-            ")
+                ),
+                0
+            ) AS total_pending
+        ")
             ->from('item_master im')
-            ->join('stock_details sd', 'sd.product_id=im.product_id', 'left')
+            ->join(
+                'stock_details sd',
+                'sd.product_id = im.product_id',
+                'left'
+            )
             ->where('im.is_inactive', 0)
             ->where('im.is_marked_delete', 0)
             ->group_by('im.product_id')

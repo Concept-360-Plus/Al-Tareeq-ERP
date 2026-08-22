@@ -321,8 +321,6 @@
 		}
 	});
 
-
-
 	function export_stock_inventory_report() {
 		var rowCount = document.querySelectorAll("#basic-btn tbody tr").length;
 
