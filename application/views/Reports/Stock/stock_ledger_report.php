@@ -31,10 +31,10 @@
                                 name="from_date"
                                 class="form-control"
                                 value="<?php
-                                    echo !empty($from)
-                                        ? date('Y-m-d', strtotime($from))
-                                        : date('Y-m-01');
-                                ?>"
+                                        echo !empty($from)
+                                            ? date('Y-m-d', strtotime($from))
+                                            : date('Y-m-01');
+                                        ?>"
                                 required>
 
                         </div>
@@ -53,10 +53,10 @@
                                 name="to_date"
                                 class="form-control"
                                 value="<?php
-                                    echo !empty($to)
-                                        ? date('Y-m-d', strtotime($to))
-                                        : date('Y-m-d');
-                                ?>"
+                                        echo !empty($to)
+                                            ? date('Y-m-d', strtotime($to))
+                                            : date('Y-m-d');
+                                        ?>"
                                 required>
 
                         </div>
@@ -66,14 +66,9 @@
 
                         <div class="col-md-3">
 
-                            <label>
-                                Warehouse
-                            </label>
+                            <label> Warehouse</label>
 
-                            <select
-                                name="warehouse_id"
-                                class="form-control select2">
-
+                            <select name="warehouse_id" id="warehouse_id" class="form-control select2">
                                 <option value="">
                                     All Warehouses
                                 </option>
@@ -86,27 +81,27 @@
                                     ) {
                                 ?>
 
-                                    <option
-                                        value="<?php
-                                            echo $warehouse->warehouse_id;
-                                        ?>"
-                                        <?php
-                                        echo (
-                                            isset($warehouse_id) &&
-                                            $warehouse_id ==
-                                            $warehouse->warehouse_id
-                                        )
-                                            ? 'selected'
-                                            : '';
-                                        ?>>
+                                        <option
+                                            value="<?php
+                                                    echo $warehouse->warehouse_id;
+                                                    ?>"
+                                            <?php
+                                            echo (
+                                                isset($warehouse_id) &&
+                                                $warehouse_id ==
+                                                $warehouse->warehouse_id
+                                            )
+                                                ? 'selected'
+                                                : '';
+                                            ?>>
 
-                                        <?php
-                                        echo html_escape(
-                                            $warehouse->warehouse_name
-                                        );
-                                        ?>
+                                            <?php
+                                            echo html_escape(
+                                                $warehouse->warehouse_name
+                                            );
+                                            ?>
 
-                                    </option>
+                                        </option>
 
                                 <?php
                                     }
@@ -119,16 +114,10 @@
 
 
                         <!-- STORE -->
-
                         <div class="col-md-3">
 
-                            <label>
-                                Store
-                            </label>
-
-                            <select
-                                name="store_id"
-                                class="form-control select2">
+                            <label> Store</label>
+                            <select name="store_id" id="store_id" class="form-control select2">
 
                                 <option value="">
                                     All Stores
@@ -137,35 +126,33 @@
                                 <?php
                                 if (!empty($store_records)) {
 
-                                    foreach (
-                                        $store_records as $store
-                                    ) {
+                                    foreach ($store_records as $store) {
                                 ?>
 
-                                    <option
-                                        value="<?php
-                                            echo $store->store_id;
-                                        ?>"
-                                        <?php
-                                        echo (
-                                            isset($store_id) &&
-                                            $store_id ==
-                                            $store->store_id
-                                        )
-                                            ? 'selected'
-                                            : '';
-                                        ?>>
+                                        <option
+                                            value="<?php
+                                                    echo $store->store_id;
+                                                    ?>"
+                                            <?php
+                                            echo (
+                                                isset($store_id) &&
+                                                $store_id == $store->store_id
+                                            )
+                                                ? 'selected'
+                                                : '';
+                                            ?>>
 
-                                        <?php
-                                        echo html_escape(
-                                            $store->store_name
-                                        );
-                                        ?>
+                                            <?php
+                                            echo html_escape(
+                                                $store->store_name
+                                            );
+                                            ?>
 
-                                    </option>
+                                        </option>
 
                                 <?php
-                                    }
+                                    } // foreach
+                                } // if
                                 ?>
 
                             </select>
@@ -205,29 +192,29 @@
                                     ) {
                                 ?>
 
-                                    <option
-                                        value="<?php
-                                            echo $product->product_id;
-                                        ?>"
-                                        <?php
-                                        echo (
-                                            isset($product_id) &&
-                                            $product_id ==
-                                            $product->product_id
-                                        )
-                                            ? 'selected'
-                                            : '';
-                                        ?>>
+                                        <option
+                                            value="<?php
+                                                    echo $product->product_id;
+                                                    ?>"
+                                            <?php
+                                            echo (
+                                                isset($product_id) &&
+                                                $product_id ==
+                                                $product->product_id
+                                            )
+                                                ? 'selected'
+                                                : '';
+                                            ?>>
 
-                                        <?php
-                                        echo html_escape(
-                                            $product->product_code .
-                                            ' ' .
-                                            $product->product_name
-                                        );
-                                        ?>
+                                            <?php
+                                            echo html_escape(
+                                                $product->product_code .
+                                                    ' ' .
+                                                    $product->product_name
+                                            );
+                                            ?>
 
-                                    </option>
+                                        </option>
 
                                 <?php
                                     }
@@ -433,9 +420,7 @@
                                             <td>
 
                                                 <?php
-                                                echo !empty(
-                                                    $row->stock_date
-                                                )
+                                                echo !empty($row->stock_date)
                                                     ? date(
                                                         'd-m-Y',
                                                         strtotime(
@@ -454,9 +439,7 @@
 
                                                 <?php
 
-                                                echo !empty(
-                                                    $row->reference
-                                                )
+                                                echo !empty($row->reference)
                                                     ? html_escape(
                                                         $row->reference
                                                     )
@@ -472,9 +455,7 @@
                                             <td>
 
                                                 <?php
-                                                echo !empty(
-                                                    $row->product_code
-                                                )
+                                                echo !empty($row->product_code)
                                                     ? html_escape(
                                                         $row->product_code
                                                     )
@@ -489,9 +470,7 @@
                                             <td>
 
                                                 <?php
-                                                echo !empty(
-                                                    $row->product_name
-                                                )
+                                                echo !empty($row->product_name)
                                                     ? html_escape(
                                                         $row->product_name
                                                     )
@@ -584,9 +563,7 @@
                                             <td>
 
                                                 <?php
-                                                echo !empty(
-                                                    $row->warehouse_name
-                                                )
+                                                echo !empty($row->warehouse_name)
                                                     ? html_escape(
                                                         $row->warehouse_name
                                                     )
@@ -601,9 +578,7 @@
                                             <td>
 
                                                 <?php
-                                                echo !empty(
-                                                    $row->store_name
-                                                )
+                                                echo !empty($row->store_name)
                                                     ? html_escape(
                                                         $row->store_name
                                                     )
@@ -620,29 +595,22 @@
                                                 <?php
 
                                                 if (
-                                                    !empty(
-                                                        $row->item_remark
-                                                    )
+                                                    !empty($row->item_remark)
                                                 ) {
 
                                                     echo html_escape(
                                                         $row->item_remark
                                                     );
-
                                                 } elseif (
-                                                    !empty(
-                                                        $row->remark
-                                                    )
+                                                    !empty($row->remark)
                                                 ) {
 
                                                     echo html_escape(
                                                         $row->remark
                                                     );
-
                                                 } else {
 
                                                     echo '-';
-
                                                 }
 
                                                 ?>
@@ -896,152 +864,189 @@
 
 
 <script>
-
-/* =========================================================
+    /* =========================================================
    PRINT STOCK LEDGER
 ========================================================= */
 
-function printStockLedgerReport(event)
-{
-    if (event) {
-        event.preventDefault();
+    function printStockLedgerReport(event) {
+        if (event) {
+            event.preventDefault();
+        }
+
+
+        const fromDate =
+            document.querySelector(
+                'input[name="from_date"]'
+            ).value;
+
+
+        const toDate =
+            document.querySelector(
+                'input[name="to_date"]'
+            ).value;
+
+
+        const warehouseId =
+            document.querySelector(
+                'select[name="warehouse_id"]'
+            ).value;
+
+
+        const storeId =
+            document.querySelector(
+                'select[name="store_id"]'
+            ).value;
+
+
+        const productId =
+            document.querySelector(
+                'select[name="product_id"]'
+            ).value;
+
+
+        const baseUrl =
+            "<?php
+                echo base_url(
+                    'index.php/Reports/print_stock_ledger_report'
+                );
+                ?>";
+
+
+        const params =
+            new URLSearchParams({
+
+                from_date: fromDate,
+
+                to_date: toDate,
+
+                warehouse_id: warehouseId,
+
+                store_id: storeId,
+
+                product_id: productId
+
+            });
+
+
+        window.open(
+            baseUrl + "?" + params.toString(),
+            '_blank'
+        );
+
+
+        return false;
     }
 
 
-    const fromDate =
-        document.querySelector(
-            'input[name="from_date"]'
-        ).value;
+    /* =========================================================
+       EXPORT STOCK LEDGER
+    ========================================================= */
+
+    function exportStockLedgerExcel(event) {
+        if (event) {
+            event.preventDefault();
+        }
 
 
-    const toDate =
-        document.querySelector(
-            'input[name="to_date"]'
-        ).value;
+        const fromDate =
+            document.querySelector(
+                'input[name="from_date"]'
+            ).value;
 
 
-    const warehouseId =
-        document.querySelector(
-            'select[name="warehouse_id"]'
-        ).value;
+        const toDate =
+            document.querySelector(
+                'input[name="to_date"]'
+            ).value;
 
 
-    const storeId =
-        document.querySelector(
-            'select[name="store_id"]'
-        ).value;
+        const warehouseId =
+            document.querySelector(
+                'select[name="warehouse_id"]'
+            ).value;
 
 
-    const productId =
-        document.querySelector(
-            'select[name="product_id"]'
-        ).value;
+        const storeId =
+            document.querySelector(
+                'select[name="store_id"]'
+            ).value;
 
 
-    const baseUrl =
-        "<?php
-            echo base_url(
-                'index.php/Reports/print_stock_ledger_report'
-            );
-        ?>";
+        const productId =
+            document.querySelector(
+                'select[name="product_id"]'
+            ).value;
 
 
-    const params =
-        new URLSearchParams({
-
-            from_date: fromDate,
-
-            to_date: toDate,
-
-            warehouse_id: warehouseId,
-
-            store_id: storeId,
-
-            product_id: productId
-
-        });
+        const baseUrl =
+            "<?php
+                echo base_url(
+                    'index.php/Reports/export_stock_ledger_excel'
+                );
+                ?>";
 
 
-    window.open(
-        baseUrl + "?" + params.toString(),
-        '_blank'
-    );
+        const params =
+            new URLSearchParams({
+
+                from_date: fromDate,
+
+                to_date: toDate,
+
+                warehouse_id: warehouseId,
+
+                store_id: storeId,
+
+                product_id: productId
+
+            });
 
 
-    return false;
-}
+        window.location.href =
+            baseUrl + "?" + params.toString();
 
 
-/* =========================================================
-   EXPORT STOCK LEDGER
-========================================================= */
-
-function exportStockLedgerExcel(event)
-{
-    if (event) {
-        event.preventDefault();
+        return false;
     }
 
-
-    const fromDate =
-        document.querySelector(
-            'input[name="from_date"]'
-        ).value;
-
-
-    const toDate =
-        document.querySelector(
-            'input[name="to_date"]'
-        ).value;
-
-
-    const warehouseId =
-        document.querySelector(
-            'select[name="warehouse_id"]'
-        ).value;
-
-
-    const storeId =
-        document.querySelector(
-            'select[name="store_id"]'
-        ).value;
-
-
-    const productId =
-        document.querySelector(
-            'select[name="product_id"]'
-        ).value;
-
-
-    const baseUrl =
-        "<?php
-            echo base_url(
-                'index.php/Reports/export_stock_ledger_excel'
+    $(document).ready(function() {
+        $('#warehouse_id').change(function() {
+            
+            var warehouse_id = $(this).val();
+            $('#store_id').html(
+                '<option value="">Loading...</option>'
             );
-        ?>";
 
+            $.ajax({
+                url: "<?= base_url('index.php/Ajax/get_store_by_warehouse'); ?>",
+                type: "POST",
+                data: {
+                    warehouse_id: warehouse_id
+                },
+                dataType: "json",
+                success: function(result) {
+                    var selectedStore = "<?= isset($store_id) ? $store_id : ''; ?>";
+                    var html = '<option value="">All Stores</option>';
 
-    const params =
-        new URLSearchParams({
+                    $.each(result, function(i, row) {
+                        var selected = (row.store_id == selectedStore) ? 'selected' : '';
+                        html += '<option value="' + row.store_id + '" ' + selected + '>' + row.store_name + '</option>';
 
-            from_date: fromDate,
-
-            to_date: toDate,
-
-            warehouse_id: warehouseId,
-
-            store_id: storeId,
-
-            product_id: productId
-
+                    });
+                    $('#store_id').html(html);
+                    $('#store_id').trigger('change.select2');
+                },
+                error: function() {
+                    $('#store_id').html(
+                        '<option value="">All Stores</option>'
+                    );
+                }
+            });
         });
 
+        if ($('#warehouse_id').val() != '') {
+            $('#warehouse_id').trigger('change');
 
-    window.location.href =
-        baseUrl + "?" + params.toString();
-
-
-    return false;
-}
-
+        }
+    });
 </script>
