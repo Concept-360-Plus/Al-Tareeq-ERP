@@ -10,7 +10,8 @@
         background: #fff;
         min-height: 135px;
         margin-bottom: 20px;
-        border: 1px solid #eee;
+        border: 1px solid #e8e8e8;
+        border-top: 4px solid #5b7c99;
         box-shadow: 0 2px 8px rgba(0, 0, 0, .05);
         cursor: pointer;
         transition: .2s;
@@ -24,17 +25,18 @@
     .hr-kpi h4 {
         margin: 0 0 10px;
         font-size: 14px;
-        color: #666;
+        color: #555;
     }
 
     .hr-kpi h2 {
         margin: 0;
         font-size: 28px;
         font-weight: 600;
+        color: #4f6f8f;
     }
 
     .hr-kpi small {
-        color: #999;
+        color: #888;
     }
 
     .hr-kpi-icon {
@@ -43,6 +45,7 @@
         top: 20px;
         font-size: 28px;
         opacity: .25;
+        color: #5b7c99;
     }
 
     .hr-panel {

@@ -85,7 +85,7 @@ class Reports extends CI_Controller
     $data['supplier_id'] = $this->input->get('supplier_id');
     $data['created_by'] = $this->input->get('created_by');
     $data['records'] = $this->Reports_model->get_purchase_request_report_records();
-    $filename = 'Purchase_Request_Report_' . date('Y-m-d_H-i-s') . '.xls';
+    $filename = 'Purchase_Request_Report_' . date('Y-m-d') . '.xls';
 
     header('Content-Type: application/vnd.ms-excel');
     header('Content-Disposition: attachment; filename="' . $filename . '"');
@@ -161,7 +161,7 @@ class Reports extends CI_Controller
 
     $data['records'] = $this->Reports_model->get_rfq_report_records();
 
-    $filename = 'RFQ_Report_' . date('Y-m-d_H-i-s') . '.xls';
+    $filename = 'RFQ_Report_' . date('Y-m-d') . '.xls';
     header('Content-Type: application/vnd.ms-excel');
     header('Content-Disposition: attachment; filename="' . $filename . '"');
     header('Pragma: no-cache');
@@ -288,7 +288,7 @@ class Reports extends CI_Controller
       }
     }
     $data['company_name'] = $this->Setup_model->get_company_details();
-    $filename = 'Purchase_Order_Report_' . date('Y-m-d_H-i-s') . '.xls';
+    $filename = 'Purchase_Order_Report_' . date('Y-m-d') . '.xls';
     header('Content-Type: application/vnd.ms-excel');
     header('Content-Disposition: attachment; filename="' . $filename . '"');
     header('Pragma: no-cache');
@@ -527,7 +527,7 @@ class Reports extends CI_Controller
 
     $filename =
       'Purchase_Return_Report_' .
-      date('Y-m-d_H-i-s') .
+      date('Y-m-d') .
       '.xls';
 
 
@@ -1189,7 +1189,7 @@ class Reports extends CI_Controller
       }
     }
 
-    $filename = 'Stock_Inventory_Report_' . date('Y-m-d_H-i-s') . '.xls';
+    $filename = 'Stock_Inventory_Report_' . date('Y-m-d') . '.xls';
     header('Content-Type: application/vnd.ms-excel');
     header('Content-Disposition: attachment; filename="' . $filename . '"');
     header('Pragma: no-cache');
@@ -1321,7 +1321,7 @@ class Reports extends CI_Controller
       $movement_type
     );
 
-    $filename = 'Stock_Movement_Report_' . date('Y-m-d_H-i-s') . '.xls';
+    $filename = 'Stock_Movement_Report_' . date('Y-m-d') . '.xls';
     header('Content-Type: application/vnd.ms-excel');
     header('Content-Disposition: attachment; filename="' . $filename . '"');
     header('Pragma: no-cache');
@@ -1682,7 +1682,7 @@ class Reports extends CI_Controller
     }
 
     $data['records'] = $this->Reports_model->get_stock_ledger_report($from_date, $to_date, $warehouse_id, $store_id, $product_id);
-    $filename = 'Stock_Ledger_Report_' . date('Y-m-d_H-i-s') . '.xls';
+    $filename = 'Stock_Ledger_Report_' . date('Y-m-d') . '.xls';
     header('Content-Type: application/vnd.ms-excel');
     header('Content-Disposition: attachment; filename="' . $filename . '"');
     header('Pragma: no-cache');
@@ -1862,12 +1862,274 @@ class Reports extends CI_Controller
       $data['prepared_by'] = 'Admin';
     }
 
-    $data['records'] = $this->Reports_model->get_stock_valuation_report($warehouse_id,$store_id,$product_id);
-    $filename = 'Stock_Valuation_Report_' . date('Y-m-d_H-i-s') . '.xls';
+    $data['records'] = $this->Reports_model->get_stock_valuation_report($warehouse_id, $store_id, $product_id);
+    $filename = 'Stock_Valuation_Report_' . date('Y-m-d') . '.xls';
     header('Content-Type: application/vnd.ms-excel');
     header('Content-Disposition: attachment; filename="' . $filename . '"');
     header('Pragma: no-cache');
     header('Expires: 0');
     $this->load->view('Reports/Stock/Export/export_stock_valuation_report', $data);
   }
+
+  ///////////////////// STOCK RESERVATION REPORT /////////////////////
+
+  public function stock_reservation_report()
+  {
+    $data['title'] = 'Stock Reservation Report';
+
+    $data['from'] = date('Y-m-01');
+    $data['to']   = date('Y-m-d');
+    $data['product_id']  = '';
+    $data['customer_id'] = '';
+    $data['so_id']       = '';
+    $data['status']      = '';
+
+    $this->load->model('Stock_model');
+    $data['products'] = $this->Stock_model->get_stock_code_list();
+
+    $this->load->model('Setup_model');
+    $data['customer_records'] = $this->Setup_model->get_all_customer_list();
+
+    $data['sales_orders'] = $this->Reports_model->get_reservation_sales_order_list();
+    $data['records'] = array();
+
+    $data['main_content'] = 'Reports/Stock/stock_reservation_report.php';
+    $this->load->view('includes/template.php', $data);
+  }
+
+
+  public function get_stock_reservation_report()
+  {
+    $data['title'] = 'Stock Reservation Report';
+    $data['from'] = $this->input->post('from_date');
+    $data['to'] = $this->input->post('to_date');
+    $data['product_id'] = $this->input->post('product_id');
+    $data['customer_id'] = $this->input->post('customer_id');
+    $data['so_id'] = $this->input->post('so_id');
+    $data['status'] = $this->input->post('status');
+
+    $this->load->model('Stock_model');
+    $data['products'] = $this->Stock_model->get_stock_code_list();
+
+    $this->load->model('Setup_model');
+    $data['customer_records'] = $this->Setup_model->get_all_customer_list();
+    $data['sales_orders'] = $this->Reports_model->get_reservation_sales_order_list();
+
+    $data['records'] = $this->Reports_model->get_stock_reservation_report($data['from'],$data['to'],$data['product_id'],$data['customer_id'],$data['so_id'],$data['status']);
+
+    $data['main_content'] = 'Reports/Stock/stock_reservation_report.php';
+    $this->load->view('includes/template.php', $data);
+  }
+
+
+  public function print_stock_reservation_report()
+  {
+    $from_date = $this->input->get('from_date');
+    $to_date = $this->input->get('to_date');
+    $product_id = $this->input->get('product_id');
+    $customer_id = $this->input->get('customer_id');
+    $so_id = $this->input->get('so_id');
+    $status = $this->input->get('status');
+
+    $data['title'] ='Stock Reservation Report';
+    $data['from'] = $from_date;
+    $data['to'] = $to_date;
+    $data['product_id'] = $product_id;
+    $data['customer_id'] = $customer_id;
+    $data['so_id'] = $so_id;
+    $data['status'] = $status;
+
+    $data['records'] = $this->Reports_model->get_stock_reservation_report($from_date,$to_date,$product_id,$customer_id,$so_id,$status);
+
+    $this->load->model('Setup_model');
+    $data['company_name'] = '';
+    $company = $this->Setup_model->get_company_details();
+
+    if (!empty($company)) {
+      if (is_array($company)) {
+        $company = $company[0];
+      }
+      if (is_object($company)) {
+        $data['company_name'] = $company->company_name ?? '';
+      }
+    }
+
+    $branch_id = 1;
+    $branch = $this->Setup_model->get_branch_by_id($branch_id);
+    $data['branch_name'] = '';
+
+    if (!empty($branch)) {
+      $data['branch_name'] = $branch->branch_name ?? '';
+    }
+
+    $data['headerPath'] = '';
+
+    if (!empty($branch) && !empty($branch->branch_header)) 
+    {
+      $data['headerPath'] = base_url(ltrim($branch->branch_header, '/'));
+    }
+
+    $data['prepared_by'] = $this->session->userdata('user_name');
+    if (empty($data['prepared_by'])) {
+      $data['prepared_by'] = 'Admin';
+    }
+
+    $data['product_name'] ='All Products';
+
+    if (!empty($product_id)) {
+      $product = $this->db->where('product_id', $product_id)->get('item_master')->row();
+      if (!empty($product)) {
+        $data['product_name'] = $product->product_name;
+      }
+    }
+
+    $data['customer_name'] ='All Customers';
+    if (!empty($customer_id)) {
+      $customer = $this->db->where('customer_id', $customer_id)->get('customer_master')->row();
+      if (!empty($customer)) {
+        $data['customer_name'] = $customer->customer_name;
+      }
+    }
+
+    $data['sales_order_name'] ='All Sales Orders';
+    if (!empty($so_id)) {
+      $so = $this->db->where('so_id', $so_id)->get('sales_order_master')->row();
+      if (!empty($so)) {
+        $data['sales_order_name'] = $so->so_code;
+      }
+    }
+
+    $this->load->view('Reports/Stock/Print/print_stock_reservation_report', $data);
+  }
+
+
+  public function export_stock_reservation_excel()
+  {
+    $from_date =
+      $this->input->get('from_date');
+
+    $to_date =
+      $this->input->get('to_date');
+
+    $product_id =
+      $this->input->get('product_id');
+
+    $customer_id =
+      $this->input->get('customer_id');
+
+    $so_id =
+      $this->input->get('so_id');
+
+    $status =
+      $this->input->get('status');
+
+
+    $data['title'] =
+      'Stock Reservation Report';
+
+    $data['from'] =
+      $from_date;
+
+    $data['to'] =
+      $to_date;
+
+    $data['product_id'] =
+      $product_id;
+
+    $data['customer_id'] =
+      $customer_id;
+
+    $data['so_id'] =
+      $so_id;
+
+    $data['status'] =
+      $status;
+
+
+    // Company
+    $this->load->model('Setup_model');
+
+    $data['company_name'] = '';
+
+    $company =
+      $this->Setup_model
+      ->get_company_details();
+
+    if (!empty($company)) {
+
+      if (is_array($company)) {
+        $company = $company[0];
+      }
+
+      if (is_object($company)) {
+
+        $data['company_name'] =
+          $company->company_name ?? '';
+      }
+    }
+
+
+    // Branch
+    $branch_id = 1;
+
+    $branch =
+      $this->Setup_model
+      ->get_branch_by_id($branch_id);
+
+    $data['branch_name'] = '';
+
+    if (!empty($branch)) {
+
+      $data['branch_name'] =
+        $branch->branch_name ?? '';
+    }
+
+
+    $data['product_name'] = 'All Products';
+    if (!empty($product_id)) {
+      $product = $this->db
+        ->where(
+          'product_id',
+          $product_id
+        )
+        ->get('item_master')
+        ->row();
+      if (!empty($product)) {
+        $data['product_name'] = $product->product_name;
+      }
+    }
+
+    $data['customer_name'] = 'All Customers';
+    if (!empty($customer_id)) {
+      $customer = $this->db->where('customer_id', $customer_id)->get('customer_master')->row();
+      if (!empty($customer)) {
+        $data['customer_name'] = $customer->customer_name;
+      }
+    }
+
+    $data['sales_order_name'] ='All Sales Orders';
+    if (!empty($so_id)) {
+      $so = $this->db->where('so_id', $so_id)->get('sales_order_master')->row();
+      if (!empty($so)) {
+        $data['sales_order_name'] = $so->so_code;
+      }
+    }
+
+    $data['prepared_by'] = $this->session->userdata('user_name')
+    if (empty($data['prepared_by'])) {
+      $data['prepared_by'] = 'Admin';
+    }
+
+    $data['records'] = $this->Reports_model->get_stock_reservation_report($from_date, $to_date, $product_id, $customer_id, $so_id, $status);
+
+    $filename ='Stock_Reservation_Report_' . date('Y-m-d') . '.xls';
+    header('Content-Type: application/vnd.ms-excel');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+
+    $this->load->view('Reports/Stock/Export/export_stock_reservation_report', $data);
+  }
+
+  ///////////////////// STOCK RESERVATION REPORT END /////////////////////
 }
