@@ -2115,7 +2115,7 @@ class Reports extends CI_Controller
       }
     }
 
-    $data['prepared_by'] = $this->session->userdata('user_name')
+    $data['prepared_by'] = $this->session->userdata('user_name');
     if (empty($data['prepared_by'])) {
       $data['prepared_by'] = 'Admin';
     }
