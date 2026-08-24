@@ -744,7 +744,6 @@
 
         if ($('#warehouse_id').val() != '') {
             $('#warehouse_id').trigger('change');
-
         }
     });
 </script>
