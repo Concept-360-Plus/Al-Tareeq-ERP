@@ -915,9 +915,16 @@ class Purchase_Model extends CI_Model
 			'checked_by'        => $this->input->post('employee_checked'),
 			'approved_by'       => $this->input->post('employee_approved'),
 			'created_by' 		=> $this->session->userdata('user_id'),
-			'created_date' 		=> date('Y-m-d H:i:s')
-			//   'currency_id' => $this->input->post('cid'),
-			//   'currency_rate' => $this->input->post('crate'),
+			'created_date' 		=> date('Y-m-d H:i:s'),
+
+			'po_type'           => 'quotation',
+			'purchase_type'     => $this->input->post('purchase_type'),
+
+			'currency_id'       => $this->input->post('currency_id'),
+			'currency_rate'     => $this->input->post('currency_rate'),
+
+			'conversion_rate'          => $this->input->post('conversion_rate'),
+			'base_currency_grand_total' => $this->input->post('base_currency_grand_total'),
 		);
 		$this->db->insert('purchase_order_master', $data);
 		$insert_id = $this->db->insert_id();
@@ -1020,13 +1027,17 @@ class Purchase_Model extends CI_Model
 			'approved_by'       => $this->input->post('employee_approved'),
 			'created_by' 		=> $this->session->userdata('user_id'),
 			'created_date' 		=> date('Y-m-d H:i:s'),
-			// 'prepared_by' => $this->session->userdata('user_name')
+			// 'prepared_by' => $this->session->userdata('user_name'),
 
-			//    'approved_by'  => $this->input->post('approved_by')
+			//    'approved_by'  => $this->input->post('approved_by'),
 
+			'purchase_type' => $this->input->post('purchase_type'),
 
-			//   'currency_id' => $this->input->post('cid'),
-			//   'currency_rate' => $this->input->post('crate'),
+			'currency_id'   => $this->input->post('currency_id'),
+			'currency_rate' => $this->input->post('currency_rate'),
+
+			'conversion_rate'          => $this->input->post('conversion_rate'),
+			'base_currency_grand_total' => $this->input->post('base_currency_grand_total'),
 		);
 
 

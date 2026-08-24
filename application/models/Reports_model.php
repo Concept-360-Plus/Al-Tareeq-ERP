@@ -1614,68 +1614,107 @@ class Reports_model extends CI_Model
 
     ///////////////////// STOCK TRANSFER REPORT /////////////////////
 
-    public function get_stock_transfer_report(
-        $from_date = null,
-        $to_date = null,
-        $from_warehouse_id = '',
-        $from_store_id = '',
-        $to_warehouse_id = '',
-        $to_store_id = '',
-        $product_id = '',
-        $status = ''
-    ) {
+    public function get_stock_transfer_report($request_type = 'post')
+    {
+        if ($request_type === 'get') {
 
-        if (empty($from_date)) {
-            $from_date = date('Y-m-01');
+            $from = $this->input->get('from');
+            $to   = $this->input->get('to');
+
+            $from_branch_id =
+                $this->input->get('from_branch_id');
+
+            $to_branch_id =
+                $this->input->get('to_branch_id');
+
+            $from_warehouse_id =
+                $this->input->get('from_warehouse_id');
+
+            $to_warehouse_id =
+                $this->input->get('to_warehouse_id');
+
+            $from_store_id =
+                $this->input->get('from_store_id');
+
+            $to_store_id =
+                $this->input->get('to_store_id');
+
+            $product_id =
+                $this->input->get('product_id');
+
+            $status =
+                $this->input->get('status');
+        } else {
+
+            $from = $this->input->post('from');
+            $to   = $this->input->post('to');
+
+            $from_branch_id =
+                $this->input->post('from_branch_id');
+
+            $to_branch_id =
+                $this->input->post('to_branch_id');
+
+            $from_warehouse_id =
+                $this->input->post('from_warehouse_id');
+
+            $to_warehouse_id =
+                $this->input->post('to_warehouse_id');
+
+            $from_store_id =
+                $this->input->post('from_store_id');
+
+            $to_store_id =
+                $this->input->post('to_store_id');
+
+            $product_id =
+                $this->input->post('product_id');
+
+            $status =
+                $this->input->post('status');
         }
-
-        if (empty($to_date)) {
-            $to_date = date('Y-m-d');
-        }
-
-
-        $from = date(
-            'Y-m-d',
-            strtotime($from_date)
-        );
-
-        $to = date(
-            'Y-m-d',
-            strtotime($to_date)
-        );
-
 
         $this->db->select("
-            stm.transfer_id,
-            stm.transfer_code,
-            stm.transfer_date,
-            stm.from_branch_id,
-            stm.from_warehouse_id,
-            stm.from_store_id,
-            stm.to_branch_id,
-            stm.to_warehouse_id,
-            stm.to_store_id,
-            stm.status,
-            stm.remarks,
-            stm.created_by,
-            stm.created_at,
-            sti.product_id,
-            sti.unit_id,
-            sti.available_qty,
-            sti.transfer_qty,
-            sti.remarks AS item_remarks,
-            im.product_code,
-            im.product_name,
-            um.unit_name,
-            fb.branch_name AS from_branch,
-            tb.branch_name AS to_branch,
-            fw.warehouse_name AS from_warehouse,
-            tw.warehouse_name AS to_warehouse,
-            fs.store_name AS from_store,
-            ts.store_name AS to_store,
-            u.user_name AS created_user
+        stm.transfer_id,
+        stm.transfer_code,
+        stm.transfer_date,
 
-        ", false);
+        stm.from_branch_id,
+        stm.from_warehouse_id,
+        stm.from_store_id,
+
+        stm.to_branch_id,
+        stm.to_warehouse_id,
+        stm.to_store_id,
+
+        stm.remarks AS transfer_remarks,
+        stm.status,
+
+        stm.created_at,
+
+        fb.branch_name AS from_branch,
+        tb.branch_name AS to_branch,
+
+        fw.warehouse_name AS from_warehouse,
+        tw.warehouse_name AS to_warehouse,
+
+        fs.store_name AS from_store,
+        ts.store_name AS to_store,
+
+        u.user_name AS created_user,
+
+        sti.item_id,
+        sti.product_id,
+        sti.unit_id,
+        sti.available_qty,
+        sti.transfer_qty,
+        sti.remarks AS item_remarks,
+
+        im.product_code,
+        im.product_name,
+
+        um.unit_name
+    ");
 
         $this->db->from(
             'stock_transfer_master stm'
@@ -1684,7 +1723,7 @@ class Reports_model extends CI_Model
         $this->db->join(
             'stock_transfer_items sti',
             'sti.transfer_id = stm.transfer_id',
-            'left'
+            'inner'
         );
 
         $this->db->join(
@@ -1693,44 +1732,164 @@ class Reports_model extends CI_Model
             'left'
         );
 
-        $this->db->join('unit_master um','um.unit_id = sti.unit_id','left');
-        $this->db->join('branch_master fb','fb.branch_id = stm.from_branch_id','left');
-        $this->db->join('branch_master tb','tb.branch_id = stm.to_branch_id','left');
-        $this->db->join('warehouse_master fw','fw.warehouse_id = stm.from_warehouse_id','left');
-        $this->db->join('warehouse_master tw','tw.warehouse_id = stm.to_warehouse_id','left');
-        $this->db->join('store_master fs','fs.store_id = stm.from_store_id','left');
-        $this->db->join('store_master ts','ts.store_id = stm.to_store_id','left');
-        $this->db->join('users u','u.user_id = stm.created_by','left');
-        $this->db->where('DATE(stm.transfer_date) >=',$from);
-        $this->db->where('DATE(stm.transfer_date) <=', $to);
+        $this->db->join(
+            'unit_master um',
+            'um.unit_id = sti.unit_id',
+            'left'
+        );
+
+        $this->db->join(
+            'branch_master fb',
+            'fb.branch_id = stm.from_branch_id',
+            'left'
+        );
+
+        $this->db->join(
+            'branch_master tb',
+            'tb.branch_id = stm.to_branch_id',
+            'left'
+        );
+
+        $this->db->join(
+            'warehouse_master fw',
+            'fw.warehouse_id = stm.from_warehouse_id',
+            'left'
+        );
+
+        $this->db->join(
+            'warehouse_master tw',
+            'tw.warehouse_id = stm.to_warehouse_id',
+            'left'
+        );
+
+        $this->db->join(
+            'store_master fs',
+            'fs.store_id = stm.from_store_id',
+            'left'
+        );
+
+        $this->db->join(
+            'store_master ts',
+            'ts.store_id = stm.to_store_id',
+            'left'
+        );
+
+        $this->db->join(
+            'users u',
+            'u.user_id = stm.created_by',
+            'left'
+        );
+
+        /*
+     * Date filter
+     */
+        if (!empty($from)) {
+
+            $this->db->where(
+                'stm.transfer_date >=',
+                $from
+            );
+        }
+
+        if (!empty($to)) {
+
+            $this->db->where(
+                'stm.transfer_date <=',
+                $to
+            );
+        }
+
+        /*
+     * Source filters
+     */
+        if (!empty($from_branch_id)) {
+
+            $this->db->where(
+                'stm.from_branch_id',
+                $from_branch_id
+            );
+        }
 
         if (!empty($from_warehouse_id)) {
-            $this->db->where('stm.from_warehouse_id', $from_warehouse_id);
+
+            $this->db->where(
+                'stm.from_warehouse_id',
+                $from_warehouse_id
+            );
         }
 
         if (!empty($from_store_id)) {
-            $this->db->where('stm.from_store_id',$from_store_id);
+
+            $this->db->where(
+                'stm.from_store_id',
+                $from_store_id
+            );
+        }
+
+        /*
+     * Destination filters
+     */
+        if (!empty($to_branch_id)) {
+
+            $this->db->where(
+                'stm.to_branch_id',
+                $to_branch_id
+            );
         }
 
         if (!empty($to_warehouse_id)) {
-            $this->db->where('stm.to_warehouse_id', $to_warehouse_id);
+
+            $this->db->where(
+                'stm.to_warehouse_id',
+                $to_warehouse_id
+            );
         }
 
         if (!empty($to_store_id)) {
-            $this->db->where('stm.to_store_id',$to_store_id);
+
+            $this->db->where(
+                'stm.to_store_id',
+                $to_store_id
+            );
         }
 
+        /*
+     * Product
+     */
         if (!empty($product_id)) {
-            $this->db->where('sti.product_id',$product_id);
+
+            $this->db->where(
+                'sti.product_id',
+                $product_id
+            );
         }
 
+        /*
+     * Status
+     */
         if (!empty($status)) {
-            $this->db->where('stm.status', $status);
+
+            $this->db->where(
+                'stm.status',
+                $status
+            );
         }
 
-        $this->db->order_by('stm.transfer_date','DESC');
-        $this->db->order_by('stm.transfer_id','DESC');
-        $this->db->order_by('sti.transfer_id','ASC');
+        $this->db->order_by(
+            'stm.transfer_date',
+            'DESC'
+        );
+
+        $this->db->order_by(
+            'stm.transfer_id',
+            'DESC'
+        );
+
+        $this->db->order_by(
+            'sti.item_id',
+            'ASC'
+        );
+
         return $this->db->get()->result();
     }
 }

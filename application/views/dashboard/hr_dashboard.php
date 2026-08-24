@@ -95,6 +95,78 @@
         font-size: 22px;
         margin-bottom: 8px;
     }
+
+    .kpi-employees {
+        border-top-color: #337ab7;
+    }
+
+    .kpi-employees h2,
+    .kpi-employees .hr-kpi-icon {
+        color: #337ab7;
+    }
+
+    .kpi-employees {
+        border-top-color: #337ab7;
+    }
+
+    .kpi-employees h2,
+    .kpi-employees .hr-kpi-icon {
+        color: #337ab7;
+    }
+
+    .kpi-leave {
+        border-top-color: #f0ad4e;
+    }
+
+    .kpi-leave h2,
+    .kpi-leave .hr-kpi-icon {
+        color: #f0ad4e;
+    }
+
+    .kpi-payroll {
+        border-top-color: #7952b3;
+    }
+
+    .kpi-payroll h2,
+    .kpi-payroll .hr-kpi-icon {
+        color: #7952b3;
+    }
+
+    .kpi-new-hires {
+        border-top-color: #20a39e;
+    }
+
+    .kpi-new-hires h2,
+    .kpi-new-hires .hr-kpi-icon {
+        color: #20a39e;
+    }
+
+    .kpi-resignations {
+        border-top-color: #dc3545;
+    }
+
+    .kpi-resignations h2,
+    .kpi-resignations .hr-kpi-icon {
+        color: #dc3545;
+    }
+
+    .kpi-pending-leave {
+        border-top-color: #f0ad4e;
+    }
+
+    .kpi-pending-leave h2,
+    .kpi-pending-leave .hr-kpi-icon {
+        color: #f0ad4e;
+    }
+
+    .kpi-payroll-pending {
+        border-top-color: #dc3545;
+    }
+
+    .kpi-payroll-pending h2,
+    .kpi-payroll-pending .hr-kpi-icon {
+        color: #dc3545;
+    }
 </style>
 
 
@@ -107,10 +179,10 @@
     <div class="row">
 
         <div class="col-lg-3 col-md-6">
-            <a href="<?= site_url('Users/view_employee_list'); ?>"
+            <a href="<?= site_url('Company/list_employee'); ?>"
                 style="text-decoration:none;color:inherit;">
 
-                <div class="hr-kpi">
+                <div class="hr-kpi kpi-employees">
 
                     <i class="fa fa-users hr-kpi-icon"></i>
 
@@ -969,6 +1041,11 @@
                                 data: attendanceData.map(
                                     x => x.present
                                 ),
+                                borderColor: '#28a745',
+                                backgroundColor: 'rgba(40,167,69,0.12)',
+                                pointBackgroundColor: '#28a745',
+                                borderWidth: 2,
+                                fill: false,
                                 tension: 0.3
                             },
 
@@ -977,6 +1054,11 @@
                                 data: attendanceData.map(
                                     x => x.absent
                                 ),
+                                borderColor: '#dc3545',
+                                backgroundColor: 'rgba(220,53,69,0.12)',
+                                pointBackgroundColor: '#dc3545',
+                                borderWidth: 2,
+                                fill: false,
                                 tension: 0.3
                             },
 
@@ -985,6 +1067,11 @@
                                 data: attendanceData.map(
                                     x => x.leave_count
                                 ),
+                                borderColor: '#f0ad4e',
+                                backgroundColor: 'rgba(240,173,78,0.12)',
+                                pointBackgroundColor: '#f0ad4e',
+                                borderWidth: 2,
+                                fill: false,
                                 tension: 0.3
                             }
 
@@ -994,7 +1081,21 @@
 
                     options: {
                         responsive: true,
-                        maintainAspectRatio: false
+                        maintainAspectRatio: false,
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                fontSize: 12,
+                                padding: 15
+                            }
+                        },
+                        scales: {
+                            yAxes: [{
+                                ticks: {
+                                    beginAtZero: true
+                                }
+                            }]
+                        }
                     }
 
                 }
@@ -1015,40 +1116,51 @@
                     type: 'bar',
 
                     data: {
-
                         labels: [
                             'Jan', 'Feb', 'Mar', 'Apr',
                             'May', 'Jun', 'Jul', 'Aug',
                             'Sep', 'Oct', 'Nov', 'Dec'
                         ],
 
-                        datasets: [
-
-                            {
+                        datasets: [{
                                 label: 'New Hires',
-
                                 data: movement.map(
                                     x => x.new_hires
-                                )
+                                ),
+                                backgroundColor: 'rgba(51, 122, 183, 0.75)',
+                                borderColor: '#337ab7',
+                                borderWidth: 1
                             },
-
                             {
                                 label: 'Resignations',
-
                                 data: movement.map(
                                     x => x.resignations
-                                )
+                                ),
+                                backgroundColor: 'rgba(220, 53, 69, 0.75)',
+                                borderColor: '#dc3545',
+                                borderWidth: 1
                             }
-
                         ]
-
                     },
 
                     options: {
                         responsive: true,
-                        maintainAspectRatio: false
+                        maintainAspectRatio: false,
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                fontSize: 12,
+                                padding: 15
+                            }
+                        },
+                        scales: {
+                            yAxes: [{
+                                ticks: {
+                                    beginAtZero: true
+                                }
+                            }]
+                        }
                     }
-
                 }
             );
 
@@ -1075,15 +1187,41 @@
                         datasets: [{
                             data: leaveData.map(
                                 x => x.total
-                            )
+                            ),
+
+                            backgroundColor: [
+                                '#337ab7',
+                                '#28a745',
+                                '#f0ad4e',
+                                '#7952b3',
+                                '#20a39e',
+                                '#dc3545'
+                            ],
+
+                            borderColor: '#ffffff',
+                            borderWidth: 2
                         }]
 
                     },
 
                     options: {
-                        responsive: true
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                fontSize: 12,
+                                padding: 15
+                            }
+                        },
+                        scales: {
+                            yAxes: [{
+                                ticks: {
+                                    beginAtZero: true
+                                }
+                            }]
+                        }
                     }
-
                 }
             );
 
@@ -1107,27 +1245,39 @@
                             x => x.month
                         ),
 
-                        datasets: [
-
-                            {
-                                label: 'Gross Payroll',
-
-                                data: payroll.map(
-                                    x => x.gross_salary
-                                ),
-
-                                tension: 0.3
-                            }
-
-                        ]
-
+                        datasets: [{
+                            label: 'Gross Payroll',
+                            data: payroll.map(
+                                x => x.gross_salary
+                            ),
+                            borderColor: '#7952b3',
+                            backgroundColor: 'rgba(121, 82, 179, 0.12)',
+                            pointBackgroundColor: '#7952b3',
+                            pointBorderColor: '#7952b3',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.3
+                        }]
                     },
 
                     options: {
                         responsive: true,
-                        maintainAspectRatio: false
+                        maintainAspectRatio: false,
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                fontSize: 12,
+                                padding: 15
+                            }
+                        },
+                        scales: {
+                            yAxes: [{
+                                ticks: {
+                                    beginAtZero: true
+                                }
+                            }]
+                        }
                     }
-
                 }
             );
 
