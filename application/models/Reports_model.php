@@ -838,7 +838,7 @@ class Reports_model extends CI_Model
     }
 
     ///////////////////// STOCK LEDGER REPORT /////////////////////
-    
+
     public function get_stock_ledger_report(
         $from_date = null,
         $to_date = null,
@@ -1209,5 +1209,406 @@ class Reports_model extends CI_Model
         ";
 
         return $this->db->query($sql)->result();
+    }
+
+    ///////////////////// STOCK RESERVATION REPORT /////////////////////
+
+    public function get_stock_reservation_report($from_date = null, $to_date = null, $product_id = '', $customer_id = '', $so_id = '', $status = '')
+    {
+
+        if (empty($from_date)) {
+            $from_date = date('Y-m-01');
+        }
+
+        if (empty($to_date)) {
+            $to_date = date('Y-m-d');
+        }
+
+        $from =
+            date(
+                'Y-m-d',
+                strtotime($from_date)
+            );
+
+        $to =
+            date(
+                'Y-m-d',
+                strtotime($to_date)
+            );
+
+
+        $this->db->select("
+            sd.stock_id,
+            sd.product_id,
+
+            im.product_code,
+            im.product_name,
+
+            um.unit_name,
+            um.unit_abbr,
+
+            sd.quantity AS requested_qty,
+            sd.reserved_quantity,
+            sd.pending_quantity,
+
+            sd.reserve_priority,
+            sd.allocation AS reserve_code,
+
+            som.so_id,
+            som.so_code,
+            som.reserved_date,
+            som.stock_status,
+
+            cm.customer_id,
+            cm.customer_code,
+            cm.customer_name,
+
+            bm.branch_name,
+
+            u.user_name AS reserved_by
+
+        ", false);
+
+        $this->db->from('stock_details sd');
+
+        // Product
+        $this->db->join(
+            'item_master im',
+            'im.product_id = sd.product_id',
+            'left'
+        );
+
+
+        // Unit
+        $this->db->join(
+            'unit_master um',
+            'um.unit_id = im.unit_id',
+            'left'
+        );
+
+
+        // Sales Order
+        $this->db->join(
+            'sales_order_master som',
+            'som.so_id = sd.allocation_id',
+            'left'
+        );
+
+
+        // Quotation
+        $this->db->join(
+            'quotation_master qm',
+            'qm.qtn_id = som.qtn_id',
+            'left'
+        );
+
+
+        // Enquiry
+        $this->db->join(
+            'enquiry_master em',
+            'em.enquiry_id = som.enquiry_id',
+            'left'
+        );
+
+
+        // Customer
+        $this->db->join(
+            'customer_master cm',
+            "
+        cm.customer_id =
+        COALESCE(
+            qm.quotation_customer,
+            em.enquiry_customer
+        )
+        ",
+            'left',
+            false
+        );
+
+
+        // Branch
+        $this->db->join(
+            'branch_master bm',
+            'bm.branch_id = cm.branch_id',
+            'left'
+        );
+
+
+        // User
+        $this->db->join(
+            'users u',
+            'u.user_id = sd.created_by',
+            'left'
+        );
+
+        $this->db->where(
+            'sd.stock_type',
+            'RESERVE'
+        );
+
+        $this->db->where(
+            'sd.status',
+            1
+        );
+
+        $this->db->where(
+            'DATE(COALESCE(som.reserved_date, sd.created_date)) >=',
+            $from
+        );
+
+        $this->db->where(
+            'DATE(COALESCE(som.reserved_date, sd.created_date)) <=',
+            $to
+        );
+
+        if (!empty($product_id)) {
+
+            $this->db->where(
+                'sd.product_id',
+                $product_id
+            );
+        }
+
+        if (!empty($customer_id)) {
+
+            $this->db->where(
+                "
+            COALESCE(
+                qm.quotation_customer,
+                em.enquiry_customer
+            )
+            = " . $this->db->escape($customer_id),
+                null,
+                false
+            );
+        }
+
+        if (!empty($so_id)) {
+
+            $this->db->where(
+                'som.so_id',
+                $so_id
+            );
+        }
+
+        if (!empty($status)) {
+
+            $this->db->where(
+                'som.stock_status',
+                $status
+            );
+        }
+
+
+        $this->db->order_by(
+            'sd.reserve_priority',
+            'ASC'
+        );
+
+        $this->db->order_by(
+            'som.reserved_date',
+            'ASC'
+        );
+
+        $this->db->order_by(
+            'som.so_id',
+            'ASC'
+        );
+
+        $this->db->order_by(
+            'im.product_name',
+            'ASC'
+        );
+
+
+        return $this->db
+            ->get()
+            ->result();
+    }
+
+
+    public function get_reservation_sales_order_list()
+    {
+        $this->db->select("
+        so_id,
+        so_code
+    ");
+
+        $this->db->from(
+            'sales_order_master'
+        );
+
+        $this->db->where(
+            'reserved_status',
+            1
+        );
+
+        $this->db->order_by(
+            'so_id',
+            'DESC'
+        );
+
+        return $this->db
+            ->get()
+            ->result();
+    }
+
+    ///////////////////// STOCK ADJUSTMENT REPORT /////////////////////
+
+    public function get_stock_adjustment_report($from_date = null, $to_date = null, $warehouse_id = '', $store_id = '', $product_id = '', $adjustment_type = '')
+    {
+        if (empty($from_date)) {
+            $from_date = date('Y-m-01');
+        }
+
+        if (empty($to_date)) {
+            $to_date = date('Y-m-d');
+        }
+
+        $from = date('Y-m-d', strtotime($from_date));
+        $to = date('Y-m-d', strtotime($to_date));
+
+
+        $this->db->select("
+            sa.sno AS adjustment_id,
+            sa.stock_code AS adjustment_code,
+            sa.stock_date,
+            sa.stock_type AS adjustment_type,
+
+            sa.warehouse_id,
+
+            sa.product_id,
+
+            sa.order_code,
+            sa.item_desc,
+            sa.size,
+            sa.model_code,
+            sa.remark AS adjustment_remark,
+
+            sa.created_by,
+            sa.created_date,
+
+            sa.status,
+            sa.approved_by,
+            sa.approved_date,
+
+            sd.stock_id,
+            sd.store_id,
+
+            sd.quantity,
+            sd.price,
+            sd.stock_value,
+
+            sd.item_remark,
+            sd.remark AS stock_remark,
+
+            im.product_code,
+            im.product_name,
+
+            wm.warehouse_name,
+            sm.store_name,
+
+            u.user_name AS created_user
+
+        ", false);
+
+
+        $this->db->from(
+            'stock_adjustment sa'
+        );
+
+        $this->db->join('stock_details sd', 'sd.adjustment_id = sa.sno', 'left');
+
+
+        $this->db->join(
+            'item_master im',
+            'im.product_id = sa.product_id',
+            'left'
+        );
+
+
+        $this->db->join(
+            'warehouse_master wm',
+            'wm.warehouse_id = sa.warehouse_id',
+            'left'
+        );
+
+        $this->db->join(
+            'store_master sm',
+            'sm.store_id = sd.store_id',
+            'left'
+        );
+
+        $this->db->join(
+            'users u',
+            'u.user_id = sa.created_by',
+            'left'
+        );
+
+        $this->db->where(
+            'DATE(sa.stock_date) >=',
+            $from
+        );
+
+        $this->db->where(
+            'DATE(sa.stock_date) <=',
+            $to
+        );
+
+        if (!empty($warehouse_id)) {
+
+            $this->db->where(
+                'sa.warehouse_id',
+                $warehouse_id
+            );
+        }
+
+        if (!empty($store_id)) {
+
+            $this->db->where(
+                'sd.store_id',
+                $store_id
+            );
+        }
+
+        if (!empty($product_id)) {
+
+            $this->db->where(
+                'sa.product_id',
+                $product_id
+            );
+        }
+
+        if (!empty($adjustment_type)) {
+
+            $this->db->where(
+                'sa.stock_type',
+                $adjustment_type
+            );
+        }
+
+
+        $this->db->where(
+            'sd.adjustment_id IS NOT NULL',
+            null,
+            false
+        );
+
+        $this->db->order_by(
+            'sa.stock_date',
+            'DESC'
+        );
+
+        $this->db->order_by(
+            'sa.sno',
+            'DESC'
+        );
+
+        $this->db->order_by(
+            'sd.stock_id',
+            'ASC'
+        );
+
+        return $this->db->get()->result();
     }
 }
