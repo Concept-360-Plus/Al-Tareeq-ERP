@@ -1871,7 +1871,7 @@ class Reports extends CI_Controller
     $this->load->view('Reports/Stock/Export/export_stock_valuation_report', $data);
   }
 
-  ///////////////////// STOCK RESERVATION REPORT /////////////////////
+  ///////////////////// STOCK RESERVATION REPORT START /////////////////////
 
   public function stock_reservation_report()
   {
@@ -1915,7 +1915,7 @@ class Reports extends CI_Controller
     $data['customer_records'] = $this->Setup_model->get_all_customer_list();
     $data['sales_orders'] = $this->Reports_model->get_reservation_sales_order_list();
 
-    $data['records'] = $this->Reports_model->get_stock_reservation_report($data['from'],$data['to'],$data['product_id'],$data['customer_id'],$data['so_id'],$data['status']);
+    $data['records'] = $this->Reports_model->get_stock_reservation_report($data['from'], $data['to'], $data['product_id'], $data['customer_id'], $data['so_id'], $data['status']);
 
     $data['main_content'] = 'Reports/Stock/stock_reservation_report.php';
     $this->load->view('includes/template.php', $data);
@@ -1931,7 +1931,7 @@ class Reports extends CI_Controller
     $so_id = $this->input->get('so_id');
     $status = $this->input->get('status');
 
-    $data['title'] ='Stock Reservation Report';
+    $data['title'] = 'Stock Reservation Report';
     $data['from'] = $from_date;
     $data['to'] = $to_date;
     $data['product_id'] = $product_id;
@@ -1939,7 +1939,7 @@ class Reports extends CI_Controller
     $data['so_id'] = $so_id;
     $data['status'] = $status;
 
-    $data['records'] = $this->Reports_model->get_stock_reservation_report($from_date,$to_date,$product_id,$customer_id,$so_id,$status);
+    $data['records'] = $this->Reports_model->get_stock_reservation_report($from_date, $to_date, $product_id, $customer_id, $so_id, $status);
 
     $this->load->model('Setup_model');
     $data['company_name'] = '';
@@ -1964,8 +1964,7 @@ class Reports extends CI_Controller
 
     $data['headerPath'] = '';
 
-    if (!empty($branch) && !empty($branch->branch_header)) 
-    {
+    if (!empty($branch) && !empty($branch->branch_header)) {
       $data['headerPath'] = base_url(ltrim($branch->branch_header, '/'));
     }
 
@@ -1974,7 +1973,7 @@ class Reports extends CI_Controller
       $data['prepared_by'] = 'Admin';
     }
 
-    $data['product_name'] ='All Products';
+    $data['product_name'] = 'All Products';
 
     if (!empty($product_id)) {
       $product = $this->db->where('product_id', $product_id)->get('item_master')->row();
@@ -1983,7 +1982,7 @@ class Reports extends CI_Controller
       }
     }
 
-    $data['customer_name'] ='All Customers';
+    $data['customer_name'] = 'All Customers';
     if (!empty($customer_id)) {
       $customer = $this->db->where('customer_id', $customer_id)->get('customer_master')->row();
       if (!empty($customer)) {
@@ -1991,7 +1990,7 @@ class Reports extends CI_Controller
       }
     }
 
-    $data['sales_order_name'] ='All Sales Orders';
+    $data['sales_order_name'] = 'All Sales Orders';
     if (!empty($so_id)) {
       $so = $this->db->where('so_id', $so_id)->get('sales_order_master')->row();
       if (!empty($so)) {
@@ -2005,27 +2004,178 @@ class Reports extends CI_Controller
 
   public function export_stock_reservation_excel()
   {
+    $from_date = $this->input->get('from_date');
+    $to_date = $this->input->get('to_date');
+    $product_id = $this->input->get('product_id');
+    $customer_id = $this->input->get('customer_id');
+    $so_id = $this->input->get('so_id');
+    $status = $this->input->get('status');
+
+
+    $data['title'] ='Stock Reservation Report';
+    $data['from'] = $from_date;
+    $data['to'] = $to_date;
+    $data['product_id'] = $product_id;
+    $data['customer_id'] = $customer_id;
+    $data['so_id'] = $so_id;
+    $data['status'] = $status;
+
+    $this->load->model('Setup_model');
+    $data['company_name'] = '';
+    $company = $this->Setup_model->get_company_details();
+
+    if (!empty($company)) {
+      if (is_array($company)) {
+        $company = $company[0];
+      }
+
+      if (is_object($company)) {
+        $data['company_name'] = $company->company_name ?? '';
+      }
+    }
+
+
+    // Branch
+    $branch_id = 1;
+    $branch = $this->Setup_model->get_branch_by_id($branch_id);
+
+    $data['branch_name'] = '';
+    if (!empty($branch)) {
+      $data['branch_name'] = $branch->branch_name ?? '';
+    }
+
+
+    $data['product_name'] = 'All Products';
+    if (!empty($product_id)) {
+      $product = $this->db->where('product_id', $product_id)->get('item_master')->row();
+      if (!empty($product)) {
+        $data['product_name'] = $product->product_name;
+      }
+    }
+
+    $data['customer_name'] = 'All Customers';
+    if (!empty($customer_id)) {
+      $customer = $this->db->where('customer_id', $customer_id)->get('customer_master')->row();
+      if (!empty($customer)) {
+        $data['customer_name'] = $customer->customer_name;
+      }
+    }
+
+    $data['sales_order_name'] = 'All Sales Orders';
+    if (!empty($so_id)) {
+      $so = $this->db->where('so_id', $so_id)->get('sales_order_master')->row();
+      if (!empty($so)) {
+        $data['sales_order_name'] = $so->so_code;
+      }
+    }
+
+    $data['prepared_by'] = $this->session->userdata('user_name');
+    if (empty($data['prepared_by'])) {
+      $data['prepared_by'] = 'Admin';
+    }
+
+    $data['records'] = $this->Reports_model->get_stock_reservation_report($from_date, $to_date, $product_id, $customer_id, $so_id, $status);
+
+    $filename = 'Stock_Reservation_Report_' . date('Y-m-d') . '.xls';
+    header('Content-Type: application/vnd.ms-excel');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+
+    $this->load->view('Reports/Stock/Export/export_stock_reservation_report', $data);
+  }
+
+  ///////////////////// STOCK RESERVATION REPORT END /////////////////////
+
+  ///////////////////// STOCK ADJUSTMENT REPORT START /////////////////////
+
+  public function stock_adjustment_report()
+  {
+    $data['title'] = 'Stock Adjustment Report';
+
+    $data['from'] = date('Y-m-01');
+    $data['to']   = date('Y-m-d');
+
+    $data['warehouse_id'] = '';
+    $data['store_id']     = '';
+    $data['product_id']   = '';
+    $data['adjustment_type'] = '';
+
+    // Product list
+    $this->load->model('Stock_model');
+
+    $data['products'] =
+      $this->Stock_model->get_stock_code_list();
+
+    // Warehouse list
+    $this->load->model('Setup_model');
+
+    $data['warehouse_records'] =
+      $this->Setup_model->get_warehouse_list();
+
+    // Empty records initially
+    $data['records'] = array();
+
+    $data['main_content'] =
+      'Reports/Stock/stock_adjustment_report.php';
+
+    $this->load->view(
+      'includes/template.php',
+      $data
+    );
+  }
+
+
+  public function get_stock_adjustment_report()
+  {
+    $data['title'] = 'Stock Adjustment Report';
+    $data['from'] = $this->input->post('from_date');
+    $data['to'] = $this->input->post('to_date');
+    $data['warehouse_id'] = $this->input->post('warehouse_id');
+    $data['store_id'] = $this->input->post('store_id');
+    $data['product_id'] = $this->input->post('product_id');
+    $data['adjustment_type'] = $this->input->post('adjustment_type');
+
+    // Product list
+    $this->load->model('Stock_model');
+    $data['products'] = $this->Stock_model->get_stock_code_list();
+
+    // Warehouse list
+    $this->load->model('Setup_model');
+    $data['warehouse_records'] = $this->Setup_model->get_warehouse_list();
+
+    // Report records
+    $data['records'] = $this->Reports_model->get_stock_adjustment_report($data['from'], $data['to'], $data['warehouse_id'], $data['store_id'], $data['product_id'], $data['adjustment_type']);
+
+    $data['main_content'] = 'Reports/Stock/stock_adjustment_report.php';
+
+    $this->load->view('includes/template.php', $data);
+  }
+
+
+  public function print_stock_adjustment_report()
+  {
     $from_date =
       $this->input->get('from_date');
 
     $to_date =
       $this->input->get('to_date');
 
+    $warehouse_id =
+      $this->input->get('warehouse_id');
+
+    $store_id =
+      $this->input->get('store_id');
+
     $product_id =
       $this->input->get('product_id');
 
-    $customer_id =
-      $this->input->get('customer_id');
-
-    $so_id =
-      $this->input->get('so_id');
-
-    $status =
-      $this->input->get('status');
+    $adjustment_type =
+      $this->input->get('adjustment_type');
 
 
     $data['title'] =
-      'Stock Reservation Report';
+      'Stock Adjustment Report';
 
     $data['from'] =
       $from_date;
@@ -2033,17 +2183,227 @@ class Reports extends CI_Controller
     $data['to'] =
       $to_date;
 
+    $data['warehouse_id'] =
+      $warehouse_id;
+
+    $data['store_id'] =
+      $store_id;
+
     $data['product_id'] =
       $product_id;
 
-    $data['customer_id'] =
-      $customer_id;
+    $data['adjustment_type'] =
+      $adjustment_type;
 
-    $data['so_id'] =
-      $so_id;
 
-    $data['status'] =
-      $status;
+    // Get records
+    $data['records'] =
+      $this->Reports_model->get_stock_adjustment_report(
+        $from_date,
+        $to_date,
+        $warehouse_id,
+        $store_id,
+        $product_id,
+        $adjustment_type
+      );
+
+
+    // Company
+    $this->load->model('Setup_model');
+
+    $data['company_name'] = '';
+
+    $company = $this->Setup_model->get_company_details();
+
+    if (!empty($company)) {
+      if (is_array($company)) {
+        $company = $company[0];
+      }
+
+      if (is_object($company)) {
+        $data['company_name'] = $company->company_name ?? '';
+      }
+    }
+
+
+    // Branch
+    $branch_id = 1;
+
+    $branch =
+      $this->Setup_model->get_branch_by_id(
+        $branch_id
+      );
+
+    $data['branch_name'] = '';
+
+    if (!empty($branch)) {
+
+      $data['branch_name'] =
+        $branch->branch_name ?? '';
+    }
+
+
+    // Header
+    $data['headerPath'] = '';
+
+    if (
+      !empty($branch) &&
+      !empty($branch->branch_header)
+    ) {
+
+      $data['headerPath'] =
+        base_url(
+          ltrim(
+            $branch->branch_header,
+            '/'
+          )
+        );
+    }
+
+
+    // Warehouse name
+    $data['warehouse_name'] =
+      'All Warehouses';
+
+    if (!empty($warehouse_id)) {
+
+      $warehouse =
+        $this->db
+        ->where(
+          'warehouse_id',
+          $warehouse_id
+        )
+        ->get('warehouse_master')
+        ->row();
+
+      if (!empty($warehouse)) {
+
+        $data['warehouse_name'] =
+          $warehouse->warehouse_name;
+      }
+    }
+
+
+    // Store name
+    $data['store_name'] =
+      'All Stores';
+
+    if (!empty($store_id)) {
+
+      $store =
+        $this->db
+        ->where(
+          'store_id',
+          $store_id
+        )
+        ->get('store_master')
+        ->row();
+
+      if (!empty($store)) {
+
+        $data['store_name'] =
+          $store->store_name;
+      }
+    }
+
+
+    // Product name
+    $data['product_name'] =
+      'All Products';
+
+    if (!empty($product_id)) {
+
+      $product =
+        $this->db
+        ->where(
+          'product_id',
+          $product_id
+        )
+        ->get('item_master')
+        ->row();
+
+      if (!empty($product)) {
+
+        $data['product_name'] =
+          $product->product_name;
+      }
+    }
+
+
+    // Prepared by
+    $data['prepared_by'] =
+      $this->session->userdata('user_name');
+
+    if (empty($data['prepared_by'])) {
+
+      $data['prepared_by'] =
+        'Admin';
+    }
+
+
+    // Adjustment type name
+    $data['adjustment_type_name'] =
+      'All';
+
+    if ($adjustment_type == 'IN') {
+
+      $data['adjustment_type_name'] =
+        'Increase';
+    } elseif ($adjustment_type == 'OUT') {
+
+      $data['adjustment_type_name'] =
+        'Decrease';
+    }
+
+
+    $this->load->view(
+      'Reports/Stock/Print/print_stock_adjustment_report',
+      $data
+    );
+  }
+
+
+  public function export_stock_adjustment_excel()
+  {
+    $from_date =
+      $this->input->get('from_date');
+
+    $to_date =
+      $this->input->get('to_date');
+
+    $warehouse_id =
+      $this->input->get('warehouse_id');
+
+    $store_id =
+      $this->input->get('store_id');
+
+    $product_id =
+      $this->input->get('product_id');
+
+    $adjustment_type =
+      $this->input->get('adjustment_type');
+
+
+    $data['title'] =
+      'Stock Adjustment Report';
+
+    $data['from'] =
+      $from_date;
+
+    $data['to'] =
+      $to_date;
+
+    $data['warehouse_id'] =
+      $warehouse_id;
+
+    $data['store_id'] =
+      $store_id;
+
+    $data['product_id'] =
+      $product_id;
+
+    $data['adjustment_type'] =
+      $adjustment_type;
 
 
     // Company
@@ -2052,8 +2412,7 @@ class Reports extends CI_Controller
     $data['company_name'] = '';
 
     $company =
-      $this->Setup_model
-      ->get_company_details();
+      $this->Setup_model->get_company_details();
 
     if (!empty($company)) {
 
@@ -2073,8 +2432,9 @@ class Reports extends CI_Controller
     $branch_id = 1;
 
     $branch =
-      $this->Setup_model
-      ->get_branch_by_id($branch_id);
+      $this->Setup_model->get_branch_by_id(
+        $branch_id
+      );
 
     $data['branch_name'] = '';
 
@@ -2085,51 +2445,143 @@ class Reports extends CI_Controller
     }
 
 
-    $data['product_name'] = 'All Products';
+    // Warehouse
+    $data['warehouse_name'] =
+      'All Warehouses';
+
+    if (!empty($warehouse_id)) {
+
+      $warehouse =
+        $this->db
+        ->where(
+          'warehouse_id',
+          $warehouse_id
+        )
+        ->get('warehouse_master')
+        ->row();
+
+      if (!empty($warehouse)) {
+
+        $data['warehouse_name'] =
+          $warehouse->warehouse_name;
+      }
+    }
+
+
+    // Store
+    $data['store_name'] =
+      'All Stores';
+
+    if (!empty($store_id)) {
+
+      $store =
+        $this->db
+        ->where(
+          'store_id',
+          $store_id
+        )
+        ->get('store_master')
+        ->row();
+
+      if (!empty($store)) {
+
+        $data['store_name'] =
+          $store->store_name;
+      }
+    }
+
+
+    // Product
+    $data['product_name'] =
+      'All Products';
+
     if (!empty($product_id)) {
-      $product = $this->db
+
+      $product =
+        $this->db
         ->where(
           'product_id',
           $product_id
         )
         ->get('item_master')
         ->row();
+
       if (!empty($product)) {
-        $data['product_name'] = $product->product_name;
+
+        $data['product_name'] =
+          $product->product_name;
       }
     }
 
-    $data['customer_name'] = 'All Customers';
-    if (!empty($customer_id)) {
-      $customer = $this->db->where('customer_id', $customer_id)->get('customer_master')->row();
-      if (!empty($customer)) {
-        $data['customer_name'] = $customer->customer_name;
-      }
+
+    // Adjustment Type
+    $data['adjustment_type_name'] =
+      'All';
+
+    if ($adjustment_type == 'IN') {
+
+      $data['adjustment_type_name'] =
+        'Increase';
+    } elseif ($adjustment_type == 'OUT') {
+
+      $data['adjustment_type_name'] =
+        'Decrease';
     }
 
-    $data['sales_order_name'] ='All Sales Orders';
-    if (!empty($so_id)) {
-      $so = $this->db->where('so_id', $so_id)->get('sales_order_master')->row();
-      if (!empty($so)) {
-        $data['sales_order_name'] = $so->so_code;
-      }
-    }
 
-    $data['prepared_by'] = $this->session->userdata('user_name');
+    // Prepared By
+    $data['prepared_by'] =
+      $this->session->userdata('user_name');
+
     if (empty($data['prepared_by'])) {
-      $data['prepared_by'] = 'Admin';
+
+      $data['prepared_by'] =
+        'Admin';
     }
 
-    $data['records'] = $this->Reports_model->get_stock_reservation_report($from_date, $to_date, $product_id, $customer_id, $so_id, $status);
 
-    $filename ='Stock_Reservation_Report_' . date('Y-m-d') . '.xls';
-    header('Content-Type: application/vnd.ms-excel');
-    header('Content-Disposition: attachment; filename="' . $filename . '"');
-    header('Pragma: no-cache');
-    header('Expires: 0');
+    // Records
+    $data['records'] =
+      $this->Reports_model->get_stock_adjustment_report(
+        $from_date,
+        $to_date,
+        $warehouse_id,
+        $store_id,
+        $product_id,
+        $adjustment_type
+      );
 
-    $this->load->view('Reports/Stock/Export/export_stock_reservation_report', $data);
+
+    $filename =
+      'Stock_Adjustment_Report_' .
+      date('Y-m-d') .
+      '.xls';
+
+
+    header(
+      'Content-Type: application/vnd.ms-excel'
+    );
+
+    header(
+      'Content-Disposition: attachment; filename="' .
+        $filename .
+        '"'
+    );
+
+    header(
+      'Pragma: no-cache'
+    );
+
+    header(
+      'Expires: 0'
+    );
+
+
+    $this->load->view(
+      'Reports/Stock/Export/export_stock_adjustment_report',
+      $data
+    );
   }
 
-  ///////////////////// STOCK RESERVATION REPORT END /////////////////////
+  ///////////////////// STOCK ADJUSTMENT REPORT END /////////////////////
 }

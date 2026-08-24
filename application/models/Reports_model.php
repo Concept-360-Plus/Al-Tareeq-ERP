@@ -1452,4 +1452,163 @@ class Reports_model extends CI_Model
             ->get()
             ->result();
     }
+
+    ///////////////////// STOCK ADJUSTMENT REPORT /////////////////////
+
+    public function get_stock_adjustment_report($from_date = null, $to_date = null, $warehouse_id = '', $store_id = '', $product_id = '', $adjustment_type = '')
+    {
+        if (empty($from_date)) {
+            $from_date = date('Y-m-01');
+        }
+
+        if (empty($to_date)) {
+            $to_date = date('Y-m-d');
+        }
+
+        $from = date('Y-m-d', strtotime($from_date));
+        $to = date('Y-m-d', strtotime($to_date));
+
+
+        $this->db->select("
+            sa.sno AS adjustment_id,
+            sa.stock_code AS adjustment_code,
+            sa.stock_date,
+            sa.stock_type AS adjustment_type,
+
+            sa.warehouse_id,
+
+            sa.product_id,
+
+            sa.order_code,
+            sa.item_desc,
+            sa.size,
+            sa.model_code,
+            sa.remark AS adjustment_remark,
+
+            sa.created_by,
+            sa.created_date,
+
+            sa.status,
+            sa.approved_by,
+            sa.approved_date,
+
+            sd.stock_id,
+            sd.store_id,
+
+            sd.quantity,
+            sd.price,
+            sd.stock_value,
+
+            sd.item_remark,
+            sd.remark AS stock_remark,
+
+            im.product_code,
+            im.product_name,
+
+            wm.warehouse_name,
+            sm.store_name,
+
+            u.user_name AS created_user
+
+        ", false);
+
+
+        $this->db->from(
+            'stock_adjustment sa'
+        );
+
+        $this->db->join('stock_details sd', 'sd.adjustment_id = sa.sno', 'left');
+
+
+        $this->db->join(
+            'item_master im',
+            'im.product_id = sa.product_id',
+            'left'
+        );
+
+
+        $this->db->join(
+            'warehouse_master wm',
+            'wm.warehouse_id = sa.warehouse_id',
+            'left'
+        );
+
+        $this->db->join(
+            'store_master sm',
+            'sm.store_id = sd.store_id',
+            'left'
+        );
+
+        $this->db->join(
+            'users u',
+            'u.user_id = sa.created_by',
+            'left'
+        );
+
+        $this->db->where(
+            'DATE(sa.stock_date) >=',
+            $from
+        );
+
+        $this->db->where(
+            'DATE(sa.stock_date) <=',
+            $to
+        );
+
+        if (!empty($warehouse_id)) {
+
+            $this->db->where(
+                'sa.warehouse_id',
+                $warehouse_id
+            );
+        }
+
+        if (!empty($store_id)) {
+
+            $this->db->where(
+                'sd.store_id',
+                $store_id
+            );
+        }
+
+        if (!empty($product_id)) {
+
+            $this->db->where(
+                'sa.product_id',
+                $product_id
+            );
+        }
+
+        if (!empty($adjustment_type)) {
+
+            $this->db->where(
+                'sa.stock_type',
+                $adjustment_type
+            );
+        }
+
+
+        $this->db->where(
+            'sd.adjustment_id IS NOT NULL',
+            null,
+            false
+        );
+
+        $this->db->order_by(
+            'sa.stock_date',
+            'DESC'
+        );
+
+        $this->db->order_by(
+            'sa.sno',
+            'DESC'
+        );
+
+        $this->db->order_by(
+            'sd.stock_id',
+            'ASC'
+        );
+
+        return $this->db->get()->result();
+    }
 }
