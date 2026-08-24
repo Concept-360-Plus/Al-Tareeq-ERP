@@ -799,8 +799,52 @@
         return false;
     }
 
-
     $(document).ready(function() {
         $('.select2').select2();
+    });
+
+    $(document).ready(function() {
+        $('#warehouse_id').change(function() {
+            var warehouse_id = $(this).val();
+            $('#store_id').html(
+                '<option value="">Loading...</option>'
+            );
+
+            $.ajax({
+                url: "<?= base_url('index.php/Ajax/get_store_by_warehouse'); ?>",
+                type: "POST",
+                data: {
+                    warehouse_id: warehouse_id
+                },
+                dataType: "json",
+                success: function(result) {
+                    var selectedStore = "<?= isset($store_id) ? $store_id : ''; ?>";
+                    var html = '<option value="">All Stores</option>';
+                    $.each(
+                        result,
+                        function(i, row) {
+                            var selected = (row.store_id == selectedStore) ? 'selected' : '';
+                            html += '<option value="' + row.store_id + '" ' + selected +
+                                '>' +
+                                row.store_name +
+                                '</option>';
+                        }
+                    );
+
+                    $('#store_id').html(html);
+                    $('#store_id').trigger('change.select2');
+
+                },
+                error: function() {
+                    $('#store_id').html(
+                        '<option value="">All Stores</option>'
+                    );
+                }
+            });
+        });
+
+        if ($('#warehouse_id').val() != '') {
+            $('#warehouse_id').trigger('change');
+        }
     });
 </script>

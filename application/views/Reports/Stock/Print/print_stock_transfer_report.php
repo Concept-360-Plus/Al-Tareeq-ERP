@@ -7,12 +7,15 @@
     <meta charset="utf-8">
 
     <title>
-        <?php echo html_escape($title); ?>
+        <?php echo html_escape($title ?? 'Stock Transfer Report'); ?>
     </title>
 
     <style>
         body {
-            font-family: Arial, Helvetica, sans-serif;
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
             font-size: 11px;
             margin: 20px;
             color: #000;
@@ -104,7 +107,6 @@
         }
 
         @media print {
-
             body {
                 margin: 10mm;
             }
@@ -139,7 +141,12 @@
 <body>
 
 
+    <!-- =========================
+         HEADER
+    ========================== -->
+
     <div class="header">
+
 
         <?php if (!empty($headerPath)) { ?>
 
@@ -154,7 +161,13 @@
         <?php if (!empty($company_name)) { ?>
 
             <div class="company-name">
-                <?php echo html_escape($company_name); ?>
+
+                <?php
+                echo html_escape(
+                    $company_name
+                );
+                ?>
+
             </div>
 
         <?php } ?>
@@ -163,48 +176,91 @@
         <?php if (!empty($branch_name)) { ?>
 
             <div class="branch-name">
-                <?php echo html_escape($branch_name); ?>
+
+                <?php
+                echo html_escape(
+                    $branch_name
+                );
+                ?>
+
             </div>
 
         <?php } ?>
 
 
         <div class="report-title">
-            Stock Adjustment Report
+
+            Stock Transfer Report
+
         </div>
+
 
     </div>
 
 
+    <!-- =========================
+         FILTERS
+    ========================== -->
+
     <table class="filter-table">
 
+
         <tr>
 
             <td>
-                <strong>From Date:</strong>
+
+                <strong>
+                    From Date:
+                </strong>
+
                 <?php
+
                 echo !empty($from)
-                    ? date('d-m-Y', strtotime($from))
+                    ? date(
+                        'd-m-Y',
+                        strtotime($from)
+                    )
                     : '-';
+
                 ?>
+
             </td>
 
+
             <td>
-                <strong>To Date:</strong>
+
+                <strong>
+                    To Date:
+                </strong>
+
                 <?php
+
                 echo !empty($to)
-                    ? date('d-m-Y', strtotime($to))
+                    ? date(
+                        'd-m-Y',
+                        strtotime($to)
+                    )
                     : '-';
+
                 ?>
+
             </td>
 
+
             <td>
-                <strong>Adjustment Type:</strong>
+
+                <strong>
+                    Status:
+                </strong>
+
                 <?php
+
                 echo html_escape(
-                    $adjustment_type_name ?? 'All'
+                    $status_name ?? 'All'
                 );
+
                 ?>
+
             </td>
 
         </tr>
@@ -213,56 +269,174 @@
         <tr>
 
             <td>
-                <strong>Warehouse:</strong>
+
+                <strong>
+                    From Warehouse:
+                </strong>
+
                 <?php
+
                 echo html_escape(
-                    $warehouse_name ?? 'All Warehouses'
+                    $from_warehouse_name
+                        ?? 'All Warehouses'
                 );
+
                 ?>
+
             </td>
 
-            <td>
-                <strong>Store:</strong>
-                <?php
-                echo html_escape(
-                    $store_name ?? 'All Stores'
-                );
-                ?>
-            </td>
 
             <td>
-                <strong>Product:</strong>
+
+                <strong>
+                    From Store:
+                </strong>
+
                 <?php
+
                 echo html_escape(
-                    $product_name ?? 'All Products'
+                    $from_store_name
+                        ?? 'All Stores'
                 );
+
                 ?>
+
+            </td>
+
+
+            <td>
+
+                <strong>
+                    Product:
+                </strong>
+
+                <?php
+
+                echo html_escape(
+                    $product_name
+                        ?? 'All Products'
+                );
+
+                ?>
+
             </td>
 
         </tr>
+
+
+        <tr>
+
+            <td>
+
+                <strong>
+                    To Warehouse:
+                </strong>
+
+                <?php
+
+                echo html_escape(
+                    $to_warehouse_name
+                        ?? 'All Warehouses'
+                );
+
+                ?>
+
+            </td>
+
+
+            <td colspan="2">
+
+                <strong>
+                    To Store:
+                </strong>
+
+                <?php
+
+                echo html_escape(
+                    $to_store_name
+                        ?? 'All Stores'
+                );
+
+                ?>
+
+            </td>
+
+        </tr>
+
 
     </table>
 
 
+    <!-- =========================
+         REPORT
+    ========================== -->
+
     <table class="report-table">
+
 
         <thead>
 
             <tr>
 
-                <th>Sl No</th>
-                <th>Adjustment No</th>
-                <th>Date</th>
-                <th>Type</th>
-                <th>Stock Code</th>
-                <th>Product Name</th>
-                <th>Warehouse</th>
-                <th>Store</th>
-                <th>Qty</th>
-                <th>Unit Price</th>
-                <th>Value</th>
-                <th>Created By</th>
-                <th>Remarks</th>
+                <th>
+                    Sl No
+                </th>
+
+                <th>
+                    Transfer No
+                </th>
+
+                <th>
+                    Date
+                </th>
+
+                <th>
+                    From Warehouse
+                </th>
+
+                <th>
+                    From Store
+                </th>
+
+                <th>
+                    To Warehouse
+                </th>
+
+                <th>
+                    To Store
+                </th>
+
+                <th>
+                    Stock Code
+                </th>
+
+                <th>
+                    Product Name
+                </th>
+
+                <th>
+                    Unit
+                </th>
+
+                <th>
+                    Available Qty
+                </th>
+
+                <th>
+                    Transfer Qty
+                </th>
+
+                <th>
+                    Status
+                </th>
+
+                <th>
+                    Created By
+                </th>
+
+                <th>
+                    Remarks
+                </th>
 
             </tr>
 
@@ -271,267 +445,430 @@
 
         <tbody>
 
+
             <?php
 
-            $total_quantity = 0;
-            $total_value = 0;
+            $total_transfer_qty = 0;
 
             ?>
 
 
             <?php if (!empty($records)) { ?>
 
+
                 <?php $i = 1; ?>
 
 
                 <?php foreach ($records as $row) { ?>
 
+
                     <?php
 
-                    $quantity =
-                        (float)($row->quantity ?? 0);
+                    $available_qty =
+                        (float)(
+                            $row->available_qty
+                            ?? 0
+                        );
 
-                    $price =
-                        (float)($row->price ?? 0);
 
-                    $value =
-                        isset($row->stock_value)
-                        ? (float)$row->stock_value
-                        : ($quantity * $price);
+                    $transfer_qty =
+                        (float)(
+                            $row->transfer_qty
+                            ?? 0
+                        );
 
-                    $total_quantity +=
-                        $quantity;
 
-                    $total_value +=
-                        $value;
+                    $total_transfer_qty +=
+                        $transfer_qty;
+
 
                     ?>
 
 
                     <tr>
 
+
                         <td class="text-center">
-                            <?php echo $i++; ?>
+
+                            <?php
+                            echo $i++;
+                            ?>
+
                         </td>
+
 
                         <td>
-                            <?php
-                            echo !empty($row->adjustment_code)
-                                ? html_escape($row->adjustment_code)
-                                : '-';
-                            ?>
-                        </td>
 
-                        <td class="text-center">
                             <?php
-                            echo !empty($row->stock_date)
-                                ? date(
-                                    'd-m-Y',
-                                    strtotime($row->stock_date)
+
+                            echo !empty($row->transfer_code)
+                                ? html_escape(
+                                    $row->transfer_code
                                 )
                                 : '-';
+
                             ?>
+
                         </td>
+
 
                         <td class="text-center">
+
                             <?php
-                            echo strtoupper(
-                                $row->adjustment_type ?? '-'
-                            ) == 'IN'
-                                ? 'Increase'
-                                : (
-                                    strtoupper(
-                                        $row->adjustment_type ?? ''
-                                    ) == 'OUT'
-                                    ? 'Decrease'
-                                    : html_escape(
-                                        $row->adjustment_type ?? '-'
+
+                            echo !empty($row->transfer_date)
+                                ? date(
+                                    'd-m-Y',
+                                    strtotime(
+                                        $row->transfer_date
                                     )
-                                );
-                            ?>
-                        </td>
-
-                        <td>
-                            <?php
-                            echo html_escape(
-                                $row->product_code ?? '-'
-                            );
-                            ?>
-                        </td>
-
-                        <td>
-                            <?php
-                            echo html_escape(
-                                $row->product_name ?? '-'
-                            );
-                            ?>
-                        </td>
-
-                        <td>
-                            <?php
-                            echo html_escape(
-                                $row->warehouse_name ?? '-'
-                            );
-                            ?>
-                        </td>
-
-                        <td>
-                            <?php
-                            echo html_escape(
-                                $row->store_name ?? '-'
-                            );
-                            ?>
-                        </td>
-
-                        <td class="text-right">
-                            <?php
-                            echo number_format(
-                                $quantity,
-                                2
-                            );
-                            ?>
-                        </td>
-
-                        <td class="text-right">
-                            <?php
-                            echo number_format(
-                                $price,
-                                2
-                            );
-                            ?>
-                        </td>
-
-                        <td class="text-right">
-                            <?php
-                            echo number_format(
-                                $value,
-                                2
-                            );
-                            ?>
-                        </td>
-
-                        <td>
-                            <?php
-                            echo html_escape(
-                                $row->created_user ?? '-'
-                            );
-                            ?>
-                        </td>
-
-                        <td>
-                            <?php
-
-                            $remarks =
-                                $row->adjustment_remark
-                                ?? $row->stock_remark
-                                ?? $row->item_remark
-                                ?? '';
-
-                            echo !empty($remarks)
-                                ? html_escape($remarks)
+                                )
                                 : '-';
 
                             ?>
+
                         </td>
 
+
+                        <td>
+
+                            <?php
+
+                            echo html_escape(
+                                $row->from_warehouse
+                                    ?? '-'
+                            );
+
+                            ?>
+
+                        </td>
+
+
+                        <td>
+
+                            <?php
+
+                            echo html_escape(
+                                $row->from_store
+                                    ?? '-'
+                            );
+
+                            ?>
+
+                        </td>
+
+
+                        <td>
+
+                            <?php
+
+                            echo html_escape(
+                                $row->to_warehouse
+                                    ?? '-'
+                            );
+
+                            ?>
+
+                        </td>
+
+
+                        <td>
+
+                            <?php
+
+                            echo html_escape(
+                                $row->to_store
+                                    ?? '-'
+                            );
+
+                            ?>
+
+                        </td>
+
+
+                        <td>
+
+                            <?php
+
+                            echo html_escape(
+                                $row->product_code
+                                    ?? '-'
+                            );
+
+                            ?>
+
+                        </td>
+
+
+                        <td>
+
+                            <?php
+
+                            echo html_escape(
+                                $row->product_name
+                                    ?? '-'
+                            );
+
+                            ?>
+
+                        </td>
+
+
+                        <td>
+
+                            <?php
+
+                            echo html_escape(
+                                $row->unit_name
+                                    ?? '-'
+                            );
+
+                            ?>
+
+                        </td>
+
+
+                        <td class="text-right">
+
+                            <?php
+
+                            echo number_format(
+                                $available_qty,
+                                2
+                            );
+
+                            ?>
+
+                        </td>
+
+
+                        <td class="text-right">
+
+                            <?php
+
+                            echo number_format(
+                                $transfer_qty,
+                                2
+                            );
+
+                            ?>
+
+                        </td>
+
+
+                        <td class="text-center">
+
+                            <?php
+
+                            $status_value =
+                                isset($row->status)
+                                ? (string)$row->status
+                                : '';
+
+
+                            if ($status_value === '1') {
+
+                                echo 'Completed';
+                            } elseif (
+                                $status_value === '0'
+                            ) {
+
+                                echo 'Pending';
+                            } else {
+
+                                echo html_escape(
+                                    $row->status
+                                        ?? '-'
+                                );
+                            }
+
+                            ?>
+
+                        </td>
+
+
+                        <td>
+
+                            <?php
+
+                            echo html_escape(
+                                $row->created_user
+                                    ?? '-'
+                            );
+
+                            ?>
+
+                        </td>
+
+
+                        <td>
+
+                            <?php
+
+                            $remarks = '';
+
+
+                            if (
+                                !empty($row->remarks)
+                            ) {
+
+                                $remarks =
+                                    $row->remarks;
+                            } elseif (
+                                !empty($row->item_remarks)
+                            ) {
+
+                                $remarks =
+                                    $row->item_remarks;
+                            }
+
+
+                            echo !empty($remarks)
+                                ? html_escape(
+                                    $remarks
+                                )
+                                : '-';
+
+                            ?>
+
+                        </td>
+
+
                     </tr>
+
 
                 <?php } ?>
 
 
+                <!-- TOTAL -->
+
                 <tr class="total-row">
 
+
                     <td
-                        colspan="8"
+                        colspan="11"
                         class="text-right">
 
-                        Total
+                        Total Transfer Quantity
 
                     </td>
+
 
                     <td class="text-right">
 
                         <?php
+
                         echo number_format(
-                            $total_quantity,
+                            $total_transfer_qty,
                             2
                         );
+
                         ?>
 
                     </td>
 
-                    <td></td>
 
-                    <td class="text-right">
+                    <td colspan="3"></td>
 
-                        <?php
-                        echo number_format(
-                            $total_value,
-                            2
-                        );
-                        ?>
-
-                    </td>
-
-                    <td colspan="2"></td>
 
                 </tr>
 
 
             <?php } else { ?>
 
+
                 <tr>
 
                     <td
-                        colspan="13"
+                        colspan="15"
                         class="text-center">
 
-                        No Stock Adjustment
+                        No Stock Transfer
                         records found.
 
                     </td>
 
                 </tr>
 
+
             <?php } ?>
+
 
         </tbody>
 
+
     </table>
 
+
+    <!-- =========================
+         PREPARED BY
+    ========================== -->
 
     <table class="footer">
 
         <tr>
+
             <td>
+
                 Prepared By:
+
                 <strong>
+
                     <?php
+
                     echo html_escape(
-                        $prepared_by ?? 'Admin'
+                        $prepared_by
+                            ?? 'Admin'
                     );
+
                     ?>
+
                 </strong>
+
             </td>
 
-            <td style="text-align:right;">
+
+            <td
+                style="text-align:right;">
+
                 Printed On:
+
                 <strong>
+
                     <?php
-                    echo date('d-m-Y h:i A');
+
+                    echo date(
+                        'd-m-Y h:i A'
+                    );
+
                     ?>
+
                 </strong>
+
             </td>
+
         </tr>
+
     </table>
+
+
+    <!-- =========================
+         FOOTER
+    ========================== -->
+
     <div class="footer">
+
 
         <div class="footer-left">
 
-            &copy; <?= date('Y'); ?>
+            &copy;
+
+            <?= date('Y'); ?>
 
             <?= !empty($company_name)
-                ? htmlspecialchars($company_name)
+                ? htmlspecialchars(
+                    $company_name
+                )
                 : 'Al Tareeq Kitchen Equipment Industry LLC'; ?>
 
         </div>
@@ -545,13 +882,18 @@
 
         </div>
 
+
     </div>
+
 
     <script>
         window.onload = function() {
+
             window.print();
+
         };
     </script>
+
 
 </body>
 

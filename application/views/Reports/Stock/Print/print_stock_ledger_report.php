@@ -47,6 +47,11 @@
             margin: 8px 0 5px;
         }
 
+        .company-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
 
         /* =====================================================
            INFORMATION
@@ -117,13 +122,9 @@
             bottom: 0;
             left: 0;
             right: 0;
-
             border-top: 1px solid #555;
-
             padding: 7px 15px;
-
             font-size: 10px;
-
             background: #fff;
         }
 
@@ -180,12 +181,21 @@
 
         <?php } else { ?> -->
 
-            <img
-                src="<?= base_url('public/assets/images/altariq_logo.jpeg'); ?>"
-                class="company-logo"
-                alt="Company Logo">
+        <img
+            src="<?= base_url('public/assets/images/altariq_logo.jpeg'); ?>"
+            class="company-logo"
+            alt="Company Logo">
 
         <!-- <?php } ?> -->
+
+        <?php if (!empty($company_name)) { ?>
+
+            <div class="company-name">
+                <?php echo html_escape($company_name); ?>
+            </div>
+
+        <?php } ?>
+
 
 
         <div class="report-title">

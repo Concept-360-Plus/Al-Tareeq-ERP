@@ -1102,40 +1102,24 @@ class Reports extends CI_Controller
 
     $data['company_name'] = '';
     $company = $this->Setup_model->get_company_details();
-
-    if (!empty($company)) {
-      if (is_array($company)) {
-        $company = $company[0];
-      }
-      $data['company_name'] = $company->company_name ?? '';
+    if (!empty($company) && is_array($company)) {
+      $data['company_name'] = $company['company_name'] ?? '';
     }
 
     $data['branch_name'] = '';
     $branch_id = 8;
     $branch = $this->Setup_model->get_branch_by_id($branch_id);
-
     if (!empty($branch)) {
-      $data['branch_name'] =
-        $branch->branch_name ?? '';
+      $data['branch_name'] = $branch->branch_name ?? '';
     }
-
 
     $data['warehouse_name'] = '';
     if (!empty($data['warehouse_id'])) {
-
-      $warehouse = $this->db->where(
-        'warehouse_id',
-        $data['warehouse_id']
-      )
-        ->get('warehouse_master')
-        ->row();
-
+      $warehouse = $this->db->where('warehouse_id', $data['warehouse_id'])->get('warehouse_master')->row();
       if (!empty($warehouse)) {
-        $data['warehouse_name'] =
-          $warehouse->warehouse_name ?? '';
+        $data['warehouse_name'] = $warehouse->warehouse_name ?? '';
       }
     }
-
 
     $data['store_name'] = '';
     if (!empty($data['store_id'])) {
@@ -1448,16 +1432,8 @@ class Reports extends CI_Controller
     $this->load->model('Setup_model');
     $data['company_name'] = '';
     $company = $this->Setup_model->get_company_details();
-
-    if (!empty($company)) {
-      if (is_array($company)) {
-        $company = $company[0];
-      }
-
-      if (is_object($company)) {
-        $data['company_name'] =
-          $company->company_name ?? '';
-      }
+    if (!empty($company) && is_array($company)) {
+      $data['company_name'] = $company['company_name'] ?? '';
     }
 
     $branch_id = 8;
@@ -1598,21 +1574,9 @@ class Reports extends CI_Controller
     // =====================================================
 
     $data['company_name'] = '';
-
-    $company =
-      $this->Setup_model->get_company_details();
-
-    if (!empty($company)) {
-
-      if (is_array($company)) {
-        $company = $company[0];
-      }
-
-      if (is_object($company)) {
-
-        $data['company_name'] =
-          $company->company_name ?? '';
-      }
+    $company = $this->Setup_model->get_company_details();
+    if (!empty($company) && is_array($company)) {
+      $data['company_name'] = $company['company_name'] ?? '';
     }
 
 
@@ -1746,15 +1710,10 @@ class Reports extends CI_Controller
     $this->load->model('Setup_model');
     $data['company_name'] = '';
     $company = $this->Setup_model->get_company_details();
-
-    if (!empty($company)) {
-      if (is_array($company)) {
-        $company = $company[0];
-      }
-      if (is_object($company)) {
-        $data['company_name'] = $company->company_name ?? '';
-      }
+    if (!empty($company) && is_array($company)) {
+      $data['company_name'] = $company['company_name'] ?? '';
     }
+
 
     $branch_id = 1;
     $branch = $this->Setup_model->get_branch_by_id($branch_id);
@@ -1813,17 +1772,11 @@ class Reports extends CI_Controller
 
     $this->load->model('Setup_model');
     $data['company_name'] = '';
-
     $company = $this->Setup_model->get_company_details();
-
-    if (!empty($company)) {
-      if (is_array($company)) {
-        $company = $company[0];
-      }
-      if (is_object($company)) {
-        $data['company_name'] = $company->company_name ?? '';
-      }
+    if (!empty($company) && is_array($company)) {
+      $data['company_name'] = $company['company_name'] ?? '';
     }
+
 
     $branch_id = 1;
     $branch = $this->Setup_model->get_branch_by_id($branch_id);
@@ -1944,15 +1897,10 @@ class Reports extends CI_Controller
     $this->load->model('Setup_model');
     $data['company_name'] = '';
     $company = $this->Setup_model->get_company_details();
-
-    if (!empty($company)) {
-      if (is_array($company)) {
-        $company = $company[0];
-      }
-      if (is_object($company)) {
-        $data['company_name'] = $company->company_name ?? '';
-      }
+    if (!empty($company) && is_array($company)) {
+      $data['company_name'] = $company['company_name'] ?? '';
     }
+
 
     $branch_id = 1;
     $branch = $this->Setup_model->get_branch_by_id($branch_id);
@@ -2012,7 +1960,7 @@ class Reports extends CI_Controller
     $status = $this->input->get('status');
 
 
-    $data['title'] ='Stock Reservation Report';
+    $data['title'] = 'Stock Reservation Report';
     $data['from'] = $from_date;
     $data['to'] = $to_date;
     $data['product_id'] = $product_id;
@@ -2023,16 +1971,10 @@ class Reports extends CI_Controller
     $this->load->model('Setup_model');
     $data['company_name'] = '';
     $company = $this->Setup_model->get_company_details();
-
-    if (!empty($company)) {
-      if (is_array($company)) {
-        $company = $company[0];
-      }
-
-      if (is_object($company)) {
-        $data['company_name'] = $company->company_name ?? '';
-      }
+    if (!empty($company) && is_array($company)) {
+      $data['company_name'] = $company['company_name'] ?? '';
     }
+
 
 
     // Branch
@@ -2210,21 +2152,11 @@ class Reports extends CI_Controller
 
     // Company
     $this->load->model('Setup_model');
-
     $data['company_name'] = '';
-
     $company = $this->Setup_model->get_company_details();
-
-    if (!empty($company)) {
-      if (is_array($company)) {
-        $company = $company[0];
-      }
-
-      if (is_object($company)) {
-        $data['company_name'] = $company->company_name ?? '';
-      }
+    if (!empty($company) && is_array($company)) {
+      $data['company_name'] = $company['company_name'] ?? '';
     }
-
 
     // Branch
     $branch_id = 1;
@@ -2408,25 +2340,11 @@ class Reports extends CI_Controller
 
     // Company
     $this->load->model('Setup_model');
-
     $data['company_name'] = '';
-
-    $company =
-      $this->Setup_model->get_company_details();
-
-    if (!empty($company)) {
-
-      if (is_array($company)) {
-        $company = $company[0];
-      }
-
-      if (is_object($company)) {
-
-        $data['company_name'] =
-          $company->company_name ?? '';
-      }
+    $company = $this->Setup_model->get_company_details();
+    if (!empty($company) && is_array($company)) {
+      $data['company_name'] = $company['company_name'] ?? '';
     }
-
 
     // Branch
     $branch_id = 1;
@@ -2584,4 +2502,372 @@ class Reports extends CI_Controller
   }
 
   ///////////////////// STOCK ADJUSTMENT REPORT END /////////////////////
+
+  ///////////////////// STOCK TRANSFER REPORT /////////////////////
+
+  function stock_transfer_report()
+  {
+    $data['title'] = 'Stock Transfer Report';
+    $data['from_date'] = date('Y-m-01');
+    $data['to_date'] = date('Y-m-d');
+    $data['from_warehouse_id'] = '';
+    $data['from_store_id'] = '';
+    $data['to_warehouse_id'] = '';
+    $data['to_store_id'] = '';
+    $data['product_id'] = '';
+    $data['status'] = '';
+
+    $this->load->model('Setup_model');
+    $this->load->model('Stock_model');
+    $data['products'] = $this->Stock_model->get_stock_code_list();
+    $data['warehouse_records'] = $this->Setup_model->get_warehouse_list();
+
+    $data['records'] = array();
+    $data['main_content'] = 'Reports/Stock/stock_transfer_report.php';
+    $this->load->view('includes/template.php', $data);
+  }
+
+  function get_stock_transfer_report()
+  {
+    $data['title'] = 'Stock Transfer Report';
+    $data['from_date'] = $this->input->post('from_date');
+    $data['to_date'] = $this->input->post('to_date');
+    $data['from_warehouse_id'] = $this->input->post('from_warehouse_id');
+    $data['from_store_id'] = $this->input->post('from_store_id');
+    $data['to_warehouse_id'] = $this->input->post('to_warehouse_id');
+    $data['to_store_id'] = $this->input->post('to_store_id');
+    $data['product_id'] = $this->input->post('product_id');
+    $data['status'] = $this->input->post('status');
+
+    $this->load->model('Setup_model');
+    $this->load->model('Stock_model');
+    $data['products'] = $this->Stock_model->get_stock_code_list();
+    $data['warehouse_records'] = $this->Setup_model->get_warehouse_list();
+    $data['records'] = $this->Reports_model->get_stock_transfer_report($data['from_date'], $data['to_date'], $data['from_warehouse_id'], $data['from_store_id'], $data['to_warehouse_id'], $data['to_store_id'], $data['product_id'], $data['status']);
+
+    $data['main_content'] = 'Reports/Stock/stock_transfer_report.php';
+    $this->load->view('includes/template.php', $data);
+  }
+
+  function print_stock_transfer_report()
+  {
+
+    $this->load->model('Setup_model');
+    $from_date = $this->input->get('from_date');
+    $to_date = $this->input->get('to_date');
+    $from_warehouse_id = $this->input->get('from_warehouse_id');
+    $from_store_id = $this->input->get('from_store_id');
+    $to_warehouse_id = $this->input->get('to_warehouse_id');
+    $to_store_id = $this->input->get('to_store_id');
+    $product_id = $this->input->get('product_id');
+    $status = $this->input->get('status');
+
+    $data['title'] = 'Stock Transfer Report';
+    $data['from'] = $from_date;
+    $data['to'] = $to_date;
+    $data['from_warehouse_id'] = $from_warehouse_id;
+    $data['from_store_id'] = $from_store_id;
+    $data['to_warehouse_id'] = $to_warehouse_id;
+    $data['to_store_id'] =  $to_store_id;
+    $data['product_id'] = $product_id;
+    $data['status'] = $status;
+    $data['company_name'] = '';
+
+    $company = $this->Setup_model->get_company_details();
+    if (!empty($company) && is_array($company)) {
+      $data['company_name'] = $company['company_name'] ?? '';
+    }
+
+    $branch_id = 1;
+    $branch = $this->Setup_model->get_branch_by_id($branch_id);
+    $data['branch_name'] = '';
+    if (!empty($branch)) {
+      $data['branch_name'] = $branch->branch_name ?? '';
+    }
+
+    $data['from_warehouse_name'] = 'All Warehouses';
+    if (!empty($from_warehouse_id)) {
+      $warehouse = $this->db->where('warehouse_id', $from_warehouse_id)->get('warehouse_master')->row();
+      if (!empty($warehouse)) {
+        $data['from_warehouse_name'] = $warehouse->warehouse_name;
+      }
+    }
+
+    $data['from_store_name'] = 'All Stores';
+    if (!empty($from_store_id)) {
+      $store = $this->db->where('store_id', $from_store_id)->get('store_master')->row();
+      if (!empty($store)) {
+        $data['from_store_name'] = $store->store_name;
+      }
+    }
+
+    $data['to_warehouse_name'] = 'All Warehouses';
+    if (!empty($to_warehouse_id)) {
+      $warehouse = $this->db->where('warehouse_id', $to_warehouse_id)->get('warehouse_master')->row();
+      if (!empty($warehouse)) {
+        $data['to_warehouse_name'] = $warehouse->warehouse_name;
+      }
+    }
+
+    $data['to_store_name'] = 'All Stores';
+    if (!empty($to_store_id)) {
+      $store = $this->db->where('store_id', $to_store_id)->get('store_master')->row();
+      if (!empty($store)) {
+        $data['to_store_name'] = $store->store_name;
+      }
+    }
+
+    $data['product_name'] = 'All Products';
+    if (!empty($product_id)) {
+      $product = $this->db->where('product_id', $product_id)->get('item_master')->row();
+      if (!empty($product)) {
+        $data['product_name'] = $product->product_name;
+      }
+    }
+
+    $data['status_name'] = !empty($status) ? $status : 'All';
+
+    $data['prepared_by'] = $this->session->userdata('user_name');
+    if (empty($data['prepared_by'])) {
+      $data['prepared_by'] = 'Admin';
+    }
+
+    $data['records'] = $this->Reports_model->get_stock_transfer_report($from_date, $to_date, $from_warehouse_id, $from_store_id, $to_warehouse_id, $to_store_id, $product_id, $status);
+
+    $this->load->view('Reports/Stock/Print/print_stock_transfer_report', $data);
+  }
+
+  function export_stock_transfer_excel()
+  {
+    // =====================================================
+    // LOAD MODEL
+    // =====================================================
+
+    $this->load->model(
+      'Setup_model'
+    );
+
+
+    // =====================================================
+    // FILTERS
+    // =====================================================
+
+    $from_date =
+      $this->input->get('from_date');
+
+    $to_date =
+      $this->input->get('to_date');
+
+    $from_warehouse_id =
+      $this->input->get('from_warehouse_id');
+
+    $from_store_id =
+      $this->input->get('from_store_id');
+
+    $to_warehouse_id =
+      $this->input->get('to_warehouse_id');
+
+    $to_store_id =
+      $this->input->get('to_store_id');
+
+    $product_id =
+      $this->input->get('product_id');
+
+    $status =
+      $this->input->get('status');
+
+
+    // =====================================================
+    // BASIC DATA
+    // =====================================================
+
+    $data['title'] =
+      'Stock Transfer Report';
+
+    $data['from'] =
+      $from_date;
+
+    $data['to'] =
+      $to_date;
+
+
+    // =====================================================
+    // COMPANY
+    // =====================================================
+
+    $data['company_name'] =
+      '';
+
+    $company =
+      $this->Setup_model
+      ->get_company_details();
+
+    if (
+      !empty($company) &&
+      is_array($company)
+    ) {
+
+      $data['company_name'] =
+        $company['company_name']
+        ?? '';
+    }
+
+
+    // =====================================================
+    // BRANCH
+    // =====================================================
+
+    $branch_id = 1;
+
+    $branch =
+      $this->Setup_model
+      ->get_branch_by_id(
+        $branch_id
+      );
+
+    $data['branch_name'] =
+      '';
+
+    if (!empty($branch)) {
+
+      $data['branch_name'] =
+        $branch->branch_name
+        ?? '';
+    }
+
+
+    // =====================================================
+    // LOCATION NAMES
+    // =====================================================
+
+    $data['from_warehouse_name'] =
+      'All Warehouses';
+
+    if (!empty($from_warehouse_id)) {
+
+      $warehouse =
+        $this->db
+        ->where(
+          'warehouse_id',
+          $from_warehouse_id
+        )
+        ->get('warehouse_master')
+        ->row();
+
+      if (!empty($warehouse)) {
+
+        $data['from_warehouse_name'] =
+          $warehouse->warehouse_name;
+      }
+    }
+
+
+    $data['from_store_name'] =
+      'All Stores';
+
+    if (!empty($from_store_id)) {
+
+      $store =
+        $this->db
+        ->where(
+          'store_id',
+          $from_store_id
+        )
+        ->get('store_master')
+        ->row();
+
+      if (!empty($store)) {
+
+        $data['from_store_name'] =
+          $store->store_name;
+      }
+    }
+
+
+    $data['to_warehouse_name'] =
+      'All Warehouses';
+
+    if (!empty($to_warehouse_id)) {
+
+      $warehouse =
+        $this->db
+        ->where(
+          'warehouse_id',
+          $to_warehouse_id
+        )
+        ->get('warehouse_master')
+        ->row();
+
+      if (!empty($warehouse)) {
+
+        $data['to_warehouse_name'] =
+          $warehouse->warehouse_name;
+      }
+    }
+
+
+    $data['to_store_name'] =
+      'All Stores';
+
+    if (!empty($to_store_id)) {
+
+      $store =
+        $this->db
+        ->where(
+          'store_id',
+          $to_store_id
+        )
+        ->get('store_master')
+        ->row();
+
+      if (!empty($store)) {
+
+        $data['to_store_name'] =
+          $store->store_name;
+      }
+    }
+
+
+    // =====================================================
+    // PRODUCT NAME
+    // =====================================================
+
+    $data['product_name'] =
+      'All Products';
+
+    if (!empty($product_id)) {
+
+      $product =
+        $this->db
+        ->where(
+          'product_id',
+          $product_id
+        )
+        ->get('item_master')
+        ->row();
+
+      if (!empty($product)) {
+
+        $data['product_name'] =
+          $product->product_name;
+      }
+    }
+
+    $data['status_name'] =!empty($status) ? $status : 'All';
+    
+    $data['prepared_by'] = $this->session->userdata('user_name');
+    if (empty($data['prepared_by'])) {
+      $data['prepared_by'] ='Admin';
+    }
+
+
+    $data['records'] = $this->Reports_model->get_stock_transfer_report($from_date,$to_date,$from_warehouse_id,$from_store_id,$to_warehouse_id,$to_store_id,$product_id,$status);
+
+    $filename ='Stock_Transfer_Report_' . date('Y-m-d_H-i-s') . '.xls';
+    header('Content-Type: application/vnd.ms-excel');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+    $this->load->view('Reports/Stock/Export/export_stock_transfer_report', $data);
+  }
 }
