@@ -47,6 +47,19 @@
           <input type="hidden" name="supplier_id" id="supplier_id">
         </div>
 
+
+        <div class="col-md-3">
+          <label>Purchase Type <span class="text-danger">*</span></label>
+          <select name="purchase_type"
+            id="purchase_type"
+            class="form-control"
+            required>
+            <option value="Local">Local</option>
+            <option value="International">International</option>
+          </select>
+        </div>
+
+
         <div class="col-md-3">
           <label class="control-label">Reference</label>
           <input type="text" class="form-control" name="ref_no" id="ref_no">

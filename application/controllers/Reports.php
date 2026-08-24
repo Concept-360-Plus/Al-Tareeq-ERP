@@ -2505,26 +2505,63 @@ class Reports extends CI_Controller
 
   ///////////////////// STOCK TRANSFER REPORT /////////////////////
 
-  function stock_transfer_report()
+  public function stock_transfer_report()
   {
     $data['title'] = 'Stock Transfer Report';
-    $data['from_date'] = date('Y-m-01');
-    $data['to_date'] = date('Y-m-d');
-    $data['from_warehouse_id'] = '';
-    $data['from_store_id'] = '';
-    $data['to_warehouse_id'] = '';
-    $data['to_store_id'] = '';
-    $data['product_id'] = '';
-    $data['status'] = '';
 
-    $this->load->model('Setup_model');
-    $this->load->model('Stock_model');
-    $data['products'] = $this->Stock_model->get_stock_code_list();
-    $data['warehouse_records'] = $this->Setup_model->get_warehouse_list();
+    // Default date range
+    $data['from'] = $this->input->post('from')
+      ? $this->input->post('from')
+      : date('Y-m-01');
 
-    $data['records'] = array();
-    $data['main_content'] = 'Reports/Stock/stock_transfer_report.php';
-    $this->load->view('includes/template.php', $data);
+    $data['to'] = $this->input->post('to')
+      ? $this->input->post('to')
+      : date('Y-m-d');
+
+    $data['from_branch_id'] =
+      $this->input->post('from_branch_id') ?? '';
+
+    $data['to_branch_id'] =
+      $this->input->post('to_branch_id') ?? '';
+
+    $data['from_warehouse_id'] =
+      $this->input->post('from_warehouse_id') ?? '';
+
+    $data['to_warehouse_id'] =
+      $this->input->post('to_warehouse_id') ?? '';
+
+    $data['from_store_id'] =
+      $this->input->post('from_store_id') ?? '';
+
+    $data['to_store_id'] =
+      $this->input->post('to_store_id') ?? '';
+
+    $data['product_id'] =
+      $this->input->post('product_id') ?? '';
+
+    $data['status'] =
+      $this->input->post('status') ?? '';
+$this->load->model('Company_model');
+    // Dropdowns
+    $data['branch_records'] =
+      $this->Company_model->get_all_branches();
+
+    $data['warehouse_list'] =
+      $this->Setup_model->get_warehouse_list();
+
+    $data['products'] =
+      $this->Setup_model->get_active_item_list();
+
+    $data['records'] =
+      $this->Reports_model->get_stock_transfer_report();
+
+    $data['main_content'] =
+      'Reports/Stock/stock_transfer_report.php';
+
+    $this->load->view(
+      'includes/template',
+      $data
+    );
   }
 
   function get_stock_transfer_report()
@@ -2549,325 +2586,147 @@ class Reports extends CI_Controller
     $this->load->view('includes/template.php', $data);
   }
 
-  function print_stock_transfer_report()
+  public function print_stock_transfer_report()
   {
-
-    $this->load->model('Setup_model');
-    $from_date = $this->input->get('from_date');
-    $to_date = $this->input->get('to_date');
-    $from_warehouse_id = $this->input->get('from_warehouse_id');
-    $from_store_id = $this->input->get('from_store_id');
-    $to_warehouse_id = $this->input->get('to_warehouse_id');
-    $to_store_id = $this->input->get('to_store_id');
-    $product_id = $this->input->get('product_id');
-    $status = $this->input->get('status');
-
-    $data['title'] = 'Stock Transfer Report';
-    $data['from'] = $from_date;
-    $data['to'] = $to_date;
-    $data['from_warehouse_id'] = $from_warehouse_id;
-    $data['from_store_id'] = $from_store_id;
-    $data['to_warehouse_id'] = $to_warehouse_id;
-    $data['to_store_id'] =  $to_store_id;
-    $data['product_id'] = $product_id;
-    $data['status'] = $status;
-    $data['company_name'] = '';
-
-    $company = $this->Setup_model->get_company_details();
-    if (!empty($company) && is_array($company)) {
-      $data['company_name'] = $company['company_name'] ?? '';
-    }
-
-    $branch_id = 1;
-    $branch = $this->Setup_model->get_branch_by_id($branch_id);
-    $data['branch_name'] = '';
-    if (!empty($branch)) {
-      $data['branch_name'] = $branch->branch_name ?? '';
-    }
-
-    $data['from_warehouse_name'] = 'All Warehouses';
-    if (!empty($from_warehouse_id)) {
-      $warehouse = $this->db->where('warehouse_id', $from_warehouse_id)->get('warehouse_master')->row();
-      if (!empty($warehouse)) {
-        $data['from_warehouse_name'] = $warehouse->warehouse_name;
-      }
-    }
-
-    $data['from_store_name'] = 'All Stores';
-    if (!empty($from_store_id)) {
-      $store = $this->db->where('store_id', $from_store_id)->get('store_master')->row();
-      if (!empty($store)) {
-        $data['from_store_name'] = $store->store_name;
-      }
-    }
-
-    $data['to_warehouse_name'] = 'All Warehouses';
-    if (!empty($to_warehouse_id)) {
-      $warehouse = $this->db->where('warehouse_id', $to_warehouse_id)->get('warehouse_master')->row();
-      if (!empty($warehouse)) {
-        $data['to_warehouse_name'] = $warehouse->warehouse_name;
-      }
-    }
-
-    $data['to_store_name'] = 'All Stores';
-    if (!empty($to_store_id)) {
-      $store = $this->db->where('store_id', $to_store_id)->get('store_master')->row();
-      if (!empty($store)) {
-        $data['to_store_name'] = $store->store_name;
-      }
-    }
-
-    $data['product_name'] = 'All Products';
-    if (!empty($product_id)) {
-      $product = $this->db->where('product_id', $product_id)->get('item_master')->row();
-      if (!empty($product)) {
-        $data['product_name'] = $product->product_name;
-      }
-    }
-
-    $data['status_name'] = !empty($status) ? $status : 'All';
-
-    $data['prepared_by'] = $this->session->userdata('user_name');
-    if (empty($data['prepared_by'])) {
-      $data['prepared_by'] = 'Admin';
-    }
-
-    $data['records'] = $this->Reports_model->get_stock_transfer_report($from_date, $to_date, $from_warehouse_id, $from_store_id, $to_warehouse_id, $to_store_id, $product_id, $status);
-
-    $this->load->view('Reports/Stock/Print/print_stock_transfer_report', $data);
-  }
-
-  function export_stock_transfer_excel()
-  {
-    // =====================================================
-    // LOAD MODEL
-    // =====================================================
-
-    $this->load->model(
-      'Setup_model'
-    );
-
-
-    // =====================================================
-    // FILTERS
-    // =====================================================
-
-    $from_date =
-      $this->input->get('from_date');
-
-    $to_date =
-      $this->input->get('to_date');
-
-    $from_warehouse_id =
-      $this->input->get('from_warehouse_id');
-
-    $from_store_id =
-      $this->input->get('from_store_id');
-
-    $to_warehouse_id =
-      $this->input->get('to_warehouse_id');
-
-    $to_store_id =
-      $this->input->get('to_store_id');
-
-    $product_id =
-      $this->input->get('product_id');
-
-    $status =
-      $this->input->get('status');
-
-
-    // =====================================================
-    // BASIC DATA
-    // =====================================================
-
-    $data['title'] =
-      'Stock Transfer Report';
-
     $data['from'] =
-      $from_date;
+      $this->input->get('from')
+      ?: date('Y-m-01');
 
     $data['to'] =
-      $to_date;
+      $this->input->get('to')
+      ?: date('Y-m-d');
 
+    $data['from_branch_id'] =
+      $this->input->get('from_branch_id') ?? '';
 
-    // =====================================================
-    // COMPANY
-    // =====================================================
+    $data['to_branch_id'] =
+      $this->input->get('to_branch_id') ?? '';
 
-    $data['company_name'] =
-      '';
+    $data['from_warehouse_id'] =
+      $this->input->get('from_warehouse_id') ?? '';
 
-    $company =
-      $this->Setup_model
-      ->get_company_details();
+    $data['to_warehouse_id'] =
+      $this->input->get('to_warehouse_id') ?? '';
 
-    if (
-      !empty($company) &&
-      is_array($company)
-    ) {
+    $data['from_store_id'] =
+      $this->input->get('from_store_id') ?? '';
 
-      $data['company_name'] =
-        $company['company_name']
-        ?? '';
-    }
+    $data['to_store_id'] =
+      $this->input->get('to_store_id') ?? '';
 
+    $data['product_id'] =
+      $this->input->get('product_id') ?? '';
 
-    // =====================================================
-    // BRANCH
-    // =====================================================
+    $data['status'] =
+      $this->input->get('status') ?? '';
 
-    $branch_id = 1;
-
-    $branch =
-      $this->Setup_model
-      ->get_branch_by_id(
-        $branch_id
+    $data['records'] =
+      $this->Reports_model->get_stock_transfer_report(
+        'get'
       );
 
+    /*
+     * Company / branch information
+     *
+     * Using branch ID 1 here because your existing
+     * Stock Transfer print function already uses branch 1.
+     */
+    $branch = $this->Setup_model->get_branch_by_id(1);
+
+    $data['branch'] = $branch;
+
+    $data['company_name'] =
+      !empty($branch->company_name)
+      ? $branch->company_name
+      : '';
+
     $data['branch_name'] =
-      '';
+      !empty($branch->branch_name)
+      ? $branch->branch_name
+      : '';
 
-    if (!empty($branch)) {
+    $data['prepared_by'] =
+      $this->session->userdata('user_name')
+      ?: 'Admin';
 
-      $data['branch_name'] =
-        $branch->branch_name
-        ?? '';
-    }
+    $this->load->view(
+      'Reports/Stock/Print/print_stock_transfer_report',
+      $data
+    );
+  }
 
+  public function export_stock_transfer_excel()
+  {
+    $data['from'] =
+      $this->input->get('from')
+      ?: date('Y-m-01');
 
-    // =====================================================
-    // LOCATION NAMES
-    // =====================================================
+    $data['to'] =
+      $this->input->get('to')
+      ?: date('Y-m-d');
 
-    $data['from_warehouse_name'] =
-      'All Warehouses';
+    $data['from_branch_id'] =
+      $this->input->get('from_branch_id') ?? '';
 
-    if (!empty($from_warehouse_id)) {
+    $data['to_branch_id'] =
+      $this->input->get('to_branch_id') ?? '';
 
-      $warehouse =
-        $this->db
-        ->where(
-          'warehouse_id',
-          $from_warehouse_id
-        )
-        ->get('warehouse_master')
-        ->row();
+    $data['from_warehouse_id'] =
+      $this->input->get('from_warehouse_id') ?? '';
 
-      if (!empty($warehouse)) {
+    $data['to_warehouse_id'] =
+      $this->input->get('to_warehouse_id') ?? '';
 
-        $data['from_warehouse_name'] =
-          $warehouse->warehouse_name;
-      }
-    }
+    $data['from_store_id'] =
+      $this->input->get('from_store_id') ?? '';
 
+    $data['to_store_id'] =
+      $this->input->get('to_store_id') ?? '';
 
-    $data['from_store_name'] =
-      'All Stores';
+    $data['product_id'] =
+      $this->input->get('product_id') ?? '';
 
-    if (!empty($from_store_id)) {
+    $data['status'] =
+      $this->input->get('status') ?? '';
 
-      $store =
-        $this->db
-        ->where(
-          'store_id',
-          $from_store_id
-        )
-        ->get('store_master')
-        ->row();
+    $data['records'] =
+      $this->Reports_model->get_stock_transfer_report(
+        'get'
+      );
 
-      if (!empty($store)) {
+    $branch =
+      $this->Setup_model->get_branch_by_id(1);
 
-        $data['from_store_name'] =
-          $store->store_name;
-      }
-    }
+    $data['company_name'] =
+      !empty($branch->company_name)
+      ? $branch->company_name
+      : '';
 
+    $data['branch_name'] =
+      !empty($branch->branch_name)
+      ? $branch->branch_name
+      : '';
 
-    $data['to_warehouse_name'] =
-      'All Warehouses';
+    $data['prepared_by'] =
+      $this->session->userdata('user_name')
+      ?: 'Admin';
 
-    if (!empty($to_warehouse_id)) {
+    header(
+      'Content-Type: application/vnd.ms-excel'
+    );
 
-      $warehouse =
-        $this->db
-        ->where(
-          'warehouse_id',
-          $to_warehouse_id
-        )
-        ->get('warehouse_master')
-        ->row();
+    header(
+      'Content-Disposition: attachment; filename="Stock_Transfer_Report_' .
+        date('Ymd') .
+        '.xls"'
+    );
 
-      if (!empty($warehouse)) {
-
-        $data['to_warehouse_name'] =
-          $warehouse->warehouse_name;
-      }
-    }
-
-
-    $data['to_store_name'] =
-      'All Stores';
-
-    if (!empty($to_store_id)) {
-
-      $store =
-        $this->db
-        ->where(
-          'store_id',
-          $to_store_id
-        )
-        ->get('store_master')
-        ->row();
-
-      if (!empty($store)) {
-
-        $data['to_store_name'] =
-          $store->store_name;
-      }
-    }
-
-
-    // =====================================================
-    // PRODUCT NAME
-    // =====================================================
-
-    $data['product_name'] =
-      'All Products';
-
-    if (!empty($product_id)) {
-
-      $product =
-        $this->db
-        ->where(
-          'product_id',
-          $product_id
-        )
-        ->get('item_master')
-        ->row();
-
-      if (!empty($product)) {
-
-        $data['product_name'] =
-          $product->product_name;
-      }
-    }
-
-    $data['status_name'] =!empty($status) ? $status : 'All';
-    
-    $data['prepared_by'] = $this->session->userdata('user_name');
-    if (empty($data['prepared_by'])) {
-      $data['prepared_by'] ='Admin';
-    }
-
-
-    $data['records'] = $this->Reports_model->get_stock_transfer_report($from_date,$to_date,$from_warehouse_id,$from_store_id,$to_warehouse_id,$to_store_id,$product_id,$status);
-
-    $filename ='Stock_Transfer_Report_' . date('Y-m-d_H-i-s') . '.xls';
-    header('Content-Type: application/vnd.ms-excel');
-    header('Content-Disposition: attachment; filename="' . $filename . '"');
     header('Pragma: no-cache');
     header('Expires: 0');
-    $this->load->view('Reports/Stock/Export/export_stock_transfer_report', $data);
+
+    $this->load->view(
+      'Reports/Stock/Export/export_stock_transfer_report',
+      $data
+    );
   }
 }
