@@ -3,19 +3,89 @@
         padding: 10px 0;
     }
 
+    /* =========================================================
+   HR DASHBOARD KPI CARDS
+   ========================================================= */
+
     .hr-kpi {
         position: relative;
+        overflow: hidden;
         padding: 20px;
-        border-radius: 8px;
-        background: #fff;
-        min-height: 135px;
+        border-radius: 14px;
+        color: #fff;
+        min-height: 125px;
         margin-bottom: 20px;
-        border: 1px solid #e8e8e8;
-        border-top: 4px solid #5b7c99;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, .05);
+        border: none;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14);
         cursor: pointer;
-        transition: .2s;
+        transition: all 0.25s ease;
     }
+
+    .hr-kpi:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 7px 20px rgba(0, 0, 0, 0.20);
+    }
+
+    .hr-kpi h4 {
+        margin: 0 0 8px 0;
+        font-size: 17px;
+        font-weight: 500;
+        color: #fff;
+    }
+
+    .hr-kpi h2 {
+        margin: 0;
+        font-size: 30px;
+        font-weight: 700;
+        color: #fff;
+    }
+
+    .hr-kpi small {
+        display: block;
+        margin-top: 6px;
+        color: #fff;
+        opacity: 0.90;
+        font-size: 12px;
+    }
+
+    .hr-kpi-icon {
+        position: absolute;
+        right: 18px;
+        top: 20px;
+        font-size: 42px;
+        color: #fff !important;
+        opacity: 0.20;
+    }
+
+
+    /* =========================================================
+   HR KPI COLORS
+   ========================================================= */
+
+    .kpi-blue {
+        background: linear-gradient(135deg, #1976D2, #2196F3);
+    }
+
+    .kpi-green {
+        background: linear-gradient(135deg, #2E7D32, #43A047);
+    }
+
+    .kpi-orange {
+        background: linear-gradient(135deg, #EF8C00, #F5A623);
+    }
+
+    .kpi-purple {
+        background: linear-gradient(135deg, #6A1B9A, #8E44AD);
+    }
+
+    .kpi-teal {
+        background: linear-gradient(135deg, #00897B, #26A69A);
+    }
+
+    .kpi-red {
+        background: linear-gradient(135deg, #C62828, #E53935);
+    }
+
 
     .hr-kpi:hover {
         transform: translateY(-2px);
@@ -96,24 +166,6 @@
         margin-bottom: 8px;
     }
 
-    .kpi-employees {
-        border-top-color: #337ab7;
-    }
-
-    .kpi-employees h2,
-    .kpi-employees .hr-kpi-icon {
-        color: #337ab7;
-    }
-
-    .kpi-employees {
-        border-top-color: #337ab7;
-    }
-
-    .kpi-employees h2,
-    .kpi-employees .hr-kpi-icon {
-        color: #337ab7;
-    }
-
     .kpi-leave {
         border-top-color: #f0ad4e;
     }
@@ -182,7 +234,7 @@
             <a href="<?= site_url('Company/list_employee'); ?>"
                 style="text-decoration:none;color:inherit;">
 
-                <div class="hr-kpi kpi-employees">
+                <div class="hr-kpi kpi-blue">
 
                     <i class="fa fa-users hr-kpi-icon"></i>
 
@@ -204,7 +256,7 @@
             <a href="<?= site_url('Hr/view_emp_attendance_list'); ?>"
                 style="text-decoration:none;color:inherit;">
 
-                <div class="hr-kpi">
+                <div class="hr-kpi kpi-green">
 
                     <i class="fa fa-calendar-check-o hr-kpi-icon"></i>
 
@@ -240,7 +292,7 @@
             <a href="<?= site_url('Hr/view_leave_application_list'); ?>"
                 style="text-decoration:none;color:inherit;">
 
-                <div class="hr-kpi">
+                <div class="hr-kpi kpi-orange">
 
                     <i class="fa fa-calendar-minus-o hr-kpi-icon"></i>
 

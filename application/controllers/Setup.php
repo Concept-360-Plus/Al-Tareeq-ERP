@@ -1845,7 +1845,7 @@ class Setup extends CI_Controller
 
         // Basic validation
         if ($currency_abbr == '' || $currency_name == '') {
-            $this->session->set_flashdata('warning','Currency Abbreviation and Currency Name are required.');
+            $this->session->set_flashdata('warning', 'Currency Abbreviation and Currency Name are required.');
             redirect('Setup/add_currency');
             return;
         }
@@ -1855,7 +1855,7 @@ class Setup extends CI_Controller
         $exists = $this->db->get('currency_master')->num_rows();
 
         if ($exists > 0) {
-            $this->session->set_flashdata('warning','Currency Abbreviation Already Exists.');
+            $this->session->set_flashdata('warning', 'Currency Abbreviation Already Exists.');
             redirect('Setup/add_currency');
             return;
         }
@@ -1869,10 +1869,10 @@ class Setup extends CI_Controller
 
         $result = $this->Setup_model->insert_currency($data);
         if ($result) {
-            $this->session->set_flashdata('success','Currency Added Successfully');
+            $this->session->set_flashdata('success', 'Currency Added Successfully');
             redirect('Setup/list_currency');
         } else {
-            $this->session->set_flashdata('error','Failed To Add Currency');
+            $this->session->set_flashdata('error', 'Failed To Add Currency');
             redirect('Setup/add_currency');
         }
     }
@@ -1889,7 +1889,7 @@ class Setup extends CI_Controller
             $data['title'] = 'Edit Currency';
             $this->load->model('Setup_model');
             $data['currency'] = $this->Setup_model->get_currency_by_id($id);
-            $data['main_content'] ='setup/currency_form.php';
+            $data['main_content'] = 'setup/currency_form.php';
         }
 
         $this->load->view('includes/template', $data);
@@ -1913,13 +1913,13 @@ class Setup extends CI_Controller
         $conversion_rate = $this->input->post('conversion_rate', true);
 
         if (empty($currency_id)) {
-            $this->session->set_flashdata('error','Invalid Currency ID.');
+            $this->session->set_flashdata('error', 'Invalid Currency ID.');
             redirect('Setup/list_currency');
             return;
         }
 
         if ($currency_abbr == '' || $currency_name == '') {
-            $this->session->set_flashdata('warning','Currency Abbreviation and Currency Name are required.');
+            $this->session->set_flashdata('warning', 'Currency Abbreviation and Currency Name are required.');
             redirect('Setup/edit_currency/' . $currency_id);
             return;
         }
@@ -1930,7 +1930,7 @@ class Setup extends CI_Controller
 
         $exists = $this->db->get('currency_master')->num_rows();
         if ($exists > 0) {
-            $this->session->set_flashdata('warning','Currency Abbreviation Already Exists.');
+            $this->session->set_flashdata('warning', 'Currency Abbreviation Already Exists.');
             redirect('Setup/edit_currency/' . $currency_id);
             return;
         }
@@ -1942,11 +1942,11 @@ class Setup extends CI_Controller
             'active'          => $this->input->post('active', true)
         );
 
-        $result = $this->Setup_model->update_currency($currency_id,$data);
+        $result = $this->Setup_model->update_currency($currency_id, $data);
         if ($result) {
-            $this->session->set_flashdata('success','Currency Updated Successfully');
+            $this->session->set_flashdata('success', 'Currency Updated Successfully');
         } else {
-            $this->session->set_flashdata('error','Failed To Update Currency');
+            $this->session->set_flashdata('error', 'Failed To Update Currency');
         }
 
         redirect('Setup/list_currency');
@@ -1965,7 +1965,7 @@ class Setup extends CI_Controller
         }
 
         if (empty($id)) {
-            $this->session->set_flashdata('error','Invalid Currency ID.');
+            $this->session->set_flashdata('error', 'Invalid Currency ID.');
 
             redirect('Setup/list_currency');
             return;
@@ -1973,9 +1973,11 @@ class Setup extends CI_Controller
 
         $result = $this->Setup_model->deactivate_currency($id);
         if ($result) {
-            $this->session->set_flashdata('success','Currency Deactivated Successfully');
+            $this->session->set_flashdata('success', 'Currency Deactivated Successfully');
         } else {
-            $this->session->set_flashdata('error','Unable To Deactivate Currency'
+            $this->session->set_flashdata(
+                'error',
+                'Unable To Deactivate Currency'
             );
         }
 
@@ -1983,6 +1985,250 @@ class Setup extends CI_Controller
     }
 
     /////////////////////////////////////// END CURRENCY MASTER ////////////////////////////////////////
+
+    ///////////////////////////////////// TERMS & CONDITIONS MASTER /////////////////////////////////////
+
+    public function list_terms_conditions()
+    {
+        $user = $this->session->userdata('user_id');
+
+        if (!has_view_access($user, 'Setup/list_terms_conditions')) {
+            $data['title'] = 'Access Denied';
+            $data['main_content'] = 'errors/access_control.php';
+        } else {
+            $data['title'] = 'Terms & Conditions Master';
+            $data['terms_conditions'] = $this->Setup_model->get_terms_conditions_list();
+            $data['main_content'] ='setup/list_terms_conditions.php';
+        }
+
+        $this->load->view('includes/template', $data);
+    }
+
+    public function add_terms_conditions()
+    {
+        $user = $this->session->userdata('user_id');
+
+        if (!has_access($user, 'Setup/list_terms_conditions', 'A')) {
+            $data['title'] = 'Access Denied';
+            $data['main_content'] = 'errors/access_control.php';
+        } else {
+            $data['title'] = 'Add Terms & Conditions';
+            $data['main_content'] ='setup/terms_conditions_form.php';
+        }
+
+        $this->load->view('includes/template', $data);
+    }
+
+    public function add_terms_conditions_data()
+    {
+        $user = $this->session->userdata('user_id');
+
+        if (!has_access($user, 'Setup/list_terms_conditions', 'A')) {
+            $data['title'] = 'Access Denied';
+            $data['main_content'] = 'errors/access_control.php';
+
+            $this->load->view('includes/template', $data);
+            return;
+        }
+
+        $terms_name = trim($this->input->post('terms_name', true));
+        $applicable_to = $this->input->post('applicable_to', true);
+        $validity = trim($this->input->post('validity', true));
+        $payment_terms = $this->input->post('payment_terms', true);
+        $delivery_terms = $this->input->post('delivery_terms', true);
+        $general_terms = $this->input->post('general_terms', true);
+        $warranty = trim($this->input->post('warranty', true));
+        $warranty_description = $this->input->post('warranty_description', true);
+
+        // BASIC VALIDATION
+        if ($terms_name == '') {
+            $this->session->set_flashdata('warning','Terms & Conditions Name is required.');
+            redirect('Setup/add_terms_conditions');
+            return;
+        }
+
+        // VALIDATE APPLICABLE TO
+        if (
+            !in_array(
+                $applicable_to,
+                array('SALES', 'PURCHASE', 'BOTH')
+            )
+        ) {
+            $this->session->set_flashdata(
+                'warning',
+                'Please select a valid Applicable To option.'
+            );
+
+            redirect('Setup/add_terms_conditions');
+            return;
+        }
+
+        // DUPLICATE CHECK
+        $exists = $this->Setup_model->check_terms_conditions_duplicate($terms_name);
+        if ($exists > 0) {
+            $this->session->set_flashdata('warning','Terms & Conditions Name Already Exists.');
+            redirect('Setup/add_terms_conditions');
+            return;
+        }
+
+        $data = array(
+            'terms_name'            => $terms_name,
+            'applicable_to'         => $applicable_to,
+            'validity'              => $validity,
+            'payment_terms'         => $payment_terms,
+            'delivery_terms'        => $delivery_terms,
+            'general_terms'         => $general_terms,
+            'warranty'              => $warranty,
+            'warranty_description'  => $warranty_description,
+            'active'                => 1,
+            'created_by'            => $user,
+            'created_date'          => date('Y-m-d H:i:s')
+        );
+
+        $result = $this->Setup_model->insert_terms_conditions($data);
+        if ($result) {
+            $this->session->set_flashdata('success','Terms & Conditions Added Successfully');
+            redirect('Setup/list_terms_conditions');
+        } else {
+            $this->session->set_flashdata('error','Failed To Add Terms & Conditions');
+            redirect('Setup/add_terms_conditions');
+        }
+    }
+
+    public function edit_terms_conditions($id)
+    {
+        $user = $this->session->userdata('user_id');
+
+        if (!has_access($user, 'Setup/list_terms_conditions', 'E')) {
+            $data['title'] = 'Access Denied';
+            $data['main_content'] = 'errors/access_control.php';
+        } else {
+            $data['title'] = 'Edit Terms & Conditions';
+            $data['terms_conditions'] = $this->Setup_model->get_terms_conditions_by_id($id);
+            if (empty($data['terms_conditions'])) {
+                $this->session->set_flashdata('error','Invalid Terms & Conditions ID.');
+                redirect('Setup/list_terms_conditions');
+                return;
+            }
+
+            $data['main_content'] ='setup/terms_conditions_form.php';
+        }
+
+        $this->load->view('includes/template', $data);
+    }
+
+    public function update_terms_conditions_data()
+    {
+        $user = $this->session->userdata('user_id');
+
+        if (!has_access($user, 'Setup/list_terms_conditions', 'E')) {
+            $data['title'] = 'Access Denied';
+            $data['main_content'] = 'errors/access_control.php';
+
+            $this->load->view('includes/template', $data);
+            return;
+        }
+
+        $terms_id = $this->input->post('terms_id', true);
+        $terms_name = trim($this->input->post('terms_name', true));
+        $applicable_to = $this->input->post('applicable_to', true);
+        $validity = trim($this->input->post('validity', true));
+        $payment_terms = $this->input->post('payment_terms', true);
+        $delivery_terms = $this->input->post('delivery_terms', true);
+        $general_terms = $this->input->post('general_terms', true);
+        $warranty = trim($this->input->post('warranty', true));
+        $warranty_description = $this->input->post('warranty_description', true);
+        $active = $this->input->post('active', true);
+
+        if (empty($terms_id)) {
+            $this->session->set_flashdata('error','Invalid Terms & Conditions ID.');
+
+            redirect('Setup/list_terms_conditions');
+            return;
+        }
+
+        if ($terms_name == '') {
+            $this->session->set_flashdata('warning','Terms & Conditions Name is required.');
+
+            redirect('Setup/edit_terms_conditions/' . $terms_id);
+            return;
+        }
+
+        if (
+            !in_array(
+                $applicable_to,
+                array('SALES', 'PURCHASE', 'BOTH')
+            )
+        ) {
+
+            $this->session->set_flashdata('warning','Please select a valid Applicable To option.');
+            redirect('Setup/edit_terms_conditions/' . $terms_id);
+            return;
+        }
+
+        // DUPLICATE CHECK
+        $exists = $this->Setup_model->check_terms_conditions_duplicate($terms_name, $terms_id);
+        if ($exists > 0) {
+            $this->session->set_flashdata('warning','Terms & Conditions Name Already Exists.');
+            redirect('Setup/edit_terms_conditions/' . $terms_id);
+            return;
+        }
+
+        $data = array(
+            'terms_name'           => $terms_name,
+            'applicable_to'        => $applicable_to,
+            'validity'             => $validity,
+            'payment_terms'        => $payment_terms,
+            'delivery_terms'       => $delivery_terms,
+            'general_terms'        => $general_terms,
+            'warranty'             => $warranty,
+            'warranty_description' => $warranty_description,
+            'active'               => ($active ? 1 : 0),
+            'updated_by'           => $user,
+            'updated_date'         => date('Y-m-d H:i:s')
+        );
+
+        $result = $this->Setup_model->update_terms_conditions($terms_id, $data);
+        if ($result) {
+            $this->session->set_flashdata('success', 'Terms & Conditions Updated Successfully');
+        } else {
+            $this->session->set_flashdata('error', 'Failed To Update Terms & Conditions');
+        }
+
+        redirect('Setup/list_terms_conditions');
+    }
+
+    public function delete_terms_conditions($id)
+    {
+        $user = $this->session->userdata('user_id');
+
+        if (!has_access($user, 'Setup/list_terms_conditions', 'D')) {
+            $data['title'] = 'Access Denied';
+            $data['main_content'] = 'errors/access_control.php';
+
+            $this->load->view('includes/template', $data);
+            return;
+        }
+
+        if (empty($id)) {
+            $this->session->set_flashdata('error','Invalid Terms & Conditions ID.');
+            redirect('Setup/list_terms_conditions');
+            return;
+        }
+
+        $result = $this->Setup_model->deactivate_terms_conditions($id);
+        if ($result) {
+            $this->session->set_flashdata('success','Terms & Conditions Deactivated Successfully'
+            );
+        } else {
+            $this->session->set_flashdata('error','Unable To Deactivate Terms & Conditions'
+            );
+        }
+
+        redirect('Setup/list_terms_conditions');
+    }
+
+    //////////////////////////////// END TERMS & CONDITIONS MASTER /////////////////////////////////////
 
 
     //randam val
