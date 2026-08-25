@@ -352,7 +352,6 @@ class Setup_model extends CI_Model
         return $query;
     }
 
-
     function get_active_customer_contacts($customer_id)
     {
         $this->db->select('*');
@@ -388,6 +387,7 @@ class Setup_model extends CI_Model
         $res = $this->db->where('setting_name', 'discount_limit')->get('other_settings')->row_array();
         return $res;
     }
+
     //currency
     function get_active_currency_list()
     {
@@ -415,13 +415,11 @@ class Setup_model extends CI_Model
         return $this->db->get('currency_master')->row();
     }
 
-
     public function insert_currency($data)
     {
         $this->db->insert('currency_master', $data);
         return $this->db->insert_id();
     }
-
 
     public function update_currency($currency_id, $data)
     {
@@ -429,14 +427,69 @@ class Setup_model extends CI_Model
         return $this->db->update('currency_master', $data);
     }
 
-
     public function deactivate_currency($currency_id)
     {
         $this->db->where('currency_id', $currency_id);
-        return $this->db->update('currency_master', array('active' => 0)
+        return $this->db->update(
+            'currency_master',
+            array('active' => 0)
         );
     }
-    /////////////////////////////////////// END CURRENCY MASTER ////////////////////////////////////////
+    ////////////////////////////////// END CURRENCY MASTER /////////////////////////////////////
+
+    /////////////////////////////// TERMS & CONDITIONS MASTER ///////////////////////////////////////
+
+    public function get_terms_conditions_list()
+    {
+        $this->db->select('*');
+        $this->db->from('terms_conditions_master');
+        $this->db->order_by('terms_id', 'DESC');
+
+        return $this->db->get()->result();
+    }
+
+    public function get_terms_conditions_by_id($terms_id)
+    {
+        $this->db->where('terms_id', $terms_id);
+        return $this->db->get('terms_conditions_master')->row();
+    }
+
+    public function insert_terms_conditions($data)
+    {
+        $this->db->insert('terms_conditions_master', $data);
+        return $this->db->insert_id();
+    }
+
+    public function update_terms_conditions($terms_id, $data)
+    {
+        $this->db->where('terms_id', $terms_id);
+        return $this->db->update('terms_conditions_master', $data);
+    }
+
+    public function deactivate_terms_conditions($terms_id)
+    {
+        $this->db->where('terms_id', $terms_id);
+        return $this->db->update(
+            'terms_conditions_master',
+            array(
+                'active' => 0,
+                'updated_by' => $this->session->userdata('user_id'),
+                'updated_date' => date('Y-m-d H:i:s')
+            )
+        );
+    }
+
+    public function check_terms_conditions_duplicate($terms_name, $terms_id = null)
+    {
+        $this->db->where('LOWER(terms_name)', strtolower(trim($terms_name)));
+        if (!empty($terms_id)) {
+            $this->db->where('terms_id !=', $terms_id);
+        }
+
+        return $this->db->get('terms_conditions_master')->num_rows();
+    }
+
+    ////////////////////////// END TERMS & CONDITIONS MASTER /////////////////////////////////////
 
     //supplier
     function get_active_supplier_list()
