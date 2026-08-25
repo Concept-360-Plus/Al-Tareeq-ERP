@@ -398,6 +398,46 @@ class Setup_model extends CI_Model
         return $query;
     }
 
+    /////////////////////////////////////// CURRENCY MASTER ////////////////////////////////////////////
+
+    public function get_currency_list()
+    {
+        $this->db->select('*');
+        $this->db->from('currency_master');
+        $this->db->order_by('currency_id', 'ASC');
+
+        return $this->db->get()->result();
+    }
+
+    public function get_currency_by_id($currency_id)
+    {
+        $this->db->where('currency_id', $currency_id);
+        return $this->db->get('currency_master')->row();
+    }
+
+
+    public function insert_currency($data)
+    {
+        $this->db->insert('currency_master', $data);
+        return $this->db->insert_id();
+    }
+
+
+    public function update_currency($currency_id, $data)
+    {
+        $this->db->where('currency_id', $currency_id);
+        return $this->db->update('currency_master', $data);
+    }
+
+
+    public function deactivate_currency($currency_id)
+    {
+        $this->db->where('currency_id', $currency_id);
+        return $this->db->update('currency_master', array('active' => 0)
+        );
+    }
+    /////////////////////////////////////// END CURRENCY MASTER ////////////////////////////////////////
+
     //supplier
     function get_active_supplier_list()
     {
@@ -474,11 +514,6 @@ class Setup_model extends CI_Model
     {
         $query = $this->db->query("select vat_percent from vat_master order by applicable_date desc limit 1");
         return $query->row('vat_percent');
-    }
-    function get_currency_list()
-    {
-        $query = $this->db->query("select * from currency_master");
-        return $query->result();
     }
 
     public function get_company_bank_list($branch_id)

@@ -1795,6 +1795,195 @@ class Setup extends CI_Controller
     }
     ///////// STORE CODE END   ///////////////////////
 
+    /////////////////////////////////////// CURRENCY MASTER ////////////////////////////////////////////
+
+    public function list_currency()
+    {
+        $user = $this->session->userdata('user_id');
+        if (!has_view_access($user, 'Setup/list_currency')) {
+            $data['title'] = 'Access Denied';
+            $data['main_content'] = 'errors/access_control.php';
+        } else {
+            $data['title'] = 'Currency Master';
+            $this->load->model('Setup_model');
+            $data['currencies'] = $this->Setup_model->get_currency_list();
+            $data['main_content'] = 'setup/list_currency.php';
+        }
+        $this->load->view('includes/template', $data);
+    }
+
+
+    public function add_currency()
+    {
+        $user = $this->session->userdata('user_id');
+        if (!has_access($user, 'Setup/list_currency', 'A')) {
+            $data['title'] = 'Access Denied';
+            $data['main_content'] = 'errors/access_control.php';
+        } else {
+            $data['title'] = 'Add Currency';
+            $data['main_content'] = 'setup/currency_form.php';
+        }
+
+        $this->load->view('includes/template', $data);
+    }
+
+
+    public function add_currency_data()
+    {
+        $user = $this->session->userdata('user_id');
+
+        if (!has_access($user, 'Setup/list_currency', 'A')) {
+            $data['title'] = 'Access Denied';
+            $data['main_content'] = 'errors/access_control.php';
+            $this->load->view('includes/template', $data);
+            return;
+        }
+
+        $currency_abbr   = trim($this->input->post('currency_abbr', true));
+        $currency_name   = trim($this->input->post('currency_name', true));
+        $conversion_rate = $this->input->post('conversion_rate', true);
+
+        // Basic validation
+        if ($currency_abbr == '' || $currency_name == '') {
+            $this->session->set_flashdata('warning','Currency Abbreviation and Currency Name are required.');
+            redirect('Setup/add_currency');
+            return;
+        }
+
+        // Check duplicate abbreviation
+        $this->db->where('currency_abbr', $currency_abbr);
+        $exists = $this->db->get('currency_master')->num_rows();
+
+        if ($exists > 0) {
+            $this->session->set_flashdata('warning','Currency Abbreviation Already Exists.');
+            redirect('Setup/add_currency');
+            return;
+        }
+
+        $data = array(
+            'currency_abbr'   => $currency_abbr,
+            'currency_name'   => $currency_name,
+            'conversion_rate' => ($conversion_rate !== '' ? $conversion_rate : 1),
+            'active'          => 1
+        );
+
+        $result = $this->Setup_model->insert_currency($data);
+        if ($result) {
+            $this->session->set_flashdata('success','Currency Added Successfully');
+            redirect('Setup/list_currency');
+        } else {
+            $this->session->set_flashdata('error','Failed To Add Currency');
+            redirect('Setup/add_currency');
+        }
+    }
+
+
+    public function edit_currency($id)
+    {
+        $user = $this->session->userdata('user_id');
+
+        if (!has_access($user, 'Setup/list_currency', 'E')) {
+            $data['title'] = 'Access Denied';
+            $data['main_content'] = 'errors/access_control.php';
+        } else {
+            $data['title'] = 'Edit Currency';
+            $this->load->model('Setup_model');
+            $data['currency'] = $this->Setup_model->get_currency_by_id($id);
+            $data['main_content'] ='setup/currency_form.php';
+        }
+
+        $this->load->view('includes/template', $data);
+    }
+
+
+    public function update_currency_data()
+    {
+        $user = $this->session->userdata('user_id');
+
+        if (!has_access($user, 'Setup/list_currency', 'E')) {
+            $data['title'] = 'Access Denied';
+            $data['main_content'] = 'errors/access_control.php';
+            $this->load->view('includes/template', $data);
+            return;
+        }
+
+        $currency_id    = $this->input->post('currency_id', true);
+        $currency_abbr  = trim($this->input->post('currency_abbr', true));
+        $currency_name  = trim($this->input->post('currency_name', true));
+        $conversion_rate = $this->input->post('conversion_rate', true);
+
+        if (empty($currency_id)) {
+            $this->session->set_flashdata('error','Invalid Currency ID.');
+            redirect('Setup/list_currency');
+            return;
+        }
+
+        if ($currency_abbr == '' || $currency_name == '') {
+            $this->session->set_flashdata('warning','Currency Abbreviation and Currency Name are required.');
+            redirect('Setup/edit_currency/' . $currency_id);
+            return;
+        }
+
+        // Check duplicate abbreviation excluding current currency
+        $this->db->where('currency_abbr', $currency_abbr);
+        $this->db->where('currency_id !=', $currency_id);
+
+        $exists = $this->db->get('currency_master')->num_rows();
+        if ($exists > 0) {
+            $this->session->set_flashdata('warning','Currency Abbreviation Already Exists.');
+            redirect('Setup/edit_currency/' . $currency_id);
+            return;
+        }
+
+        $data = array(
+            'currency_abbr'   => $currency_abbr,
+            'currency_name'   => $currency_name,
+            'conversion_rate' => ($conversion_rate !== '' ? $conversion_rate : 1),
+            'active'          => $this->input->post('active', true)
+        );
+
+        $result = $this->Setup_model->update_currency($currency_id,$data);
+        if ($result) {
+            $this->session->set_flashdata('success','Currency Updated Successfully');
+        } else {
+            $this->session->set_flashdata('error','Failed To Update Currency');
+        }
+
+        redirect('Setup/list_currency');
+    }
+
+
+    public function delete_currency($id)
+    {
+        $user = $this->session->userdata('user_id');
+
+        if (!has_access($user, 'Setup/list_currency', 'D')) {
+            $data['title'] = 'Access Denied';
+            $data['main_content'] = 'errors/access_control.php';
+            $this->load->view('includes/template', $data);
+            return;
+        }
+
+        if (empty($id)) {
+            $this->session->set_flashdata('error','Invalid Currency ID.');
+
+            redirect('Setup/list_currency');
+            return;
+        }
+
+        $result = $this->Setup_model->deactivate_currency($id);
+        if ($result) {
+            $this->session->set_flashdata('success','Currency Deactivated Successfully');
+        } else {
+            $this->session->set_flashdata('error','Unable To Deactivate Currency'
+            );
+        }
+
+        redirect('Setup/list_currency');
+    }
+
+    /////////////////////////////////////// END CURRENCY MASTER ////////////////////////////////////////
+
 
     //randam val
     public function randomString($length = 5)
