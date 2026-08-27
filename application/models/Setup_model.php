@@ -444,7 +444,6 @@ class Setup_model extends CI_Model
         $this->db->select('*');
         $this->db->from('terms_conditions_master');
         $this->db->order_by('terms_id', 'DESC');
-
         return $this->db->get()->result();
     }
 
@@ -472,16 +471,19 @@ class Setup_model extends CI_Model
         return $this->db->update(
             'terms_conditions_master',
             array(
-                'active' => 0,
-                'updated_by' => $this->session->userdata('user_id'),
+                'active'       => 0,
+                'updated_by'   => $this->session->userdata('user_id'),
                 'updated_date' => date('Y-m-d H:i:s')
             )
         );
     }
 
-    public function check_terms_conditions_duplicate($terms_name, $terms_id = null)
+    public function check_terms_conditions_duplicate($term_type, $terms_name, $terms_id = null)
     {
+        $this->db->where('term_type', strtoupper(trim($term_type)));
         $this->db->where('LOWER(terms_name)', strtolower(trim($terms_name)));
+
+        // Exclude current record while editing
         if (!empty($terms_id)) {
             $this->db->where('terms_id !=', $terms_id);
         }
@@ -489,7 +491,7 @@ class Setup_model extends CI_Model
         return $this->db->get('terms_conditions_master')->num_rows();
     }
 
-    ////////////////////////// END TERMS & CONDITIONS MASTER /////////////////////////////////////
+    /////////////////////////////// END TERMS & CONDITIONS MASTER /////////////////////////////////////
 
     //supplier
     function get_active_supplier_list()
