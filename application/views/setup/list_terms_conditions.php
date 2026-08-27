@@ -1,43 +1,81 @@
 <?php
-
 $page_name = $this->uri->segment(1) . '/' . $this->uri->segment(2);
-
 $user = $this->session->userdata('user_id');
-
 ?>
 
 <div class="page-content">
-
     <div class="container-fluid">
 
 
         <!-- FLASH MESSAGES -->
+        <div class="flash-message-container">
 
-        <?php if ($this->session->flashdata('success')): ?>
+            <?php if ($this->session->flashdata('success')) { ?>
 
-            <div class="alert alert-success">
-                <?= $this->session->flashdata('success'); ?>
-            </div>
+                <div class="alert alert-success alert-dismissible fade show"
+                    role="alert">
 
-        <?php endif; ?>
+                    <strong>Success!</strong>
+                    <?= $this->session->flashdata('success'); ?>
+
+                    <button type="button"
+                        class="close"
+                        data-dismiss="alert"
+                        aria-label="Close">
+
+                        <span aria-hidden="true">&times;</span>
+
+                    </button>
+
+                </div>
+
+            <?php } ?>
 
 
-        <?php if ($this->session->flashdata('error')): ?>
+            <?php if ($this->session->flashdata('error')) { ?>
 
-            <div class="alert alert-danger">
-                <?= $this->session->flashdata('error'); ?>
-            </div>
+                <div class="alert alert-danger alert-dismissible fade show"
+                    role="alert">
 
-        <?php endif; ?>
+                    <strong>Error!</strong>
+                    <?= $this->session->flashdata('error'); ?>
+
+                    <button type="button"
+                        class="close"
+                        data-dismiss="alert"
+                        aria-label="Close">
+
+                        <span aria-hidden="true">&times;</span>
+
+                    </button>
+
+                </div>
+
+            <?php } ?>
 
 
-        <?php if ($this->session->flashdata('warning')): ?>
+            <?php if ($this->session->flashdata('warning')) { ?>
 
-            <div class="alert alert-warning">
-                <?= $this->session->flashdata('warning'); ?>
-            </div>
+                <div class="alert alert-warning alert-dismissible fade show"
+                    role="alert">
 
-        <?php endif; ?>
+                    <strong>Warning!</strong>
+                    <?= $this->session->flashdata('warning'); ?>
+
+                    <button type="button"
+                        class="close"
+                        data-dismiss="alert"
+                        aria-label="Close">
+
+                        <span aria-hidden="true">&times;</span>
+
+                    </button>
+
+                </div>
+
+            <?php } ?>
+
+        </div>
 
 
         <div class="card">

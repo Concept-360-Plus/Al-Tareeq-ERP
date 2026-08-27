@@ -3,46 +3,76 @@
 
         <div class="page-title-box">
 
-            <h4 class="page-title">
+            <div class="flash-message-container">
 
-                <?php
-                echo isset($terms_conditions)
-                    ? 'Edit Terms & Conditions'
-                    : 'Add Terms & Conditions';
-                ?>
+                <?php if ($this->session->flashdata('success')) { ?>
 
-            </h4>
+                    <div class="alert alert-success alert-dismissible fade show"
+                        role="alert">
+
+                        <strong>Success!</strong>
+                        <?= $this->session->flashdata('success'); ?>
+
+                        <button type="button"
+                            class="close"
+                            data-dismiss="alert"
+                            aria-label="Close">
+
+                            <span aria-hidden="true">&times;</span>
+
+                        </button>
+
+                    </div>
+
+                <?php } ?>
+
+
+                <?php if ($this->session->flashdata('error')) { ?>
+
+                    <div class="alert alert-danger alert-dismissible fade show"
+                        role="alert">
+
+                        <strong>Error!</strong>
+                        <?= $this->session->flashdata('error'); ?>
+
+                        <button type="button"
+                            class="close"
+                            data-dismiss="alert"
+                            aria-label="Close">
+
+                            <span aria-hidden="true">&times;</span>
+
+                        </button>
+
+                    </div>
+
+                <?php } ?>
+
+
+                <?php if ($this->session->flashdata('warning')) { ?>
+
+                    <div class="alert alert-warning alert-dismissible fade show"
+                        role="alert">
+
+                        <strong>Warning!</strong>
+                        <?= $this->session->flashdata('warning'); ?>
+
+                        <button type="button"
+                            class="close"
+                            data-dismiss="alert"
+                            aria-label="Close">
+
+                            <span aria-hidden="true">&times;</span>
+
+                        </button>
+
+                    </div>
+
+                <?php } ?>
+
+            </div>
 
         </div>
-
-
-        <!-- FLASH MESSAGES -->
-
-        <?php if ($this->session->flashdata('success')) { ?>
-
-            <div class="alert alert-success">
-                <?php echo $this->session->flashdata('success'); ?>
-            </div>
-
-        <?php } ?>
-
-
-        <?php if ($this->session->flashdata('error')) { ?>
-
-            <div class="alert alert-danger">
-                <?php echo $this->session->flashdata('error'); ?>
-            </div>
-
-        <?php } ?>
-
-
-        <?php if ($this->session->flashdata('warning')) { ?>
-
-            <div class="alert alert-warning">
-                <?php echo $this->session->flashdata('warning'); ?>
-            </div>
-
-        <?php } ?>
 
 
         <div class="card">
@@ -200,10 +230,10 @@
                     <br>
 
 
-                    <!-- DESCRIPTION -->
+
+                    <!-- TERMS & CONDITIONS DESCRIPTION -->
 
                     <div class="row">
-
                         <div class="col-md-12">
 
                             <label>
@@ -212,45 +242,41 @@
 
                             <textarea
                                 name="terms_description"
-                                rows="7"
+                                id="terms_description"
+                                rows="10"
                                 class="form-control"
-                                placeholder="Enter terms and conditions details..."><?php
+                                placeholder="Enter terms and conditions details...">
+                                <?php
+                                echo isset($terms_conditions)
+                                    ? htmlspecialchars(
+                                        $terms_conditions->terms_description,
+                                        ENT_QUOTES,
+                                        'UTF-8'
+                                    )
+                                    : '';
 
-                                                                                    echo isset($terms_conditions)
-                                                                                        ? htmlspecialchars(
-                                                                                            $terms_conditions->terms_description,
-                                                                                            ENT_QUOTES,
-                                                                                            'UTF-8'
-                                                                                        )
-                                                                                        : '';
-
-                                                                                    ?></textarea>
+                                ?>
+                            </textarea>
 
                             <small class="text-muted">
-                                Enter the complete terms and conditions applicable to this term type.
+                                Enter the complete terms and conditions. You can use
+                                formatting, numbering, bullet points, tables, etc.
                             </small>
 
                         </div>
-
                     </div>
-
 
                     <br>
 
-
                     <!-- STATUS -->
-
                     <div class="row">
-
                         <div class="col-md-6">
 
                             <label>
                                 Status
                             </label>
 
-                            <select
-                                name="active"
-                                class="form-control">
+                            <select name="active" class="form-control">
 
                                 <option
                                     value="1"
@@ -286,15 +312,11 @@
                             </select>
 
                         </div>
-
                     </div>
-
 
                     <br>
 
-
                     <!-- BUTTONS -->
-
                     <button
                         type="submit"
                         class="btn btn-primary">
@@ -309,14 +331,7 @@
 
                     </button>
 
-
-                    <a
-                        href="<?php
-                                echo base_url(
-                                    'index.php/Setup/list_terms_conditions'
-                                );
-                                ?>"
-                        class="btn btn-secondary">
+                    <a href="<?php echo base_url('index.php/Setup/list_terms_conditions'); ?>" class="btn btn-secondary">
                         Cancel
                     </a>
 
@@ -329,3 +344,12 @@
 
     </div>
 </div>
+
+<script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
+<script>
+    $(document).ready(function() {
+        if (document.getElementById('terms_description')) {
+            CKEDITOR.replace('terms_description');
+        }
+    });
+</script>

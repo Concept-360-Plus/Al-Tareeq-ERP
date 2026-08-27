@@ -491,6 +491,49 @@ class Setup_model extends CI_Model
         return $this->db->get('terms_conditions_master')->num_rows();
     }
 
+    public function get_active_terms_conditions_by_type($term_type)
+    {
+        return $this->db
+            ->where('term_type', strtoupper($term_type))
+            ->where('active', 1)
+            ->order_by('terms_name', 'ASC')
+            ->get('terms_conditions_master')
+            ->result();
+    }
+
+    public function add_terms_conditions_ajax($term_type, $terms_name, $terms_description)
+    {
+        $term_type = strtoupper(trim($term_type));
+        $terms_name = trim($terms_name);
+        $terms_description = trim($terms_description);
+
+        // Check duplicate within same term type
+        $exists = $this->check_terms_conditions_duplicate(
+            $term_type,
+            $terms_name
+        );
+
+        if ($exists > 0) {
+            return false;
+        }
+
+        $data = array(
+            'term_type'         => $term_type,
+            'terms_name'        => $terms_name,
+            'terms_description' => $terms_description,
+            'active'            => 1,
+            'created_by'        => $this->session->userdata('user_id'),
+            'created_date'      => date('Y-m-d H:i:s')
+        );
+
+        $this->db->insert(
+            'terms_conditions_master',
+            $data
+        );
+
+        return $this->db->insert_id();
+    }
+
     /////////////////////////////// END TERMS & CONDITIONS MASTER /////////////////////////////////////
 
     //supplier

@@ -1074,4 +1074,97 @@ class Ajax extends CI_Controller
     }
     ///////////STORE CODE END   ////////
 
+    /////////////////////////////// TERMS & CONDITIONS AJAX START //////////////////////////////
+
+    public function add_new_term()
+    {
+        $term_type = strtoupper(
+            trim($this->input->post('term_type', true))
+        );
+
+        if (!in_array($term_type, array(
+            'PAYMENT',
+            'DELIVERY',
+            'GENERAL'
+        ))) {
+            echo json_encode(array(
+                'success' => false,
+                'message' => 'Invalid term type.'
+            ));
+            return;
+        }
+
+        $this->load->model('Setup_model');
+
+        $data['term_type'] = $term_type;
+
+        $this->load->view(
+            'ajax/add_terms_conditions_modal',
+            $data
+        );
+    }
+
+
+    public function save_term_ajax()
+    {
+        $term_type = strtoupper(trim($this->input->post('term_type', true)));
+        $terms_name = trim($this->input->post('terms_name', true));
+        $terms_description = trim($this->input->post('terms_description', true));
+
+        // Validate term type
+        if (!in_array($term_type, array(
+            'PAYMENT',
+            'DELIVERY',
+            'GENERAL'
+        ))) {
+            echo json_encode(array(
+                'success' => false,
+                'message' => 'Invalid term type.'
+            ));
+            return;
+        }
+
+        // Validate name
+        if ($terms_name == '') {
+            echo json_encode(array(
+                'success' => false,
+                'message' => 'Terms & Conditions Name is required.'
+            ));
+            return;
+        }
+
+        $this->load->model('Setup_model');
+
+        // Check duplicate
+        $exists = $this->Setup_model->check_terms_conditions_duplicate($term_type, $terms_name);
+        if ($exists > 0) {
+            echo json_encode(array(
+                'success' => false,
+                'message' =>
+                'This term already exists for the selected type.'
+            ));
+            return;
+        }
+
+        // Insert
+        $terms_id = $this->Setup_model->add_terms_conditions_ajax($term_type, $terms_name, $terms_description);
+
+        if ($terms_id) {
+            echo json_encode(array(
+                'success'           => true,
+                'terms_id'          => $terms_id,
+                'term_type'         => $term_type,
+                'terms_name'        => $terms_name,
+                'terms_description' => $terms_description
+            ));
+        } else {
+            echo json_encode(array(
+                'success' => false,
+                'message' => 'Failed to save Terms & Conditions.'
+            ));
+        }
+    }
+
+    /////////////////////////////// TERMS & CONDITIONS AJAX END //////////////////////////////
+
 }
