@@ -164,6 +164,10 @@ class Purchase extends CI_Controller
         $data['purchase_requests'] = $this->Purchase_Model->get_PR_list(); // <--- added
         $data['supplier_records']   = $this->Setup_model->get_active_supplier_list();
 
+        $data['payment_terms_list'] = $this->Setup_model->get_active_terms_conditions_by_type('PAYMENT');
+        $data['delivery_terms_list'] = $this->Setup_model->get_active_terms_conditions_by_type('DELIVERY');
+        $data['general_terms_list'] = $this->Setup_model->get_active_terms_conditions_by_type('GENERAL');
+
         // pass selected rfq id to the view
         $data['selected_rfq_id']    = $rfq_id;
 

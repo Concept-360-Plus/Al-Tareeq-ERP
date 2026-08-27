@@ -1993,18 +1993,12 @@ class Setup extends CI_Controller
         $user = $this->session->userdata('user_id');
 
         if (!has_view_access($user, 'Setup/list_terms_conditions')) {
-
             $data['title'] = 'Access Denied';
             $data['main_content'] = 'errors/access_control.php';
         } else {
-
             $data['title'] = 'Terms & Conditions Master';
-
-            $data['terms_conditions'] =
-                $this->Setup_model->get_terms_conditions_list();
-
-            $data['main_content'] =
-                'setup/list_terms_conditions.php';
+            $data['terms_conditions'] = $this->Setup_model->get_terms_conditions_list();
+            $data['main_content'] ='setup/list_terms_conditions.php';
         }
 
         $this->load->view('includes/template', $data);
@@ -2016,14 +2010,11 @@ class Setup extends CI_Controller
         $user = $this->session->userdata('user_id');
 
         if (!has_access($user, 'Setup/list_terms_conditions', 'A')) {
-
             $data['title'] = 'Access Denied';
             $data['main_content'] = 'errors/access_control.php';
         } else {
-
             $data['title'] = 'Add Terms & Conditions';
-            $data['main_content'] =
-                'setup/terms_conditions_form.php';
+            $data['main_content'] ='setup/terms_conditions_form.php';
         }
 
         $this->load->view('includes/template', $data);
@@ -2035,7 +2026,6 @@ class Setup extends CI_Controller
         $user = $this->session->userdata('user_id');
 
         if (!has_access($user, 'Setup/list_terms_conditions', 'A')) {
-
             $data['title'] = 'Access Denied';
             $data['main_content'] = 'errors/access_control.php';
 
@@ -2045,103 +2035,52 @@ class Setup extends CI_Controller
 
 
         // GET FORM DATA
-        $term_type = strtoupper(
-            trim($this->input->post('term_type', true))
-        );
-
-        $terms_name = trim(
-            $this->input->post('terms_name', true)
-        );
-
-        $terms_description = $this->input->post(
-            'terms_description',
-            true
-        );
-
+        $term_type = strtoupper(trim($this->input->post('term_type', true)));
+        $terms_name = trim($this->input->post('terms_name', true));
+        $terms_description = $this->input->post('terms_description', true);
 
         // VALIDATE TERM TYPE
-        $allowed_types = array(
-            'PAYMENT',
-            'DELIVERY',
-            'GENERAL'
-        );
-
+        $allowed_types = array('PAYMENT','DELIVERY','GENERAL');
         if (!in_array($term_type, $allowed_types)) {
-
-            $this->session->set_flashdata(
-                'warning',
-                'Please select a valid Term Type.'
-            );
+            $this->session->set_flashdata('warning','Please select a valid Term Type.');
 
             redirect('Setup/add_terms_conditions');
             return;
         }
-
 
         // VALIDATE NAME
         if ($terms_name == '') {
-
-            $this->session->set_flashdata(
-                'warning',
-                'Terms & Conditions Name is required.'
-            );
-
+            $this->session->set_flashdata('warning','Terms & Conditions Name is required.');
             redirect('Setup/add_terms_conditions');
             return;
         }
-
 
         // DUPLICATE CHECK
-        $exists = $this->Setup_model
-            ->check_terms_conditions_duplicate(
-                $term_type,
-                $terms_name
-            );
+        $exists = $this->Setup_model->check_terms_conditions_duplicate($term_type, $terms_name);
 
         if ($exists > 0) {
-
-            $this->session->set_flashdata(
-                'warning',
-                'This Terms & Conditions already exists for the selected Term Type.'
-            );
-
+            $this->session->set_flashdata('warning','This Terms & Conditions already exists for the selected Term Type.');
             redirect('Setup/add_terms_conditions');
             return;
         }
-
 
         // INSERT DATA
         $data = array(
-
             'term_type'         => $term_type,
             'terms_name'        => $terms_name,
             'terms_description' => $terms_description,
             'active'            => 1,
             'created_by'        => $user,
             'created_date'      => date('Y-m-d H:i:s')
-
         );
 
-
-        $result = $this->Setup_model
-            ->insert_terms_conditions($data);
-
+        $result = $this->Setup_model->insert_terms_conditions($data);
 
         if ($result) {
-
-            $this->session->set_flashdata(
-                'success',
-                'Terms & Conditions Added Successfully'
-            );
-
+            $this->session->set_flashdata('success','Terms & Conditions Added Successfully');
             redirect('Setup/list_terms_conditions');
         } else {
-
-            $this->session->set_flashdata(
-                'error',
-                'Failed To Add Terms & Conditions'
-            );
-
+            $this->session->set_flashdata('error','Failed To Add Terms & Conditions');
             redirect('Setup/add_terms_conditions');
         }
     }
@@ -2152,31 +2091,19 @@ class Setup extends CI_Controller
         $user = $this->session->userdata('user_id');
 
         if (!has_access($user, 'Setup/list_terms_conditions', 'E')) {
-
             $data['title'] = 'Access Denied';
             $data['main_content'] = 'errors/access_control.php';
         } else {
-
             $data['title'] = 'Edit Terms & Conditions';
-
-            $data['terms_conditions'] =
-                $this->Setup_model->get_terms_conditions_by_id($id);
-
+            $data['terms_conditions'] = $this->Setup_model->get_terms_conditions_by_id($id);
 
             if (empty($data['terms_conditions'])) {
-
-                $this->session->set_flashdata(
-                    'error',
-                    'Invalid Terms & Conditions ID.'
-                );
-
+                $this->session->set_flashdata('error','Invalid Terms & Conditions ID.');
                 redirect('Setup/list_terms_conditions');
                 return;
             }
 
-
-            $data['main_content'] =
-                'setup/terms_conditions_form.php';
+            $data['main_content'] ='setup/terms_conditions_form.php';
         }
 
         $this->load->view('includes/template', $data);
