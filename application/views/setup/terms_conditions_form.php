@@ -2,41 +2,51 @@
     <div class="container-fluid">
 
         <div class="page-title-box">
+
             <h4 class="page-title">
+
                 <?php
                 echo isset($terms_conditions)
                     ? 'Edit Terms & Conditions'
                     : 'Add Terms & Conditions';
                 ?>
+
             </h4>
+
         </div>
 
 
-        <!-- SUCCESS -->
+        <!-- FLASH MESSAGES -->
+
         <?php if ($this->session->flashdata('success')) { ?>
+
             <div class="alert alert-success">
                 <?php echo $this->session->flashdata('success'); ?>
             </div>
+
         <?php } ?>
 
 
-        <!-- ERROR -->
         <?php if ($this->session->flashdata('error')) { ?>
+
             <div class="alert alert-danger">
                 <?php echo $this->session->flashdata('error'); ?>
             </div>
+
         <?php } ?>
 
 
-        <!-- WARNING -->
         <?php if ($this->session->flashdata('warning')) { ?>
+
             <div class="alert alert-warning">
                 <?php echo $this->session->flashdata('warning'); ?>
             </div>
+
         <?php } ?>
 
 
         <div class="card">
+
             <div class="card-body">
 
                 <form
@@ -59,6 +69,7 @@
 
 
                     <!-- EDIT ID -->
+
                     <?php if (isset($terms_conditions)) { ?>
 
                         <input
@@ -69,10 +80,92 @@
                     <?php } ?>
 
 
-                    <!-- ROW 1 -->
                     <div class="row">
 
+
+                        <!-- TERM TYPE -->
+
+                        <div class="col-md-6">
+
+                            <label>
+                                Term Type
+                                <span class="text-danger">*</span>
+                            </label>
+
+                            <select
+                                name="term_type"
+                                class="form-control"
+                                required>
+
+                                <option value="">
+                                    Select Term Type
+                                </option>
+
+
+                                <option
+                                    value="PAYMENT"
+                                    <?php
+
+                                    if (
+                                        isset($terms_conditions) &&
+                                        strtoupper(
+                                            $terms_conditions->term_type
+                                        ) == 'PAYMENT'
+                                    ) {
+                                        echo 'selected';
+                                    }
+
+                                    ?>>
+                                    Payment
+                                </option>
+
+
+                                <option
+                                    value="DELIVERY"
+                                    <?php
+
+                                    if (
+                                        isset($terms_conditions) &&
+                                        strtoupper(
+                                            $terms_conditions->term_type
+                                        ) == 'DELIVERY'
+                                    ) {
+                                        echo 'selected';
+                                    }
+
+                                    ?>>
+                                    Delivery
+                                </option>
+
+
+                                <option
+                                    value="GENERAL"
+                                    <?php
+
+                                    if (
+                                        isset($terms_conditions) &&
+                                        strtoupper(
+                                            $terms_conditions->term_type
+                                        ) == 'GENERAL'
+                                    ) {
+                                        echo 'selected';
+                                    }
+
+                                    ?>>
+                                    General
+                                </option>
+
+                            </select>
+
+                            <small class="text-muted">
+                                Select whether this is a Payment, Delivery or General term.
+                            </small>
+
+                        </div>
+
+
                         <!-- TERMS NAME -->
+
                         <div class="col-md-6">
 
                             <label>
@@ -86,7 +179,9 @@
                                 class="form-control"
                                 maxlength="150"
                                 required
+                                placeholder="Example: 30 Days Credit Payment"
                                 value="<?php
+
                                         echo isset($terms_conditions)
                                             ? htmlspecialchars(
                                                 $terms_conditions->terms_name,
@@ -94,261 +189,59 @@
                                                 'UTF-8'
                                             )
                                             : '';
+
                                         ?>">
 
+                        </div>
+
+                    </div>
+
+
+                    <br>
+
+
+                    <!-- DESCRIPTION -->
+
+                    <div class="row">
+
+                        <div class="col-md-12">
+
+                            <label>
+                                Terms & Conditions Description
+                            </label>
+
+                            <textarea
+                                name="terms_description"
+                                rows="7"
+                                class="form-control"
+                                placeholder="Enter terms and conditions details..."><?php
+
+                                                                                    echo isset($terms_conditions)
+                                                                                        ? htmlspecialchars(
+                                                                                            $terms_conditions->terms_description,
+                                                                                            ENT_QUOTES,
+                                                                                            'UTF-8'
+                                                                                        )
+                                                                                        : '';
+
+                                                                                    ?></textarea>
+
                             <small class="text-muted">
-                                Example: Standard Purchase Terms
+                                Enter the complete terms and conditions applicable to this term type.
                             </small>
 
                         </div>
 
-
-                        <!-- APPLICABLE TO -->
-                        <div class="col-md-6">
-
-                            <label>
-                                Applicable To
-                                <span class="text-danger">*</span>
-                            </label>
-
-                            <select
-                                name="applicable_to"
-                                class="form-control"
-                                required>
-
-                                <option value="">
-                                    Select Applicable To
-                                </option>
-
-
-                                <option
-                                    value="SALES"
-                                    <?php
-                                    if (
-                                        isset($terms_conditions) &&
-                                        strtoupper(
-                                            $terms_conditions->applicable_to
-                                        ) == 'SALES'
-                                    ) {
-                                        echo 'selected';
-                                    }
-                                    ?>>
-                                    Sales
-                                </option>
-
-
-                                <option
-                                    value="PURCHASE"
-                                    <?php
-                                    if (
-                                        isset($terms_conditions) &&
-                                        strtoupper(
-                                            $terms_conditions->applicable_to
-                                        ) == 'PURCHASE'
-                                    ) {
-                                        echo 'selected';
-                                    }
-                                    ?>>
-                                    Purchase
-                                </option>
-
-
-                                <option
-                                    value="BOTH"
-                                    <?php
-                                    if (
-                                        isset($terms_conditions) &&
-                                        strtoupper(
-                                            $terms_conditions->applicable_to
-                                        ) == 'BOTH'
-                                    ) {
-                                        echo 'selected';
-                                    }
-                                    ?>>
-                                    Both
-                                </option>
-
-                            </select>
-
-                        </div>
-
                     </div>
 
 
                     <br>
 
 
-                    <!-- ROW 2 -->
+                    <!-- STATUS -->
+
                     <div class="row">
 
-                        <!-- VALIDITY -->
-                        <div class="col-md-6">
-
-                            <label>
-                                Validity
-                            </label>
-
-                            <input
-                                type="text"
-                                name="validity"
-                                class="form-control"
-                                maxlength="100"
-                                placeholder="Example: 30 Days / 60 Days"
-                                value="<?php
-                                        echo isset($terms_conditions)
-                                            ? htmlspecialchars(
-                                                $terms_conditions->validity,
-                                                ENT_QUOTES,
-                                                'UTF-8'
-                                            )
-                                            : '';
-                                        ?>">
-
-                        </div>
-
-
-                        <!-- WARRANTY -->
-                        <div class="col-md-6">
-
-                            <label>
-                                Warranty
-                            </label>
-
-                            <input
-                                type="text"
-                                name="warranty"
-                                class="form-control"
-                                maxlength="255"
-                                placeholder="Example: 1 Year"
-                                value="<?php
-                                        echo isset($terms_conditions)
-                                            ? htmlspecialchars(
-                                                $terms_conditions->warranty,
-                                                ENT_QUOTES,
-                                                'UTF-8'
-                                            )
-                                            : '';
-                                        ?>">
-
-                        </div>
-
-                    </div>
-
-
-                    <br>
-
-
-                    <!-- ROW 3 -->
-                    <div class="row">
-
-                        <!-- PAYMENT TERMS -->
-                        <div class="col-md-6">
-
-                            <label>
-                                Payment Terms
-                            </label>
-
-                            <textarea
-                                name="payment_terms"
-                                rows="5"
-                                class="form-control"
-                                placeholder="Enter payment terms...">
-                                <?php
-                                echo isset($terms_conditions)
-                                    ? htmlspecialchars(
-                                        $terms_conditions->payment_terms,
-                                        ENT_QUOTES,
-                                        'UTF-8'
-                                    )
-                                    : '';
-                                ?>
-                            </textarea>
-
-                        </div>
-
-
-                        <!-- DELIVERY TERMS -->
-                        <div class="col-md-6">
-
-                            <label>
-                                Delivery Terms
-                            </label>
-
-                            <textarea
-                                name="delivery_terms"
-                                rows="5"
-                                class="form-control"
-                                placeholder="Enter delivery terms...">
-                                <?php
-                                echo isset($terms_conditions)
-                                    ? htmlspecialchars(
-                                        $terms_conditions->delivery_terms,
-                                        ENT_QUOTES,
-                                        'UTF-8'
-                                    )
-                                    : '';
-                                ?>
-                            </textarea>
-
-                        </div>
-
-                    </div>
-
-
-                    <br>
-
-
-                    <!-- ROW 4 -->
-                    <div class="row">
-
-                        <!-- GENERAL TERMS -->
-                        <div class="col-md-6">
-
-                            <label>
-                                General Terms
-                            </label>
-
-                            <textarea name="general_terms" rows="5" class="form-control" placeholder="Enter general terms and conditions..."><?php echo isset($terms_conditions) ? htmlspecialchars($terms_conditions->general_terms, ENT_QUOTES, 'UTF-8') : ''; ?>
-                            </textarea>
-
-                        </div>
-
-
-                        <!-- WARRANTY DESCRIPTION -->
-                        <div class="col-md-6">
-
-                            <label>
-                                Warranty Description
-                            </label>
-
-                            <textarea
-                                name="warranty_description"
-                                rows="5"
-                                class="form-control"
-                                placeholder="Enter detailed warranty information...">
-                                <?php
-                                echo isset($terms_conditions)
-                                    ? htmlspecialchars(
-                                        $terms_conditions->warranty_description,
-                                        ENT_QUOTES,
-                                        'UTF-8'
-                                    )
-                                    : '';
-                                ?>
-                            </textarea>
-
-                        </div>
-
-                    </div>
-
-
-                    <br>
-
-
-                    <!-- ROW 5 -->
-                    <div class="row">
-
-                        <!-- STATUS -->
                         <div class="col-md-6">
 
                             <label>
@@ -363,15 +256,10 @@
                                     value="1"
                                     <?php
 
-                                    if (isset($terms_conditions)) {
-
-                                        if (
-                                            $terms_conditions->active == 1
-                                        ) {
-                                            echo 'selected';
-                                        }
-                                    } else {
-
+                                    if (
+                                        !isset($terms_conditions) ||
+                                        $terms_conditions->active == 1
+                                    ) {
                                         echo 'selected';
                                     }
 
@@ -406,6 +294,7 @@
 
 
                     <!-- BUTTONS -->
+
                     <button
                         type="submit"
                         class="btn btn-primary">
@@ -435,6 +324,7 @@
                 </form>
 
             </div>
+
         </div>
 
     </div>
