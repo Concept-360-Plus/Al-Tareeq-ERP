@@ -564,7 +564,7 @@
 
     });
 
-   //////////////////////////////////////GENERAL TERM CHANGE/////////////////////////
+    //////////////////////////////////////GENERAL TERM CHANGE/////////////////////////
     $('#general_terms_select').on('change', function() {
       var description = $(this)
         .find(':selected')
@@ -661,18 +661,18 @@
             if (response.success) {
               var selectId = '';
               if (response.term_type == 'PAYMENT') {
-                selectId ='#payment_terms_select';
+                selectId = '#payment_terms_select';
               } else if (
                 response.term_type == 'DELIVERY'
               ) {
-                selectId ='#delivery_terms_select';
+                selectId = '#delivery_terms_select';
               } else if (
                 response.term_type == 'GENERAL'
               ) {
-                selectId ='#general_terms_select';
+                selectId = '#general_terms_select';
               }
 
-              var $select =$(selectId);
+              var $select = $(selectId);
 
               // Add new option
               var newOption =
