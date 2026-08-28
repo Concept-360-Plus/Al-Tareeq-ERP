@@ -163,7 +163,14 @@ $user = $this->session->userdata('user_id');
                   <!-- <td><input type="text" class="form-control" name="item_brand[]" value="<?php echo $r->brand_name; ?>" /></td> -->
                   <td><input type="text" class="form-control" name="item_description[]" value="<?php echo $r->description; ?>" /></td>
                   <td><input type="number" class="form-control qty" name="item_quantity[]" id="item_quantity<?php echo $i; ?>" value="<?php echo $r->quantity; ?>" /></td>
-                  <td><select class="form-control" name="item_unit[]" value="<?php echo $r->unit_name; ?>" /></td>
+                  <td><select class="form-control" name="unit[]" id='unit0'>
+                      <option value=''>Select</option>
+                      <?php foreach ($active_units as $unit) { ?>
+                        <option value='<?php echo $unit->unit_id ?>'><?php echo $unit->unit_name; ?></option>
+                      <?php } ?>
+                    </select>>
+                  </td>
+
                   <td><select class="form-control" name="item_packing[]">
                       <option>CTN</option>
                     </select></td>
@@ -234,26 +241,220 @@ $user = $this->session->userdata('user_id');
             <input type="text" class="form-control" name="validity" id="validity"
               value="<?php echo $records1[0]->validity; ?>">
           </div>
+          <!-- Payment Terms -->
           <div class="col-md-6">
-            <label class="form-label">Payment Terms</label>
-            <input type="text" class="form-control" name="payment_terms" id="payment_terms"
-              value="<?php echo $records1[0]->payment_term; ?>">
+
+            <label for="payment_terms_select" class="form-label">
+              Payment Terms
+            </label>
+
+            <select
+              class="form-control term-select"
+              id="payment_terms_select"
+              name="payment_term_id">
+
+              <option value="">
+                Please select payment terms
+              </option>
+
+              <?php if (!empty($payment_terms_list)) { ?>
+
+                <?php foreach ($payment_terms_list as $term) { ?>
+
+                  <option
+                    value="<?php echo $term->terms_id; ?>"
+                    data-description="<?php echo htmlspecialchars(
+                                        $term->terms_description ?? '',
+                                        ENT_QUOTES,
+                                        'UTF-8'
+                                      ); ?>"
+                    <?php
+                    echo (
+                      isset($records1[0]->payment_term) &&
+                      $records1[0]->payment_term == $term->terms_description
+                    ) ? 'selected' : '';
+                    ?>>
+                    <?php echo htmlspecialchars(
+                      $term->terms_name,
+                      ENT_QUOTES,
+                      'UTF-8'
+                    ); ?>
+                  </option>
+
+                <?php } ?>
+
+              <?php } ?>
+
+            </select>
+
+
+            <small>
+              <a href="#"
+                class="add-term-link"
+                data-term-type="PAYMENT">
+                + Add New Payment Term
+              </a>
+            </small>
+
+
+            <!-- Existing field retained for controller -->
+            <input
+              type="hidden"
+              name="payment_terms"
+              id="payment_terms"
+              value="<?php echo htmlspecialchars(
+                        $records1[0]->payment_term ?? '',
+                        ENT_QUOTES,
+                        'UTF-8'
+                      ); ?>">
+
           </div>
         </div>
 
-        <!-- Row 4: Delivery & General -->
+        <!-- Row 4: Delivery + General -->
         <div class="row mb-3">
+
+          <!-- Delivery Terms -->
           <div class="col-md-6">
-            <label class="form-label">Delivery Terms</label>
-            <textarea class="form-control" name="delivery_terms" id="delivery_terms">
-                          <?php echo $records1[0]->delivery_term; ?>
-                      </textarea>
+
+            <label for="delivery_terms_select" class="form-label">
+              Delivery Terms
+            </label>
+
+            <select
+              class="form-control term-select"
+              id="delivery_terms_select"
+              name="delivery_term_id">
+
+              <option value="">
+                Please select delivery terms
+              </option>
+
+              <?php if (!empty($delivery_terms_list)) { ?>
+
+                <?php foreach ($delivery_terms_list as $term) { ?>
+
+                  <option
+                    value="<?php echo $term->terms_id; ?>"
+                    data-description="<?php echo htmlspecialchars(
+                                        $term->terms_description ?? '',
+                                        ENT_QUOTES,
+                                        'UTF-8'
+                                      ); ?>"
+                    <?php
+                    echo (
+                      isset($records1[0]->delivery_term) &&
+                      $records1[0]->delivery_term == $term->terms_description
+                    ) ? 'selected' : '';
+                    ?>>
+                    <?php echo htmlspecialchars(
+                      $term->terms_name,
+                      ENT_QUOTES,
+                      'UTF-8'
+                    ); ?>
+                  </option>
+
+                <?php } ?>
+
+              <?php } ?>
+
+            </select>
+
+
+            <small>
+              <a href="#"
+                class="add-term-link"
+                data-term-type="DELIVERY">
+                + Add New Delivery Term
+              </a>
+            </small>
+
+
+            <!-- Existing field retained for controller -->
+            <input
+              type="hidden"
+              name="delivery_terms"
+              id="delivery_terms"
+              value="<?php echo htmlspecialchars(
+                        $records1[0]->delivery_term ?? '',
+                        ENT_QUOTES,
+                        'UTF-8'
+                      ); ?>">
+
           </div>
+
+
+          <!-- General Terms -->
           <div class="col-md-6">
-            <label class="form-label">General Terms</label>
-            <textarea class="form-control" name="general_terms" id="general_terms"><?php echo $records1[0]->general_term; ?></textarea>
+
+            <label for="general_terms_select" class="form-label">
+              General Terms
+            </label>
+
+            <select
+              class="form-control term-select"
+              id="general_terms_select"
+              name="general_term_id">
+
+              <option value="">
+                Please select general terms
+              </option>
+
+              <?php if (!empty($general_terms_list)) { ?>
+
+                <?php foreach ($general_terms_list as $term) { ?>
+
+                  <option
+                    value="<?php echo $term->terms_id; ?>"
+                    data-description="<?php echo htmlspecialchars(
+                                        $term->terms_description ?? '',
+                                        ENT_QUOTES,
+                                        'UTF-8'
+                                      ); ?>"
+                    <?php
+                    echo (
+                      isset($records1[0]->general_term) &&
+                      $records1[0]->general_term == $term->terms_description
+                    ) ? 'selected' : '';
+                    ?>>
+                    <?php echo htmlspecialchars(
+                      $term->terms_name,
+                      ENT_QUOTES,
+                      'UTF-8'
+                    ); ?>
+                  </option>
+
+                <?php } ?>
+
+              <?php } ?>
+
+            </select>
+
+
+            <small>
+              <a href="#"
+                class="add-term-link"
+                data-term-type="GENERAL">
+                + Add New General Term
+              </a>
+            </small>
+
+
+            <!-- Existing field retained for controller -->
+            <input
+              type="hidden"
+              name="general_terms"
+              id="general_terms"
+              value="<?php echo htmlspecialchars(
+                        $records1[0]->general_term ?? '',
+                        ENT_QUOTES,
+                        'UTF-8'
+                      ); ?>">
+
           </div>
+
         </div>
+
         <!-- Checkbox and Submit Button in same row -->
         <div class="row mb-3 align-items-center">
           <div class="col-md-6">
@@ -271,17 +472,18 @@ $user = $this->session->userdata('user_id');
     </div>
 
 </form>
+<div
+  class="modal fade"
+  id="addTermModal"
+  tabindex="-1"
+  role="dialog"
+  aria-hidden="true">
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.ckeditor.com/4.21.0/standard/ckeditor.js"></script>
+  <div id="addTermModalContent"></div>
+
+</div>
+
 <script>
-  ['delivery_terms', 'general_terms'].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el && el.tagName.toLowerCase() === 'textarea') {
-      CKEDITOR.replace(id);
-    }
-  });
-
   function get_enquiry_info() {
     var rfq_id = document.getElementById("rfq_id").value;
 

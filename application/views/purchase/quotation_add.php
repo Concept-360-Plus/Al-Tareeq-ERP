@@ -546,100 +546,65 @@
     });
 
 
-    ////////////////////////////////////////////////////////////
-    // PAYMENT TERM CHANGE
-    ////////////////////////////////////////////////////////////
-
+    //////////////////////////////// PAYMENT TERM CHANGE//////////////////////////
     $('#payment_terms_select').on('change', function() {
-
       var description = $(this)
         .find(':selected')
         .attr('data-description') || '';
-
       $('#payment_terms').val(description);
 
     });
 
-
-    ////////////////////////////////////////////////////////////
-    // DELIVERY TERM CHANGE
-    ////////////////////////////////////////////////////////////
-
+    ///////////////////// DELIVERY TERM CHANGE//////////////////////
     $('#delivery_terms_select').on('change', function() {
-
       var description = $(this)
         .find(':selected')
         .attr('data-description') || '';
-
       $('#delivery_terms').val(description);
 
     });
 
-
-    ////////////////////////////////////////////////////////////
-    // GENERAL TERM CHANGE
-    ////////////////////////////////////////////////////////////
-
+    //////////////////////////////////////GENERAL TERM CHANGE/////////////////////////
     $('#general_terms_select').on('change', function() {
-
       var description = $(this)
         .find(':selected')
         .attr('data-description') || '';
-
       $('#general_terms').val(description);
-
     });
 
 
-    ////////////////////////////////////////////////////////////
-    // ADD NEW TERM
-    ////////////////////////////////////////////////////////////
+    /////////////////ADD NEW TERM//////////////////////////////
 
     $(document).on(
       'click',
       '.add-term-link',
       function(e) {
-
         e.preventDefault();
-
         var termType = $(this).data('term-type');
-
         $.ajax({
-
           url: "<?php echo base_url('index.php/Ajax/add_new_term'); ?>",
-
           type: "POST",
-
           data: {
             term_type: termType
           },
 
           success: function(response) {
-
             $('#addTermModalContent')
               .html(response);
-
             $('#addTermModal').modal('show');
-
           },
 
           error: function() {
-
             alert(
               'Unable to open Add Term form.'
             );
-
           }
-
         });
-
       }
     );
 
 
-    ////////////////////////////////////////////////////////////
-    // SAVE NEW TERM
-    ////////////////////////////////////////////////////////////
+    //////////////////////SAVE NEW TERM////////////////////////////////
 
     $(document).on(
       'click',
@@ -683,58 +648,31 @@
 
 
         $.ajax({
-
           url: "<?php echo base_url('index.php/Ajax/save_term_ajax'); ?>",
-
           type: "POST",
-
           dataType: "json",
-
           data: {
-
             term_type: termType,
-
             terms_name: termName,
-
             terms_description: description
-
           },
 
-
           success: function(response) {
-
-
             if (response.success) {
-
-
               var selectId = '';
-
-
               if (response.term_type == 'PAYMENT') {
-
-                selectId =
-                  '#payment_terms_select';
-
+                selectId = '#payment_terms_select';
               } else if (
                 response.term_type == 'DELIVERY'
               ) {
-
-                selectId =
-                  '#delivery_terms_select';
-
+                selectId = '#delivery_terms_select';
               } else if (
                 response.term_type == 'GENERAL'
               ) {
-
-                selectId =
-                  '#general_terms_select';
-
+                selectId = '#general_terms_select';
               }
 
-
-              var $select =
-                $(selectId);
-
+              var $select = $(selectId);
 
               // Add new option
               var newOption =
