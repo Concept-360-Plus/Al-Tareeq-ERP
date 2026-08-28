@@ -242,11 +242,14 @@ class Purchase extends CI_Controller
         $data['branch_records']     = $this->Company_model->get_all_branches();
         // $data['supplier_records']     = $this->Company_model->get_supplier_by_branch($data['records1'][0]->branch_id);	
 
+        $data['unit_records']        = $this->Setup_model->get_active_unit_list();
+        $data['records2']            = $this->Purchase_Model->get_pur_qtn_tr_by_id($quotation_id);
+        $data['quote_doc']           = $this->Purchase_Model->get_quote_doc($quotation_id, "Quote File");
+        $data['payment_terms_list']  = $this->Setup_model->get_active_terms_conditions_by_type('PAYMENT');
+        $data['delivery_terms_list'] = $this->Setup_model->get_active_terms_conditions_by_type('DELIVERY');
+        $data['general_terms_list']  = $this->Setup_model->get_active_terms_conditions_by_type('GENERAL');
 
-        $data['records2']           = $this->Purchase_Model->get_pur_qtn_tr_by_id($quotation_id);
-
-        $data['quote_doc']          = $this->Purchase_Model->get_quote_doc($quotation_id, "Quote File");
-        $data['main_content']       = 'purchase/quotation_edit.php';
+        $data['main_content']        = 'purchase/quotation_edit.php';
         // }
         $this->load->view('includes/template.php', $data);
     }
