@@ -6,10 +6,7 @@
 
         <!-- Row 1: Quotation Code + RFQ -->
         <div class="row mb-3">
-          <div class="col-md-6">
-            <label for="quotation_code" class="form-label">Quotation Code</label>
-            <input type="text" class="form-control" name="quotation_code" id="quotation_code" readonly value="<?php echo $Code; ?>">
-          </div>
+
           <div class="col-md-6">
             <label for="rfq_id" class="form-label">Select RFQ/PR</label>
             <select class="form-control" id="rfq_id" name="rfq_id" required onchange="get_enquiry_info()">
@@ -31,55 +28,70 @@
                 </option>
               <?php } ?>
             </select>
-
-
           </div>
+
+          <div class="col-md-6">
+            <label for="quotation_code" class="form-label">Quotation Code</label>
+            <input type="text" class="form-control" name="quotation_code" id="quotation_code" readonly value="<?php echo $Code; ?>">
+          </div>
+
         </div>
 
         <!-- Row 2: Date + Branch -->
         <div class="row mb-3">
+
           <div class="col-md-6">
             <label for="quotation_date" class="form-label">Date</label>
             <input type="date" class="form-control" name="quotation_date" id="quotation_date" value="<?php echo date('Y-m-d'); ?>">
           </div>
+
           <div class="col-md-6">
             <label for="branch_name" class="form-label">Branch</label>
             <input type="text" readonly name="branch_name" id="branch_name" class="form-control">
             <input type="hidden" name="branch_id" id="branch_id">
           </div>
+
         </div>
 
         <!-- Row 3: Supplier + Reference -->
         <div class="row mb-3">
+
           <div class="col-md-6">
             <label for="supplier_name" class="form-label">Supplier</label>
             <input type="text" readonly name="supplier_name" id="supplier_name" class="form-control">
             <input type="hidden" name="supplier_id" id="supplier_id">
           </div>
+
           <div class="col-md-6">
             <label for="ref_no" class="form-label">Reference</label>
             <input type="text" class="form-control" name="ref_no" id="ref_no">
           </div>
+
         </div>
 
         <!-- Row 4: Project Name + Upload Document -->
         <div class="row mb-3">
+
           <div class="col-md-6">
             <label for="project" class="form-label">Project Name</label>
             <input type="text" class="form-control" name="project" id="project">
           </div>
+
           <div class="col-md-6">
             <label for="quote_doc" class="form-label">Upload Document</label>
             <input type="file" class="form-control" name="quote_doc" id="quote_doc">
           </div>
+
         </div>
 
         <!-- Row 5: RFQ Created By -->
         <div class="row mb-3">
+
           <div class="col-md-6">
             <label for="rfq_by" class="form-label">RFQ/PR Created By</label>
             <input type="text" class="form-control" name="rfq_by" id="rfq_by">
           </div>
+
         </div>
 
         <!-- RFQ Items -->

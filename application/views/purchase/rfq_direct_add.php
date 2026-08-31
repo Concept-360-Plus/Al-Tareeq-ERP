@@ -10,26 +10,12 @@
 
          <div class="x_content">
 
-
            <div class="well" style="overflow: auto">
-             <div class="col-md-6">
-               <label class="control-label col-md-3 col-sm-3 col-xs-3">RFQ Code</label>
-               <div class="col-sm-9 col-xs-9">
-                 <input type="text" class="form-control" name="rfq_code" id="rfq_code" readonly value="<?php echo $Code; ?>">
 
-               </div>
-             </div>
-             <div class="col-md-6">
-               <label class="control-label col-md-3 col-sm-3 col-xs-3">RFQ Date</label>
-               <div class="col-md-9 col-sm-9 col-xs-9">
-                 <input type="date" class="form-control" data-inputmask="'mask' : '99/99/9999'" tabindex="1" name="rfq_date" id="rfq_date" value="<?php echo date('Y-m-d'); ?>">
-               </div>
-             </div>
-             <br /> <br /> <br />
              <div class="col-md-6">
                <label class="control-label col-md-3 col-sm-3 col-xs-3 ">Select Branch</label>
                <div class="col-md-9 col-sm-9 col-xs-9">
-                 <select name="branch_id" id="branch_id" class="form-control select2" required tabindex="1">
+                 <select name="branch_id" id="branch_id" class="form-control rfq-select2" required tabindex="1">
                    <option value="">Please select branch</option>
                    <?php foreach ($branch_records as $b) { ?>
                      <option value="<?php echo $b->branch_id; ?>"><?php echo $b->branch_name; ?></option>
@@ -37,16 +23,31 @@
                  </select>
                </div>
              </div>
-             <br /><br /><br />
+
+             <div class="col-md-6">
+               <label class="control-label col-md-3 col-sm-3 col-xs-3">RFQ Code</label>
+               <div class="col-sm-9 col-xs-9">
+                 <input type="text" class="form-control" name="rfq_code" id="rfq_code" readonly value="<?php echo $Code; ?>">
+               </div>
+             </div>
+
+             <br /> <br /> <br />
+
+             <div class="col-md-6">
+               <label class="control-label col-md-3 col-sm-3 col-xs-3">RFQ Date</label>
+               <div class="col-md-9 col-sm-9 col-xs-9">
+                 <input type="date" class="form-control" data-inputmask="'mask' : '99/99/9999'" tabindex="1" name="rfq_date" id="rfq_date" value="<?php echo date('Y-m-d'); ?>">
+               </div>
+             </div>
 
              <div class="col-md-6">
                <label class="control-label col-md-3 col-sm-3 col-xs-3">Select Supplier</label>
                <div class="col-md-9 col-sm-9 col-xs-9">
                  <div id="supplier_dropdown_wrapper">
-                   <select name="supplier_id" id="supplier_id" class="form-control select2" required tabindex="2">
-                     <option value="">Please select name</option>
+                   <select name="supplier_id" id="supplier_id" class="form-control rfq-select2" required tabindex="2">
+                     <option value="">Please Select Supplier</option>
                      <?php foreach ($supplier_records as $g) { ?>
-                       <option value="<?php echo $g->supplier_id; ?>"><?php echo $g->supplier_code . ' ' . $g->supplier_name; ?></option>
+                       <option value="<?php echo $g->supplier_id; ?>"><?php echo $g->supplier_name . ' (' . $g->supplier_code . ')'; ?></option>
                      <?php } ?>
                    </select>
                  </div>
@@ -54,20 +55,24 @@
                </div>
              </div>
 
+             <br /><br /><br />
+
              <div class="col-md-6">
                <label class="control-label col-md-3 col-sm-3 col-xs-3">Subject</label>
                <div class="col-md-9 col-sm-9 col-xs-9">
                  <input type="text" class="form-control" name="subject" id="subject">
                </div>
-
              </div>
-             <br /> <br /> <br />
+
              <div class="col-md-6">
                <label class="control-label col-md-3 col-sm-3 col-xs-3">Project Name</label>
                <div class="col-md-9 col-sm-6 col-xs-6">
                  <input type="text" class="form-control" name="project" id="project">
                </div>
              </div>
+
+             <br /> <br /> <br />
+
              <div class="col-md-6">
                <label class="control-label col-md-3 col-sm-3 col-xs-3">Reference</label>
                <div class="col-md-9 col-sm-6 col-xs-6">
@@ -116,8 +121,8 @@
                    </td>
                    <td><input class="form-control" type="number" name="quantity[]" id="quantity0"></td>
                    <td>
-                      <button type="button" class="btn btn-success addRow"><i class="fa fa-plus"></i></button>
-                      <button type="button" class="btn btn-danger deleteRow"><i class="fa fa-minus"></i></button>
+                     <button type="button" class="btn btn-success addRow"><i class="fa fa-plus"></i></button>
+                     <button type="button" class="btn btn-danger deleteRow"><i class="fa fa-minus"></i></button>
                    </td>
                  </tr>
                </tbody>
@@ -167,9 +172,9 @@
        <div class="modal-content">
          <div class="modal-header">
            <h5 class="modal-title" id="addItemModalLabel">Add New Product</h5>
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
+           <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+             <span aria-hidden="true">&times;</span>
+           </button>
          </div>
          <div class="modal-body" id="addItemModalContent">
            <!-- Item form will be loaded here via AJAX -->
@@ -184,8 +189,8 @@
          <div class="modal-header">
            <h5 class="modal-title">Supplier Details</h5>
            <button type="button" class="close" data-dismiss="modal">
-              <span>&times;</span>
-          </button>
+             <span>&times;</span>
+           </button>
          </div>
          <div id="supplier-success-alert" class="alert alert-success m-3" style="display: none;">
            Supplier saved successfully!
@@ -204,14 +209,14 @@
 
 
    <script>
-     function initializeSelect2(selectElement) {
-       selectElement.select2({
-
-       });
-     }
-
      $(document).ready(function() {
-       initializeSelect2($('.item-select2'));
+
+       $('.rfq-select2').select2({
+         width: '100%',
+         placeholder: 'Select an option',
+         allowClear: true
+       });
+
      });
 
      $(document).ready(function() {
