@@ -39,7 +39,8 @@
                             <?php echo $r->unit_name; ?>
                         </option>
                     </select>
-                </td> <!-- <td><select class="form-control" name="item_packing[]"><option>CTN</option></select></td> -->
+                </td>
+                 <!-- <td><select class="form-control" name="item_packing[]"><option>CTN</option></select></td> -->
 
                 <td><input type="number" class="form-control unit_price" name="unit_price[]" step='any' id="unit_price<?php echo $i; ?>" value="<?php echo $r->retail_price; ?>" /></td>
                 <td><input type="number" class="form-control dis_per" id="discount_per<?php echo $i; ?>" step='any' name="dis_per[]" /></td>

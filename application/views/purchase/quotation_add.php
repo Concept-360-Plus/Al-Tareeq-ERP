@@ -133,10 +133,12 @@
 
         <!-- Validity + Payment Terms -->
         <div class="row mb-3">
+
           <div class="col-md-6">
             <label for="validity" class="form-label">Validity</label>
             <input type="text" class="form-control" name="validity" id="validity">
           </div>
+
           <div class="col-md-6">
 
             <label for="payment_terms_select" class="form-label">
@@ -196,6 +198,7 @@
 
         <!-- Delivery Terms + General Terms -->
         <div class="row mb-3">
+
           <div class="col-md-6">
 
             <label for="delivery_terms_select" class="form-label">
@@ -251,47 +254,28 @@
               id="delivery_terms">
 
           </div>
-          <div class="col-md-6">
 
+          <div class="col-md-6">
             <label for="general_terms_select" class="form-label">
               General Terms
             </label>
 
-            <select
-              class="form-control term-select select2"
-              id="general_terms_select"
-              name="general_term_id">
-
+            <select class="form-control term-select select2" id="general_terms_select" name="general_term_id">
               <option value="">
                 Please select general terms
               </option>
-
               <?php if (!empty($general_terms_list)) { ?>
-
                 <?php foreach ($general_terms_list as $term) { ?>
-
-                  <option
-                    value="<?php echo $term->terms_id; ?>"
-                    data-description="<?php
-                                      echo htmlspecialchars(
-                                        $term->terms_description,
-                                        ENT_QUOTES,
-                                        'UTF-8'
-                                      );
-                                      ?>">
+                  <option value="<?php echo $term->terms_id; ?>" data-description="<?php echo htmlspecialchars($term->terms_description, ENT_QUOTES, 'UTF-8'); ?>">
                     <?php echo htmlspecialchars(
                       $term->terms_name,
                       ENT_QUOTES,
                       'UTF-8'
                     ); ?>
                   </option>
-
                 <?php } ?>
-
               <?php } ?>
-
             </select>
-
             <small>
               <a href="#"
                 class="add-term-link"
@@ -299,13 +283,9 @@
                 + Add New General Term
               </a>
             </small>
-
-            <input
-              type="hidden"
-              name="general_terms"
-              id="general_terms">
-
+            <input type="hidden" name="general_terms" id="general_terms">
           </div>
+
         </div>
 
         <!-- Submit Button -->
@@ -332,7 +312,6 @@
 
 </div>
 
-<!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script> -->
 
 <script>
   $(document).ready(function() {

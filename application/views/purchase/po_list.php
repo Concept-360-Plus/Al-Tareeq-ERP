@@ -91,18 +91,18 @@
                                <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
                              </a>
                            <?php } ?>
-                           <a target="_blank" href="<?php echo base_url() . 'index.php/Purchase/print_po/' . $row->po_id . '/' . ($row->po_type == 'direct' ? 2 : 1);?>" style="margin-right:10px;">
+                           <a target="_blank" href="<?php echo base_url() . 'index.php/Purchase/print_po/' . $row->po_id . '/' . ($row->po_type == 'direct' ? 2 : 1); ?>" style="margin-right:10px;">
                              <i class="fa fa-print"></i>
                            </a>
 
-                          <?php if (has_access($this->session->userdata('user_id'), 'Purchase/purchase_order_list', 'D')) { ?>
-                              <a href="#"
-                                title="Delete"
-                                class="delete"
-                                data-id="<?php echo $row->po_id; ?>">
-                                  <i class="glyphicon glyphicon-trash"></i>
-                              </a>
-                          <?php } ?>
+                           <?php if (has_access($this->session->userdata('user_id'), 'Purchase/purchase_order_list', 'D')) { ?>
+                             <a href="#"
+                               title="Delete"
+                               class="delete"
+                               data-id="<?php echo $row->po_id; ?>">
+                               <i class="glyphicon glyphicon-trash"></i>
+                             </a>
+                           <?php } ?>
                          </td>
 
                        </tr>

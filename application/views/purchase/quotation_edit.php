@@ -137,7 +137,7 @@ $user = $this->session->userdata('user_id');
                 <!-- UNIT SMALL -->
                 <th style="width:60px;">Unit</th>
 
-                <th style="width:70px;">Packing</th>
+                <!-- <th style="width:70px;">Packing</th> -->
 
                 <th style="width:90px;">Price</th>
                 <th style="width:80px;">Dis 1%</th>
@@ -168,12 +168,12 @@ $user = $this->session->userdata('user_id');
                       <?php foreach ($active_units as $unit) { ?>
                         <option value='<?php echo $unit->unit_id ?>'><?php echo $unit->unit_name; ?></option>
                       <?php } ?>
-                    </select>>
+                    </select>
                   </td>
 
-                  <td><select class="form-control" name="item_packing[]">
+                  <!-- <td><select class="form-control" name="item_packing[]">
                       <option>CTN</option>
-                    </select></td>
+                    </select></td> -->
 
                   <td><input type="number" class="form-control unit_price" name="unit_price[]" step='any' id="unit_price<?php echo $i; ?>" value="<?php echo $r->price; ?>" /></td>
                   <td><input type="number" class="form-control dis_per" id="discount_per<?php echo $i; ?>" step='any' name="dis_per[]" value="<?php echo $r->dis_per; ?>" /></td>
