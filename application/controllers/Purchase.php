@@ -362,6 +362,10 @@ class Purchase extends CI_Controller
         $digit = sprintf("%1$04d", $num);
         $data['Code'] = $prifix . date("y") . '/' . $digit;
 
+        $data['payment_terms_list'] = $this->Setup_model->get_active_terms_conditions_by_type('PAYMENT');
+        $data['delivery_terms_list'] = $this->Setup_model->get_active_terms_conditions_by_type('DELIVERY');
+        $data['general_terms_list'] = $this->Setup_model->get_active_terms_conditions_by_type('GENERAL');
+
         $this->load->model('Purchase_Model');
         $data['records'] = $this->Purchase_Model->get_quotation_list();
 
@@ -652,7 +656,7 @@ class Purchase extends CI_Controller
         $this->load->model('Purchase_Model');
         $this->load->model('Company_model');
         $this->load->model('Setup_model');
-        $data['title']              = 'Purchase Order-Stock';
+        $data['title']              = 'Purchase Order-Direct';
 
         $selected_tr = $this->input->post('selected_tr');
         $selected_ids = array();
@@ -667,14 +671,17 @@ class Purchase extends CI_Controller
             $data['reorder_list'] = $this->Stock_model->get_reorder_stock_for_PO($selected_ids);
         }
 
-        $prifix                     = 'AVE/POD/';
-        $num                        = $this->Setup_model->get_next_code($prifix, 'po_code', 'purchase_order_master', 12) + 1;
-        $digit                      = sprintf("%1$04d", $num);
-        $data['Code']               = $prifix . date("y") . '/' . $digit;
-        $data['branch_records']     = $this->Company_model->get_all_branches();
-        $data['records']            = $this->Purchase_Model->get_RFQ_list('direct');
-        $data['active_items']       = $this->Setup_model->get_active_item_list();
-        $data['active_units']       = $this->Setup_model->get_active_unit_list();
+        $prifix                      = 'AVE/POD/';
+        $num                         = $this->Setup_model->get_next_code($prifix, 'po_code', 'purchase_order_master', 12) + 1;
+        $digit                       = sprintf("%1$04d", $num);
+        $data['Code']                = $prifix . date("y") . '/' . $digit;
+        $data['branch_records']      = $this->Company_model->get_all_branches();
+        $data['records']             = $this->Purchase_Model->get_RFQ_list('direct');
+        $data['active_items']        = $this->Setup_model->get_active_item_list();
+        $data['active_units']        = $this->Setup_model->get_active_unit_list();
+        $data['payment_terms_list']  = $this->Setup_model->get_active_terms_conditions_by_type('PAYMENT');
+        $data['delivery_terms_list'] = $this->Setup_model->get_active_terms_conditions_by_type('DELIVERY');
+        $data['general_terms_list']  = $this->Setup_model->get_active_terms_conditions_by_type('GENERAL');
 
         $data['supplier_records']   = $this->Setup_model->get_active_supplier_list();
         $data['prepared_by'] = $this->session->userdata('user_name');

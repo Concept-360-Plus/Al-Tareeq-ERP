@@ -5,7 +5,7 @@
             <th>Product Code</th>
             <th>Unit</th>
             <th>Quantity</th>
-            <th width="15%">Serial Number</th>
+            <!-- <th width="15%">Serial Number</th> -->
             <th>Price</th>
 
             <th>Total</th>
@@ -23,7 +23,9 @@
         $j = 1;
         foreach ($records2 as $r) { ?>
             <tr>
+
                 <td><?php echo $j; ?></td>
+
                 <td>
                     <input type="text" class="form-control" name="item_model[]" value="<?php echo $r->product_name; ?>" readonly />
                     <input type="hidden" class="form-control" name="item_id[]" value="<?php echo $r->product_id; ?>" />
@@ -43,20 +45,24 @@
                         <?php } ?>
                     </select>
                 </td>
+
                 <td>
                     Ordered:<input type="number" class="form-control qty" name="item_quantity[]" id="item_quantity<?php echo $i; ?>" value="<?php echo $r->quantity; ?>" readonly />
                     Pre Ordered:<input type="number" class="form-control pre_quantity" name="pre_quantity[]" id="pre_quantity<?php echo $i; ?>" value="<?php echo $r->received_qty; ?>" readonly />
                     Received:<input type="number" class="form-control rec_quantity" onchange="test(event);" name="rec_quantity[]" id="rec_quantity<?php echo $i; ?>" data-index="<?php echo $i; ?>" /><small id="error_msg<?php echo $i; ?>" class="text-danger" style="display: none;"></small>
                 </td>
-                <td class="serial-container" id="serial_container<?php echo $i; ?>"> </td>
+
+                <!-- <td class="serial-container" id="serial_container<?php echo $i; ?>"> </td> -->
 
                 <td>Unit Price:<input type="number" class="form-control unit_price" name="unit_price[]" step='any' id="unit_price<?php echo $i; ?>" value="<?php echo $r->price; ?>" />
-                    Landing Price:<input type="number" class="form-control landing_price" name="landing_price[]" step='any' id="landing_price<?php echo $i; ?>" /></td>
+                    Landing Price:<input type="number" class="form-control landing_price" name="landing_price[]" step='any' id="landing_price<?php echo $i; ?>" />
+                </td>
 
-                <td><input type="number" class="form-control total_price" id="total_price<?php echo $i; ?>" step='any' name="total_price[]" value="<?php echo $r->total; ?>" /></td>
-
+                <td><input type="number" class="form-control total_price" id="total_price<?php echo $i; ?>" step='any' name="total_price[]" value="<?php echo $r->total; ?>" />
+                </td>
 
             </tr>
+
         <?php $i++;
             $j++;
         } ?>

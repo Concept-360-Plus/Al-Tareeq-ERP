@@ -20,7 +20,13 @@
                     foreach ($pr_list as $pr) { ?>
                         <tr>
                             <td><?= $i++ ?></td>
-                            <td><?= $pr->pr_code ?></td>
+                            <td>
+                                <a title="View PR From MI details"
+                                    target="_blank"
+                                    href="<?= base_url('index.php/Purchase/edit_pr_from_mi/' . $pr->pr_id) ?>">
+                                    <?= $pr->pr_code ?>
+                                </a>
+                            </td>
                             <td><?= date('d-m-Y', strtotime($pr->pr_date)) ?></td>
                             <td><?= $pr->mi_code ?></td>
                             <td><?= $pr->branch_name ?></td>
