@@ -178,23 +178,21 @@
                     </td>
 
                     <!-- Actions -->
-                    <td style="white-space: nowrap;">
+                    <td class="action-icons">
 
                       <?php if ((int)$row->status === 0): ?>
 
                         <!-- Edit -->
                         <a href="<?php echo base_url(); ?>index.php/Stock/edit_stock_adjustment/<?php echo $row->sno; ?>"
                           title="Edit Stock Adjustment"
-                          class="btn btn-sm btn-primary"
-                          style="margin-right: 5px;">
+                          style="margin-right: 10px;">
 
-                          <i class="glyphicon glyphicon-pencil"></i>
+                          <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
                         </a>
 
                         <!-- Approve -->
                         <a href="<?php echo base_url(); ?>index.php/Stock/approve_stock_adjustment/<?php echo $row->sno; ?>"
                           title="Approve Stock Adjustment"
-                          class="btn btn-sm btn-success"
                           onclick="return confirm('Are you sure you want to approve this Stock Adjustment?');">
 
                           <i class="glyphicon glyphicon-ok"></i>

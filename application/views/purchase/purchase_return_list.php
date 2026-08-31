@@ -77,14 +77,6 @@
                                             <?= $row->total_return_qty; ?>
                                         </td>
                                         <td>
-                                            <!-- Print -->
-                                            <a
-                                                target="_blank"
-                                                href="<?= base_url(); ?>index.php/Purchase/print_purchase_return/<?= $row->return_id; ?>"
-                                                title="Print">
-                                                <i class="fa fa-print"></i>
-                                            </a>
-                                            &nbsp;&nbsp;
                                             <!-- View -->
                                             <a
                                                 href="<?= base_url(); ?>index.php/Purchase/view_purchase_return/<?= $row->return_id; ?>"
@@ -93,6 +85,16 @@
                                             </a>
 
                                             &nbsp;&nbsp;
+
+                                            <!-- Print -->
+                                            <a
+                                                target="_blank"
+                                                href="<?= base_url(); ?>index.php/Purchase/print_purchase_return/<?= $row->return_id; ?>"
+                                                title="Print">
+                                                <i class="fa fa-print"></i>
+                                            </a>
+                                            &nbsp;&nbsp;
+                                            
                                             <!-- Delete -->
                                             <a
                                                 href="#"
