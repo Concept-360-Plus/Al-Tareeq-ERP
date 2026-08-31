@@ -2358,6 +2358,7 @@ class Purchase_Model extends CI_Model
                 pr.pr_id,
                 pr.pr_code,
                 pr.pr_date,
+				pr.supplier_id,
                 mi.mi_code,
                 b.branch_name,
                 s.supplier_name

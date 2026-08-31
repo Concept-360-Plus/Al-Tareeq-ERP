@@ -1,5 +1,5 @@
 <?php
-defined('BASEPATH') OR exit('No direct script access allowed');
+defined('BASEPATH') or exit('No direct script access allowed');
 class Purchase extends CI_Controller
 {
     public function __construct()
@@ -987,7 +987,7 @@ class Purchase extends CI_Controller
         $this->load->model('Item_model');
         $this->load->model('Company_model');
         $this->load->model('Project_model');
-        $data['title'] = 'Purchase Request from Material Issue';
+        $data['title'] = 'PR from Material Issue';
 
         $prifix = 'ALA/PR/';
         $num = $this->Setup_model->get_next_code($prifix, 'pr_code', 'purchase_requests', 12) + 1;
@@ -997,6 +997,7 @@ class Purchase extends CI_Controller
         $data['branch_records']   = $this->Company_model->get_all_branches();
         $data['supplier_records'] = $this->Setup_model->get_active_supplier_list();
 
+        $data['active_items'] = $this->Setup_model->get_active_item_list();
         $data['active_units'] = $this->Setup_model->get_active_unit_list();
 
         // $data['material_issues'] = $this->db->select('mi_id, mi_code')
@@ -1032,7 +1033,7 @@ class Purchase extends CI_Controller
         $this->load->model('Company_model');
         $this->load->model('Project_model');
 
-        $data['title'] = 'Edit Purchase Request';
+        $data['title'] = 'Edit PR From Material Issue';
 
         $data['pr'] = $this->Purchase_Model->get_pr_by_id($pr_id);
 
@@ -1045,6 +1046,7 @@ class Purchase extends CI_Controller
 
         $data['branch_records']   = $this->Company_model->get_all_branches();
         $data['supplier_records'] = $this->Setup_model->get_active_supplier_list();
+        $data['active_items']     = $this->Setup_model->get_active_item_list();
         $data['active_units']     = $this->Setup_model->get_active_unit_list();
         $data['material_issues']  = $this->Purchase_Model->get_issued_mi_with_pending_qty();
 

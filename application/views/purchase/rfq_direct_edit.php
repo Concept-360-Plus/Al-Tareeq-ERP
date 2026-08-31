@@ -11,6 +11,21 @@
 
           <!-- Row 1: RFQ Code & RFQ Date -->
           <div class="row mb-3">
+
+            <div class="col-md-6">
+              <label class="control-label col-md-3 col-sm-3 col-xs-3">Select Branch</label>
+              <div class="col-md-9 col-sm-9 col-xs-9">
+                <select name="branch_id" id="branch_id" class="form-control rfq-select2" required tabindex="1">
+                  <option value="">Please select branch</option>
+                  <?php foreach ($branch_records as $b) { ?>
+                    <option value="<?php echo $b->branch_id; ?>" <?php if ($b->branch_id == $records1[0]->branch_id) echo 'selected'; ?>>
+                      <?php echo $b->branch_name; ?>
+                    </option>
+                  <?php } ?>
+                </select>
+              </div>
+            </div>
+
             <div class="col-md-6">
               <label class="control-label col-md-3 col-sm-3 col-xs-3">RFQ Code</label>
               <div class="col-md-9 col-sm-9 col-xs-9">
@@ -21,6 +36,11 @@
               </div>
             </div>
 
+          </div>
+
+          <!-- Row 2: Branch -->
+          <div class="row mb-3">
+
             <div class="col-md-6">
               <label class="control-label col-md-3 col-sm-3 col-xs-3">RFQ Date</label>
               <div class="col-md-9 col-sm-9 col-xs-9">
@@ -28,40 +48,25 @@
                   value="<?php echo $records1[0]->rfq_date; ?>">
               </div>
             </div>
-          </div>
 
-          <!-- Row 2: Branch -->
-          <div class="row mb-3">
             <div class="col-md-6">
-              <label class="control-label col-md-3 col-sm-3 col-xs-3">Branch</label>
+              <label class="control-label col-md-3 col-sm-3 col-xs-3">Select Supplier</label>
               <div class="col-md-9 col-sm-9 col-xs-9">
-                <select name="branch_id" id="branch_id" class="form-control" required tabindex="1">
-                  <option value="">Please select branch</option>
-                  <?php foreach ($branch_records as $b) { ?>
-                    <option value="<?php echo $b->branch_id; ?>" <?php if ($b->branch_id == $records1[0]->branch_id) echo 'selected'; ?>>
-                      <?php echo $b->branch_name; ?>
+                <select name="supplier_id" id="supplier_id" class="form-control rfq-select2" required>
+                  <?php foreach ($supplier_records as $g) { ?>
+                    <option <?php if ($g->supplier_id == $records1[0]->supplier_id) echo 'selected'; ?>
+                      value="<?php echo $g->supplier_id; ?>">
+                      <?php echo $g->supplier_name . ' (' . $g->supplier_code . ')' ?>
                     </option>
                   <?php } ?>
                 </select>
               </div>
             </div>
+
           </div>
 
           <!-- Row 3: Supplier & Subject -->
           <div class="row mb-3">
-            <div class="col-md-6">
-              <label class="control-label col-md-3 col-sm-3 col-xs-3">Supplier</label>
-              <div class="col-md-9 col-sm-9 col-xs-9">
-                <select name="supplier_id" id="supplier_id" class="form-control" required>
-                  <?php foreach ($supplier_records as $g) { ?>
-                    <option <?php if ($g->supplier_id == $records1[0]->supplier_id) echo 'selected'; ?>
-                      value="<?php echo $g->supplier_id; ?>">
-                      <?php echo $g->supplier_code . ' ' . $g->supplier_name; ?>
-                    </option>
-                  <?php } ?>
-                </select>
-              </div>
-            </div>
 
             <div class="col-md-6">
               <label class="control-label col-md-3 col-sm-3 col-xs-3">Subject</label>
@@ -70,10 +75,7 @@
                   value="<?php echo $records1[0]->subject; ?>">
               </div>
             </div>
-          </div>
 
-          <!-- Row 4: Project Name & Reference -->
-          <div class="row mb-3">
             <div class="col-md-6">
               <label class="control-label col-md-3 col-sm-3 col-xs-3">Project Name</label>
               <div class="col-md-9 col-sm-9 col-xs-9">
@@ -82,6 +84,10 @@
               </div>
             </div>
 
+          </div>
+
+          <!-- Row 4: Project Name & Reference -->
+          <div class="row mb-3">
             <div class="col-md-6">
               <label class="control-label col-md-3 col-sm-3 col-xs-3">Reference</label>
               <div class="col-md-9 col-sm-9 col-xs-9">
@@ -185,14 +191,14 @@
 
 
 <script>
-  function initializeSelect2(selectElement) {
-    selectElement.select2({
-
-    });
-  }
-
   $(document).ready(function() {
-    initializeSelect2($('.select2'));
+
+    $('.rfq-select2').select2({
+      width: '100%',
+      placeholder: 'Select an option',
+      allowClear: true
+    });
+
   });
 
   $(document).ready(function() {
@@ -204,7 +210,7 @@
       const newRow = `
             <tr>
                 <td>
-                    <select class="form-control select2" name="item[]" id="item${rowIndex}" onchange="get_item_by_id(${rowIndex})">
+                    <select class="form-control rfq-select2" name="item[]" id="item${rowIndex}" onchange="get_item_by_id(${rowIndex})">
                         <option value="">Select</option>
                         <?php foreach ($active_items as $item) { ?>
                             <option value="<?php echo $item->product_id ?>"><?php echo $item->product_name; ?></option>
@@ -214,7 +220,7 @@
 
                 <td><input class="form-control" type="text" name="description[]" id="description${rowIndex}"></td>
                 <td>
-                 <select class="form-control select2" name="unit[]" id='unit${rowIndex}'>
+                 <select class="form-control rfq-select2" name="unit[]" id='unit${rowIndex}'>
                         <option value=''>Select</option><?php foreach ($active_units as $unit) { ?><option value='<?php echo $unit->unit_id ?>'><?php echo $unit->unit_name; ?></option><?php } ?>
                         </select>
                 </td>
@@ -226,7 +232,7 @@
             </tr>`;
 
       $('#datatable-responsive tbody').append(newRow);
-      $(`#item${rowIndex}`).select2(); // Reinitialize select2 for the new element
+      $(`#item${rowIndex}`).rfq - select2(); // Reinitialize select2 for the new element
       rowIndex++;
     });
 
