@@ -52,34 +52,34 @@
                                     <td>
                                         <?php
                                         if ($row->status == 'Completed') {
-                                            echo '<span class="label label-success">Completed</span>';
+                                            echo '<span class="badge badge-success">Completed</span>';
                                         } elseif ($row->status == 'Draft') {
-                                            echo '<span class="label label-warning">Draft</span>';
+                                            echo '<span class="badge badge-warning">Draft</span>';
+                                        } elseif ($row->status == 'Cancelled') {
+                                            echo '<span class="badge badge-danger">Cancelled</span>';
                                         } else {
-                                            echo '<span class="label label-danger">' . $row->status . '</span>';
+                                            echo '<span class="badge badge-secondary">'
+                                                . htmlspecialchars($row->status, ENT_QUOTES, 'UTF-8')
+                                                . '</span>';
                                         }
                                         ?>
-
                                     </td>
 
                                     <td>
                                         <a href="<?= base_url('index.php/Inventory/view_stock_transfer/' . $row->transfer_id) ?>"
-                                            class="btn btn-info btn-sm"
                                             title="View">
                                             <i class="fa fa-eye"></i>
                                         </a>
-
+                                        &nbsp;
                                         <a href="<?= base_url('index.php/Inventory/print_stock_transfer/' . $row->transfer_id) ?>"
                                             target="_blank"
-                                            class="btn btn-primary btn-sm"
                                             title="Print">
                                             <i class="fa fa-print"></i>
                                         </a>
-
+                                        &nbsp;
                                         <?php if ($row->status != 'Cancelled') { ?>
 
                                             <a href="<?= base_url('index.php/Inventory/cancel_stock_transfer/' . $row->transfer_id) ?>"
-                                                class="btn btn-danger btn-sm"
                                                 title="Cancel"
                                                 onclick="return confirm('Are you sure you want to cancel this Stock Transfer? The stock will be returned to the source location.')">
                                                 <i class="fa fa-times"></i>
