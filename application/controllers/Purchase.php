@@ -623,6 +623,10 @@ class Purchase extends CI_Controller
         $data['po_doc']             = $this->Purchase_Model->get_quote_doc($po_id, "PO File");
         $data['supplier_records']   = $this->Setup_model->get_active_supplier_list();
 
+        $data['payment_terms_list'] = $this->Setup_model->get_active_terms_conditions_by_type('PAYMENT');
+        $data['delivery_terms_list'] = $this->Setup_model->get_active_terms_conditions_by_type('DELIVERY');
+        $data['general_terms_list'] = $this->Setup_model->get_active_terms_conditions_by_type('GENERAL');
+
         $this->load->model('Hr_model');
         $data['employees'] = $this->Hr_model->get_employee_list();
         if ($po_type == 1) {

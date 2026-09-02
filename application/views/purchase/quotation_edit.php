@@ -125,6 +125,7 @@ $user = $this->session->userdata('user_id');
             </div>
 
             <div class="col-md-6">
+
               <label for="quote_doc" class="form-label">Doc Upload</label>
               <input type="file" class="form-control" name="quote_doc" id="quote_doc">
               <?php if (!empty($records1[0]->quote_doc)) { ?>
@@ -138,18 +139,27 @@ $user = $this->session->userdata('user_id');
                   </a>
                 </div>
               <?php } ?>
+              
             </div>
 
             <input type="hidden" name="existing_quote_doc"
               value="<?php echo $records1[0]->quote_doc; ?>">
-              
+
             <!-- Row 5: RFQ By -->
             <div class="row mb-3">
+
               <div class="col-md-6">
                 <label for="rfq_by" class="form-label">RFQ By</label>
                 <input type="text" class="form-control" name="rfq_by" id="rfq_by"
                   value="<?php echo $records1[0]->rfq_created_by_name; ?>">
               </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Prepared By</label>
+                <input type="text" class="form-control" name="sales_person" id="sales_person"
+                  value="<?php echo $records1[0]->sales_person; ?>">
+              </div>
+
             </div>
 
           </div>
@@ -255,15 +265,11 @@ $user = $this->session->userdata('user_id');
 
         <!-- Row 2: Prepared/Approved -->
         <div class="row mb-3">
-          <div class="col-md-6">
-            <label class="form-label">Prepared By</label>
-            <input type="text" class="form-control" name="sales_person" id="sales_person"
-              value="<?php echo $records1[0]->sales_person; ?>">
-          </div>
-          <div class="col-md-6">
+
+          <!-- <div class="col-md-6">
             <label class="form-label">Approved By</label>
             <input type="text" class="form-control" name="approved_by" id="approved_by">
-          </div>
+          </div> -->
         </div>
 
 

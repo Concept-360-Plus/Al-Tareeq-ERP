@@ -185,7 +185,6 @@
           <input type="text" class="form-control" name="validity" id="validity">
         </div>
 
-
         <div class="col-md-6">
 
           <label for="payment_terms_select" class="form-label">
@@ -417,7 +416,7 @@
 
 </div>
 
-
+<script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
 <script>
   $(document).ready(function() {
 
@@ -475,10 +474,21 @@
             term_type: termType
           },
 
+
           success: function(response) {
             $('#addTermModalContent')
               .html(response);
             $('#addTermModal').modal('show');
+
+            // Initialize CKEditor
+            if (typeof CKEDITOR !== 'undefined') {
+
+              if (CKEDITOR.instances['new_terms_description']) {
+                CKEDITOR.instances['new_terms_description'].destroy(true);
+              }
+
+              CKEDITOR.replace('new_terms_description');
+            }
           },
 
           error: function() {
