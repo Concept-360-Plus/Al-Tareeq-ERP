@@ -239,6 +239,8 @@ class Ajax extends CI_Controller
                 'supplier_name'        => $row->supplier_name,
                 'branch_id'            => $row->branch_id,
                 'branch_name'          => $row->branch_name,
+                'created_by'           => $row->created_by,
+                'created_by_name'      => $row->rfq_created_by,
                 'sales_person_name'    => $row->sales_person_name,
                 'subject'              => $row->subject,
                 'project'              => $row->project,

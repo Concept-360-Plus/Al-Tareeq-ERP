@@ -2334,11 +2334,24 @@ class Purchase_Model extends CI_Model
 
 	public function get_PR_list()
 	{
-		$this->db->select('pr_id, pr_code');
-		$this->db->from('purchase_requests');
-		// $this->db->where('status', 'approved'); // optional
-		$query = $this->db->get();
-		return $query->result();
+		$this->db->select('
+        pr.pr_id,
+        pr.pr_code,
+        pr.created_by,
+        u.user_name AS created_by_name
+    ');
+
+		$this->db->from('purchase_requests pr');
+
+		$this->db->join(
+			'users u',
+			'u.user_id = pr.created_by',
+			'left'
+		);
+
+		$this->db->order_by('pr.pr_id', 'DESC');
+
+		return $this->db->get()->result();
 	}
 	//pending quantity Purchase request
 	public function get_issued_mi_with_pending_qty()

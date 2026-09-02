@@ -20,6 +20,7 @@ $user = $this->session->userdata('user_id');
 
           <!-- Row 1: Select RFQ, Code, Revision -->
           <div class="row mb-3">
+
             <div class="col-md-4">
               <label for="rfq_id" class="form-label">Select RFQ</label>
               <select class="form-control" id="rfq_id" name="rfq_id" readonly>
@@ -28,6 +29,7 @@ $user = $this->session->userdata('user_id');
                 </option>
               </select>
             </div>
+
             <div class="col-md-4">
               <label for="quotation_code" class="form-label">Code</label>
               <input type="text" class="form-control" name="quotation_code" id="quotation_code"
@@ -35,6 +37,7 @@ $user = $this->session->userdata('user_id');
               <input type="hidden" name="quotation_id" id="quotation_id"
                 value="<?php echo $records1[0]->quotation_id; ?>">
             </div>
+
             <div class="col-md-4">
               <label for="revision" class="form-label">Revision</label>
               <input type="text" class="form-control" name="revision" id="revision"
@@ -44,11 +47,13 @@ $user = $this->session->userdata('user_id');
 
           <!-- Row 2: Branch and Date -->
           <div class="row mb-3">
+
             <div class="col-md-6">
               <label for="quotation_date" class="form-label">Date</label>
               <input type="date" class="form-control" name="quotation_date" id="quotation_date"
                 value="<?php echo $records1[0]->quotation_date; ?>">
             </div>
+
             <div class="col-md-6">
               <label for="branch_id" class="form-label">Branch</label>
               <select name="branch_id" id="branch_id" class="form-control select2" required tabindex="1" readonly>
@@ -66,6 +71,7 @@ $user = $this->session->userdata('user_id');
 
           <!-- Row 3: Supplier and Reference -->
           <div class="row mb-3">
+
             <div class="col-md-6">
               <label for="supplier_name" class="form-label">Supplier</label>
               <input type="text" readonly name="supplier_name" id="supplier_name" class="form-control"
@@ -73,42 +79,70 @@ $user = $this->session->userdata('user_id');
               <input type="hidden" readonly name="supplier_id" id="supplier_id"
                 value="<?php echo $records1[0]->supplier_id; ?>">
             </div>
+
             <div class="col-md-6">
               <label for="ref_no" class="form-label">Reference</label>
               <input type="text" class="form-control" name="ref_no" id="ref_no"
                 value="<?php echo $records1[0]->reference; ?>">
             </div>
+
           </div>
 
           <!-- Row 4: Project Name and Doc Upload -->
           <div class="row mb-3">
+
             <div class="col-md-6">
               <label for="project" class="form-label">Project Name</label>
-              <input type="text" class="form-control" name="project" id="project"
-                value="<?php echo $records1[0]->project; ?>">
+              <select
+                class="form-control select2"
+                name="project"
+                id="project">
+                <option value="">Select Project</option>
+                <?php if (!empty($project_records)) { ?>
+                  <?php foreach ($project_records as $project) { ?>
+                    <option
+                      value="<?php echo htmlspecialchars($project['project_name'], ENT_QUOTES, 'UTF-8'); ?>"
+                      <?php echo (
+                        isset($records1[0]->project) &&
+                        $records1[0]->project == $project['project_name']
+                      ) ? 'selected' : ''; ?>>
+                      <?php echo htmlspecialchars(
+                        $project['project_name'],
+                        ENT_QUOTES,
+                        'UTF-8'
+                      ); ?>
+                      <?php if (!empty($project['project_code'])) { ?>
+                        (<?php echo htmlspecialchars(
+                            $project['project_code'],
+                            ENT_QUOTES,
+                            'UTF-8'
+                          ); ?>)
+                      <?php } ?>
+                    </option>
+                  <?php } ?>
+                <?php } ?>
+              </select>
             </div>
+
             <div class="col-md-6">
               <label for="quote_doc" class="form-label">Doc Upload</label>
               <input type="file" class="form-control" name="quote_doc" id="quote_doc">
-
               <?php if (!empty($records1[0]->quote_doc)) { ?>
-
                 <?php
                 $file = $records1[0]->quote_doc;
                 $url = base_url('public/uploaded_documents/' . $file);
                 ?>
-
                 <div style="margin-top:8px;">
                   <a href="<?= $url ?>" target="_blank">
                     View File
                   </a>
                 </div>
-
               <?php } ?>
             </div>
 
             <input type="hidden" name="existing_quote_doc"
               value="<?php echo $records1[0]->quote_doc; ?>">
+              
             <!-- Row 5: RFQ By -->
             <div class="row mb-3">
               <div class="col-md-6">
@@ -483,6 +517,7 @@ $user = $this->session->userdata('user_id');
 
 </div>
 
+<script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
 <script>
   function get_enquiry_info() {
     var rfq_id = document.getElementById("rfq_id").value;
@@ -599,11 +634,256 @@ $user = $this->session->userdata('user_id');
       $('#grand_total').val(grandTotalWithVAT.toFixed(2));
     }
   });
-</script>
+
+  $(document).ready(function() {
 
 
+    ////////////////////////////////////////////////////////////
+    // INITIALIZE SELECT2
+    ////////////////////////////////////////////////////////////
+
+    $('#rfq_id').select2({
+      width: '100%',
+      placeholder: 'Select RFQ/PR',
+      allowClear: true
+    });
+
+    $('#project').select2({
+      width: '100%',
+      placeholder: 'Select Project',
+      allowClear: true
+    });
+
+    $('.term-select').select2({
+      width: '100%',
+      placeholder: 'Please select',
+      allowClear: true
+    });
 
 
+    //////////////////////////////// PAYMENT TERM CHANGE//////////////////////////
+    $('#payment_terms_select').on('change', function() {
+      var description = $(this)
+        .find(':selected')
+        .attr('data-description') || '';
+      $('#payment_terms').val(description);
+
+    });
+
+    ///////////////////// DELIVERY TERM CHANGE//////////////////////
+    $('#delivery_terms_select').on('change', function() {
+      var description = $(this)
+        .find(':selected')
+        .attr('data-description') || '';
+      $('#delivery_terms').val(description);
+
+    });
+
+    //////////////////////////////////////GENERAL TERM CHANGE/////////////////////////
+    $('#general_terms_select').on('change', function() {
+      var description = $(this)
+        .find(':selected')
+        .attr('data-description') || '';
+      $('#general_terms').val(description);
+    });
 
 
+    /////////////////ADD NEW TERM//////////////////////////////
+
+    $(document).on(
+      'click',
+      '.add-term-link',
+      function(e) {
+        e.preventDefault();
+        var termType = $(this).data('term-type');
+        $.ajax({
+          url: "<?php echo base_url('index.php/Ajax/add_new_term'); ?>",
+          type: "POST",
+          data: {
+            term_type: termType
+          },
+
+          success: function(response) {
+            $('#addTermModalContent')
+              .html(response);
+            $('#addTermModal').modal('show');
+
+            // Initialize CKEditor
+            if (typeof CKEDITOR !== 'undefined') {
+
+              if (CKEDITOR.instances['new_terms_description']) {
+                CKEDITOR.instances['new_terms_description'].destroy(true);
+              }
+
+              CKEDITOR.replace('new_terms_description');
+            }
+          },
+
+          error: function() {
+            alert(
+              'Unable to open Add Term form.'
+            );
+          }
+        });
+      }
+    );
+
+
+    //////////////////////SAVE NEW TERM////////////////////////////////
+
+    $(document).on(
+      'click',
+      '#saveNewTermBtn',
+      function() {
+
+        var $button = $(this);
+
+        var termType =
+          $('#new_term_type').val();
+
+        var termName =
+          $.trim(
+            $('#new_terms_name').val()
+          );
+
+        var description =
+          $.trim(
+            $('#new_terms_description').val()
+          );
+
+
+        if (termName == '') {
+
+          alert(
+            'Terms & Conditions Name is required.'
+          );
+
+          $('#new_terms_name').focus();
+
+          return;
+
+        }
+
+
+        $button
+          .prop('disabled', true)
+          .html(
+            '<i class="fa fa-spinner fa-spin"></i> Saving...'
+          );
+
+
+        $.ajax({
+          url: "<?php echo base_url('index.php/Ajax/save_term_ajax'); ?>",
+          type: "POST",
+          dataType: "json",
+          data: {
+            term_type: termType,
+            terms_name: termName,
+            terms_description: description
+          },
+
+          success: function(response) {
+            if (response.success) {
+              var selectId = '';
+              if (response.term_type == 'PAYMENT') {
+                selectId = '#payment_terms_select';
+              } else if (
+                response.term_type == 'DELIVERY'
+              ) {
+                selectId = '#delivery_terms_select';
+              } else if (
+                response.term_type == 'GENERAL'
+              ) {
+                selectId = '#general_terms_select';
+              }
+
+              var $select = $(selectId);
+
+              // Add new option
+              var newOption =
+                new Option(
+                  response.terms_name,
+                  response.terms_id,
+                  true,
+                  true
+                );
+
+
+              $(newOption)
+                .attr(
+                  'data-description',
+                  response.terms_description
+                );
+
+
+              $select
+                .append(newOption)
+                .trigger('change');
+
+
+              // Update hidden description
+              if (
+                response.term_type ==
+                'PAYMENT'
+              ) {
+
+                $('#payment_terms')
+                  .val(
+                    response.terms_description
+                  );
+
+              } else if (
+                response.term_type ==
+                'DELIVERY'
+              ) {
+                $('#delivery_terms')
+                  .val(
+                    response.terms_description
+                  );
+
+              } else if (
+                response.term_type ==
+                'GENERAL'
+              ) {
+                $('#general_terms')
+                  .val(
+                    response.terms_description
+                  );
+              }
+
+              // Close modal
+              $('#addTermModal').modal('hide');
+
+              // Reset modal
+              $('#addTermModalContent').html('');
+
+            } else {
+              alert(
+                response.message ||
+                'Failed to save term.'
+              );
+
+              $button
+                .prop('disabled', false)
+                .html(
+                  '<i class="fa fa-save"></i> Save'
+                );
+            }
+          },
+
+          error: function() {
+            alert(
+              'Something went wrong while saving.'
+            );
+
+            $button
+              .prop('disabled', false)
+              .html(
+                '<i class="fa fa-save"></i> Save'
+              );
+          }
+        });
+      }
+    );
+  });
 </script>

@@ -73,9 +73,36 @@
         <div class="row mb-3">
 
           <div class="col-md-6">
-            <label for="project" class="form-label">Project Name</label>
-            <input type="text" class="form-control" name="project" id="project">
+            <label for="ref_no" class="form-label">Select Project</label>
+
+            <select
+              class="form-control select2"
+              name="project"
+              id="project">
+
+              <option value="">Select Project</option>
+
+              <?php if (!empty($project_records)) { ?>
+
+                <?php foreach ($project_records as $project) { ?>
+
+                  <option value="<?= htmlspecialchars($project['project_name'], ENT_QUOTES, 'UTF-8') ?>">
+
+                    <?= htmlspecialchars($project['project_name'], ENT_QUOTES, 'UTF-8') ?>
+
+                    <?php if (!empty($project['project_code'])) { ?>
+                      (<?= htmlspecialchars($project['project_code'], ENT_QUOTES, 'UTF-8') ?>)
+                    <?php } ?>
+
+                  </option>
+
+                <?php } ?>
+
+              <?php } ?>
+
+            </select>
           </div>
+
 
           <div class="col-md-6">
             <label for="quote_doc" class="form-label">Upload Document</label>
@@ -312,7 +339,7 @@
 
 </div>
 
-
+<script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
 <script>
   $(document).ready(function() {
 
@@ -350,6 +377,42 @@
 
   });
 
+  function setProjectValue(projectValue) {
+
+    if (!projectValue) {
+      $('#project').val('').trigger('change');
+      return;
+    }
+
+    projectValue = $.trim(String(projectValue));
+    var matchedValue = '';
+
+    $('#project option').each(function() {
+
+      var optionValue = $.trim(String($(this).val()));
+      var optionText = $.trim(String($(this).text()));
+
+      // Compare both option value and displayed text
+      if (
+        optionValue.toLowerCase() === projectValue.toLowerCase() ||
+        optionText.toLowerCase().replace(/\s*\([^)]*\)\s*$/, '') === projectValue.toLowerCase()
+      ) {
+        matchedValue = optionValue;
+        return false;
+      }
+    });
+
+    if (matchedValue !== '') {
+      $('#project')
+        .val(matchedValue)
+        .trigger('change');
+    } else {
+      $('#project')
+        .val('')
+        .trigger('change');
+    }
+  }
+
   /* ================= RFQ / PR INFO ================= */
   function get_enquiry_info() {
 
@@ -369,13 +432,12 @@
         },
         dataType: "json",
         success: function(msg) {
-
           $('#branch_id').val(msg.branch_id);
           $('#branch_name').val(msg.branch_name);
           $('#supplier_name').val(msg.supplier_name);
           $('#supplier_id').val(msg.supplier_id);
-          $('#rfq_by').val(msg.sales_person_name);
-          $('#project').val(msg.project);
+          $('#rfq_by').val(msg.created_by_name);
+          setProjectValue(msg.project);
           $('#ref_no').val(msg.ref);
 
           get_rfq_items_list(id);
@@ -392,13 +454,12 @@
         },
         dataType: "json",
         success: function(msg) {
-
           $('#branch_id').val(msg.branch_id);
           $('#branch_name').val(msg.branch_name);
           $('#supplier_name').val(msg.supplier_name);
           $('#supplier_id').val(msg.supplier_id);
           $('#rfq_by').val(msg.created_by_name);
-          $('#project').val(msg.project);
+          setProjectValue(msg.project);
           $('#ref_no').val(msg.pr_code);
 
           get_pr_items_list(id);
@@ -530,6 +591,18 @@
     // INITIALIZE SELECT2
     ////////////////////////////////////////////////////////////
 
+    $('#rfq_id').select2({
+      width: '100%',
+      placeholder: 'Select RFQ/PR',
+      allowClear: true
+    });
+
+    $('#project').select2({
+      width: '100%',
+      placeholder: 'Select Project',
+      allowClear: true
+    });
+
     $('.term-select').select2({
       width: '100%',
       placeholder: 'Please select',
@@ -583,6 +656,16 @@
             $('#addTermModalContent')
               .html(response);
             $('#addTermModal').modal('show');
+
+            // Initialize CKEditor
+            if (typeof CKEDITOR !== 'undefined') {
+
+              if (CKEDITOR.instances['new_terms_description']) {
+                CKEDITOR.instances['new_terms_description'].destroy(true);
+              }
+
+              CKEDITOR.replace('new_terms_description');
+            }
           },
 
           error: function() {
