@@ -119,6 +119,11 @@
             <input type="text" class="form-control" name="rfq_by" id="rfq_by">
           </div>
 
+          <div class="col-md-6">
+            <label for="sales_person" class="form-label">Prepared By</label>
+            <input type="text" class="form-control" name="sales_person" id="sales_person" value="<?php echo $this->session->userdata('user_name'); ?>" readonly>
+          </div>
+
         </div>
 
         <!-- RFQ Items -->
@@ -148,14 +153,10 @@
 
         <!-- Prepared By + Approved By -->
         <div class="row mb-3">
-          <div class="col-md-6">
-            <label for="sales_person" class="form-label">Prepared By</label>
-            <input type="text" class="form-control" name="sales_person" id="sales_person" value="<?php echo $this->session->userdata('user_name'); ?>">
-          </div>
-          <div class="col-md-6">
+          <!-- <div class="col-md-6">
             <label for="approved_by" class="form-label">Approved By</label>
             <input type="text" class="form-control" name="approved_by" id="approved_by">
-          </div>
+          </div> -->
         </div>
 
         <!-- Validity + Payment Terms -->
