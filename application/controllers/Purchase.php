@@ -154,6 +154,7 @@ class Purchase extends CI_Controller
         }
         $this->load->model('Setup_model');
         $this->load->model('Purchase_Model');
+        $this->load->model('Project_model');
 
         $data['title']              = 'Quote From Supplier';
         $prifix                     = 'AVE/SQT/';
@@ -163,6 +164,7 @@ class Purchase extends CI_Controller
         $data['records']            = $this->Purchase_Model->get_RFQ_list('direct');
         $data['purchase_requests'] = $this->Purchase_Model->get_PR_list(); // <--- added
         $data['supplier_records']   = $this->Setup_model->get_active_supplier_list();
+        $data['project_records'] = $this->Project_model->get_approved_projects();
 
         $data['payment_terms_list'] = $this->Setup_model->get_active_terms_conditions_by_type('PAYMENT');
         $data['delivery_terms_list'] = $this->Setup_model->get_active_terms_conditions_by_type('DELIVERY');
@@ -228,6 +230,7 @@ class Purchase extends CI_Controller
         }
         $this->load->model('Setup_model');
         $this->load->model('Company_model');
+        $this->load->model('Project_model');
         $quotation_id           = $this->uri->segment('3');
         $data['view_only']      = $this->uri->segment('4');
 
@@ -240,11 +243,15 @@ class Purchase extends CI_Controller
         //master
         $data['records1']           = $this->Purchase_Model->get_pur_qtn_master_by_id($quotation_id);
         $data['branch_records']     = $this->Company_model->get_all_branches();
-        // $data['supplier_records']     = $this->Company_model->get_supplier_by_branch($data['records1'][0]->branch_id);	
+        // $data['supplier_records']     = $this->Company_model->get_supplier_by_branch($data['records1'][0]->branch_id);
+        $data['supplier_records']   = $this->Setup_model->get_active_supplier_list();
 
+        // Project list
+        $data['project_records'] = $this->Project_model->get_approved_projects();
         $data['unit_records']        = $this->Setup_model->get_active_unit_list();
         $data['records2']            = $this->Purchase_Model->get_pur_qtn_tr_by_id($quotation_id);
         $data['quote_doc']           = $this->Purchase_Model->get_quote_doc($quotation_id, "Quote File");
+
         $data['payment_terms_list']  = $this->Setup_model->get_active_terms_conditions_by_type('PAYMENT');
         $data['delivery_terms_list'] = $this->Setup_model->get_active_terms_conditions_by_type('DELIVERY');
         $data['general_terms_list']  = $this->Setup_model->get_active_terms_conditions_by_type('GENERAL');
@@ -989,6 +996,16 @@ class Purchase extends CI_Controller
     //     $this->load->view('includes/template.php', $data);
     // }
 
+    public function pr_from_mi_list()
+    {
+        $this->load->model('Purchase_model');
+
+        $data['title'] = 'PR From Material Issue List';
+        $data['pr_list'] = $this->Purchase_model->get_pr_from_mi_list();
+
+        $data['main_content'] = 'purchase/pr_from_mi_list.php';
+        $this->load->view('includes/template.php', $data);
+    }
     public function add_pr_from_mi()
     {
         $this->load->model('Item_model');
@@ -1018,22 +1035,62 @@ class Purchase extends CI_Controller
         $data['main_content'] = 'purchase/pr_from_mi_add.php';
         $this->load->view('includes/template.php', $data);
     }
-    public function pr_from_mi_list()
-    {
-        $this->load->model('Purchase_model');
 
-        $data['title'] = 'PR From Material Issue List';
-        $data['pr_list'] = $this->Purchase_model->get_pr_from_mi_list();
-
-        $data['main_content'] = 'purchase/pr_from_mi_list.php';
-        $this->load->view('includes/template.php', $data);
-    }
-    public function delete_pr($pr_id)
+    public function save_pr_from_mi()
     {
-        $this->db->where('pr_id', $pr_id)->delete('purchase_requests');
-        $this->session->set_flashdata('success', 'Purchase Request deleted successfully.');
+        $this->load->database();
+        $this->load->library('session');
+
+        $pr_data = [
+            'pr_code'     => $this->input->post('pr_code'),
+            'pr_date'     => $this->input->post('pr_date'),
+            'branch_id'   => $this->input->post('branch_id'),
+            'supplier_id' => $this->input->post('supplier_id'),
+            'mi_id'       => $this->input->post('mi_id') ?: NULL,
+            'subject'     => $this->input->post('subject'),
+            'project'     => $this->input->post('project'),
+            'ref'         => $this->input->post('ref'),
+            'remarks'     => $this->input->post('remarks'),
+            'created_by'  => $this->session->userdata('user_id'),
+            'updated_by'  => $this->session->userdata('user_id'),
+            'updated_at'  => date('Y-m-d H:i:s')
+        ];
+
+        $this->db->trans_start();
+
+        $this->db->insert('purchase_requests', $pr_data);
+        $pr_id = $this->db->insert_id();
+
+        $product_ids = $this->input->post('product_id');
+        $units       = $this->input->post('unit');
+        $quantities  = $this->input->post('quantity');
+
+        if ($product_ids && count($product_ids) > 0) {
+            foreach ($product_ids as $key => $product_id) {
+
+                if (isset($quantities[$key]) && $quantities[$key] > 0) {
+                    $item_data = [
+                        'pr_id'      => $pr_id,
+                        'product_id' => $product_id,
+                        'unit_id'    => $units[$key],
+                        'quantity'   => $quantities[$key]
+                    ];
+                    $this->db->insert('purchase_request_items', $item_data);
+                }
+            }
+        }
+
+        $this->db->trans_complete();
+
+        if ($this->db->trans_status() === FALSE) {
+            $this->session->set_flashdata('error', 'Failed to save Purchase Request.');
+        } else {
+            $this->session->set_flashdata('success', 'Purchase Request saved successfully.');
+        }
+
         redirect('Purchase/pr_from_mi_list');
     }
+
     public function edit_pr_from_mi($pr_id)
     {
         $this->load->model('Item_model');
@@ -1060,7 +1117,6 @@ class Purchase extends CI_Controller
         $data['main_content'] = 'purchase/pr_from_mi_edit.php';
         $this->load->view('includes/template.php', $data);
     }
-
 
     public function update_pr_from_mi($pr_id)
     {
@@ -1137,62 +1193,13 @@ class Purchase extends CI_Controller
         redirect('Purchase/pr_from_mi_list');
     }
 
-
-
-    public function save_pr_from_mi()
+    public function delete_pr($pr_id)
     {
-        $this->load->database();
-        $this->load->library('session');
-
-        $pr_data = [
-            'pr_code'     => $this->input->post('pr_code'),
-            'pr_date'     => $this->input->post('pr_date'),
-            'branch_id'   => $this->input->post('branch_id'),
-            'supplier_id' => $this->input->post('supplier_id'),
-            'mi_id'       => $this->input->post('mi_id') ?: NULL,
-            'subject'     => $this->input->post('subject'),
-            'project'     => $this->input->post('project'),
-            'ref'         => $this->input->post('ref'),
-            'remarks'     => $this->input->post('remarks'),
-            'created_by'  => $this->session->userdata('user_id'),
-            'updated_by'  => $this->session->userdata('user_id'),
-            'updated_at'  => date('Y-m-d H:i:s')
-        ];
-
-        $this->db->trans_start();
-
-        $this->db->insert('purchase_requests', $pr_data);
-        $pr_id = $this->db->insert_id();
-
-        $product_ids = $this->input->post('product_id');
-        $units       = $this->input->post('unit');
-        $quantities  = $this->input->post('quantity');
-
-        if ($product_ids && count($product_ids) > 0) {
-            foreach ($product_ids as $key => $product_id) {
-
-                if (isset($quantities[$key]) && $quantities[$key] > 0) {
-                    $item_data = [
-                        'pr_id'      => $pr_id,
-                        'product_id' => $product_id,
-                        'unit_id'    => $units[$key],
-                        'quantity'   => $quantities[$key]
-                    ];
-                    $this->db->insert('purchase_request_items', $item_data);
-                }
-            }
-        }
-
-        $this->db->trans_complete();
-
-        if ($this->db->trans_status() === FALSE) {
-            $this->session->set_flashdata('error', 'Failed to save Purchase Request.');
-        } else {
-            $this->session->set_flashdata('success', 'Purchase Request saved successfully.');
-        }
-
+        $this->db->where('pr_id', $pr_id)->delete('purchase_requests');
+        $this->session->set_flashdata('success', 'Purchase Request deleted successfully.');
         redirect('Purchase/pr_from_mi_list');
     }
+
     // File: application/controllers/Purchase.php
 
     public function delete_po($po_id)

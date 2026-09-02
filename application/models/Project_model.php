@@ -272,6 +272,8 @@ public function get_all_projects()
         p.project_code,
         p.project_name,
         p.customer_name,
+        
+        p.created_on,
         p.start_date,
         p.end_date,
         p.duration,
@@ -283,13 +285,46 @@ public function get_all_projects()
     return $this->db->get()->result_array();
 }
 
+//filter
+public function get_projects_ajax($status = '',$from_date = '',$to_date = '') {
+    
+    $this->db->select('
+            project_id,
+            project_code,
+            project_name,
+            customer_name,
+            created_on,
+            start_date,
+            end_date,
+            grand_total,
+            status
+        ')->from('project_master');
+
+    if (!empty($status)) {
+        $this->db->where('status', $status);
+    }
+
+    if (!empty($from_date)) {
+        $this->db->where('DATE(created_on) >=', $from_date);
+    }
+
+    if (!empty($to_date)) {
+        $this->db->where('DATE(created_on) <=', $to_date);
+    }
+    if($status = ''&& $from_date = ''&& $to_date = '')
+    $this->db->order_by('project_id', 'DESC');
+   
+
+    return $this->db->get()->result();
+}
+
 public function get_project_items_list($project_id)
 {
      return $this->db
-        ->select('pi.*, im.product_name as product_name')
+        ->select('pi.*, im.product_name as product_name,u.unit_abbr')
         ->from('project_items pi')
         ->join('item_master im', 'im.product_id = pi.product_id', 'left')
-        // ->join('unit_master u', 'u.unit_id = pi.unit_id', 'left') // if you also store unit_id in project_items
+        ->join('unit_master u', 'u.unit_id = im.unit_id', 'left') // if you also store unit_id in project_items
         ->where('pi.project_id', $project_id)
         ->get()
         ->result_array();
@@ -568,6 +603,7 @@ public function get_projects_with_progress()
         ->from('project_master p')
         ->join('project_progress pp', 'pp.project_id = p.project_id', 'left')
         ->where('p.status', 'Approved')
+         ->order_by('p.project_id', 'DESC')
         ->get()
         ->result_array();
 }
@@ -699,10 +735,15 @@ public function get_last_progress_log($project_id)
     public function getQuotationByEnquiry($eid=""){
         $where = array('active'=>1,'aproval'=>1);
         return $this->db
-            ->select('qtn_id,quotation_code,quotation_type')
+            ->select('q.qtn_id,
+                    q.quotation_code,
+                    q.quotation_type,
+                    c.customer_name')
+            ->from('quotation_master q')
+            ->join('customer_master c', 'q.quotation_customer = c.customer_id', 'left')
             ->where($where)
-            ->order_by('qtn_id', 'ASC')
-            ->get('quotation_master')
+            ->order_by('q.qtn_id', 'ASC')
+            ->get()
             ->result_array();
 
     }
@@ -727,7 +768,7 @@ public function get_last_progress_log($project_id)
 
      public function getcustomerDetailsByQuotation($qid){
         return $this->db
-            ->select('c.customer_name,q.enquiry_id')
+            ->select('c.customer_name,q.enquiry_id,c.customer_id')
             ->from('customer_master c')
             ->join('quotation_master q', 'q.quotation_customer = c.customer_id', 'left')
             ->where('q.qtn_id',$qid)
@@ -736,7 +777,7 @@ public function get_last_progress_log($project_id)
     }
     public function get_all_products_by_quotation($q_id) {
    
-        $this->db->select('qp.qty,qp.prd_id, qp.unit_price, im.product_name, u.unit_name');
+        $this->db->select('qp.qty,qp.prd_id, qp.unit_price, im.product_name, u.unit_abbr');
         $this->db->from('quotation_products qp');
         $this->db->join('item_master im', 'im.product_id = qp.prd_id', 'left');
         $this->db->join('unit_master u', 'u.unit_id = qp.unit_id', 'left');
@@ -756,11 +797,23 @@ public function get_last_progress_log($project_id)
     }
 
     public function get_all_items(){
-        $where = array('is_inactive'=>0,'is_marked_delete'=>'0');
-        return $this->db->select('product_id, product_name,product_code')
-          ->from('item_master')
-          ->where($where)
-          ->get()->result_array();
+        $where = array(
+            'i.is_inactive'      => 0,
+            'i.is_marked_delete' => 0
+        );
+
+        return $this->db
+            ->select('i.product_id,
+                    i.product_name,
+                    i.product_code,
+                    i.unit_id,
+                    u.unit_abbr')
+            ->from('item_master i')
+            ->join('unit_master u', 'u.unit_id = i.unit_id', 'left')
+            ->where($where)
+            ->order_by('i.product_name', 'ASC')
+            ->get()
+            ->result_array();
           
     }
 
@@ -1380,9 +1433,10 @@ public function get_last_progress_log($project_id)
     }
     public function get_tasks_dash($project_id)
     {
-        $this->db->select('
+         $this->db->select('
             pti.*,
-            pt.project_task_name,
+            p.remarks AS task_remarks,
+            ptc.project_task_name,
             pm.milestone_name,
             dm.designation_name,
             em.employee_name
@@ -1392,35 +1446,43 @@ public function get_last_progress_log($project_id)
 
         $this->db->join(
             'project_task p',
-            'p.id=pti.project_task_id',
+            'p.id = pti.project_task_id',
             'left'
         );
 
         $this->db->join(
-            'project_task_category pt',
-            'pt.project_task_id=pti.task_category_id',
+            'project_task_category ptc',
+            'ptc.project_task_id = pti.task_category_id',
             'left'
         );
 
         $this->db->join(
             'project_milestone pm',
-            'pm.milestone_id=pti.milestone_id',
+            'pm.milestone_id = pti.milestone_id',
             'left'
         );
 
         $this->db->join(
             'designation_master dm',
-            'dm.id=pti.designation_id',
+            'dm.id = pti.designation_id',
             'left'
         );
 
         $this->db->join(
             'employee_master em',
-            'em.employee_id=pti.employee_id',
+            'em.employee_id = pti.employee_id',
             'left'
         );
 
-        $this->db->where('p.project_id',$project_id);
+        $this->db->where(
+            'pti.project_id',
+            $project_id
+        );
+
+        $this->db->order_by(
+            'pti.id',
+            'DESC'
+        );
 
         return $this->db->get()->result_array();
     }
@@ -1505,13 +1567,13 @@ public function get_last_progress_log($project_id)
             SELECT p.*, u.user_name, c.customer_name, p.fk_cust_id
             FROM project_master p
             JOIN users u ON p.approver_id = u.user_id
-            JOIN customer_master c ON p.fk_cust_id = c.customer_id
-            JOIN project_outsource po ON po.project_id = p.project_id
+           left JOIN customer_master c ON p.fk_cust_id = c.customer_id
             WHERE p.project_complete = '0'
             group BY p.project_id
             ORDER BY p.created_on DESC
         ");
         //AND po.quality_check_done = 'Yes'
+        //JOIN project_outsource po ON po.project_id = p.project_id
         return $s= $query->result();
    }
     function get_work_order_list()
@@ -1607,14 +1669,16 @@ public function get_last_progress_log($project_id)
 		$data = array(
 			'project_id' => $this->input->post('project_id'),
 			'supplier_id' => $this->input->post('supplier_id'),
-            'outsource_date' => !empty($outsource_date) ? date('Y-m-d', strtotime($outsource_date)) : NULL,
-            'outsource_finish_date' => !empty($outsource_finish_date) ? date('Y-m-d', strtotime($outsource_finish_date)) : NULL,
+            'outsource_date' => !empty($outsource_date) ? $outsource_date : NULL,
+            'outsource_finish_date' => !empty($outsource_finish_date) ?$outsource_finish_date : NULL,
 			'remark' => $this->input->post('remark'),
 			'created_by' => $this->session->userdata('user_id'),
 			'created_date' => date('Y-m-d'),
+            'status' => $this->input->post('status'),
+            'progress_percentage' => $this->input->post('progress_percentage')
 		);
 		$this->db->insert('project_outsource', $data);
-		$insert_id = $this->db->insert_id();
+        $insert_id = $this->db->insert_id();
 
 		for ($c = 0; $c < count($_POST['outsource_item']); $c++) {
 			$data = array(
@@ -1644,20 +1708,20 @@ public function get_last_progress_log($project_id)
 	{
          $outsource_date = $this->input->post('outsource_date');
          $outsource_finish_date = $this->input->post('outsource_finish_date');
-		$data = array(
-			'remark' => $this->input->post('remark'),
-			'outsource_date' => !empty($outsource_date) ? date('Y-m-d', strtotime($outsource_date)) : NULL,
-            'outsource_finish_date' => !empty($outsource_finish_date) ? date('Y-m-d', strtotime($outsource_finish_date)) : NULL,
-			'quality_check_done' => $this->input->post('quality_check_done'),
-            'quality_check_by' => $this->input->post('quality_check_by'),
-            'quality_check_comments' => $this->input->post('quality_check_comments')
-		
-			);
+		    $data = array(
+                'remark' => $this->input->post('remark'),
+                'outsource_date' => !empty($outsource_date) ? date('Y-m-d', strtotime($outsource_date)) : NULL,
+                'outsource_finish_date' => !empty($outsource_finish_date) ? date('Y-m-d', strtotime($outsource_finish_date)) : NULL,
+                'quality_check_done' => $this->input->post('quality_check_done'),
+                'quality_check_by' => $this->input->post('quality_check_by'),
+                'status' => $this->input->post('status'),
+                'quality_check_comments' => $this->input->post('quality_check_comments'),
+                'status' => $this->input->post('status'),
+                'progress_percentage' => $this->input->post('progress_percentage')
+            );
 		$this->db->where('outsource_id', $id);
 		$res = $this->db->update('project_outsource', $data);
-        //echo $this->db->last_query();
-        //exit;
-
+       
 		$query = $this->db->query(" delete from project_outsource_details where os_master_id=$id");
 		for ($c = 0; $c < count($_POST['outsource_item']); $c++) {
 			$data = array(
@@ -1686,7 +1750,7 @@ public function get_last_progress_log($project_id)
 	}
 	function get_outsource_processing_list()
 	{
-		$query = $this->db->query("SELECT pm.project_name, pm.project_code, po.outsource_id,po.outsource_date,po.remark,sm.supplier_code,sm.supplier_name 
+		$query = $this->db->query("SELECT pm.project_name, pm.project_code, po.outsource_id,po.outsource_date,po.remark,sm.supplier_code,po.status,sm.supplier_name,po.progress_percentage 
         FROM project_outsource po JOIN project_master pm ON po.project_id = pm.project_id JOIN 
         supplier_master sm ON po.supplier_id = sm.supplier_id ORDER BY po.outsource_date DESC ");
 		return $query->result();
@@ -1748,7 +1812,8 @@ public function get_last_progress_log($project_id)
 	}
     function get_project_list()  
 	{
-		$query=$this->db->query("select p.*, u.user_name, c.customer_name as cust_name,p.fk_cust_id from project_master p, users u, customer_master c where p.approver_id=u.user_id and p.fk_cust_id=c.customer_id order by p.created_on desc");
+		//$query=$this->db->query("select p.*, u.user_name, c.customer_name as cust_name,p.fk_cust_id from project_master p, users u, customer_master c where p.approver_id=u.user_id and p.fk_cust_id=c.customer_id order by p.created_on desc");
+        $query=$this->db->query("select p.*, u.user_name, c.customer_name as cust_name,p.fk_cust_id from project_master p, users u, customer_master c group by p.project_id order by p.created_on desc");
 		// $query=$this->db->query("select p.*, u.user_name, cust_name,p.customer_id from project_master p, users u, customer_master c where p.manager=u.user_id and p.customer_id=c.customer_id and p.project_complete='0' order by created_date desc");
 
 		return $query->result();
@@ -1767,14 +1832,14 @@ public function get_last_progress_log($project_id)
     function get_project_details($id)
     {
         $query = $this->db->query("
-            SELECT  u.user_name, c.customer_name,p.start_date,p.end_date 
+            SELECT  u.user_name, c.customer_name,p.start_date,p.end_date,p.project_name,p.project_code 
             FROM project_master p
-            JOIN users u ON p.approver_id = u.user_id
-            JOIN customer_master c ON p.fk_cust_id = c.customer_id
-            JOIN project_outsource po ON po.project_id = p.project_id
+            LEFT JOIN users u ON p.approver_id = u.user_id
+            LEFT JOIN customer_master c ON p.fk_cust_id = c.customer_id
             WHERE p.project_id = $id
             
         ");
+        // JOIN project_outsource po ON po.project_id = p.project_id
 
         return $query->result_array();
     }
@@ -1851,15 +1916,17 @@ public function get_last_progress_log($project_id)
 
 	$data = array(
 		'project_id' => $this->input->post('project_id'),
-		'work_order_date' => date('Y-m-d', strtotime($this->input->post('work_order_date'))),
+		//'work_order_date' => date('Y-m-d', strtotime($this->input->post('work_order_date'))),
+        'work_order_date' => (!empty($this->input->post('work_order_date'))) ? date('Y-m-d', strtotime($this->input->post('work_order_date'))) : NULL,
+
 		'wo_code' => $this->input->post('wo_code'),
 		// 'reamrk' => $this->input->post('remark'),
 		'installation_manhr' => $this->input->post('im'),
 		'fabrication_manhr' => $this->input->post('fm'),
-		'fsdate' => date('Y-m-d', strtotime($this->input->post('fsdate'))),
-		'fedate' => date('Y-m-d', strtotime($this->input->post('fedate'))),
-		'isdate' => date('Y-m-d', strtotime($this->input->post('isdate'))),
-		'iedate' => date('Y-m-d', strtotime($this->input->post('iedate'))),
+		//'fsdate' => (!empty($this->input->post('fsdate'))) ? date('Y-m-d', strtotime($this->input->post('fsdate'))) : NULL,
+       // 'fedate' => (!empty($this->input->post('fedate'))) ? date('Y-m-d', strtotime($this->input->post('fedate'))) : NULL,
+       // 'isdate' => (!empty($this->input->post('isdate'))) ? date('Y-m-d', strtotime($this->input->post('isdate'))) : NULL,
+       // 'iedate' => (!empty($this->input->post('iedate'))) ? date('Y-m-d', strtotime($this->input->post('iedate'))) : NULL,
 		'prepared_by' => $this->input->post('prepared_id'),
 		'checked_by' => $this->input->post('checked_id'),
 		'approved_by' => $this->input->post('approved_id'),
@@ -1876,7 +1943,7 @@ public function get_last_progress_log($project_id)
                 'wo_master_id' => $insert_id,
                 'product_desc' => $_POST['desc'][$c] ?? '',
                 'cproduct_type' => $_POST['product_id'][$c] ?? '',
-                'colour_finish' => $_POST['colour_finish'][$c] ?? '',
+                //'colour_finish' => $_POST['colour_finish'][$c] ?? '',
                 //'uom' => $_POST['item_uom'][$c],
                 'quntity' => $_POST['qty4'][$c] ?? '',
 
@@ -1894,9 +1961,9 @@ public function get_last_progress_log($project_id)
             'pid' => $insert_id,
             'wo_master_id' => $insert_id,
         'revision'=>$revision,
-        'qid' => $_POST['qid'][$i],
-        'product_desc' => $_POST['desc'][$i],
-        'item_remark' => $_POST['item_remark'][$i],
+        'qid' => $_POST['qid'][$i]??'',
+        'product_desc' => $_POST['desc'][$i]??'',
+        'item_remark' => $_POST['item_remark'][$i]??'',
         );
         $this->db->insert('project_work_order_transaction', $data);
         $insert_id1 = $this->db->insert_id();
@@ -1907,17 +1974,17 @@ public function get_last_progress_log($project_id)
             'trans_id1' => $insert_id1,
             'pid' => $insert_id,
             'revision' => $revision,
-            'sub_details' => $_POST["sub_details$trans_id"][$j],
-            'qty' =>  $_POST["qty$trans_id"][$j],
-            'width' =>  $_POST["width$trans_id"][$j],
-            'height' =>  $_POST["height$trans_id"][$j],
-            'unit' =>  $_POST["unit$trans_id"][$j],
-            'price' =>  $_POST["price$trans_id"][$j],
-            'total' =>  $_POST["total$trans_id"][$j],
-            'colour_finish' => $_POST['colour_finish'][$j],
-            'item_name' => $_POST['item_name'][$j],
-            'item_code' => $_POST['item_code'][$j],
-             'product_id'      => $_POST['product_id'][$j]
+            'sub_details' => $_POST["sub_details$trans_id"][$j]??'',
+            'qty' =>  $_POST["qty$trans_id"][$j]??'',
+            'width' =>  $_POST["width$trans_id"][$j]??'',
+            'height' =>  $_POST["height$trans_id"][$j]??'',
+            'unit' =>  $_POST["unit$trans_id"][$j]??'',
+            'price' =>  $_POST["price$trans_id"][$j]??'',
+            'total' =>  $_POST["total$trans_id"][$j]??'',
+            'colour_finish' => $_POST['colour_finish'][$j]??'',
+            'item_name' => $_POST['item_name'][$j]??'',
+            'item_code' => $_POST['item_code'][$j]??'',
+             'product_id'      => $_POST['product_id'][$j]??''
 
             );
             $this->db->insert('project_work_order_transaction1', $data);
@@ -1958,7 +2025,7 @@ if ($insert_id) {
         }
     }
 }
-
+if(isset($_POST['wo_attachments']) && !empty($_POST['wo_attachments'])) {
 for ($i = 0; $i < count($_POST['wo_attachments']); $i++) {
 
     $data3 = array(
@@ -1969,7 +2036,8 @@ for ($i = 0; $i < count($_POST['wo_attachments']); $i++) {
     );
 
     $this->db->insert('project_work_order_extra_details', $data3);
-}
+}}
+if(isset($_POST['product_route']) && !empty($_POST['product_route'])) {
 	for ($j = 0; $j < count($_POST['product_route']); $j++) {
 		$data4 = array(
 			'wo_master_id' => $insert_id,
@@ -1979,6 +2047,8 @@ for ($i = 0; $i < count($_POST['wo_attachments']); $i++) {
 		);
 		$this->db->insert('project_work_order_extra_details', $data4);
 	}
+}
+if(isset($_POST['wo_plan']) && !empty($_POST['wo_plan'])) {
 	for ($k = 0; $k < count($_POST['wo_plan']); $k++) {
 		$data5 = array(
 			'wo_master_id' => $insert_id,
@@ -1989,6 +2059,7 @@ for ($i = 0; $i < count($_POST['wo_attachments']); $i++) {
 		);
 		$this->db->insert('project_work_order_extra_details', $data5);
 	}
+}
 	if ($insert_id) {
 		$user_se_id = $this->session->userdata('user_id');
 		$page_name = explode('index.php/', $_SERVER['PHP_SELF']);
@@ -2009,16 +2080,17 @@ for ($i = 0; $i < count($_POST['wo_attachments']); $i++) {
                 'wo_code'              => $this->input->post('wo_code'),
                 'installation_manhr'   => $this->input->post('im'),
                 'fabrication_manhr'    => $this->input->post('fm'),
-                'fsdate'               => date('Y-m-d', strtotime($this->input->post('fsdate'))),
-                'fedate'               => date('Y-m-d', strtotime($this->input->post('fedate'))),
-                'isdate'               => date('Y-m-d', strtotime($this->input->post('isdate'))),
-                'iedate'               => date('Y-m-d', strtotime($this->input->post('iedate'))),
+                //'fsdate'               => date('Y-m-d', strtotime($this->input->post('fsdate'))),
+                //'fedate'               => date('Y-m-d', strtotime($this->input->post('fedate'))),
+                //'isdate'               => date('Y-m-d', strtotime($this->input->post('isdate'))),
+                //'iedate'               => date('Y-m-d', strtotime($this->input->post('iedate'))),
                 'prepared_by'          => $this->input->post('prepared_id'),
                 'checked_by'           => $this->input->post('checked_id'),
                 'approved_by'          => $this->input->post('approved_id'),
                 'handed_over_to'       => $this->input->post('handed_over_to'),
                 'created_by'           => $this->session->userdata('user_id'),
-                'created_date'         => date('Y-m-d')
+                //'created_date'         => date('Y-m-d')
+                 'status'              => $this->input->post('status'),
             );
 
             $this->db->where('work_id', $id);
@@ -2039,10 +2111,10 @@ for ($i = 0; $i < count($_POST['wo_attachments']); $i++) {
                     $data = array(
                         'pid'            => $id,
                         'wo_master_id'   => $id,
-                        'revision'       => $revision,
-                        'qid'            => $_POST['qid'][$i],
-                        'product_desc'   => $_POST['desc'][$i],
-                        'item_remark'    => $_POST['item_remark'][$i]
+                        'revision'       => $revision??0,
+                        'qid'            => $_POST['qid'][$i]??'',
+                        'product_desc'   => $_POST['desc'][$i]??'',
+                        'item_remark'    => $_POST['item_remark'][$i]??''
                     );
 
                     $this->db->insert('project_work_order_transaction', $data);
@@ -2057,7 +2129,7 @@ for ($i = 0; $i < count($_POST['wo_attachments']); $i++) {
                                 'pid'            => $id,
                                 'revision'       => $revision,
                                 'sub_details'    => $_POST["sub_details$trans_id"][$j],
-                                'qty'            => $_POST["qty$trans_id"][$j],
+                                'qty'            => $_POST["qty1$trans_id"][$j],
                                 'width'          => $_POST["width$trans_id"][$j],
                                 'height'         => $_POST["height$trans_id"][$j],
                                 'unit'           => $_POST["unit$trans_id"][$j],
@@ -2067,6 +2139,7 @@ for ($i = 0; $i < count($_POST['wo_attachments']); $i++) {
                                 'item_name'      => $_POST['item_name'][$j],
                                 'item_code'      => $_POST['item_code'][$j],
                                 'product_id'      => $_POST['product_id'][$j],
+                                'received_qty'   => $_POST['received_qty' . $trans_id][$j],
 
                             );
 
@@ -2422,7 +2495,7 @@ for ($i = 0; $i < count($_POST['wo_attachments']); $i++) {
     }
     //print work order.
     public function get_project_progress_report(){
-        return $this->db->select('pm.project_id,pm.project_code,pm.created_on,pm.project_name,cm.customer_name,u.user_name as manager,pm.start_date,pm.end_date,pm.status,pp.progress_percentage,pp.current_status,pp.last_updated')
+        return $this->db->select('pm.project_id,pm.project_code,pm.created_on,pm.project_name,cm.customer_name,u.user_name as manager,pm.start_date,pm.end_date,pm.status,pp.progress_percentage,pp.current_status,pp.last_updated,pm.customer_name as cname')
         ->from('project_master pm')
         ->join('customer_master cm','cm.customer_id=pm.fk_cust_id','left')
         ->join('users u','u.user_id=pm.approver_id','left')
@@ -2439,6 +2512,7 @@ for ($i = 0; $i < count($_POST['wo_attachments']); $i++) {
                 ->get()
                 ->result();
     }
+    
     //project model
     // Project Details
     /*soumya
@@ -2699,5 +2773,667 @@ for ($i = 0; $i < count($_POST['wo_attachments']); $i++) {
         return $query_tasks->result_array();
     }
 
-   
+    //EDIT PROJECT POPUPS
+    public function get_project_work_orders($project_id)
+    {
+        return $result = $this->db
+            ->select('
+                pwo.work_id,
+                pwo.wo_code,
+                pwo.work_order_date,
+                pwo.status,
+                pwo.approve_flag
+            ')
+            ->from('project_work_order pwo')
+            ->where('pwo.project_id', $project_id)
+            ->order_by('pwo.work_id', 'DESC')
+            ->get()
+            ->result_array();
+    }
+    public function get_project_material_requests($project_id)
+    {
+        return $this->db
+            ->select('
+                mr.mr_id,
+                mr.mr_code,
+                mr.requested_date,mr.required_date,
+                mr.status,
+                COUNT(pmi.pjt_material_id) AS total_products
+            ')
+            ->from('material_requests mr')
+            ->join('project_material_items pmi','pmi.mr_id=mr.mr_id','left')
+            ->where('mr.project_id',$project_id)
+            ->group_by('mr.mr_id')
+            ->order_by('mr.mr_id','DESC')
+            ->get()
+            ->result_array();
+    }
+    public function get_material_request_products($mr_id)
+    {
+        return $this->db
+            ->select('
+                pmi.*,
+                im.product_code,im.description,
+                im.product_name,
+                um.unit_abbr
+            ')
+            ->from('project_material_items pmi')
+            ->join('item_master im','im.product_id=pmi.fk_item_id')
+            ->join('unit_master um','um.unit_id=im.unit_id','left')
+            ->where('pmi.mr_id',$mr_id)
+            ->get()
+            ->result_array();
+    }
+    public function get_project_outsource($project_id)
+    {
+        return $this->db
+            ->select('
+                po.outsource_id,
+                po.outsource_date,
+                po.outsource_finish_date,
+                po.status,
+                po.progress_percentage,
+                s.supplier_name,
+                COUNT(pod.outsource_trid) AS total_items
+            ')
+            ->from('project_outsource po')
+            ->join('supplier_master s','s.supplier_id=po.supplier_id','left')
+            ->join('project_outsource_details pod','pod.os_master_id=po.outsource_id','left')
+            ->where('po.project_id',$project_id)
+            ->group_by('po.outsource_id')
+            ->order_by('po.outsource_id','DESC')
+            ->get()
+            ->result_array();
+    }
+    public function get_outsource_products($outsource_id)
+    {
+        return $this->db
+            ->select('
+                outsource_trid,
+                outsource_type,
+                nature_work,
+                outsource_item,
+                product_desc,
+                quantity,
+                item_price
+            ')
+            ->from('project_outsource_details')
+            ->where('os_master_id',$outsource_id)
+            ->order_by('outsource_trid')
+            ->get()
+            ->result_array();
+    }
+
+   public function get_project_tasks_popup($project_id)
+    {
+        return $this->db
+            ->select('
+                pti.id,
+                pti.project_task_id,
+                pti.task_name,
+                pti.priority,
+                pti.start_date,
+                pti.end_date,
+                pti.status,
+                pti.task_description,
+                ptc.project_task_name AS category_name,
+                pm.milestone_name,
+                em.employee_name
+            ')
+            ->from('project_task_items pti')
+            ->join('project_task_category ptc','ptc.project_task_id = pti.task_category_id','left')
+            ->join('project_milestone pm','pm.milestone_id = pti.milestone_id','left')
+            ->join('employee_master em','em.employee_id = pti.employee_id','left')
+            ->where('pti.project_id',$project_id)
+            ->order_by('pti.start_date','ASC')
+            ->get()
+            ->result_array();
+    }
+    
+    //EDIT PROJECT POPUP
+    //FUll repo
+     //full repor
+    public function get_project_repo($project_id)
+    {
+        return $this->db
+            ->select('
+                pm.project_id,
+                pm.project_code,
+                pm.project_name,
+                pm.remarks,
+                pm.start_date,
+                pm.end_date,
+                
+                pm.status,
+               
+
+                cm.customer_name,
+
+                u.user_name AS manager_name
+            ')
+            ->from('project_master pm')
+            ->join('customer_master cm','cm.customer_id = pm.fk_cust_id','left')
+            ->join('users u','u.user_id = pm.approver_id','left')
+            ->where('pm.project_id', $project_id)
+            ->get()
+            ->row();
+            //pm.priority, pm.progress_percentage,
+    }
+
+    public function get_project_tasks_repo($project_id)
+    {
+        return $this->db
+            ->select('
+                pti.id,
+                pti.task_name,
+                ptc.project_task_name AS category_name,
+                pm.milestone_name,
+                e.employee_name,
+                d.designation_name,
+                pti.priority,
+                pti.start_date,
+                pti.end_date,
+                pti.status,
+                pti.task_description
+            ')
+            ->from('project_task_items pti')
+            ->join('project_task pt','pt.id = pti.project_task_id','left')
+            ->join('project_task_category ptc','ptc.project_task_id = pti.task_category_id','left')
+            ->join('project_milestone pm','pm.milestone_id = pti.milestone_id','left')
+            ->join('employee_master e','e.employee_id = pti.employee_id','left')
+            ->join('designation_master d','d.id = pti.designation_id','left')
+            ->where('pti.project_id',$project_id)
+            ->order_by('pti.start_date','ASC')
+            ->get()
+            ->result();
+    }
+
+    public function get_project_attendance_repo($project_id)
+    {
+        return $this->db
+            ->select('
+                pta.attendance_id,
+                pta.check_in,
+                pta.check_out,
+                pta.total_hours,
+                pta.attendance_status,
+
+                pti.task_name,
+                pti.priority,
+
+                em.employee_name,
+                dm.designation_name
+            ')
+            ->from('project_task_attendance pta')
+            ->join('project_task_items pti','pti.id = pta.task_item_id','left')
+            ->join('employee_master em','em.employee_id = pta.employee_id','left')
+            ->join('designation_master dm','dm.id = em.designation_id','left')
+            ->where('pta.project_id', $project_id)
+            ->order_by('pta.check_in','DESC')
+            ->get()
+            ->result();
+    }
+
+    public function get_material_requests_repo($project_id)
+{
+    return $this->db
+        ->select('
+            mr_id,
+            mr_code,
+            requested_date,
+            required_date,
+            status
+        ')
+        ->from('material_requests')
+        ->where('project_id',$project_id)
+        ->order_by('mr_id','DESC')
+        ->get()
+        ->result();
+}
+
+   public function get_material_request_products_repo($mr_id)
+{
+    return $this->db
+        ->select('
+            mri.pjt_material_id,
+            im.product_code,
+            im.product_name,
+            mri.item_remarks,
+            mri.item_qty as quantity,
+            um.unit_abbr
+        ')
+        ->from('project_material_items mri')
+        ->join('item_master im','im.product_id=mri.fk_item_id')
+         ->join('unit_master um','um.unit_id=im.unit_id','left')
+        ->where('mri.mr_id',$mr_id)
+        ->order_by('mri.pjt_material_id')
+        ->get()
+        ->result();
+}
+
+    public function attendance_report($filter = array())
+    {
+        $this->db->select("
+            pta.*,
+            pm.project_code,
+            pm.project_name,
+            em.employee_name,
+            dm.designation_name,
+            pti.task_name
+        ");
+
+        $this->db->from('project_task_attendance pta');
+
+        $this->db->join('project_master pm', 'pm.project_id = pta.project_id');
+        $this->db->join('employee_master em', 'em.employee_id = pta.employee_id');
+        $this->db->join('designation_master dm', 'dm.id = em.designation_id', 'left');
+        $this->db->join('project_task_items pti', 'pti.id = pta.task_item_id', 'left');
+
+        if (!empty($filter['project_id'])) {
+            $this->db->where('pta.project_id', $filter['project_id']);
+        }
+
+        if (!empty($filter['employee_id'])) {
+            $this->db->where('pta.employee_id', $filter['employee_id']);
+        }
+
+        if (!empty($filter['status'])) {
+            $this->db->where('pta.attendance_status', $filter['status']);
+        }
+
+        if (!empty($filter['from_date'])) {
+            $this->db->where('pta.attendance_date >=', $filter['from_date']);
+        }
+
+        if (!empty($filter['to_date'])) {
+            $this->db->where('pta.attendance_date <=', $filter['to_date']);
+        }
+
+        $this->db->order_by('pta.attendance_date', 'DESC');
+        $this->db->order_by('pta.check_in', 'DESC');
+
+        return $this->db->get()->result();
+    }
+    public function get_today_project_attendance($project_id)
+    {
+        $today=date('Y-m-d');
+
+        return $this->db
+            ->select('
+                pti.id as task_item_id,
+                pti.project_id,
+                pti.task_name,
+                pti.priority,
+                pti.status as task_status,
+
+                pm.project_code,
+                pm.project_name,
+
+                em.employee_id,
+                em.employee_name,
+
+                dm.designation_name,
+
+                pta.attendance_id,
+                pta.check_in,
+                pta.pause_time,
+                pta.resume_time,
+                pta.check_out,
+                pta.attendance_status,
+                pta.total_hours
+            ')
+            ->from('project_task_items pti')
+
+            ->join('project_master pm',
+                'pm.project_id=pti.project_id')
+
+            ->join('employee_master em',
+                'em.employee_id=pti.employee_id')
+
+            ->join('designation_master dm',
+                'dm.id=pti.designation_id',
+                'left')
+
+            ->join(
+                'project_task_attendance pta',
+                'pta.task_item_id=pti.id
+                AND pta.attendance_date="'.$today.'"',
+                'left'
+            )
+
+            ->where('pti.project_id',$project_id)
+
+            ->where('pti.status <>','completed')
+
+            ->order_by('em.employee_name')
+
+            ->get()
+
+            ->result();
+    }
+   public function get_project_attendance($project_id)
+    {
+        return $this->db
+            ->select('
+                pta.attendance_date,
+                pta.check_in,
+                pta.check_out,
+                pta.total_hours,
+                pta.attendance_status,
+
+                em.employee_name,
+                dm.designation_name,
+
+                pti.task_name
+            ')
+            ->from('project_task_attendance pta')
+
+            ->join('employee_master em','em.employee_id=pta.employee_id')
+
+            ->join('designation_master dm','dm.id=em.designation_id','left')
+
+            ->join('project_task_items pti','pti.id=pta.task_item_id','left')
+
+            ->where('pta.project_id',$project_id)
+
+            ->order_by('pta.attendance_date','DESC')
+
+            ->order_by('pta.check_in','DESC')
+
+            ->get()
+
+            ->result_array();
+    }
+    public function get_work_orders_repo($project_id)
+    {
+        return $this->db
+            ->select('
+                pwo.work_id,
+                pwo.wo_code,
+                pwo.work_order_date,
+                pwo.status,pwo.fabrication_manhr,pwo.installation_manhr,
+                COUNT(pwt.trans_id) AS total_items
+            ')
+            ->from('project_work_order pwo')
+            ->join('project_work_order_transaction pwt','pwt.wo_master_id=pwo.work_id','left')
+            ->where('pwo.project_id',$project_id)
+            ->group_by('pwo.work_id')
+            ->order_by('pwo.work_id','DESC')
+            ->get()
+            ->result();
+    }
+    public function get_work_order_products_repo($work_order_id)
+    {
+        return $this->db
+            ->select('
+                pwt.trans_id ,
+                im.product_code,
+                im.product_name,
+                im.description,
+                pwt.quntity,
+                pwt.item_remark
+            ')
+            ->from('project_work_order_transaction pwt')
+            ->join('item_master im','im.item_id=pwt.product_id','left')
+            ->where('pwt.wo_master_id',$work_order_id)
+            ->order_by('pwt.tr_id')
+            ->get()
+            ->result();
+    }
+
+    public function get_outsource_repo($project_id)
+    {
+        return $this->db
+            ->select('
+                po.outsource_id,
+                po.outsource_date,
+                po.outsource_finish_date,
+                po.status,
+                po.progress_percentage,
+                s.supplier_name,
+                COUNT(pod.outsource_trid) AS total_items
+            ')
+            ->from('project_outsource po')
+            ->join('supplier_master s','s.supplier_id = po.supplier_id','left')
+            ->join('project_outsource_details pod','pod.os_master_id = po.outsource_id','left')
+            ->where('po.project_id',$project_id)
+            ->group_by('po.outsource_id')
+            ->order_by('po.outsource_id','DESC')
+            ->get()
+            ->result();
+    }
+    public function get_outsource_items_repo($outsource_id)
+    {
+        return $this->db
+            ->select('
+                outsource_trid,
+                outsource_type,
+                nature_work,
+                outsource_item,
+                product_desc,
+                quantity,
+                item_price
+            ')
+            ->from('project_outsource_details')
+            ->where('os_master_id',$outsource_id)
+            ->order_by('outsource_trid')
+            ->get()
+            ->result();
+    }
+
+   public function get_progress_history_repo($project_id)
+    {
+        return $this->db
+            ->select('
+                ppl.log_id,
+                ppl.project_id,
+                ppl.log_date,
+                ppl.start_time,
+                ppl.end_time,
+                ppl.milestone,
+                ppl.progress_percentage,
+                ppl.current_status,
+                ppl.remarks,
+                ppl.site_files,
+                ppl.site_image,
+                ppl.created_at
+            ')
+            ->from('project_progress_logs ppl')
+            ->where('ppl.project_id', $project_id)
+            ->order_by('ppl.log_date', 'DESC')
+            ->order_by('ppl.created_at', 'DESC')
+            ->get()
+            ->result();
+    }
+
+   public function get_cost_summary($project_id)
+    {
+        $result = new stdClass();
+
+        /*
+        * MATERIAL COST
+        * ------------------------------------------------
+        * material_request_items.quantity
+        * ×
+        * item_master.retail_price
+        */
+
+       $material = $this->db
+        ->select('
+            COALESCE(
+                SUM(
+                    pmi.item_qty * COALESCE(im.retail_price, 0)
+                ),
+                0
+            ) AS total
+        ')
+        ->from('material_requests mr')
+        ->join(
+            'project_material_items pmi',
+            'pmi.mr_id = mr.mr_id',
+            'inner'
+        )
+        ->join(
+            'item_master im',
+            'im.product_id = pmi.fk_item_id',
+            'left'
+        )
+        ->where('mr.project_id', $project_id)
+        ->get()
+        ->row();
+        /*
+        * OUTSOURCE COST
+        * ------------------------------------------------
+        * project_outsource_details.quantity
+        * ×
+        * project_outsource_details.item_price
+        */
+
+        $outsource = $this->db
+            ->select('
+                COALESCE(
+                    SUM(
+                        pod.quantity * COALESCE(pod.item_price, 0)
+                    ),
+                    0
+                ) AS total
+            ')
+            ->from('project_outsource po')
+            ->join(
+                'project_outsource_details pod',
+                'pod.os_master_id = po.outsource_id',
+                'left'
+            )
+            ->where('po.project_id', $project_id)
+            ->get()
+            ->row();
+
+
+        /*
+        * FINAL RESULT
+        */
+
+        $result->material_cost =
+            (float) $material->total;
+
+        $result->outsource_cost =
+            (float) $outsource->total;
+
+        $result->total_cost =
+            $result->material_cost +
+            $result->outsource_cost;
+
+
+        return $result;
+    }
+
+   //calculate project progress percentage
+   public function get_project_progress_byid($project_id) {
+        $total_items = 0;
+        $completed_items = 0;
+        $total_tasks = $this->db->where('project_id', $project_id)->count_all_results('project_task_items');
+        $completed_tasks = $this->db->where(array('project_id' => $project_id, 'status' => 'completed'))->count_all_results('project_task_items');
+        $total_items += $total_tasks;
+        $completed_items += $completed_tasks;
+
+        /*$total_outsource = $this->db->where('project_id', $project_id)->count_all_results('project_outsource');
+        $completed_outsource = $this->db->where(array('project_id' => $project_id, 'status' => 'Finished'))->count_all_results('project_outsource');
+        $total_items += $total_outsource;
+        $completed_items += $completed_outsource;*/
+
+        $total_materials = $this->db->where('project_id', $project_id)->count_all_results('material_issue');
+        $completed_materials = $this->db->where(array('project_id' => $project_id, 'status' => 'Issued'))->count_all_results('material_issue');
+        $total_items += $total_materials;
+        $completed_items += $completed_materials;
+        if ($total_items == 0) {
+            return 0; 
+        }
+        
+        $progress_percentage = ($completed_items / $total_items) * 100;
+        return round($progress_percentage); 
+    }
+
+    public function get_all_items_search($search = '')
+    {
+        $where = array(
+            'i.is_inactive'      => 0,
+            'i.is_marked_delete' => 0
+        );
+
+        $this->db
+            ->select('
+                i.product_id,
+                i.product_name,
+                i.product_code,
+                i.unit_id,
+                u.unit_abbr,
+                i.retail_price
+            ')
+            ->from('item_master i')
+            ->join('unit_master u', 'u.unit_id = i.unit_id', 'left')
+            ->where($where);
+
+        if (!empty($search)) {
+            $this->db->group_start()
+                ->like('i.product_name', $search)
+                ->or_like('i.product_code', $search)
+                ->group_end();
+        }
+
+        return $this->db
+            ->order_by('i.product_name', 'ASC')
+            ->get()
+            ->result_array();
+    }
+
+     public function get_sales_order_by_id($so_id)
+    {
+        $this->db->select('
+            so.so_id,
+            so.so_code,
+            so.qtn_id,
+            qm.project_name,
+            cm.customer_name,
+            bm.branch_name
+        ');
+        $this->db->from('sales_order_master so');
+        $this->db->join('quotation_master qm', 'qm.qtn_id = so.qtn_id', 'left');
+        $this->db->join('customer_master cm', 'cm.customer_id = qm.quotation_customer', 'left');
+        $this->db->join('branch_master bm', 'bm.branch_id = qm.quotation_branch_id', 'left');
+        $this->db->where('so.so_id', $so_id);
+
+        return $this->db->get()->row_array();
+    }
+
+      public function get_all_products_by_so($so_id)
+    {
+        $this->db->select('sop.*, im.product_name, u.unit_abbr');
+        $this->db->from('sales_order_products sop');
+        $this->db->join('item_master im', 'im.product_id = sop.product_id', 'left');
+        $this->db->join('unit_master u', 'u.unit_id = sop.unit_id', 'left');
+        $this->db->where('sop.so_id', $so_id);
+        return $this->db->get()->result_array();
+    }
+
+        public function get_all_sales_orders()
+    {
+        $this->db->select('
+        so.so_id,
+        so.so_code,
+        so.qtn_id,
+        qm.project_name,
+        cm.customer_name,
+        bm.branch_name
+    ');
+        $this->db->from('sales_order_master so');
+        $this->db->join('quotation_master qm', 'qm.qtn_id = so.qtn_id', 'left');
+        $this->db->join('customer_master cm', 'cm.customer_id = qm.quotation_customer', 'left');
+        $this->db->join('branch_master bm', 'bm.branch_id = qm.quotation_branch_id', 'left');
+        // Exclude SOs already used in project_master
+        //$this->db->where("so.so_id NOT IN (SELECT so_id FROM project_master)", NULL, FALSE);
+        $this->db->order_by('so.so_date', 'DESC');
+
+        return $this->db->get()->result_array();
+    }
+
 }

@@ -168,90 +168,244 @@
 
 <script>
     $(document).ready(function() {
-        ///////// INITIALIZE SELECT2/////////
+
+        // =====================================================
+        // DATATABLES
+        // =====================================================
+
+        let prTable;
+
+        if ($.fn.DataTable.isDataTable('#pr_items_table')) {
+
+            // If DataTables is already initialized by template
+            prTable = $('#pr_items_table').DataTable();
+
+            // Keep original insertion order
+            prTable.order([]);
+
+        } else {
+
+            // Initialize DataTables
+            prTable = $('#pr_items_table').DataTable({
+                responsive: true,
+
+                pageLength: 10,
+
+                lengthMenu: [
+                    [10, 25, 50, 100, -1],
+                    [10, 25, 50, 100, "All"]
+                ],
+
+                searching: true,
+                ordering: false,
+                paging: true,
+                info: true,
+                autoWidth: false
+            });
+        }
+
+
+        ////// SELECT2 - EXISTING SELECTS ////
+
         $('.select2').select2({
             width: '100%',
             placeholder: 'Select an option',
             allowClear: true
         });
 
-        ///////// DELETE ROW /////////
-        $(document).on('click', '.deleteRow', function(e) {
-            e.preventDefault();
-            $(this).closest('tr').remove();
-        });
 
-        ///////// ADD NEW PRODUCT ROW /////////
+        //// ROW INDEX ////
         let rowIndex = 1000;
+
+        //// ADD NEW PRODUCT ROW //// 
+
         $(document).on('click', '.addRow', function(e) {
             e.preventDefault();
             let newRow = `
             <tr>
+
                 <!-- Product -->
                 <td>
-                    <select class="form-control product-select" name="item_id[]" id="product_${rowIndex}" required>
+                    <select
+                        class="form-control product-select"
+                        name="item_id[]"
+                        id="product_${rowIndex}"
+                        required>
+
                         <option value="">Select Product</option>
+
                         <?php foreach ($active_items as $item) { ?>
+
                             <option value="<?= $item->product_id ?>">
                                 <?= htmlspecialchars($item->product_name, ENT_QUOTES, 'UTF-8') ?>
                             </option>
+
                         <?php } ?>
+
                     </select>
                 </td>
+
 
                 <!-- Description -->
                 <td>
-                    <input type="text" class="form-control" name="description[]" placeholder="Description">
+                    <input
+                        type="text"
+                        class="form-control"
+                        name="description[]"
+                        placeholder="Description">
                 </td>
+
 
                 <!-- Unit -->
                 <td>
-                    <select class="form-control" name="unit[]" required>
+
+                    <select
+                        class="form-control"
+                        name="unit[]"
+                        required>
+
                         <option value="">Select Unit</option>
+
                         <?php foreach ($active_units as $unit) { ?>
+
                             <option value="<?= $unit->unit_id ?>">
                                 <?= htmlspecialchars($unit->unit_name, ENT_QUOTES, 'UTF-8') ?>
                             </option>
+
                         <?php } ?>
+
                     </select>
+
                 </td>
+
 
                 <!-- Quantity -->
                 <td>
-                    <input type="number" class="form-control" name="quantity[]" value="1" min="0" step="0.01" required>
+
+                    <input
+                        type="number"
+                        class="form-control"
+                        name="quantity[]"
+                        value="1"
+                        min="0"
+                        step="0.01"
+                        required>
+
                 </td>
+
 
                 <!-- Actions -->
                 <td>
-                    <button type="button" class="btn btn-success addRow">
+
+                    <button
+                        type="button"
+                        class="btn btn-success addRow">
+
                         <i class="fa fa-plus"></i>
+
                     </button>
-                    <button type="button" class="btn btn-danger deleteRow">
+
+                    <button
+                        type="button"
+                        class="btn btn-danger deleteRow">
+
                         <i class="fa fa-minus"></i>
+
                     </button>
+
                 </td>
+
             </tr>
         `;
 
-            $('#pr_items_body').append(newRow);
 
-            // Initialize Select2 for the newly added product
-            $('#product_' + rowIndex).select2({
-                width: '100%',
-                placeholder: 'Select Product',
-                allowClear: true
-            });
+            // =================================================
+            // IMPORTANT:
+            // ADD ROW THROUGH DATATABLES
+            // =================================================
+
+            let rowNode = prTable
+                .row
+                .add($(newRow))
+                .draw(false)
+                .node();
+
+
+            // =================================================
+            // INITIALIZE SELECT2 FOR NEW PRODUCT
+            // =================================================
+
+            $(rowNode)
+                .find('.product-select')
+                .select2({
+                    width: '100%',
+                    placeholder: 'Select Product',
+                    allowClear: true
+                });
+
+
             rowIndex++;
+
         });
 
-        ////// QUANTITY VALIDATION ////// 
-        $(document).on('input', 'input[name="quantity[]"]', function() {
-            const val = $(this).val();
-            if (val <= 0) {
-                $(this).css('border', '1px solid red');
-            } else {
-                $(this).css('border', '');
-            }
+
+        // =====================================================
+        // DELETE ROW
+        // =====================================================
+
+        $(document).on('click', '.deleteRow', function(e) {
+
+            e.preventDefault();
+
+            prTable
+                .row($(this).closest('tr'))
+                .remove()
+                .draw(false);
+
         });
+
+
+        // =====================================================
+        // QUANTITY VALIDATION
+        // =====================================================
+
+        $(document).on(
+            'input',
+            'input[name="quantity[]"]',
+            function() {
+
+                const val = $(this).val();
+
+                if (val <= 0) {
+
+                    $(this).css(
+                        'border',
+                        '1px solid red'
+                    );
+
+                } else {
+
+                    $(this).css(
+                        'border',
+                        ''
+                    );
+                }
+
+            }
+        );
+
+
+        // =====================================================
+        // FORM SUBMIT
+        // MAKE ALL DATATABLE ROWS AVAILABLE TO FORM
+        // =====================================================
+
+        $('#main').on('submit', function() {
+            prTable
+                .page
+                .len(-1)
+                .draw(false);
+        });
+
     });
 </script>

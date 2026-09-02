@@ -112,11 +112,3 @@ if ($term_type == 'PAYMENT') {
     </div>
 
 </div>
-<script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
-<script>
-    $(document).ready(function() {
-        if (document.getElementById('new_terms_description')) {
-            CKEDITOR.replace('new_terms_description');
-        }
-    });
-</script>

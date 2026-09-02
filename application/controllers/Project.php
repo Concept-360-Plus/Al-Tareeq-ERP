@@ -54,7 +54,7 @@ class Project extends CI_Controller
         $data['project'] = [];
         $data['project_items'] = [];
         $data['project_technicians'] = [];
-        //$data['sales_orders'] = $this->Sales_model->get_all_sales_orders();
+        $data['sales_orders'] = $this->Sales_model->get_all_sales_orders();
         // Check if SO ID is passed in URL
         $eq_id = $this->input->get('eq_id');
         $data['selected_eq_id'] = $eq_id ?? null;
@@ -68,6 +68,11 @@ class Project extends CI_Controller
         $data['employees']  = $this->Project_model->get_employees();
         $data['designations'] = $this->Project_model->get_designations();
         $data['users']      = $this->db->get('users')->result_array();
+        $data['units'] = $this->db
+                    ->where('active', 1)
+                    ->order_by('unit_name', 'ASC')
+                    ->get('unit_master')
+                    ->result_array();
 
         $data['main_content'] = 'project/add_project';
         $this->load->view('includes/template', $data);
@@ -81,14 +86,14 @@ class Project extends CI_Controller
         }
 
         $data['title'] = 'Edit Project';
-
+        $data['sales_orders'] = $this->Project_model->get_all_sales_orders();
         $data['project'] = $this->Project_model->get_project_by_id($project_id);
         $enq_id = $data['project']['fk_enq_id']??'';
         $data['enquires']   = $this->Project_model->get_enquiries();
         $data['quotation'] = $this->Project_model->getQuotationByEnquiry();
         $data['project_items'] = $this->Project_model->get_project_items_list($project_id);
         $data['project_technicians'] = $this->Project_model->get_project_technicians($project_id);
-        $data['sales_orders'] = $this->Sales_model->get_all_sales_orders();
+        //$data['sales_orders'] = $this->Sales_model->get_all_sales_orders();
         $data['employees'] = $this->Project_model->get_employees();
         $data['designations'] = $this->Project_model->get_designations();
         $data['users'] = $this->Project_model->get_active_users();
@@ -97,6 +102,7 @@ class Project extends CI_Controller
         $data['milestones']  =   $this->Project_model->get_milestones();
         $data['designation_list'] = $this->Project_model->get_designations();
         $data['project_tasks']  =   $this->Project_model->get_project_tasks($project_id);
+        $data['project_id'] = $project_id;
        
 
         if (empty($data['project'])) {
@@ -113,9 +119,9 @@ public function fetch_so_details()
 {
     $so_id = $this->input->post('so_id');
 
-    $so_master = $this->Sales_model->get_sales_order_by_id($so_id);
+    $so_master = $this->Project_model->get_sales_order_by_id($so_id);
     // $so_products = $this->Sales_model->get_all_products($so_master['qtn_id']);
-    $so_products = $this->Sales_model->get_all_products_by_so($so_id); 
+    $so_products = $this->Project_model->get_all_products_by_so($so_id); 
 
     echo json_encode([
         'so_master'   => $so_master,
@@ -129,12 +135,13 @@ public function save_project()
     $this->load->model('Project_model');
     $project_id = $this->input->post('project_id');
     $projectData = [
-        //'so_id'            => $this->input->post('so_id'),
+        'so_id'            => $this->input->post('so_id'),
         //'fk_enq_id'        => $this->input->post('e_id'),
-        'fk_quot_id'       => $this->input->post('quotation_id'),
+        //'fk_quot_id'       => $this->input->post('quotation_id'),
         'project_name'     => $this->input->post('project_name'),
         'project_location' => $this->input->post('project_location'),
         'customer_name'    => $this->input->post('customer_name'),
+        'fk_cust_id'       => $this->input->post('customer_id'),
         'branch_name'      => $this->input->post('branch_name'),
         'start_date'       => $this->input->post('start_date1'),
         'end_date'         => $this->input->post('end_date1'),
@@ -148,109 +155,317 @@ public function save_project()
         'po_number'        => $this->input->post('po_number'),
         'loa_received'     => $this->input->post('loa_received'),
         'loa_date'         => $this->input->post('loa_date'),
-        'subject'          => $this->input->post('subject')
-        
+        'subject'          => $this->input->post('subject'),
+        'bit_quo'          => $this->input->post('bit_quo')
     ];
 
     $this->db->trans_start();
-    if ($project_id) {
 
-        $this->Project_model->update_project($project_id, $projectData);
-        $message = 'Project updated successfully';
-    } else {
-        
-        $project_id = $this->Project_model->insert_project($projectData);
-        //task category
-  
-            $task_category=$this->input->post('task_category');
-            $task_name=$this->input->post('task_name');
+if ($project_id) {
 
-            for($i=0;$i<count($task_name);$i++)
-            {
-                $this->db->insert('project_task_items',array(
+    // =========================================================
+    // UPDATE PROJECT
+    // =========================================================
 
-                    'project_id'=>$project_id,
+    $this->Project_model->update_project(
+        $project_id,
+        $projectData
+    );
 
-                    'task_category_id'=>$task_category[$i],
+    $message = 'Project updated successfully';
 
-                    'task_name'=>$task_name[$i],
+} else {
 
-                    'milestone_id'=>$this->input->post('milestone')[$i],
+    // =========================================================
+    // CREATE PROJECT
+    // =========================================================
 
-                    'designation_id'=>$this->input->post('designation_id')[$i],
+    $project_id = $this->Project_model->insert_project($projectData);
 
-                    'employee_id'=>$this->input->post('employee_id')[$i],
 
-                    'priority'=>$this->input->post('priority')[$i],
+    // =========================================================
+    // TASK CATEGORY / TASK ITEMS
+    // =========================================================
 
-                    'start_date'=>$this->input->post('start_date')[$i],
+    $task_category = $this->input->post('task_category');
+    $task_name     = $this->input->post('task_name');
 
-                    'end_date'=>$this->input->post('end_date')[$i],
+    if (!empty($task_name)) {
 
-                    'status'=>$this->input->post('status')[$i],
+        for ($i = 0; $i < count($task_name); $i++) {
 
-                    'task_description'=>$this->input->post('task_description')[$i]
+            $this->db->insert(
+                'project_task_items',
+                array(
 
-                ));
-            }
+                    'project_id' => $project_id,
 
-        //task project
+                    //'task_category_id' =>
+                    //    $task_category[$i] ?? null,
 
-        $project_code = 'PRJ-' . str_pad($project_id, 6, '0', STR_PAD_LEFT);
-        $this->Project_model->update_project($project_id, [
-            'project_code' => $project_code
-        ]);
-        $qid = $this->input->post('quotation_id');
-        $dataq = array(
-					'pid' => $project_id,
-					'qid' => $qid,
-				);
-		$this->db->insert('project_quotation', $dataq);
+                    'task_name' =>
+                        $task_name[$i] ?? null,
 
-                //$query=$this->db->query("select * from sales_quotation_transaction where quote_master_id=$qid");
-				$query=$this->db->query("select * from quotation_main_heading where qtn_id=$qid");
-			    $res1= $query->result();
-				foreach($res1 as $r1)
-				{
-					$data = array(
-					'pid' => $project_id,
-					'qid' => $qid,
-					//'product_desc' => $r1->product_desc,
-					//item_remark' => $r1->item_remark,
-                    'product_desc' => $r1->main_heading,
-					'item_remark' => $r1->description,
-					);
-					$this->db->insert('project_transaction1', $data);
-					$insert_id1 = $this->db->insert_id();
-		
-					//$trans_id= $r1->trans_id;
-					//$query=$this->db->query("select * from sales_quotation_transaction2 where quote_master_id=$qid and trans_id1=$trans_id");
-                    $query=$this->db->query("select * from quotation_products where qtn_id=$qid");
-					$res2= $query->result();
-					foreach($res2 as $r2)
-					{
-						$data = array(
-						'trans_id1' => $insert_id1,
-						'pid' => $project_id,
-						//'sub_details' => $r2->sub_heading_id,
-                        'sub_details' => $r2->prd_id,
-						'qty' => $r2->qty,
-						//'width' => $r2->width,
-						//'height' => $r2->height,
-						'unit' => $r2->unit_id,
-						'price' => $r2->unit_price,
-						'discount_percent' => $r2->discount_percent,
-                        'discount_amount' => $r2->discount_amount,
-                        'taxable_amount' => $r2->taxable_amount,
-                        
-						);
-						$this->db->insert('project_transaction2', $data);
-					}
-                }
+                    //'milestone_id' =>
+                   //     $this->input->post('milestone')[$i] ?? null,
 
-        $message = 'Project saved successfully';
+                    'designation_id' =>
+                        $this->input->post('designation_id')[$i] ?? null,
+
+                    'employee_id' =>
+                        $this->input->post('employee_id')[$i] ?? null,
+
+                    'priority' =>
+                        $this->input->post('priority')[$i] ?? null,
+
+                    'start_date' =>
+                        $this->input->post('start_date')[$i] ?? null,
+
+                    'end_date' =>
+                        $this->input->post('end_date')[$i] ?? null,
+
+                    'status' =>
+                        $this->input->post('status')[$i] ?? null,
+
+                    //'task_description' =>
+                     //   $this->input->post('task_description')[$i] ?? null
+                )
+            );
+        }
     }
 
+
+    // =========================================================
+    // PROJECT CODE
+    // =========================================================
+
+    $project_code =
+        'PRJ-' . str_pad($project_id, 6, '0', STR_PAD_LEFT);
+
+    $this->Project_model->update_project(
+        $project_id,
+        array(
+            'project_code' => $project_code
+        )
+    );
+
+
+    // =========================================================
+    // QUOTATION / MANUAL ITEM SOURCE
+    // =========================================================
+
+    $qid     = $this->input->post('quotation_id');
+    $bit_quo = $this->input->post('bit_quo');
+
+
+    // =========================================================
+    // OPTION 1 : QUOTATION SELECTED
+    // =========================================================
+
+    if (!empty($qid) && $bit_quo == 1) {
+
+        // -----------------------------------------------------
+        // Save project quotation
+        // -----------------------------------------------------
+
+        $dataq = array(
+            'pid' => $project_id,
+            'qid' => $qid
+        );
+
+        $this->db->insert(
+            'project_quotation',
+            $dataq
+        );
+
+
+        // -----------------------------------------------------
+        // Get quotation main headings
+        // -----------------------------------------------------
+
+        $query = $this->db->query(
+            "SELECT *
+             FROM quotation_main_heading
+             WHERE qtn_id = ?",
+            array($qid)
+        );
+
+        $res1 = $query->result();
+
+
+        foreach ($res1 as $r1) {
+
+            // -------------------------------------------------
+            // project_transaction1
+            // -------------------------------------------------
+
+            $data = array(
+                'pid'          => $project_id,
+                'qid'          => $qid,
+                'product_desc' => $r1->main_heading,
+                'item_remark'  => $r1->description
+            );
+
+            $this->db->insert(
+                'project_transaction1',
+                $data
+            );
+
+            $insert_id1 = $this->db->insert_id();
+
+
+            // -------------------------------------------------
+            // Get quotation products
+            // -------------------------------------------------
+
+            $query = $this->db->query(
+                "SELECT *
+                 FROM quotation_products
+                 WHERE qtn_id = ?",
+                array($qid)
+            );
+
+            $res2 = $query->result();
+
+
+            foreach ($res2 as $r2) {
+
+                // ---------------------------------------------
+                // project_transaction2
+                // ---------------------------------------------
+
+                $data = array(
+                    'trans_id1'        => $insert_id1,
+                    'pid'              => $project_id,
+                    'sub_details'      => $r2->prd_id,
+                    'qty'              => $r2->qty,
+                    'unit'             => $r2->unit_id,
+                    'price'            => $r2->unit_price,
+                    'discount_percent' => $r2->discount_percent,
+                    'discount_amount'  => $r2->discount_amount,
+                    'taxable_amount'   => $r2->taxable_amount
+                );
+
+                $this->db->insert(
+                    'project_transaction2',
+                    $data
+                );
+            }
+        }
+
+
+    } else {
+
+        // =====================================================
+        // OPTION 2 : NO QUOTATION
+        // ITEMS SELECTED FROM ITEM MASTER
+        // =====================================================
+
+        $products   = $this->input->post('product_id');
+        $quantities = $this->input->post('quantity');
+
+
+        if (!empty($products)) {
+
+            // -------------------------------------------------
+            // Create one transaction header
+            // -------------------------------------------------
+
+            $data = array(
+                'pid'          => $project_id,
+                'qid'          => 0,
+                'product_desc' => 'Project Items',
+                'item_remark'  => 'Items added from Item Master'
+            );
+
+            $this->db->insert(
+                'project_transaction1',
+                $data
+            );
+
+            $insert_id1 = $this->db->insert_id();
+
+
+            // -------------------------------------------------
+            // Insert selected Item Master products
+            // -------------------------------------------------
+
+            foreach ($products as $i => $pid) {
+
+                if (empty($pid)) {
+                    continue;
+                }
+
+                $qty = $quantities[$i] ?? 0;
+
+                if ($qty <= 0) {
+                    continue;
+                }
+
+
+                // ---------------------------------------------
+                // Get item details
+                // ---------------------------------------------
+
+                $item = $this->db
+                    ->select('
+                        i.product_id,
+                        i.product_name,
+                        i.unit_id
+                    ')
+                    ->from('item_master i')
+                    ->where(
+                        'i.product_id',
+                        $pid
+                    )
+                    ->where(
+                        'i.is_inactive',
+                        0
+                    )
+                    ->where(
+                        'i.is_marked_delete',
+                        0
+                    )
+                    ->get()
+                    ->row();
+
+
+                if (!$item) {
+                    continue;
+                }
+
+
+                // ---------------------------------------------
+                // project_transaction2
+                // ---------------------------------------------
+
+                $data = array(
+                    'trans_id1'        => $insert_id1,
+                    'pid'              => $project_id,
+                    'sub_details'      => $item->product_id,
+                    'qty'              => $qty,
+                    'unit'             => $item->unit_id,
+                    'price'            => 0,
+                    'discount_percent' => 0,
+                    'discount_amount'  => 0,
+                    'taxable_amount'   => 0
+                );
+
+                $this->db->insert(
+                    'project_transaction2',
+                    $data
+                );
+            }
+        }
+    }
+
+
+    // =========================================================
+    // SUCCESS MESSAGE
+    // =========================================================
+
+    $message = 'Project saved successfully';
+}
     
     $products   = $this->input->post('product_id');
     $quantities = $this->input->post('quantity');
@@ -263,7 +478,6 @@ public function save_project()
 
             $qty   = $quantities[$i] ?? 0;
             $price = $prices[$i] ?? 0;
-
             $items[] = [
                 'project_id' => $project_id,
                 'product_id' => $pid,
@@ -337,7 +551,7 @@ public function save_project()
         $this->session->set_flashdata('error', 'Something went wrong');
         redirect('Project/add');
     }
-
+    $message = isset($message) ? $message : 'Project saved successfully';
     $this->session->set_flashdata('success', $message);
     // redirect('Project/add/' . $project_id);
     redirect('Project/get_project_list');
@@ -352,7 +566,7 @@ public function update_project()
 
     $projectData = [
         'fk_enq_id'        => $this->input->post('e_id'),
-        'fk_quot_id'       => $this->input->post('quotation_id'),
+        'fk_quot_id'       => $this->input->post('quotation_id')? $this->input->post('quotation_id') : null ,
         'project_name'     => $this->input->post('project_name'),
         'project_location' => $this->input->post('project_location'),
         'customer_name'    => $this->input->post('customer_name'),
@@ -365,12 +579,12 @@ public function update_project()
         'vat_amount'       => $this->input->post('vat_amount'),
         'grand_total'      => $this->input->post('grand_total'),
         'remarks'          => $this->input->post('remarks'),
-        'approver_id'      => $this->input->post('approver_id'),
+        'approver_id'      => $this->input->post('approver'),
         'po_number'        => $this->input->post('po_number'),
         'loa_received'     => $this->input->post('loa_received'),
         'loa_date'         => $this->input->post('loa_date'),
         'subject'          => $this->input->post('subject'),
-        'approver_id'      => $this->input->post('approver_id'),
+       
     ];
 
     $this->db->trans_start();
@@ -398,16 +612,16 @@ public function update_project()
     $this->Project_model->save_project_items($project_id, $items);
     //UPDATE TASK
     $task_ids      = $this->input->post('task_id');
-    $category      = $this->input->post('task_category');
+    //$category      = $this->input->post('task_category');
     $task_name     = $this->input->post('task_name');
-    $milestone     = $this->input->post('milestone');
+    //$milestone     = $this->input->post('milestone');
     $designation   = $this->input->post('designation_id');
     $employee      = $this->input->post('employee_id');
     $priority      = $this->input->post('priority');
     $start         = $this->input->post('start_date');
     $end           = $this->input->post('end_date');
     $status        = $this->input->post('status');
-    $description   = $this->input->post('task_description');
+    //$description   = $this->input->post('task_description');
 
     $submittedIds = array();
 
@@ -417,16 +631,17 @@ public function update_project()
         {
             if(trim($value)=='')
                 continue;
-
+            $start_date = $this->normalize_date($start[$i]);
+            $end_date   = $this->normalize_date($end[$i]);
             $data=array(
 
                 'project_id'        => $project_id,
 
-                'task_category_id'  => $category[$i],
+                //'task_category_id'  => $category[$i] ?? '',
 
                 'task_name'         => $task_name[$i],
 
-                'milestone_id'      => $milestone[$i],
+                //'milestone_id'      => $milestone[$i] ?? '',
 
                 'designation_id'    => $designation[$i],
 
@@ -434,17 +649,17 @@ public function update_project()
 
                 'priority'          => $priority[$i],
 
-                'start_date'        => $start[$i],
+                'start_date'        => $start_date,
 
-                'end_date'          => $end[$i],
+                'end_date'          => $end_date,
 
                 'status'            => $status[$i],
 
-                'task_description'  => $description[$i]
+                //'task_description'  => $description[$i]??''
 
             );
 
-            if(!empty($task_ids[$i]))
+            if(!empty($task_ids[$i]) && is_numeric($task_ids[$i]) && $task_ids[$i]>0)
             {
                 $this->Project_model->update_project_task(
                     $task_ids[$i],
@@ -461,8 +676,7 @@ public function update_project()
             }
         }
     }
-
-    $this->Project_model->delete_removed_tasks(
+        $this->Project_model->delete_removed_tasks(
         $project_id,
         $submittedIds
     );
@@ -533,7 +747,51 @@ public function get_project_list()
     $data['main_content'] = 'project/project_list';
     $this->load->view('includes/template', $data);
 }
+//filter
+public function get_project_list_ajax()
+{
+    $status = $this->input->post('status');
+    $from_date = $this->input->post('from_date');
+    $to_date = $this->input->post('to_date');
 
+    // 2. Fetch data from your model
+    $projects = $this->Project_model->get_projects_ajax($status, $from_date, $to_date);
+
+    $data = array();
+    $serial_number = count($projects);  // Start your serial number counter
+
+    // 3. Loop through results and format for DataTables
+    foreach ($projects as $project) {
+        $row = array();
+        
+        // Assign the serial number as the first column, then increment it
+        //$row[] = $serial_number++; 
+        $row['sn'] = $serial_number--;  
+        $row['project_id']    = $project->project_id; 
+        $row['project_code'] = $project->project_code;
+        $row['project_name'] = $project->project_name;
+        $row['customer_name'] = $project->customer_name;
+        $row['created_on'] = $project->created_on;
+        $row['start_date'] = $project->start_date;
+        $row['end_date'] = $project->end_date;
+        $row['grand_total'] = $project->grand_total;
+        $row['status'] = $project->status;
+        $row['progress']      = $this->Project_model->get_project_progress_byid($project->project_id);
+        $data[] = $row;
+    }
+
+    array_multisort(array_column($data, 'sn'), SORT_ASC, $data);
+    // 4. Output the structured JSON response
+    $output = array(
+        "draw" => intval($this->input->post('draw')),
+        "recordsTotal" => count($projects), // For simple setups without server-side pagination
+        "recordsFiltered" => count($projects),
+        "data" => $data,
+    );
+
+    echo json_encode($output);
+    exit();
+}
 public function delete($project_id)
 {
     // Load the Project model
@@ -849,7 +1107,8 @@ public function update_material_request()
         'branch_name'   => $this->input->post('branch_name'),
         'requested_date'=> $this->input->post('requested_date'),
         'required_date' => $this->input->post('required_date'),
-        'initiated_by'  => $this->input->post('initiated_by'),
+        'initiated_by'  => $this->input->post('initiated_by')
+       
     ];
 
     $this->db->trans_start();
@@ -864,6 +1123,7 @@ public function update_material_request()
     $desc     = $this->input->post('desc');
     $qtys     = $this->input->post('pdt_qty');
     $item_remark    = $this->input->post('item_remark');
+    $item_unit       = $this->input->post('unit');
 
     $items = [];
     foreach ($products as $i => $pid) {
@@ -873,6 +1133,7 @@ public function update_material_request()
             'fk_item_id' => $pid,
             'item_desc'  => $desc[$i] ?? null,
             'item_qty'   => $qtys[$i] ?? null,
+            'item_unit'  => $item_unit[$i] ?? null,
             'item_remarks'       => $item_remark[$i] ?? null
         ];
     }
@@ -924,7 +1185,8 @@ public function project_progress($project_id)
     $data['project'] = $this->Project_model->get_project_by_id($project_id);
     $data['progress'] = $this->Project_model->get_project_progress($project_id);
     $data['logs'] = $this->Project_model->get_project_progress_logs($project_id);
-     // ✅ Get last progress log
+    $data['progress'] = $this->Project_model->get_project_progress_byid($project_id);
+    //  Get last progress log
     $data['last_log'] = $this->Project_model->get_last_progress_log($project_id);
 
     $data['title'] = 'Project Progress';
@@ -1053,6 +1315,7 @@ public function delete_progress_log()
             $final['project_location'] = $result_e['project_location'];
         }
         $final['customer'] = $result['customer_name']??'';
+        $final['customer_id'] = $result['customer_id']??'';
         $result_b = $this->Project_model->getBranchDetailsByQuotation($quotation_id);
         $final['branch'] = $result_b['branch_name']??'';
 
@@ -1611,7 +1874,7 @@ public function delete_progress_log()
    
         $data['title'] = 'Machines';
         $data['all_machines'] = $this->Project_model->get_all_machines();
-        $data['main_content'] = 'Project/list_machines.php';
+        $data['main_content'] = 'project/list_machines.php';
         $this->load->view('includes/template', $data);
     }    
     public function add_machine()
@@ -1719,7 +1982,7 @@ public function delete_progress_log()
    
         $data['title'] = 'Tools';
         $data['all_tools'] = $this->Project_model->get_all_tools();
-        $data['main_content'] = 'Project/list_tools.php';
+        $data['main_content'] = 'project/list_tools.php';
         $this->load->view('includes/template', $data);
     }    
     public function add_tool()
@@ -1828,7 +2091,7 @@ public function delete_progress_log()
         $data['employees']  =   $this->Project_model->get_employees($id=1); //technicians
         $data['machines']  =   $this->Project_model->get_machines();
         $data['all_map']  =   $this->Project_model->get_all_employyee_mapping();
-        $data['main_content'] = 'Project/list_machine_operator.php';
+        $data['main_content'] = 'project/list_machine_operator.php';
         $this->load->view('includes/template', $data);
     }    
     public function add_machineop_map()
@@ -2220,7 +2483,7 @@ public function delete_progress_log()
         $data['tasks']         = $this->Project_model->get_tasks_dash($project_id);
         $data['team']          = $this->Project_model->get_team($project_id);
         $data['manpower']      = $this->Project_model->get_manpower($project_id);
-        //$data['work_orders']   = $this->Project_model->get_work_orders($project_id);
+        $data['work_orders']   = $this->Project_model->get_work_orders_repo($project_id);
         $data['work_orders']  = [];
         //$data['timeline']      = $this->Project_model->get_timeline($project_id);
         $data['timeline']  = [];
@@ -2281,9 +2544,11 @@ public function delete_progress_log()
 		$data['user_records'] = $this->Project_model->get_userlist();
 		$this->load->model('Project_model');
 		$data['records'] = $this->Project_model->get_project_list();
-		$this->load->model('Project_model');
+        $this->load->model('Project_model');
 		$data['records1'] = $this->Project_model->transaction_work_order($id);
-		$data['trans_records'] = $this->Project_model->get_requisition_tr_by_id_item($id);
+        $project_id = $data['records1'][0]->project_id;
+        $data['pinfo'] =  $this->Project_model->get_project_details($project_id);
+        $data['trans_records'] = $this->Project_model->get_requisition_tr_by_id_item($id);
 		$data['product_route'] = $this->Project_model->get_product_extra_records($id);
 		$data['attachment'] = $this->Project_model->get_attachment_records($id);
 		$data['file_records'] = $this->Project_model->get_employee_document_doc_id($id);
@@ -2344,8 +2609,8 @@ public function delete_progress_log()
 		$this->load->model('Project_model');
 		$data['record1'] = $this->Project_model->get_project_by_id_out($id);
 		foreach ($data['record1'] as $row) {
-			$customer_id = $row->cust_name;
-			$user_id = $row->project_manager;
+			$customer_id = $row->cust_name ?? '';
+			$user_id = $row->project_manager ?? '';
 			$sdate = date('d-m-Y', strtotime($row->start_date));
 			$edate = date('d-m-Y', strtotime($row->end_date));
 		}
@@ -2372,32 +2637,22 @@ public function delete_progress_log()
 	{
 		$data['title'] = " Edit Outsource Processing";
 		$id = $this->uri->segment('3');
-
 		$this->load->model('Project_model');
 		$data['records1'] = $this->Project_model->print_outsource_processing_list($id);
         $pid = $data['records1'][0]->project_id;
         $data['pinfo'] = $this->Project_model->get_project_details($pid);
         $data['records'] = $this->Project_model->get_project_list();
 		$data['trans_records'] = $this->Project_model->get_requisition_tr_by_id_outsource($id);
-
 		$data['out_records'] = $this->Project_model->outsource_processing_details_list($id);
-		
-        
-        //$this->load->model('Sales_model');
+		//$this->load->model('Sales_model');
 		$data['enq_records'] = $this->Project_model->get_feasible_enquiry_list();
-
 		$this->load->model('Users_model');
 		$data['user_records'] = $this->Users_model->get_user_list();
 		//$this->load->model('Product_model');
 		$data['products'] = $this->Project_model->get_product_list_out();
-
 		//$this->load->model('Setup_model');
 		$data['terms_rec'] = $this->Project_model->get_terms_details();
-
-
-		
 		$data['supplier_records'] = $this->Users_model->get_supplier_list();
-
 		$this->load->model('Product_model');
 		$data['category_records'] = $this->Project_model->get_main_category_list();
 
@@ -2457,6 +2712,7 @@ public function delete_progress_log()
 	{
 		$pid = $this->input->post('project_id');
         $this->load->model('Project_model');
+        $qid="";
 		$data['records'] = $this->Project_model->get_project_quotaions($pid);
 		foreach ($data['records'] as $p) {
 			$qid = $p->qid;
@@ -2487,7 +2743,7 @@ public function delete_progress_log()
         $data['title']     = 'Project Progress Report';
         $data['project_list'] = $this->Project_model->get_projects();
         $data['projects']  = $this->Project_model->get_project_progress_report();
-        $data['main_content'] = 'Project/project_progress_report.php';
+        $data['main_content'] = 'project/project_progress_report.php';
         $this->load->view('includes/template', $data);
     }
     public function view($project_id)
@@ -2501,7 +2757,7 @@ public function delete_progress_log()
         $data['workorders'] = $this->Project_report_model->get_workorders($project_id);
         $data['progress'] =  $this->Project_report_model->get_progress($project_id);
         $data['expenses'] = $this->Project_report_model->get_expenses($project_id);
-        $data['main_content'] = 'Project/project_progress_report.php';
+        $data['main_content'] = 'project/project_progress_report.php';
         $this->load->view('includes/template', $data);
        
     }
@@ -2540,6 +2796,226 @@ public function delete_progress_log()
 
         $this->load->view('project/print_work_order',$data);
     }
-    
+    //EDIT PROJECTS POPUPS
+    public function get_project_work_orders()
+    {
+        $project_id = $this->input->post('project_id');
+        $data['work_orders'] = $this->Project_model->get_project_work_orders($project_id);
+        $this->load->view('project/ajax_work_order_list',$data);
+    }
+    public function get_project_material_requests()
+    {
+        $project_id = $this->input->post('project_id');
+
+        $data['requests'] = $this->Project_model
+                                ->get_project_material_requests($project_id);
+
+        $this->load->view('project/ajax_material_request_list',$data);
+    }
+    public function get_material_request_products()
+    {
+        $mr_id=$this->input->post('mr_id');
+        $data['products']=$this->Project_model->get_material_request_products($mr_id);
+        $this->load->view('project/ajax_material_request_products',$data);
+    }
+    public function get_project_outsource()
+    {
+        $project_id = $this->input->post('project_id');
+        $data['outsource'] = $this->Project_model->get_project_outsource($project_id);
+        $this->load->view('project/ajax_outsource_list',$data);
+    }
+   public function get_outsource_products()
+    {
+        $outsource_id=$this->input->post('outsource_id');
+        $data['products']=$this->Project_model
+                            ->get_outsource_products($outsource_id);
+
+        $this->load->view('project/ajax_outsource_products',$data);
+    }
+   /* public function get_project_tasks_popup()
+    {
+        $project_id = $this->input->post('project_id');
+
+        $data['tasks'] = $this->Project_model
+                            ->get_project_tasks_popup($project_id);
+
+        $this->load->view('project/ajax_project_task_list',$data);
+    }*/
+    public function get_project_tasks_popup()
+    {
+        $project_id = $this->input->post('project_id');
+
+        $data['tasks'] = $this->Project_model->get_project_tasks_popup($project_id);
+
+        $this->load->view('project/ajax_project_task_popup',$data);
+    }
+    public function project_full_report($project_id)
+    {
+        $data['title']  = "Project Details";
+        $data['project']             = $this->Project_model->get_project_repo($project_id);
+        $data['tasks']               = $this->Project_model->get_project_tasks_repo($project_id);
+        $data['attendance']          = $this->Project_model->get_project_attendance_repo($project_id);
+        $data['material_requests']   = $this->Project_model->get_material_requests_repo($project_id);
+        $data['work_orders']         = $this->Project_model->get_work_orders_repo($project_id);
+        $data['outsource']           = $this->Project_model->get_outsource_repo($project_id);
+        $data['progress_history']    = $this->Project_model->get_progress_history_repo($project_id);
+        $data['cost_summary']        = $this->Project_model->get_cost_summary($project_id);
+       
+        $data['main_content'] = 'project/project_full_report.php';
+        $this->load->view('includes/template', $data);
+       // $this->load->view('project/project_full_report',$data);
+    }
+    //EDIT PROJECTS POPUPS
+    public function load_attendance_report()
+    {
+        $project_id = $this->input->post('project_id');
+
+        $data['attendance'] = $this->Project_model->attendance_report(['project_id' => $project_id
+        ]);
+
+        $this->load->view('project/ajax_attendance_report',$data);
+    }
+       
+    public function get_today_attendance_popup()
+    {
+        $project_id = $this->input->post('project_id');
+
+        $data['attendance_list'] = $this->Project_model->get_today_project_attendance($project_id);
+
+        $this->load->view('project/ajax_today_attendance', $data);
+    }
+    public function get_project_attendance_popup()
+    {
+        $project_id = $this->input->post('project_id');
+        $data['attendance'] = $this->Project_model->get_project_attendance($project_id);
+        $this->load->view('project/ajax_project_attendance_popup', $data);
+    }
+
+    public function get_item_master()
+    {
+        $search = $this->input->post('search');
+
+        $items = $this->Project_model->get_all_items_search($search);
+
+        echo json_encode($items);
+    }
+public function normalize_date($date)
+{
+    if (empty($date)) {
+        return null;
+    }
+
+    // Already YYYY-MM-DD
+    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+        return $date;
+    }
+
+    // DD-MM-YYYY
+    if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $date)) {
+        $parts = explode('-', $date);
+        return $parts[2] . '-' . $parts[1] . '-' . $parts[0];
+    }
+
+    return null;
+}
+
+public function add_product()
+{
+    $this->output->set_content_type('application/json');
+
+    $product_code = trim($this->input->post('product_code'));
+    $product_name = trim($this->input->post('product_name'));
+    $unit_id      = $this->input->post('unit_id');
+    $retail_price = $this->input->post('retail_price');
+
+    /* ---------------------------------------------------------
+     * Validation
+     * --------------------------------------------------------- */
+
+    if ($product_code == '') {
+        echo json_encode([
+            'status'  => false,
+            'message' => 'Product code is required.'
+        ]);
+        return;
+    }
+
+    if ($product_name == '') {
+        echo json_encode([
+            'status'  => false,
+            'message' => 'Product name is required.'
+        ]);
+        return;
+    }
+
+    if (empty($unit_id)) {
+        echo json_encode([
+            'status'  => false,
+            'message' => 'Please select a unit.'
+        ]);
+        return;
+    }
+
+    if ($retail_price === '' || !is_numeric($retail_price)) {
+        echo json_encode([
+            'status'  => false,
+            'message' => 'Please enter a valid price.'
+        ]);
+        return;
+    }
+
+    /* ---------------------------------------------------------
+     * Check duplicate product code
+     * --------------------------------------------------------- */
+
+    $exists = $this->db
+        ->where('product_code', $product_code)
+        ->get('item_master')
+        ->row();
+
+    if ($exists) {
+        echo json_encode([
+            'status'  => false,
+            'message' => 'Product code already exists.'
+        ]);
+        return;
+    }
+
+    /* ---------------------------------------------------------
+     * Insert Item Master
+     * --------------------------------------------------------- */
+
+    $data = [
+        'product_code' => $product_code,
+        'product_name' => $product_name,
+        'unit_id'      => $unit_id,
+        'retail_price' => number_format(
+            (float) $retail_price,
+            2,
+            '.',
+            ''
+        )
+    ];
+
+    $this->db->insert('item_master', $data);
+
+    if ($this->db->affected_rows() > 0) {
+
+        $item_master_id = $this->db->insert_id();
+
+        echo json_encode([
+            'status'        => true,
+            'message'       => 'Product added successfully.',
+            'item_master_id'=> $item_master_id
+        ]);
+
+    } else {
+
+        echo json_encode([
+            'status'  => false,
+            'message' => 'Unable to insert product.'
+        ]);
+    }
+}
 
 }
