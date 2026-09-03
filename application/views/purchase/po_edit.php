@@ -30,20 +30,65 @@ $user = $this->session->userdata('user_id');
 
       <!-- Row 2: Supplier, Reference -->
       <div class="row mb-3">
+
         <div class="col-md-4">
           <label class="control-label">Branch</label>
-          <input type="text" class="form-control" name="Branch_name" id="Branch_name" value="<?php echo isset($records1[0]->branch_name) ? $records1[0]->branch_name : ''; ?>" readonly>
-          <input type="hidden" name="Branch_id" id="Branch_id" value="<?php echo isset($records1[0]->branch_id) ? $records1[0]->branch_id : ''; ?>">
+          <select class="form-control select2"
+            name="Branch_id"
+            id="Branch_id"
+            required>
+            <option value="">Select Branch</option>
+            <?php foreach ($branch_records as $b) { ?>
+              <option value="<?php echo $b->branch_id; ?>"
+                <?php echo (
+                  isset($records1[0]->branch_id) &&
+                  $records1[0]->branch_id == $b->branch_id
+                ) ? 'selected' : ''; ?>>
+                <?php echo htmlspecialchars(
+                  $b->branch_name,
+                  ENT_QUOTES,
+                  'UTF-8'
+                ); ?>
+              </option>
+            <?php } ?>
+          </select>
         </div>
+
         <div class="col-md-4">
           <label class="control-label">Supplier</label>
-          <input type="text" class="form-control" name="supplier_name" id="supplier_name" value="<?php echo isset($records1[0]->supplier_name) ? $records1[0]->supplier_name : ''; ?>" readonly>
-          <input type="hidden" name="supplier_id" id="supplier_id" value="<?php echo isset($records1[0]->supplier_id) ? $records1[0]->supplier_id : ''; ?>">
+          <select class="form-control select2"
+            name="supplier_id"
+            id="supplier_id"
+            required>
+            <option value="">Select Supplier</option>
+            <?php foreach ($supplier_records as $s) { ?>
+              <option value="<?php echo $s->supplier_id; ?>"
+                <?php echo (
+                  isset($records1[0]->supplier_id) &&
+                  $records1[0]->supplier_id == $s->supplier_id
+                ) ? 'selected' : ''; ?>>
+
+                <?php echo htmlspecialchars(
+                  $s->supplier_code . ' - ' . $s->supplier_name,
+                  ENT_QUOTES,
+                  'UTF-8'
+                ); ?>
+              </option>
+            <?php } ?>
+          </select>
         </div>
+
         <div class="col-md-4">
-          <label class="control-label">Reference</label>
-          <input type="text" class="form-control" name="ref_no" id="ref_no" value="<?php echo isset($records1[0]->supplier_ref) ? $records1[0]->supplier_ref : ''; ?>">
+          <label>Purchase Type <span class="text-danger">*</span></label>
+          <select name="purchase_type"
+            id="purchase_type"
+            class="form-control"
+            required>
+            <option value="Local">Local</option>
+            <option value="International">International</option>
+          </select>
         </div>
+
       </div>
 
       <!-- Row 3: Subject, Freight Mode -->
@@ -58,19 +103,58 @@ $user = $this->session->userdata('user_id');
             <option value="Courier" <?php echo (isset($records1[0]->freight_mode) && $records1[0]->freight_mode == 'Courier') ? 'selected' : ''; ?>>Courier</option>
           </select>
         </div>
+
         <div class="col-md-4">
           <label class="control-label">Freight Forwarder</label>
           <input type="text" class="form-control" name="subject" id="subject" value="<?php echo isset($records1[0]->subject) ? $records1[0]->subject : ''; ?>">
         </div>
+
         <div class="col-md-4">
-          <label class="control-label">Project Name</label>
-          <input type="text" class="form-control" name="project" id="project" readonly>
+          <label class="control-label">Select Project</label>
+          <select class="form-control select2" name="project" id="project" required>
+            <option value="">Select Project</option>
+            <?php if (!empty($project_records)) { ?>
+              <?php foreach ($project_records as $project) { ?>
+                <option value="<?php echo htmlspecialchars(
+                                  $project['project_name'],
+                                  ENT_QUOTES,
+                                  'UTF-8'
+                                ); ?>"
+
+                  <?php echo (
+                    isset($records1[0]->project) &&
+                    $records1[0]->project == $project['project_name']
+                  ) ? 'selected' : ''; ?>>
+
+                  <?php echo htmlspecialchars(
+                    $project['project_name'],
+                    ENT_QUOTES,
+                    'UTF-8'
+                  ); ?>
+
+                  <?php if (!empty($project['project_code'])) { ?>
+                    (<?php echo htmlspecialchars(
+                        $project['project_code'],
+                        ENT_QUOTES,
+                        'UTF-8'
+                      ); ?>)
+                  <?php } ?>
+                </option>
+              <?php } ?>
+            <?php } ?>
+          </select>
         </div>
 
       </div>
 
       <!-- Row 4: Upload Document -->
       <div class="row mb-3">
+
+        <div class="col-md-4">
+          <label class="control-label">Reference</label>
+          <input type="text" class="form-control" name="ref_no" id="ref_no" value="<?php echo isset($records1[0]->supplier_ref) ? $records1[0]->supplier_ref : ''; ?>">
+        </div>
+
         <div class="col-md-4">
           <label class="control-label">Upload Document</label>
           <input type="file" class="form-control" name="po_doc" id="po_doc">
@@ -211,7 +295,7 @@ $user = $this->session->userdata('user_id');
 
         <div class="col-md-6">
           <label>Validity</label>
-          <input type="text" class="form-control" name="validity" value="<?php echo isset($records1[0]->validity) ? $records1[0]->validity : ''; ?>">
+          <input type="text" class="form-control" name="validity" id="validity" value="<?php echo isset($records1[0]->validity) ? $records1[0]->validity : ''; ?>">
         </div>
 
 
@@ -236,18 +320,12 @@ $user = $this->session->userdata('user_id');
 
                 <option
                   value="<?php echo $term->terms_id; ?>"
-                  data-description="<?php
-                                    echo htmlspecialchars(
-                                      $term->terms_description,
-                                      ENT_QUOTES,
-                                      'UTF-8'
-                                    );
-                                    ?>">
-                  <?php echo htmlspecialchars(
-                    $term->terms_name,
-                    ENT_QUOTES,
-                    'UTF-8'
-                  ); ?>
+                  data-description="<?php echo htmlspecialchars($term->terms_description, ENT_QUOTES, 'UTF-8'); ?>"
+                  <?php echo (
+                    isset($records1[0]->payment_term) &&
+                    $records1[0]->payment_term == $term->terms_description
+                  ) ? 'selected' : ''; ?>>
+                  <?php echo htmlspecialchars($term->terms_name, ENT_QUOTES, 'UTF-8'); ?>
                 </option>
 
               <?php } ?>
@@ -267,7 +345,8 @@ $user = $this->session->userdata('user_id');
           <input
             type="hidden"
             name="payment_terms"
-            id="payment_terms">
+            id="payment_terms"
+            value="<?php echo isset($records1[0]->payment_term) ? htmlspecialchars($records1[0]->payment_term, ENT_QUOTES, 'UTF-8') : ''; ?>">
 
         </div>
 
@@ -297,18 +376,12 @@ $user = $this->session->userdata('user_id');
 
                 <option
                   value="<?php echo $term->terms_id; ?>"
-                  data-description="<?php
-                                    echo htmlspecialchars(
-                                      $term->terms_description,
-                                      ENT_QUOTES,
-                                      'UTF-8'
-                                    );
-                                    ?>">
-                  <?php echo htmlspecialchars(
-                    $term->terms_name,
-                    ENT_QUOTES,
-                    'UTF-8'
-                  ); ?>
+                  data-description="<?php echo htmlspecialchars($term->terms_description, ENT_QUOTES, 'UTF-8'); ?>"
+                  <?php echo (
+                    isset($records1[0]->delivery_term) &&
+                    $records1[0]->delivery_term == $term->terms_description
+                  ) ? 'selected' : ''; ?>>
+                  <?php echo htmlspecialchars($term->terms_name, ENT_QUOTES, 'UTF-8'); ?>
                 </option>
 
               <?php } ?>
@@ -328,7 +401,8 @@ $user = $this->session->userdata('user_id');
           <input
             type="hidden"
             name="delivery_terms"
-            id="delivery_terms">
+            id="delivery_terms"
+            value="<?php echo isset($records1[0]->delivery_term) ? htmlspecialchars($records1[0]->delivery_term, ENT_QUOTES, 'UTF-8') : ''; ?>">
 
         </div>
 
@@ -343,12 +417,14 @@ $user = $this->session->userdata('user_id');
             </option>
             <?php if (!empty($general_terms_list)) { ?>
               <?php foreach ($general_terms_list as $term) { ?>
-                <option value="<?php echo $term->terms_id; ?>" data-description="<?php echo htmlspecialchars($term->terms_description, ENT_QUOTES, 'UTF-8'); ?>">
-                  <?php echo htmlspecialchars(
-                    $term->terms_name,
-                    ENT_QUOTES,
-                    'UTF-8'
-                  ); ?>
+                <option
+                  value="<?php echo $term->terms_id; ?>"
+                  data-description="<?php echo htmlspecialchars($term->terms_description, ENT_QUOTES, 'UTF-8'); ?>"
+                  <?php echo (
+                    isset($records1[0]->general_term) &&
+                    $records1[0]->general_term == $term->terms_description
+                  ) ? 'selected' : ''; ?>>
+                  <?php echo htmlspecialchars($term->terms_name, ENT_QUOTES, 'UTF-8'); ?>
                 </option>
               <?php } ?>
             <?php } ?>
@@ -360,7 +436,12 @@ $user = $this->session->userdata('user_id');
               + Add New General Term
             </a>
           </small>
-          <input type="hidden" name="general_terms" id="general_terms">
+          
+          <input
+            type="hidden"
+            name="general_terms"
+            id="general_terms"
+            value="<?php echo isset($records1[0]->general_term) ? htmlspecialchars($records1[0]->general_term, ENT_QUOTES, 'UTF-8') : ''; ?>">
         </div>
 
       </div>
@@ -465,9 +546,9 @@ $user = $this->session->userdata('user_id');
     // INITIALIZE SELECT2
     ////////////////////////////////////////////////////////////
 
-    $('.term-select').select2({
+    $('.select2').select2({
       width: '100%',
-      placeholder: 'Please select',
+      placeholder: 'Select',
       allowClear: true
     });
 
@@ -701,36 +782,82 @@ $user = $this->session->userdata('user_id');
 
 
   function get_quotation_info() {
-    var quotation_id = document.getElementById("quotation_id").value;
+
+    var quotation_id = $('#quotation_id').val();
 
     if (quotation_id != '') {
+
       $.ajax({
-        async: "false",
         type: "POST",
-        url: "<?php echo base_url() ?>index.php/Ajax/ajax_get_quote_info",
+        url: "<?php echo base_url(); ?>index.php/Ajax/ajax_get_quote_info",
+
         data: {
           quotation_id: quotation_id
         },
+
         dataType: "json",
+
         success: function(msg) {
-          document.getElementById("supplier_id").value = msg.supplier_id;
-          document.getElementById("supplier_name").value = msg.supplier_code + ' ' + msg.supplier_name;
+
+          console.log("Quotation Info:", msg);
+
+          // Branch
+          $('#Branch_id')
+            .val(msg.branch_id)
+            .trigger('change');
+
+          // Supplier
+          $('#supplier_id')
+            .val(msg.supplier_id)
+            .trigger('change');
+
+          // Reference
+          $('#ref_no').val(msg.reference);
+
+          // Project
+          $('#project')
+            .val(msg.project)
+            .trigger('change');
+
+          // Load quotation items
           get_quote_items_list(quotation_id);
-          document.getElementById("sub_total").value = msg.subtotal;
-          document.getElementById("discount_per").value = msg.discount_percent;
-          document.getElementById("discount_amt").value = msg.discount;
-          document.getElementById("vat_per").value = msg.vat_percent;
-          document.getElementById("vat_amount").value = msg.vat_amt;
-          document.getElementById("grand_total").value = msg.grand_total;
-          document.getElementById("validity").value = msg.validity;
-          document.getElementById("payment_terms").value = msg.payment_term;
-          document.getElementById("delivery_terms").value = msg.delivery_term;
-          document.getElementById("general_terms").value = msg.general_term;
+
+          // Totals
+          $('#sub_total').val(msg.subtotal);
+          $('#discount_per').val(msg.discount_percent);
+          $('#discount_amt').val(msg.discount);
+
+          $('#vat_per').val(msg.vat_percent);
+          $('#vat_amount').val(msg.vat_amt);
+
+          $('#grand_total').val(msg.grand_total);
+
+          $('#currency').val(msg.currency);
+
+          $('#validity').val(msg.validity);
+
+          $('#payment_terms').val(msg.payment_term);
+          $('#delivery_terms').val(msg.delivery_term);
+          $('#general_terms').val(msg.general_term);
+        },
+
+        error: function(xhr, status, error) {
+
+          console.error("Quotation AJAX Error:", error);
+          console.error(xhr.responseText);
+
+          alert("Unable to load quotation details.");
         }
       });
+
     } else {
 
-      document.getElementById('quote_items_list').innerHTML = '';
+      $('#quote_items_list').html('');
+
+      $('#Branch_id').val('').trigger('change');
+      $('#supplier_id').val('').trigger('change');
+      $('#project').val('').trigger('change');
+
     }
   }
 

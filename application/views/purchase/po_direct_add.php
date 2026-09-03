@@ -80,9 +80,22 @@
                  </select>
                </div>
 
+
                <div class="col-md-4">
-                 <label class="control-label">Project Name</label>
-                 <input type="text" class="form-control" name="project" id="project">
+                 <label for="ref_no" class="form-label">Select Project</label>
+                 <select class="form-control select2" name="project" id="project">
+                   <option value="">Select Project</option>
+                   <?php if (!empty($project_records)) { ?>
+                     <?php foreach ($project_records as $project) { ?>
+                       <option value="<?= htmlspecialchars($project['project_name'], ENT_QUOTES, 'UTF-8') ?>">
+                         <?= htmlspecialchars($project['project_name'], ENT_QUOTES, 'UTF-8') ?>
+                         <?php if (!empty($project['project_code'])) { ?>
+                           (<?= htmlspecialchars($project['project_code'], ENT_QUOTES, 'UTF-8') ?>)
+                         <?php } ?>
+                       </option>
+                     <?php } ?>
+                   <?php } ?>
+                 </select>
                </div>
 
                <div class="col-md-4">
@@ -724,6 +737,24 @@
        $('.term-select').select2({
          width: '100%',
          placeholder: 'Please select',
+         allowClear: true
+       });
+
+       $('#project').select2({
+         width: '100%',
+         placeholder: 'Select Project',
+         allowClear: true
+       });
+
+       $('#supplier_id').select2({
+         width: '100%',
+         placeholder: 'Select Supplier',
+         allowClear: true
+       });
+
+       $('#branch_id').select2({
+         width: '100%',
+         placeholder: 'Select Branch',
          allowClear: true
        });
 

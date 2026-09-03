@@ -192,7 +192,6 @@
 						<tbody id="mytbbody">
 							<tr id='addr0'>
 								<td>
-									1
 									<br>
 									<!-- <a id='delete_row' title="Delete" onclick='remove_row("<?php echo $i; ?>")' class="btn btn-xs bg-orange remove1"><span class="fa fa-trash"></span></a> -->
 								</td>

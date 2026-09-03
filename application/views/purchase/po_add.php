@@ -13,7 +13,7 @@
 
         <div class="col-md-3">
           <label class="control-label">Select Quotation</label>
-          <select class="form-control" name="quotation_id" id="quotation_id" required onchange="get_quotation_info()">
+          <select class="form-control select2" name="quotation_id" id="quotation_id" required onchange="get_quotation_info()">
             <option value="">--Select--</option>
             <?php foreach ($records as $s) { ?>
               <option value="<?php echo $s->quotation_id; ?>"
@@ -41,15 +41,33 @@
 
         <div class="col-md-3">
           <label class="control-label">Branch</label>
-          <input type="text" class="form-control" name="Branch_name" id="Branch_name" readonly>
-          <input type="hidden" name="Branch_id" id="Branch_id">
+          <select class="form-control select2" name="Branch_id" id="Branch_id" required>
+            <option value="">Select Branch</option>
+            <?php foreach ($branch_records as $b) { ?>
+              <option value="<?php echo $b->branch_id; ?>">
+                <?php echo htmlspecialchars($b->branch_name, ENT_QUOTES, 'UTF-8'); ?>
+              </option>
+            <?php } ?>
           </select>
         </div>
 
         <div class="col-md-4">
           <label class="control-label">Supplier</label>
-          <input type="text" class="form-control" name="supplier_name" id="supplier_name" readonly>
-          <input type="hidden" name="supplier_id" id="supplier_id">
+          <select class="form-control select2"
+            name="supplier_id"
+            id="supplier_id"
+            required>
+            <option value="">Select Supplier</option>
+            <?php foreach ($supplier_records as $s) { ?>
+              <option value="<?php echo $s->supplier_id; ?>">
+                <?php echo htmlspecialchars(
+                  $s->supplier_code . ' - ' . $s->supplier_name,
+                  ENT_QUOTES,
+                  'UTF-8'
+                ); ?>
+              </option>
+            <?php } ?>
+          </select>
         </div>
 
         <div class="col-md-3">
@@ -58,8 +76,17 @@
             id="purchase_type"
             class="form-control"
             required>
-            <option value="Local">Local</option>
-            <option value="International">International</option>
+
+            <option value="Local"
+              <?php echo (isset($records1[0]->purchase_type) && $records1[0]->purchase_type == 'Local') ? 'selected' : ''; ?>>
+              Local
+            </option>
+
+            <option value="International"
+              <?php echo (isset($records1[0]->purchase_type) && $records1[0]->purchase_type == 'International') ? 'selected' : ''; ?>>
+              International
+            </option>
+
           </select>
         </div>
 
@@ -83,9 +110,36 @@
         </div>
 
         <div class="col-md-3">
-          <label class="control-label">Project Name</label>
-          <input type="text" class="form-control" name="project" id="project" readonly>
+          <label for="ref_no" class="form-label">Select Project</label>
+
+          <select
+            class="form-control select2"
+            name="project"
+            id="project">
+
+            <option value="">Select Project</option>
+
+            <?php if (!empty($project_records)) { ?>
+
+              <?php foreach ($project_records as $project) { ?>
+
+                <option value="<?= htmlspecialchars($project['project_name'], ENT_QUOTES, 'UTF-8') ?>">
+
+                  <?= htmlspecialchars($project['project_name'], ENT_QUOTES, 'UTF-8') ?>
+
+                  <?php if (!empty($project['project_code'])) { ?>
+                    (<?= htmlspecialchars($project['project_code'], ENT_QUOTES, 'UTF-8') ?>)
+                  <?php } ?>
+
+                </option>
+
+              <?php } ?>
+
+            <?php } ?>
+
+          </select>
         </div>
+
       </div>
 
       <!-- Row 4: Upload, Project -->
@@ -425,9 +479,9 @@
     // INITIALIZE SELECT2
     ////////////////////////////////////////////////////////////
 
-    $('.term-select').select2({
+    $('.select2').select2({
       width: '100%',
-      placeholder: 'Please select',
+      placeholder: 'Select',
       allowClear: true
     });
 
@@ -660,46 +714,98 @@
   });
 
   function get_quotation_info() {
-    var quotation_id = document.getElementById("quotation_id").value;
+
+    var quotation_id = $('#quotation_id').val();
 
     if (quotation_id != '') {
+
       $.ajax({
-        async: "false",
         type: "POST",
-        url: "<?php echo base_url() ?>index.php/Ajax/ajax_get_quote_info",
+        url: "<?php echo base_url(); ?>index.php/Ajax/ajax_get_quote_info",
         data: {
           quotation_id: quotation_id
         },
         dataType: "json",
+
         success: function(msg) {
-          document.getElementById("Branch_id").value = msg.branch_id;
-          document.getElementById("Branch_name").value = msg.branch_name;
 
-          document.getElementById("supplier_id").value = msg.supplier_id;
-          document.getElementById("supplier_name").value = msg.supplier_name + '=> ' + msg.contact_number;
+          console.log("Quotation Info:", msg);
 
-          document.getElementById("ref_no").value = msg.reference;
-          document.getElementById("project").value = msg.project;
+          // =========================
+          // Branch
+          // =========================
+          $('#Branch_id')
+            .val(msg.branch_id)
+            .trigger('change');
+
+
+          // =========================
+          // Supplier
+          // =========================
+          $('#supplier_id')
+            .val(msg.supplier_id)
+            .trigger('change');
+
+
+          // =========================
+          // Reference
+          // =========================
+          $('#ref_no').val(msg.reference);
+
+
+          // =========================
+          // Project
+          // =========================
+          $('#project')
+            .val(msg.project)
+            .trigger('change');
+
+
+          // =========================
+          // Load quotation items
+          // =========================
           get_quote_items_list(quotation_id);
-          document.getElementById("sub_total").value = msg.subtotal;
-          document.getElementById("discount_per").value = msg.discount_percent;
-          document.getElementById("discount_amt").value = msg.discount;
-          document.getElementById("vat_per").value = msg.vat_percent;
-          document.getElementById("vat_amount").value = msg.vat_amt;
 
-          document.getElementById("grand_total").value = msg.grand_total;
-          document.getElementById("currency").value = msg.currency;
 
-          document.getElementById("validity").value = msg.validity;
-          document.getElementById("payment_terms").value = msg.payment_term;
+          // =========================
+          // Totals
+          // =========================
+          $('#sub_total').val(msg.subtotal);
+          $('#discount_per').val(msg.discount_percent);
+          $('#discount_amt').val(msg.discount);
 
+          $('#vat_per').val(msg.vat_percent);
+          $('#vat_amount').val(msg.vat_amt);
+
+          $('#grand_total').val(msg.grand_total);
+          $('#currency').val(msg.currency);
+
+          $('#validity').val(msg.validity);
+
+          $('#payment_terms').val(msg.payment_term);
+
+        },
+
+        error: function(xhr, status, error) {
+
+          console.error("Quotation AJAX Error:", error);
+          console.error(xhr.responseText);
+
+          alert("Unable to load quotation details.");
         }
       });
+
     } else {
 
-      document.getElementById('quote_items_list').innerHTML = '';
+      $('#quote_items_list').html('');
+
+      $('#Branch_id').val('').trigger('change');
+      $('#supplier_id').val('').trigger('change');
+      $('#project').val('').trigger('change');
+
     }
   }
+
   $(document).ready(function() {
     // pick up selected id passed from controller
     var selected = <?php echo json_encode(isset($selected_quotation_id) ? $selected_quotation_id : ''); ?>;

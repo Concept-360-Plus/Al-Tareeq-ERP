@@ -63,27 +63,27 @@
                         <td><?= $row->project ?: '-'; ?></td>
 
                         <?php
-                            switch ($row->stock_type) {
+                        switch ($row->stock_type) {
 
-                                case 'IN':
-                                    $badge = 'success';
-                                    break;
+                            case 'IN':
+                                $badge = 'success';
+                                break;
 
-                                case 'OUT':
-                                    $badge = 'danger';
-                                    break;
+                            case 'OUT':
+                                $badge = 'danger';
+                                break;
 
-                                case 'RESERVE':
-                                    $badge = 'warning';
-                                    break;
+                            case 'RESERVE':
+                                $badge = 'warning';
+                                break;
 
-                                case 'ADJUSTMENT':
-                                    $badge = 'primary';
-                                    break;
+                            case 'ADJUSTMENT':
+                                $badge = 'primary';
+                                break;
 
-                                default:
-                                    $badge = 'secondary';
-                            }
+                            default:
+                                $badge = 'secondary';
+                        }
                         ?>
                         <td>
                             <span class="badge badge-<?= $badge ?>">
@@ -91,14 +91,13 @@
                             </span>
                         </td>
 
+                        <td><?= number_format((float)($row->quantity ?? 0), 2); ?></td>
 
-                        <td><?= number_format($row->quantity, 2); ?></td>
+                        <td><?= number_format((float)($row->balance_qty ?? 0), 2); ?></td>
 
-                        <td><?= number_format($row->balance_qty, 2); ?></td>
+                        <td><?= number_format((float)($row->price ?? 0), 2); ?></td>
 
-                        <td><?= number_format($row->price, 2); ?></td>
-
-                        <td><?= number_format($row->stock_value, 2); ?></td>
+                        <td><?= number_format((float)($row->stock_value ?? 0), 2); ?></td>
 
                         <td><?= $row->remark; ?></td>
 
