@@ -684,14 +684,18 @@ class Setup_model extends CI_Model
     public function add_commission_group_data()
     {
         $data = array(
-            'commission_group_code' => $this->input->post('commission_group_code'),
-            'commission_group_name' => $this->input->post('commission_group_name'),
-            'description'           => $this->input->post('description'),
-            'created_at'            => date('Y-m-d H:i:s')
+            'commission_group_code'   => $this->input->post('commission_group_code'),
+            'commission_group_name'   => $this->input->post('commission_group_name'),
+            'description'             => $this->input->post('description'),
+            'target_amount'           => $this->input->post('target_amount'),
+            'commission_percent'      => $this->input->post('commission_percent'),
+            'sales_discount_percent'  => $this->input->post('sales_discount_percent'),
+            'created_at'              => date('Y-m-d H:i:s')
         );
 
         return $this->db->insert('commission_group_master', $data);
     }
+
     public function get_all_commission_group_list()
     {
         return $this->db->get('commission_group_master')->result();
@@ -700,14 +704,18 @@ class Setup_model extends CI_Model
     public function update_commission_group_data($id)
     {
         $data = array(
-            'commission_group_name' => $this->input->post('commission_group_name'),
-            'description'           => $this->input->post('description'),
-            'updated_at'            => date('Y-m-d H:i:s')
+            'commission_group_name'   => $this->input->post('commission_group_name'),
+            'description'             => $this->input->post('description'),
+            'target_amount'           => $this->input->post('target_amount'),
+            'commission_percent'      => $this->input->post('commission_percent'),
+            'sales_discount_percent'  => $this->input->post('sales_discount_percent'),
+            'updated_at'              => date('Y-m-d H:i:s')
         );
 
         return $this->db->where('commission_group_id', $id)
             ->update('commission_group_master', $data);
     }
+
     public function add_customer_group_data()
     {
         $data = array(
@@ -1059,8 +1067,14 @@ class Setup_model extends CI_Model
 
     public function insert_item($data)
     {
-        $this->db->insert('item_master', $data);  // Replace 'units' with your actual table name
-        return $this->db->insert_id();
+        $this->db->insert('item_master', $data);
+
+        if ($this->db->affected_rows() > 0) {
+            return $this->db->insert_id();
+        }
+
+        log_message('error', 'insert_item failed: ' . json_encode($this->db->error()));
+        return false;
     }
 
     public function get_all_item_list()
@@ -1145,32 +1159,7 @@ class Setup_model extends CI_Model
         return $this->db->get('item_master')->result_array();
     }
 
-    public function insert_item_category($data)
-    {
-        return $this->db->insert('category_master', $data);
-    }
-
-    public function update_item_category($id, $data)
-    {
-        return $this->db->where('category_id', $id)
-            ->update('category_master', $data);
-    }
-
-    public function get_item_category($id)
-    {
-        return $this->db->where('category_id', $id)
-            ->get('category_master')
-            ->row_array();
-    }
-    public function get_all_categories()
-    {
-        $this->db->select('*');
-        $this->db->from('category_master');
-        $this->db->where('is_marked_delete', 0);
-        $this->db->order_by('category_name', 'ASC');
-
-        return $this->db->get()->result();
-    }
+    // item category
     public function get_category_code()
     {
         $this->db->select('category_code');
@@ -1189,13 +1178,281 @@ class Setup_model extends CI_Model
 
         return 'CAT' . str_pad($num, 5, '0', STR_PAD_LEFT);
     }
+
+    public function insert_item_category($data)
+    {
+        $this->db->insert('category_master', $data);
+        return $this->db->insert_id();
+    }
+
+    public function update_item_category($id, $data)
+    {
+        $this->db->where('category_id', $id);
+        return $this->db->update('category_master', $data);
+    }
+    
+    public function get_all_categories()
+    {
+        $this->db->select('*');
+        $this->db->from('category_master');
+        $this->db->where('is_marked_delete', 0);
+        $this->db->order_by('category_name', 'ASC');
+
+        return $this->db->get()->result();
+    }
+
     public function delete_category($id)
     {
         $this->db->where('category_id', $id);
-        return $this->db->update('category_master', [
+        return $this->db->update('category_master', array(
             'is_marked_delete' => 1
+        ));
+    }
+
+    // item sub category
+    public function get_subcategory_code()
+    {
+        $this->db->select('sub_category_code');
+        $this->db->from('sub_category_master');
+        $this->db->order_by('sub_category_id', 'DESC');
+        $this->db->limit(1);
+
+        $row = $this->db->get()->row();
+
+        if ($row) {
+            $num = (int) preg_replace('/[^0-9]/', '', $row->sub_category_code);
+            $num++;
+        } else {
+            $num = 1;
+        }
+
+        return 'SUBCAT' . str_pad($num, 5, '0', STR_PAD_LEFT);
+    }
+
+    public function insert_item_subcategory($data)
+    {
+        $this->db->insert('sub_category_master', $data);
+        return $this->db->insert_id();
+    }
+
+    public function update_item_subcategory($id, $data)
+    {
+        $this->db->where('sub_category_id', $id);
+        return $this->db->update('sub_category_master', $data);
+    }
+
+    public function delete_subcategory($id)
+    {
+        $this->db->where('sub_category_id', $id);
+        return $this->db->update('sub_category_master', array(
+            'is_marked_delete' => 1
+        ));
+    }
+
+    // item child category
+    public function get_childcategory_code()
+    {
+        $this->db->select('child_category_code');
+        $this->db->from('child_category_master');
+        $this->db->order_by('child_category_id', 'DESC');
+        $this->db->limit(1);
+
+        $row = $this->db->get()->row();
+
+        if ($row) {
+            $num = (int) preg_replace('/[^0-9]/', '', $row->child_category_code);
+            $num++;
+        } else {
+            $num = 1;
+        }
+
+        return 'CHILDCAT' . str_pad($num, 5, '0', STR_PAD_LEFT);
+    }
+
+    public function insert_item_childcategory($data)
+    {
+        $this->db->insert('child_category_master', $data);
+        return $this->db->insert_id();
+    }
+
+    public function update_item_childcategory($id, $data)
+    {
+        $this->db->where('child_category_id', $id);
+        return $this->db->update('child_category_master', $data);
+    }
+
+    public function get_childcategories_by_category($category_id)
+    {
+        $this->db->select('cc.*, sc.sub_category_name');
+        $this->db->from('child_category_master cc');
+        $this->db->join('sub_category_master sc', 'sc.sub_category_id = cc.sub_category_id', 'inner');
+        $this->db->where('sc.category_id', $category_id);
+        $this->db->where('cc.is_marked_delete', 0);
+        $this->db->order_by('cc.child_category_name', 'ASC');
+
+        return $this->db->get()->result();
+    }
+
+    // raw material master
+    public function get_active_raw_materials()
+    {
+        $this->db->select('*');
+        $this->db->from('amc_raw_materials');
+        $this->db->where('is_marked_delete', 0);
+        $this->db->order_by('material_name', 'ASC');
+
+        return $this->db->get()->result();
+    }
+
+    public function get_raw_material_by_id($material_id)
+    {
+        return $this->db->where('material_id', $material_id)
+            ->get('amc_raw_materials')
+            ->row();
+    }
+
+    public function get_all_raw_materials()
+    {
+        $this->db->select('*');
+        $this->db->from('amc_raw_materials');
+        $this->db->where('is_marked_delete', 0);
+        $this->db->order_by('material_name', 'ASC');
+
+        return $this->db->get()->result();
+    }
+
+    public function delete_raw_material($id)
+    {
+        $this->db->where('material_id', $id);
+        return $this->db->update('amc_raw_materials', [
+            'is_marked_delete' => 1,
+            'updated_at'       => date('Y-m-d H:i:s')
         ]);
     }
+
+    public function material_code_exists($code, $exclude_id = null)
+    {
+        $this->db->where('material_code', $code);
+
+        if (!empty($exclude_id)) {
+            $this->db->where('material_id !=', $exclude_id);
+        }
+
+        return $this->db->get('amc_raw_materials')->num_rows() > 0 ? 1 : 0;
+    }
+
+       // inserts raw materials for a newly created custom made item
+    public function save_item_raw_materials($item_id, $product_type)
+    {
+        if ($product_type != 'custom_made') {
+            return;
+        }
+
+        $material_ids = (array) $this->input->post('material_id');
+        $qtys         = (array) $this->input->post('qty');
+        $units        = (array) $this->input->post('unit');
+
+        foreach ($material_ids as $key => $material_id) {
+
+            if (empty($material_id)) {
+                continue;
+            }
+
+            $master_material = $this->get_raw_material_by_id($material_id);
+
+            if (!$master_material) {
+                continue;
+            }
+
+            $material_data = array(
+                'item_id'           => $item_id,
+                'material_id'       => $material_id,
+                'material_name'     => $master_material->material_name,
+                'material_code'     => $master_material->material_code,
+                'quantity_required' => $qtys[$key],
+                'unit'              => $units[$key]
+            );
+
+            $this->insert_raw($material_data);
+        }
+    }
+
+    // updates existing raw material rows individually and inserts newly added rows
+    // rows removed by the user are deleted immediately via Ajax/delete_record
+    public function update_item_raw_materials($item_id, $product_type)
+    {
+        if ($product_type != 'custom_made') {
+            $this->delete_raw_materials($item_id);
+            return;
+        }
+
+        $row_ids      = (array) $this->input->post('m_id');
+        $material_ids = (array) $this->input->post('material_id_old');
+        $qtys         = (array) $this->input->post('qty_old');
+        $units        = (array) $this->input->post('unit_old');
+
+        foreach ($row_ids as $key => $row_id) {
+
+            if (empty($row_id) || empty($material_ids[$key])) {
+                continue;
+            }
+
+            $master_material = $this->get_raw_material_by_id($material_ids[$key]);
+
+            if (!$master_material) {
+                continue;
+            }
+
+            $update_data = array(
+                'material_id'       => $material_ids[$key],
+                'material_name'     => $master_material->material_name,
+                'material_code'     => $master_material->material_code,
+                'quantity_required' => $qtys[$key],
+                'unit'              => $units[$key]
+            );
+
+            $this->db->where('id', $row_id);
+            $this->db->where('item_id', $item_id);
+            $this->db->update('amc_product_materials', $update_data);
+        }
+
+        $new_material_ids = (array) $this->input->post('material_id');
+        $new_qtys         = (array) $this->input->post('qty');
+        $new_units        = (array) $this->input->post('unit');
+
+        foreach ($new_material_ids as $key => $material_id) {
+
+            if (empty($material_id)) {
+                continue;
+            }
+
+            $master_material = $this->get_raw_material_by_id($material_id);
+
+            if (!$master_material) {
+                continue;
+            }
+
+            $material_data = array(
+                'item_id'           => $item_id,
+                'material_id'       => $material_id,
+                'material_name'     => $master_material->material_name,
+                'material_code'     => $master_material->material_code,
+                'quantity_required' => $new_qtys[$key],
+                'unit'              => $new_units[$key]
+            );
+
+            $this->insert_raw($material_data);
+        }
+    }
+
+
+    public function get_item_category($id)
+    {
+        return $this->db->where('category_id', $id)
+            ->get('category_master')
+            ->row_array();
+    }
+
     public function get_category($id)
     {
         return $this->db->where('category_id', $id)
@@ -1553,7 +1810,8 @@ class Setup_model extends CI_Model
     public function update_raw($data, $id)
     {
         if (!empty($data)) {
-            $this->db->query("delete  from amc_product_materials where item_id='$id'");
+            $this->db->where('item_id', $id);
+            $this->db->delete('amc_product_materials');
             return $this->db->insert('amc_product_materials', $data);
         }
         return false;
@@ -1562,7 +1820,7 @@ class Setup_model extends CI_Model
     public function get_rawmaterials($id)
     {
         if ($id) {
-            $this->db->select('id,material_name,material_code,quantity_required,cost,unit');
+            $this->db->select('id,material_id,material_name,material_code,quantity_required,cost,unit');
             $this->db->from('amc_product_materials');
             $this->db->where('item_id', $id);
             $query = $this->db->get()->result();
@@ -1589,4 +1847,165 @@ class Setup_model extends CI_Model
     {
         return $this->db->insert('amc_raw_materials', $data);
     }
+
+    // fetch commision group details for sales rep master
+    public function get_commission_group_details($id)
+    {
+        return $this->db->select('target_amount, commission_percent, sales_discount_percent')
+            ->where('commission_group_id', $id)
+            ->get('commission_group_master')
+            ->row();
+    }
+
+    ////// item popups
+
+          public function get_units_and_materials_for_popup()
+    {
+        $units = $this->db->get('unit_master')->result();
+
+        $materials = $this->db->where('is_marked_delete', 0)
+            ->order_by('material_name', 'ASC')
+            ->get('amc_raw_materials')
+            ->result();
+
+        $categories = $this->get_active_categories();
+
+        return array('units' => $units, 'materials' => $materials, 'categories' => $categories);
+    }
+
+    public function is_product_code_exists($product_code)
+    {
+        return $this->db->where('product_code', $product_code)
+            ->get('item_master')
+            ->num_rows() > 0;
+    }
+
+    public function get_active_categories()
+    {
+        return $this->db->where('is_active', 1)
+            ->where('is_marked_delete', 0)
+            ->order_by('category_name', 'ASC')
+            ->get('category_master')
+            ->result();
+    }
+
+    public function get_subcategories_by_category($category_id)
+    {
+        return $this->db->where('category_id', $category_id)
+            ->where('is_active', 1)
+            ->where('is_marked_delete', 0)
+            ->order_by('sub_category_name', 'ASC')
+            ->get('sub_category_master')
+            ->result();
+    }
+
+    public function get_childcategories_by_subcategory($sub_category_id)
+    {
+        return $this->db->where('sub_category_id', $sub_category_id)
+            ->where('is_active', 1)
+            ->where('is_marked_delete', 0)
+            ->order_by('child_category_name', 'ASC')
+            ->get('child_category_master')
+            ->result();
+    }
+    public function quick_add_item($data, $materials)
+    {
+        $this->db->insert('item_master', $data);
+        $item_id = $this->db->insert_id();
+
+        if ($item_id && !empty($materials) && $data['product_type'] == 'custom_made') {
+
+            foreach ($materials as $m) {
+
+                if (empty($m['material_id'])) {
+                    continue;
+                }
+
+                $master_material = $this->get_raw_material_by_id($m['material_id']);
+
+                if (!$master_material) {
+                    continue;
+                }
+
+                $material_data = array(
+                    'item_id'           => $item_id,
+                    'material_id'       => $m['material_id'],
+                    'material_name'     => $master_material->material_name,
+                    'material_code'     => $master_material->material_code,
+                    'quantity_required' => $m['qty'],
+                    'unit'              => $m['unit']
+                );
+                $this->insert_raw($material_data);
+            }
+        }
+
+        return $item_id;
+    }
+
+    public function get_item_for_edit_popup($id)
+    {
+        $item = $this->get_item_by_id($id);
+
+        if (!$item) {
+            return false;
+        }
+
+        $raw_materials = $this->get_rawmaterials($id);
+
+        return array('item' => $item, 'raw_materials' => $raw_materials);
+    }
+
+    public function update_item_type_and_materials($id, $product_type, $materials, $master_data = array())
+    {
+        $update_data = array_merge(array('product_type' => $product_type), $master_data);
+
+        $this->db->where('product_id', $id);
+        $this->db->update('item_master', $update_data);
+
+        $this->delete_raw_materials($id);
+
+        if (!empty($materials) && $product_type == 'custom_made') {
+
+            foreach ($materials as $m) {
+
+                if (empty($m['material_id'])) {
+                    continue;
+                }
+
+                $master_material = $this->get_raw_material_by_id($m['material_id']);
+
+                if (!$master_material) {
+                    continue;
+                }
+
+                $material_data = array(
+                    'item_id'           => $id,
+                    'material_id'       => $m['material_id'],
+                    'material_name'     => $master_material->material_name,
+                    'material_code'     => $master_material->material_code,
+                    'quantity_required' => $m['qty'],
+                    'unit'              => $m['unit']
+                );
+
+                $this->insert_raw($material_data);
+            }
+        }
+
+        return true;
+    }
+
+    public function get_active_vat_percent()
+    {
+        $row = $this->db->where('status', 1)
+            ->order_by('applicable_date', 'DESC')
+            ->limit(1)
+            ->get('vat_master')
+            ->row();
+
+        return $row ? $row->vat_percent : 0;
+    }
+
+    
+    
+    
 }

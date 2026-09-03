@@ -91,7 +91,6 @@
                <thead>
                  <tr>
                    <th>Product Code</th>
-                   <th>Brand</th>
                    <th>Description</th>
                    <th>Unit</th>
                    <th>Quantity</th>
@@ -109,7 +108,6 @@
                        <?php } ?>
                      </select>
                    </td>
-                   <td><input class="form-control" type="text" name="brand[]" id="brand0"></td>
                    <td><input class="form-control" type="text" name="description[]" id="description0"></td>
                    <td>
                      <select class="form-control" name="unit[]" id='unit0'>
@@ -131,28 +129,42 @@
            </div>
          </div>
 
-         <br><br><br><br><br><br><br><br><br>
-         <div class="x_content well">
+         <div class="x_content well" style="margin-top:20px;">
 
+           <div class="row col-md-12">
 
-           <div class="row col-md-12 col-sm-12">
+             <label class="control-label col-md-2">
+               Remarks
+             </label>
 
-             <label class="control-label col-md-2 col-sm-3 col-xs-3">Remarks</label>
-             <div class="col-md-3 col-sm-9 col-xs-9">
-               <textarea class="form-control" name="remarks" id="remarks">  </textarea>
-             </div>
-
-             <!-- inside your RFQ form, where submit button currently is -->
-             <div class="col-md-12">
-               <button type="submit" name="submit_action" value="save" class="btn btn-success">Save</button>
-
-               <!-- New: save and open quotation form -->
-               <button type="submit" name="submit_action" value="create_quote" class="btn btn-primary">
-                 Save &amp; Create Supplier Quote
-               </button>
+             <div class="col-md-10">
+               <textarea
+                 class="form-control"
+                 name="remarks"
+                 id="remarks"
+                 rows="3"></textarea>
              </div>
 
            </div>
+
+           <div class="row col-md-12" style="margin-top:20px;">
+
+             <button type="submit"
+               name="submit_action"
+               value="save"
+               class="btn btn-success">
+               Save
+             </button>
+
+             <button type="submit"
+               name="submit_action"
+               value="create_quote"
+               class="btn btn-primary">
+               Save &amp; Create Supplier Quote
+             </button>
+
+           </div>
+
          </div>
 
 
@@ -236,7 +248,6 @@
                         <?php } ?>
                     </select>
                 </td>
-                 <td><input class="form-control" type="text" name="brand[]" id="brand${rowIndex}"></td>
                 <td><input class="form-control" type="text" name="description[]" id="description${rowIndex}"></td>
                 <td>
                  <select class="form-control select2" name="unit[]" id='unit${rowIndex}'>
@@ -274,8 +285,6 @@
            },
            dataType: "json",
            success: function(response) {
-
-             $('#brand' + row_no).val(response.brand_name);
              $('#description' + row_no).val(response.item_description);
              $('#unit' + row_no).val(response.item_unit).change();
              $('#actual_price' + row_no).val(response.mrp_aed);
@@ -291,7 +300,6 @@
            }
          });
        } else {
-         $('#brand' + row_no).text('');
          $('#description' + row_no).text('');
          $('#unit' + row_no).val('').change();
          $('#actual_price' + row_no).val('');

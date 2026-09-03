@@ -365,6 +365,7 @@ class Purchase extends CI_Controller
         $data['title'] = 'Purchase Order';
         $prifix = 'AVE/POD/';
         $this->load->model('Setup_model');
+        $this->load->model('Company_model');
         $num = $this->Setup_model->get_next_code($prifix, 'po_code', 'purchase_order_master', 12) + 1;
         $digit = sprintf("%1$04d", $num);
         $data['Code'] = $prifix . date("y") . '/' . $digit;
@@ -373,8 +374,14 @@ class Purchase extends CI_Controller
         $data['delivery_terms_list'] = $this->Setup_model->get_active_terms_conditions_by_type('DELIVERY');
         $data['general_terms_list'] = $this->Setup_model->get_active_terms_conditions_by_type('GENERAL');
 
+        $data['supplier_records']   = $this->Setup_model->get_active_supplier_list();
+        $data['branch_records']     = $this->Company_model->get_all_branches();
+
         $this->load->model('Purchase_Model');
         $data['records'] = $this->Purchase_Model->get_quotation_list();
+
+        $this->load->model('Project_model');
+        $data['project_records'] = $this->Project_model->get_approved_projects();
 
         // pass selected quotation id to view
         $data['selected_quotation_id'] = $selected_quotation_id;
@@ -598,6 +605,7 @@ class Purchase extends CI_Controller
 
         $this->load->model('Setup_model');
         $this->load->model('Company_model');
+        $this->load->model('Project_model');
 
         $po_id = $this->uri->segment('3');
         $po_type = $this->uri->segment('5');
@@ -622,6 +630,7 @@ class Purchase extends CI_Controller
 
         $data['po_doc']             = $this->Purchase_Model->get_quote_doc($po_id, "PO File");
         $data['supplier_records']   = $this->Setup_model->get_active_supplier_list();
+        $data['project_records']    = $this->Project_model->get_approved_projects();
 
         $data['payment_terms_list'] = $this->Setup_model->get_active_terms_conditions_by_type('PAYMENT');
         $data['delivery_terms_list'] = $this->Setup_model->get_active_terms_conditions_by_type('DELIVERY');
@@ -667,6 +676,7 @@ class Purchase extends CI_Controller
         $this->load->model('Purchase_Model');
         $this->load->model('Company_model');
         $this->load->model('Setup_model');
+        $this->load->model('Project_model');
         $data['title']              = 'Purchase Order-Direct';
 
         $selected_tr = $this->input->post('selected_tr');
@@ -693,7 +703,7 @@ class Purchase extends CI_Controller
         $data['payment_terms_list']  = $this->Setup_model->get_active_terms_conditions_by_type('PAYMENT');
         $data['delivery_terms_list'] = $this->Setup_model->get_active_terms_conditions_by_type('DELIVERY');
         $data['general_terms_list']  = $this->Setup_model->get_active_terms_conditions_by_type('GENERAL');
-
+        $data['project_records']     = $this->Project_model->get_approved_projects();
         $data['supplier_records']   = $this->Setup_model->get_active_supplier_list();
         $data['prepared_by'] = $this->session->userdata('user_name');
         $this->load->model('Hr_model');

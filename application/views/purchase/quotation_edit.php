@@ -139,7 +139,7 @@ $user = $this->session->userdata('user_id');
                   </a>
                 </div>
               <?php } ?>
-              
+
             </div>
 
             <input type="hidden" name="existing_quote_doc"
@@ -207,10 +207,15 @@ $user = $this->session->userdata('user_id');
                   <!-- <td><input type="text" class="form-control" name="item_brand[]" value="<?php echo $r->brand_name; ?>" /></td> -->
                   <td><input type="text" class="form-control" name="item_description[]" value="<?php echo $r->description; ?>" /></td>
                   <td><input type="number" class="form-control qty" name="item_quantity[]" id="item_quantity<?php echo $i; ?>" value="<?php echo $r->quantity; ?>" /></td>
-                  <td><select class="form-control" name="unit[]" id='unit0'>
-                      <option value=''>Select</option>
+                  <td>
+                    <select class="form-control" name="item_unit[]" id="unit<?php echo $i; ?>">
+                      <option value="">Select</option>
                       <?php foreach ($active_units as $unit) { ?>
-                        <option value='<?php echo $unit->unit_id ?>'><?php echo $unit->unit_name; ?></option>
+                        <option
+                          value="<?php echo $unit->unit_id; ?>"
+                          <?php echo ($r->unit_id == $unit->unit_id) ? 'selected' : ''; ?>>
+                          <?php echo $unit->unit_name; ?>
+                        </option>
                       <?php } ?>
                     </select>
                   </td>

@@ -387,7 +387,7 @@ class Purchase_Model extends CI_Model
 				'quantity'    => $_POST['quantity'][$i],
 
 			);
-			$this->db->insert('purchase_RFQ_transaction', $data);
+			$this->db->insert('purchase_rfq_transaction', $data);
 		}
 		// if($insert_id)
 		// {
@@ -423,7 +423,7 @@ class Purchase_Model extends CI_Model
 		$this->db->update('purchase_rfq', $data);
 
 		$this->db->where('rfq_master_id', $rfq_id);
-		$this->db->delete('purchase_RFQ_transaction');
+		$this->db->delete('purchase_rfq_transaction');
 
 		for ($i = 0; $i < count($_POST['description']); $i++) {
 
@@ -436,7 +436,7 @@ class Purchase_Model extends CI_Model
 				'quantity'    => $_POST['quantity'][$i],
 
 			);
-			$this->db->insert('purchase_RFQ_transaction', $data);
+			$this->db->insert('purchase_rfq_transaction', $data);
 		}
 
 		return $insert_id;
@@ -444,7 +444,7 @@ class Purchase_Model extends CI_Model
 
 	function delete_rfq($rfq_id)
 	{
-		$this->db->query("delete from purchase_RFQ_transaction where rfq_master_id='$rfq_id'");
+		$this->db->query("delete from purchase_rfq_transaction where rfq_master_id='$rfq_id'");
 		$this->db->query("delete from purchase_rfq where rfq_id='$rfq_id'");
 
 		// $user_se_id=$this->session->userdata('user_id');
@@ -488,7 +488,7 @@ class Purchase_Model extends CI_Model
 			um.unit_name
 		");
 
-		$this->db->from('purchase_RFQ_transaction r');
+		$this->db->from('purchase_rfq_transaction r');
 		$this->db->join('item_master im', 'im.product_id = r.product_id', 'left');
 		$this->db->join('unit_master um', 'um.unit_id = im.unit_id', 'left');
 
@@ -1378,6 +1378,7 @@ class Purchase_Model extends CI_Model
 			'payment_term' 			=> $this->input->post('payment_terms'),
 			'delivery_term' 		=> $this->input->post('delivery_terms'),
 			'general_term' 			=> $this->input->post('general_terms'),
+			'purchase_type'         => $this->input->post('purchase_type'),
 
 			'created_by' 			=> $this->session->userdata('user_id'),
 			'created_date' 			=> date('Y-m-d H:i:s'),

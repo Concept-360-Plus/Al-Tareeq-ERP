@@ -950,7 +950,7 @@ class Reports extends CI_Controller
     // =====================================================
 
     $this->load->model('Setup_model');
-    $this->load->model('Stock_Model');
+    $this->load->model('Stock_model');
 
 
     // =====================================================
@@ -1076,7 +1076,7 @@ class Reports extends CI_Controller
     // =====================================================
 
     $data['records'] =
-      $this->Stock_Model
+      $this->Stock_model
       ->get_stock_inventory_report();
 
 
