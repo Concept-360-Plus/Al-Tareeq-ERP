@@ -1,5 +1,5 @@
    <!-- page content -->
-   <form id="main" method="post" action="<?php echo base_url() . 'index.php/'; ?>Purchase/add_po_direct_records" autocomplete="off" enctype="multipart/form-data">
+   <form id="main" method="post" action="<?php echo base_url() . 'index.php/'; ?>Purchase/add_po_direct_records" autocomplete="off" enctype="multipart/form-data" novalidate>
 
      <!-- page content -->
      <div class="form-group" role="main">
@@ -60,8 +60,23 @@
                </div>
 
                <div class="col-md-4">
-                 <label class="control-label">Reference</label>
-                 <input type="text" class="form-control" name="ref_no" id="ref_no">
+                 <label>Purchase Type <span class="text-danger">*</span></label>
+                 <select name="purchase_type"
+                   id="purchase_type"
+                   class="form-control"
+                   required>
+
+                   <option value="Local"
+                     <?php echo (isset($records1[0]->purchase_type) && $records1[0]->purchase_type == 'Local') ? 'selected' : ''; ?>>
+                     Local
+                   </option>
+
+                   <option value="International"
+                     <?php echo (isset($records1[0]->purchase_type) && $records1[0]->purchase_type == 'International') ? 'selected' : ''; ?>>
+                     International
+                   </option>
+
+                 </select>
                </div>
 
              </div>
@@ -106,8 +121,12 @@
              </div>
 
              <div class="row mb-3">
-
+               <div class="col-md-4">
+                 <label class="control-label">Reference</label>
+                 <input type="text" class="form-control" name="ref_no" id="ref_no">
+               </div>
              </div>
+
            </div>
 
            <div class="row col-md-12 col-sm-12" style="overflow: scroll;">
@@ -726,6 +745,7 @@
 
    </div>
 
+   <script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
    <script>
      $(document).ready(function() {
 
@@ -1186,6 +1206,28 @@
      $(document).ready(function() {
        // Form validation before submit
        $("#main").on("submit", function(e) {
+
+
+         $("#payment_terms").val(
+           $("#payment_terms_select option:selected")
+           .attr("data-description") || ""
+         );
+
+         $("#delivery_terms").val(
+           $("#delivery_terms_select option:selected")
+           .attr("data-description") || ""
+         );
+
+         $("#general_terms").val(
+           $("#general_terms_select option:selected")
+           .attr("data-description") || ""
+         );
+
+
+         console.log("Payment:", $("#payment_terms").val());
+         console.log("Delivery:", $("#delivery_terms").val());
+         console.log("General:", $("#general_terms").val());
+         
          let isValid = true;
          let errorMsg = "";
 

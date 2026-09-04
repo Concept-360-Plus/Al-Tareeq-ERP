@@ -55,7 +55,6 @@
                </div>
              </div>
 
-             <br /><br /><br />
 
              <div class="col-md-6">
                <label class="control-label col-md-3 col-sm-3 col-xs-3">Subject</label>
@@ -64,16 +63,42 @@
                </div>
              </div>
 
-             <div class="col-md-6">
-               <label class="control-label col-md-3 col-sm-3 col-xs-3">Project Name</label>
-               <div class="col-md-9 col-sm-6 col-xs-6">
-                 <input type="text" class="form-control" name="project" id="project">
+
+             <div class="col-md-6 mt-2">
+               <label class="control-label col-md-3 col-sm-3 col-xs-3">
+                 Select Project
+               </label>
+
+               <div class="col-md-9 col-sm-9 col-xs-9">
+                 <select
+                   name="project"
+                   id="project"
+                   class="form-control rfq-select2">
+
+                   <option value="">Select Project</option>
+
+                   <?php if (!empty($project_records)) { ?>
+                     <?php foreach ($project_records as $project) { ?>
+
+                       <option value="<?php echo htmlspecialchars($project['project_name'], ENT_QUOTES, 'UTF-8'); ?>">
+                         <?php echo htmlspecialchars($project['project_name'], ENT_QUOTES, 'UTF-8'); ?>
+
+                         <?php if (!empty($project['project_code'])) { ?>
+                           (<?php echo htmlspecialchars($project['project_code'], ENT_QUOTES, 'UTF-8'); ?>)
+                         <?php } ?>
+
+                       </option>
+
+                     <?php } ?>
+                   <?php } ?>
+
+                 </select>
                </div>
              </div>
 
              <br /> <br /> <br />
 
-             <div class="col-md-6">
+             <div class="col-md-6 mt-2">
                <label class="control-label col-md-3 col-sm-3 col-xs-3">Reference</label>
                <div class="col-md-9 col-sm-6 col-xs-6">
                  <input type="text" class="form-control" name="ref" id="ref">
@@ -100,7 +125,7 @@
                <tbody>
                  <tr>
                    <td>
-                     <select class="form-control select2" name="item[]" id='item0' onchange='get_item_by_id(0)'>
+                     <select class="form-control rfq-product-select" name="item[]" id='item0' onchange='get_item_by_id(0)'>
                        <option value=''>Select</option>
                        <option value='new'>+ Add New Product</option>
                        <?php foreach ($active_items as $item) { ?>
@@ -217,8 +242,6 @@
      </div>
    </div>
 
-   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
 
    <script>
      $(document).ready(function() {
@@ -226,6 +249,12 @@
        $('.rfq-select2').select2({
          width: '100%',
          placeholder: 'Select an option',
+         allowClear: true
+       });
+
+       $('.rfq-product-select').select2({
+         width: '100%',
+         placeholder: 'Select',
          allowClear: true
        });
 
@@ -240,7 +269,7 @@
          const newRow = `
             <tr>
                 <td>
-                    <select class="form-control" name="item[]" id="item${rowIndex}" onchange="get_item_by_id(${rowIndex})">
+                    <select class="form-control rfq-product-select" name="item[]" id="item${rowIndex}" onchange="get_item_by_id(${rowIndex})">
                         <option value="">Select</option>
                         <option value="new">+ Add New Product</option>
                         <?php foreach ($active_items as $item) { ?>
@@ -262,6 +291,11 @@
             </tr>`;
 
          $('#datatable-responsive tbody').append(newRow);
+         $(`#item${rowIndex}`).select2({
+           width: '100%',
+           placeholder: 'Select',
+           allowClear: true
+         });
          //$(`#item${rowIndex}`).select2(); // Reinitialize select2 for the new element
          rowIndex++;
        });

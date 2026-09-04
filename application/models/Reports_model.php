@@ -1892,4 +1892,309 @@ class Reports_model extends CI_Model
 
         return $this->db->get()->result();
     }
+
+    /////////////////// SUPPLIER QUOTATION COMPARISON ////////////////////
+
+    public function get_comparison_rfq_list(
+        $from_date = null,
+        $to_date = null
+    ) {
+        if (empty($from_date)) {
+            $from_date = date('Y-m-01');
+        }
+
+        if (empty($to_date)) {
+            $to_date = date('Y-m-d');
+        }
+
+        $from =
+            date(
+                'Y-m-d',
+                strtotime($from_date)
+            );
+
+        $to =
+            date(
+                'Y-m-d',
+                strtotime($to_date)
+            );
+
+        $this->db->select('
+        r.rfq_id,
+        r.rfq_code,
+        r.rev_version,
+        r.rfq_date,
+        r.supplier_id,
+
+        s.supplier_code,
+        s.supplier_name,
+
+        r.project,
+        r.ref,
+        r.subject,
+
+        u.user_name AS created_by_name
+    ');
+
+        $this->db->from(
+            'purchase_rfq r'
+        );
+
+        $this->db->join(
+            'supplier_master s',
+            's.supplier_id = r.supplier_id',
+            'left'
+        );
+
+        $this->db->join(
+            'users u',
+            'u.user_id = r.created_by',
+            'left'
+        );
+
+        $this->db->where(
+            'DATE(r.rfq_date) >=',
+            $from
+        );
+
+        $this->db->where(
+            'DATE(r.rfq_date) <=',
+            $to
+        );
+
+        $this->db->order_by(
+            'r.rfq_date',
+            'DESC'
+        );
+
+        $this->db->order_by(
+            'r.rfq_id',
+            'DESC'
+        );
+
+        return $this->db
+            ->get()
+            ->result();
+    }
+
+    public function get_supplier_quotation_comparison(
+        $from_date = null,
+        $to_date = null,
+        $rfq_ids = array()
+    ) {
+        if (
+            empty($from_date) ||
+            empty($to_date) ||
+            empty($rfq_ids)
+        ) {
+            return array();
+        }
+
+        /*
+     * Make sure only numeric RFQ IDs are accepted.
+     */
+        $rfq_ids = array_filter(
+            array_map(
+                'intval',
+                $rfq_ids
+            )
+        );
+
+        if (empty($rfq_ids)) {
+            return array();
+        }
+
+        $from =
+            date(
+                'Y-m-d',
+                strtotime($from_date)
+            );
+
+        $to =
+            date(
+                'Y-m-d',
+                strtotime($to_date)
+            );
+
+        /*
+     * Latest quotation revision per quotation code.
+     *
+     * Your quotation system keeps the same quotation_code
+     * while increasing revision.
+     */
+        $latest_revision = "
+        q.revision = (
+            SELECT MAX(q2.revision)
+            FROM purchase_quotation_master q2
+            WHERE q2.quotation_code = q.quotation_code
+        )
+    ";
+
+        $this->db->select('
+        q.quotation_id,
+        q.quotation_code,
+        q.revision,
+        q.quotation_date,
+        q.rfq_master_id,
+
+        q.supplier_id,
+        s.supplier_code,
+        s.supplier_name,
+
+        q.branch_id,
+
+        q.project,
+        q.reference,
+
+        q.subtotal,
+        q.vat_percent,
+        q.vat_amt,
+        q.discount_percent,
+        q.discount,
+        q.grand_total,
+
+        q.payment_term,
+        q.delivery_term,
+        q.validity,
+
+        q.status AS quotation_status,
+        q.po_created,
+        q.approval,
+        q.approval_date,
+
+        r.rfq_code,
+        r.rfq_date,
+        r.rev_version AS rfq_revision,
+
+        qt.trans_id,
+        qt.product_id,
+        qt.desc AS quotation_description,
+        qt.brand,
+        qt.unit_id,
+        qt.quantity,
+        qt.price,
+        qt.total,
+        qt.vat_per,
+        qt.vat,
+        qt.dis_per,
+        qt.dis_amt,
+        qt.dis_per2,
+        qt.dis_amt2,
+        qt.unit_price,
+
+        im.product_code,
+        im.product_name,
+
+        um.unit_name,
+        um.unit_abbr
+    ', false);
+
+        $this->db->from(
+            'purchase_quotation_master q'
+        );
+
+        /*
+     * RFQ
+     */
+        $this->db->join(
+            'purchase_rfq r',
+            'r.rfq_id = q.rfq_master_id',
+            'left'
+        );
+
+        /*
+     * Supplier
+     */
+        $this->db->join(
+            'supplier_master s',
+            's.supplier_id = q.supplier_id',
+            'left'
+        );
+
+        /*
+     * Quotation transactions
+     */
+        $this->db->join(
+            'purchase_qtn_transaction qt',
+            'qt.qtn_master_id = q.quotation_id
+         AND qt.trans_revision = q.revision',
+            'left'
+        );
+
+        /*
+     * Product
+     */
+        $this->db->join(
+            'item_master im',
+            'im.product_id = qt.product_id',
+            'left'
+        );
+
+        /*
+     * Unit
+     */
+        $this->db->join(
+            'unit_master um',
+            'um.unit_id = qt.unit_id',
+            'left'
+        );
+
+        /*
+     * Selected RFQs
+     */
+        $this->db->where_in(
+            'q.rfq_master_id',
+            $rfq_ids
+        );
+
+        /*
+     * Quotation date
+     */
+        $this->db->where(
+            'DATE(q.quotation_date) >=',
+            $from
+        );
+
+        $this->db->where(
+            'DATE(q.quotation_date) <=',
+            $to
+        );
+
+        /*
+     * Latest revision only
+     */
+        $this->db->where(
+            $latest_revision,
+            null,
+            false
+        );
+
+        /*
+     * Only quotations having a valid supplier
+     */
+        $this->db->where(
+            'q.supplier_id IS NOT NULL',
+            null,
+            false
+        );
+
+        $this->db->order_by(
+            'im.product_name',
+            'ASC'
+        );
+
+        $this->db->order_by(
+            's.supplier_name',
+            'ASC'
+        );
+
+        $this->db->order_by(
+            'qt.trans_id',
+            'ASC'
+        );
+
+        return $this->db
+            ->get()
+            ->result();
+    }
 }
