@@ -2541,7 +2541,7 @@ class Reports extends CI_Controller
 
     $data['status'] =
       $this->input->post('status') ?? '';
-$this->load->model('Company_model');
+    $this->load->model('Company_model');
     // Dropdowns
     $data['branch_records'] =
       $this->Company_model->get_all_branches();
@@ -2726,6 +2726,350 @@ $this->load->model('Company_model');
 
     $this->load->view(
       'Reports/Stock/Export/export_stock_transfer_report',
+      $data
+    );
+  }
+
+  /////////////////// SUPPLIER QUOTATION COMPARISON REPORT ////////////////////
+
+  public function supplier_quotation_comparison()
+  {
+    $data['title'] = 'Supplier Quotation Comparison';
+
+    $data['from'] = date('Y-m-01');
+    $data['to']   = date('Y-m-d');
+
+    $data['selected_rfqs'] = array();
+
+    /*
+     * RFQ list for selection
+     */
+    $data['rfq_list'] =
+      $this->Reports_model->get_comparison_rfq_list(
+        $data['from'],
+        $data['to']
+      );
+
+    /*
+     * Empty comparison initially
+     */
+    $data['records'] = array();
+    $data['suppliers'] = array();
+    $data['products'] = array();
+
+    $data['main_content'] =
+      'Reports/Purchase/supplier_quotation_comparison.php';
+
+    $this->load->view(
+      'includes/template.php',
+      $data
+    );
+  }
+
+
+  public function get_supplier_quotation_comparison()
+  {
+    $data['title'] =
+      'Supplier Quotation Comparison';
+
+    $data['from'] =
+      $this->input->post('from_date');
+
+    $data['to'] =
+      $this->input->post('to_date');
+
+    $data['selected_rfqs'] =
+      $this->input->post('rfq_ids');
+
+    /*
+     * Make sure selected RFQs are always an array
+     */
+    if (!is_array($data['selected_rfqs'])) {
+      $data['selected_rfqs'] = array();
+    }
+
+    /*
+     * RFQ dropdown
+     */
+    $data['rfq_list'] =
+      $this->Reports_model->get_comparison_rfq_list(
+        $data['from'],
+        $data['to']
+      );
+
+    /*
+     * Comparison records
+     */
+    $data['records'] = array();
+    $data['suppliers'] = array();
+    $data['products'] = array();
+
+    if (!empty($data['selected_rfqs'])) {
+
+      $data['records'] =
+        $this->Reports_model
+        ->get_supplier_quotation_comparison(
+          $data['from'],
+          $data['to'],
+          $data['selected_rfqs']
+        );
+
+      /*
+         * Prepare supplier columns
+         */
+      foreach ($data['records'] as $row) {
+
+        $supplier_key =
+          $row->supplier_id;
+
+        if (!isset($data['suppliers'][$supplier_key])) {
+
+          $data['suppliers'][$supplier_key] = $row;
+        }
+      }
+
+      /*
+         * Prepare product rows
+         */
+      foreach ($data['records'] as $row) {
+
+        $product_key =
+          $row->product_id;
+
+        if (!isset($data['products'][$product_key])) {
+
+          $data['products'][$product_key] = $row;
+        }
+      }
+    }
+
+    $data['main_content'] =
+      'Reports/Purchase/supplier_quotation_comparison.php';
+
+    $this->load->view(
+      'includes/template.php',
+      $data
+    );
+  }
+
+
+  public function print_supplier_quotation_comparison()
+  {
+    $from_date =
+      $this->input->get('from_date');
+
+    $to_date =
+      $this->input->get('to_date');
+
+    $selected_rfqs =
+      $this->input->get('rfq_ids');
+
+    if (!is_array($selected_rfqs)) {
+      $selected_rfqs = array();
+    }
+
+    $data['title'] =
+      'Supplier Quotation Comparison';
+
+    $data['from'] =
+      $from_date;
+
+    $data['to'] =
+      $to_date;
+
+    $data['selected_rfqs'] =
+      $selected_rfqs;
+
+    $data['records'] = array();
+    $data['suppliers'] = array();
+    $data['products'] = array();
+
+    if (!empty($selected_rfqs)) {
+
+      $data['records'] =
+        $this->Reports_model
+        ->get_supplier_quotation_comparison(
+          $from_date,
+          $to_date,
+          $selected_rfqs
+        );
+
+      foreach ($data['records'] as $row) {
+
+        if (!isset(
+          $data['suppliers'][$row->supplier_id]
+        )) {
+
+          $data['suppliers'][$row->supplier_id] =
+            $row;
+        }
+
+        if (!isset(
+          $data['products'][$row->product_id]
+        )) {
+
+          $data['products'][$row->product_id] =
+            $row;
+        }
+      }
+    }
+
+    /*
+     * Branch header
+     */
+    $branch_id = 1;
+
+    $branch =
+      $this->Setup_model->get_branch_by_id(
+        $branch_id
+      );
+
+    $data['headerPath'] =
+      !empty($branch->branch_header)
+      ? base_url(
+        ltrim(
+          $branch->branch_header,
+          '/'
+        )
+      )
+      : '';
+
+    $data['branch_name'] =
+      !empty($branch->branch_name)
+      ? $branch->branch_name
+      : '';
+
+    $data['prepared_by'] =
+      $this->session->userdata('user_name');
+
+    if (empty($data['prepared_by'])) {
+      $data['prepared_by'] = 'Admin';
+    }
+
+    $this->load->view(
+      'Reports/Purchase/Print/print_supplier_quotation_comparison',
+      $data
+    );
+  }
+
+
+  public function export_supplier_quotation_comparison_excel()
+  {
+    $from_date =
+      $this->input->get('from_date');
+
+    $to_date =
+      $this->input->get('to_date');
+
+    $selected_rfqs =
+      $this->input->get('rfq_ids');
+
+    if (!is_array($selected_rfqs)) {
+      $selected_rfqs = array();
+    }
+
+    $data['title'] =
+      'Supplier Quotation Comparison';
+
+    $data['from'] =
+      $from_date;
+
+    $data['to'] =
+      $to_date;
+
+    $data['selected_rfqs'] =
+      $selected_rfqs;
+
+    $data['records'] = array();
+    $data['suppliers'] = array();
+    $data['products'] = array();
+
+    if (!empty($selected_rfqs)) {
+
+      $data['records'] =
+        $this->Reports_model
+        ->get_supplier_quotation_comparison(
+          $from_date,
+          $to_date,
+          $selected_rfqs
+        );
+
+      foreach ($data['records'] as $row) {
+
+        if (!isset(
+          $data['suppliers'][$row->supplier_id]
+        )) {
+
+          $data['suppliers'][$row->supplier_id] =
+            $row;
+        }
+
+        if (!isset(
+          $data['products'][$row->product_id]
+        )) {
+
+          $data['products'][$row->product_id] =
+            $row;
+        }
+      }
+    }
+
+    /*
+     * Company
+     */
+    $data['company_name'] = '';
+
+    $company =
+      $this->Setup_model->get_company_details();
+
+    if (!empty($company) && is_array($company)) {
+
+      $data['company_name'] =
+        $company['company_name'] ?? '';
+    }
+
+    /*
+     * Branch
+     */
+    $branch_id = 1;
+
+    $branch =
+      $this->Setup_model->get_branch_by_id(
+        $branch_id
+      );
+
+    $data['branch_name'] =
+      !empty($branch->branch_name)
+      ? $branch->branch_name
+      : '';
+
+    $data['prepared_by'] =
+      $this->session->userdata('user_name');
+
+    if (empty($data['prepared_by'])) {
+      $data['prepared_by'] = 'Admin';
+    }
+
+    $filename =
+      'Supplier_Quotation_Comparison_' .
+      date('Y-m-d') .
+      '.xls';
+
+    header(
+      'Content-Type: application/vnd.ms-excel'
+    );
+
+    header(
+      'Content-Disposition: attachment; filename="' .
+        $filename .
+        '"'
+    );
+
+    header('Pragma: no-cache');
+    header('Expires: 0');
+
+    $this->load->view(
+      'Reports/Purchase/Export/export_supplier_quotation_comparison',
       $data
     );
   }

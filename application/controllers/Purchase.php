@@ -9,6 +9,7 @@ class Purchase extends CI_Controller
         $this->output->set_header("Cache-Control: post-check=0, pre-check=0", false);
         $this->output->set_header("Pragma: no-cache");
         $this->load->model('Setup_model');
+        $this->load->model('Project_model');
         $this->load->helper('menu_helper');
         $this->load->model('Purchase_Model');
         $this->load->model('Item_model');
@@ -40,6 +41,7 @@ class Purchase extends CI_Controller
         $data['Code']               = $prifix . date('y') . '/' . $digit;
         $data['branch_records']     = $this->Company_model->get_all_branches();
         $data['supplier_records']   = $this->Setup_model->get_active_supplier_list();
+        $data['project_records']    = $this->Project_model->get_approved_projects();
 
         $data['active_items']       = $this->Setup_model->get_active_item_list();
         $data['active_units']       = $this->Setup_model->get_active_unit_list();
@@ -127,6 +129,7 @@ class Purchase extends CI_Controller
         $data['active_items']       = $this->Setup_model->get_active_item_list();
         $data['active_units']       = $this->Setup_model->get_active_unit_list();
         $data['supplier_records']   = $this->Setup_model->get_all_supplier_list();
+        $data['project_records']    = $this->Project_model->get_approved_projects();
         $data['records1']           = $this->Purchase_Model->get_purchase_rfq_by_id($rfq_id);
         $data['records2']           = $this->Purchase_Model->get_purchase_rfq_tr($rfq_id);
         $data['main_content']       = 'purchase/rfq_direct_edit.php';

@@ -77,11 +77,37 @@
             </div>
 
             <div class="col-md-6">
-              <label class="control-label col-md-3 col-sm-3 col-xs-3">Project Name</label>
+              <label class="control-label col-md-3 col-sm-3 col-xs-3">
+                Select Project
+              </label>
               <div class="col-md-9 col-sm-9 col-xs-9">
-                <input type="text" class="form-control" name="project" id="project"
-                  value="<?php echo $records1[0]->project; ?>">
+                <select
+                  class="form-control rfq-select2"
+                  name="project"
+                  id="project">
+                  <option value="">Select Project</option>
+                  <?php if (!empty($project_records)) { ?>
+                    <?php foreach ($project_records as $project) { ?>
+                      <option
+                        value="<?php echo htmlspecialchars($project['project_name'], ENT_QUOTES, 'UTF-8'); ?>"
+                        <?php
+                        if (
+                          isset($records1[0]->project) &&
+                          $records1[0]->project == $project['project_name']
+                        ) {
+                          echo 'selected';
+                        }
+                        ?>>
+                        <?php echo htmlspecialchars($project['project_name'], ENT_QUOTES, 'UTF-8'); ?>
+                        <?php if (!empty($project['project_code'])) { ?>
+                          (<?php echo htmlspecialchars($project['project_code'], ENT_QUOTES, 'UTF-8'); ?>)
+                        <?php } ?>
+                      </option>
+                    <?php } ?>
+                  <?php } ?>
+                </select>
               </div>
+
             </div>
 
           </div>

@@ -84,8 +84,21 @@ $user = $this->session->userdata('user_id');
             id="purchase_type"
             class="form-control"
             required>
-            <option value="Local">Local</option>
-            <option value="International">International</option>
+
+            <option value="Local"
+              <?php echo (isset($records1[0]->purchase_type) &&
+                $records1[0]->purchase_type == 'Local')
+                ? 'selected' : ''; ?>>
+              Local
+            </option>
+
+            <option value="International"
+              <?php echo (isset($records1[0]->purchase_type) &&
+                $records1[0]->purchase_type == 'International')
+                ? 'selected' : ''; ?>>
+              International
+            </option>
+
           </select>
         </div>
 
@@ -436,7 +449,7 @@ $user = $this->session->userdata('user_id');
               + Add New General Term
             </a>
           </small>
-          
+
           <input
             type="hidden"
             name="general_terms"
