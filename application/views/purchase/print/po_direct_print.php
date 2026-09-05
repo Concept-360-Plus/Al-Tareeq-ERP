@@ -1,432 +1,1128 @@
 <!DOCTYPE html>
 <html>
+
 <head>
+    <meta charset="UTF-8">
     <title>Purchase Order</title>
+
     <style>
-        body {
-            font-family: "Franklin Gothic Book", Arial, sans-serif;
-            font-size: 13px;
-            margin: 0;
-            padding: 0;
-            color: #333;
+        @page {
+            margin: 12mm 12mm 22mm 12mm;
         }
 
-        .title {
-            text-align: center;
-            margin: 20px 0 15px 0;
-            font-size: 22px;
-            font-weight: bold;
-            text-transform: uppercase;
-            color: #2C2C2C;
-        }
- .page-header {
-            width: 100%;
-            background: #fff;
-            z-index: 999;
-        }
-         .page-content {
-            margin-top: 20px;
-            margin-bottom: 80px;
-        }
-        
-        .party-table {
-            width: 100%;
-            margin-bottom: 20px;
-            border-spacing: 0;
-        }
-        .party-table td {
-            vertical-align: top;
-            padding: 10px;
-        }
-        .party-table .section-title {
-            background-color: #2C2C2C;
-            color: #C49A00;
-            padding: 6px;
-            font-weight: bold;
-            text-align: center;
-            text-transform: uppercase;
-            font-size: 13px;
-        }
-        .party-table .info {
+        body {
+            font-family: Arial, sans-serif;
             font-size: 12px;
-            line-height: 1.5;
-            text-transform: uppercase;
+            color: #333;
+            margin: 0;
+            padding: 0;
         }
+
+        .page-content {
+            width: 100%;
+        }
+
+        /* =========================
+           COMPANY HEADER
+        ========================== */
+
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 12px;
+        }
+
+        .header-table td {
+            border: none;
+            padding: 0;
+            vertical-align: top;
+        }
+
+        .company-logo {
+            width: 300px;
+            height: auto;
+            max-height: 150px;
+            object-fit: contain;
+            display: block;
+        }
+
+        .barcode-container {
+            text-align: right;
+        }
+
+        .barcode {
+            height: 70px;
+            width: 100px;
+            display: block;
+            margin-left: auto;
+        }
+
+        .trn {
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 5px;
+            color: #333;
+            text-align: right;
+        }
+
+        /* =========================
+           DOCUMENT TITLE
+        ========================== */
+
+        .document-title {
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            margin: 8px 0 15px 0;
+            color: #222;
+        }
+
+        /* =========================
+           PO INFORMATION
+        ========================== */
+
+        .document-info {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+
+        .document-info td {
+            border: none;
+            padding: 4px 8px;
+            vertical-align: top;
+        }
+
+        .document-info .label {
+            font-weight: bold;
+            color: #555;
+            width: 110px;
+        }
+
+        .document-info .value {
+            font-weight: normal;
+        }
+
+        /* =========================
+           SUPPLIER / BRANCH
+        ========================== */
+
+        .party-wrapper {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+
+        .party-wrapper td {
+            width: 50%;
+            vertical-align: top;
+            padding: 0 8px 0 0;
+            border: none;
+        }
+
+        .party-wrapper td:last-child {
+            padding: 0 0 0 8px;
+        }
+
+        .party-box {
+            border: 1px solid #d8d8d8;
+            padding: 9px 10px;
+            min-height: 105px;
+        }
+
+        .party-title {
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 7px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #ddd;
+            color: #222;
+        }
+
+        .party-info {
+            font-size: 11px;
+            line-height: 1.55;
+        }
+
+        /* =========================
+           BILLING / SHIPPING
+        ========================== */
+
+        .address-wrapper {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 18px;
+        }
+
+        .address-wrapper td {
+            width: 50%;
+            vertical-align: top;
+            padding: 0 8px 0 0;
+            border: none;
+        }
+
+        .address-wrapper td:last-child {
+            padding: 0 0 0 8px;
+        }
+
+        .address-box {
+            border: 1px solid #d8d8d8;
+            padding: 9px 10px;
+            min-height: 65px;
+        }
+
+        .address-title {
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+            color: #444;
+        }
+
+        .address-info {
+            font-size: 11px;
+            line-height: 1.5;
+        }
+
+        /* =========================
+           PRODUCTS
+        ========================== */
 
         table.products {
             width: 100%;
             border-collapse: collapse;
-            font-size: 12px;
-            margin-bottom: 20px;
+            margin-top: 8px;
+            margin-bottom: 15px;
+            font-size: 11px;
         }
+
         table.products th {
-            background-color: #2C2C2C;
-            color: #C49A00;
+            background: #f3f3f3;
+            color: #222;
             font-weight: bold;
-            padding: 8px;
-            border: 1px solid #555;
-        }
-        table.products td {
-            border: 1px solid #aaa;
-            padding: 6px;
+            padding: 8px 6px;
+            border-top: 1px solid #999;
+            border-bottom: 1px solid #999;
+            border-left: none;
+            border-right: none;
             text-align: center;
-            font-size: 12px;
-        }
-        table.products tr:nth-child(even) td {
-            background-color: #f9f9f9;
         }
 
-        table.totals {
-            width: 40%;
-            float: right;
-            border-collapse: collapse;
-            font-size: 12px;
-            margin-bottom: 8px;
-        }
-        table.totals td {
-            border: 1px solid #aaa;
-            padding: 6px;
-            text-align: right;
-        }
-        table.totals td.label {
-            font-weight: bold;
-            background-color: #f2f2f2;
-        }
-        table.totals td.total {
-            background-color: #2C2C2C;
-            color: #C49A00;
-            font-weight: bold;
-            font-size: 13px;
+        table.products td {
+            padding: 7px 6px;
+            border-bottom: 1px solid #ddd;
+            border-left: none;
+            border-right: none;
+            vertical-align: top;
         }
 
-        .terms-title {
-            background-color: #2C2C2C;
-            color: #C49A00;
-            padding: 6px;
-            font-weight: bold;
-            font-size: 13px;
-            margin-top: 15px;
-            text-transform: uppercase;
+        table.products tbody tr:last-child td {
+            border-bottom: 1px solid #999;
         }
-        .terms-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12px;
-            margin-bottom: 20px;
+
+        .text-left {
+            text-align: left !important;
         }
-        .terms-table td {
-            padding: 6px;
-            border: 1px solid #ddd;
+
+        .text-center {
+            text-align: center !important;
         }
-        .terms-table td:first-child {
-            font-weight: bold;
-            width: 25%;
-            background-color: #f9f9f9;
+
+        .text-right {
+            text-align: right !important;
         }
-        .approval-table {
+
+        /* =========================
+           TOTALS
+        ========================== */
+
+        .summary-wrapper {
             width: 100%;
             border-collapse: collapse;
             margin-top: 8px;
-            margin-bottom: 20px;
+            margin-bottom: 18px;
+        }
+
+        .summary-wrapper>tbody>tr>td {
+            vertical-align: top;
+            border: none;
+        }
+
+        .amount-words {
+            width: 58%;
+            padding: 5px 15px 5px 0;
+            font-size: 11px;
+            line-height: 1.5;
+        }
+
+        .totals-cell {
+            width: 42%;
+        }
+
+        table.totals {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+
+        table.totals td {
+            padding: 6px 7px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        table.totals td.label {
+            text-align: left;
+            font-weight: bold;
+            width: 65%;
+        }
+
+        table.totals td.amount {
+            text-align: right;
+            width: 35%;
+        }
+
+        table.totals tr.grand-total td {
+            border-top: 1px solid #777;
+            border-bottom: 1px solid #777;
+            font-weight: bold;
             font-size: 12px;
+            padding-top: 8px;
+            padding-bottom: 8px;
+        }
+
+        /* =========================
+           TERMS
+        ========================== */
+
+        .section-heading {
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #222;
+            border-bottom: 1px solid #999;
+            padding-bottom: 5px;
+            margin-top: 12px;
+            margin-bottom: 6px;
+        }
+
+        .terms-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+            margin-bottom: 15px;
+        }
+
+        .terms-table td {
+            padding: 6px 7px;
+            border-bottom: 1px solid #ddd;
+            vertical-align: top;
+        }
+
+        .terms-table td:first-child {
+            width: 22%;
+            font-weight: bold;
+            color: #444;
+        }
+
+        /* =========================
+           APPROVALS
+        ========================== */
+
+        .approval-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            margin-top: 20px;
             page-break-inside: avoid;
         }
+
         .approval-table td {
-            width: 33.3333%;
+            width: 25%;
+            border: none;
             vertical-align: top;
-            padding: 8px;
+            padding: 5px;
         }
+
         .approval-title {
             font-weight: bold;
-            margin-bottom: 8px;
+            font-size: 11px;
+            margin-bottom: 5px;
+        }
+
+        .signature {
+            height: 55px;
+            max-width: 130px;
+            margin-top: 4px;
             display: block;
         }
-        .footer {
-             position: fixed;
-    bottom: -70px;
-    left: 0;
-    right: 0;
+
+        .approval-name {
+            font-size: 11px;
+            margin-top: 3px;
         }
-        .footer img {
-             max-width: 100%;
-      height: auto;
-      display: block;
-      margin: 0 auto;
+
+        .stamp {
+            max-width: 140px;
+            max-height: 100px;
+            margin-top: -5px;
         }
-          @page {
-            margin: 0mm 12mm 20mm 12mm; /* top right bottom left */
+
+        /* =========================
+           FOOTER
+        ========================== */
+
+        .page-footer {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: -12mm;
+            text-align: center;
         }
-        @media print {
-            .page-header {
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                margin-top: 0;
-            }
-            .page-footer {
-                position: fixed;
-                bottom: 0;
-                left: 0;
-                right: 0;
-            }
-            .page-content {
-                margin-top: 80px;
-                margin-bottom: 10px;
-            }
+
+        .page-footer img {
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 0 auto;
         }
-  .header-img {
-    margin-top: -2mm;
-}
- .no-break {
-    page-break-inside: avoid;
-    break-inside: avoid;
-}
+
+        .no-break {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
     </style>
 </head>
+
 <body>
 
-<!-- Header -->
-<header class="page-header">
-    <table style="width:100%; border-collapse:collapse; margin-bottom:0;">
-        <tr>
-            <td style="width:60%;vertical-align:top;">
-                <img src="<?= $headerPath ?>" class="header-img" style="max-height:100px;">
-            </td>
-            <td style="width:40%; text-align:right; vertical-align:top;">
-                <div style="font-size:20px; font-weight:bold; color:#2C2C2C;">Purchase Order</div>
-                <div style="font-size:12px;"><?= $po->po_code ?></div>
-                <div style="font-size:12px;"><?= date('d-m-Y', strtotime($po->po_date)) ?></div>
-                <div style="font-size:12px;"><?= $po->quotation_code ?></div>            
-            </td>
-        </tr>
-    </table>
-</header>
-<div class="page-content">
+    <?php
+    $company = !empty($company) ? $company : [];
+    ?>
 
-<!-- Supplier / Branch Info -->
-<table class="party-table">
-    <tr>
-        <td width="50%">
-            <div class="section-title">Supplier</div>
-            <div class="info">
-                <?= $po->supplier_name ?><br>
-                <?= $po->contact_number ?><br>
-                <?= $po->supplier_email ?><br>
-                <?= $po->billing_address ?><br>
-                <?= $po->billing_city ?>, <?= $po->billing_state ?>, <?= $po->billing_country ?>
-            </div>
-        </td>
-        <td width="50%">
-            <div class="section-title">Branch</div>
-            <div class="info">
-                <?= $po->branch_name ?><br>
-                <?= $po->branch_contact ?><br>
-                <?= $po->branch_email ?><br>
-                <?= $po->branch_address ?><br>
-                <?= $po->branch_location ?><br>
-                TRN: <?= $po->branch_trn ?><br>
-                Web: <?= $po->branch_web ?>
-            </div>
-        </td>
-    </tr>
-</table>
+    <div class="page-content">
 
-<!-- Billing Address / Shipping Address Info -->
-<table class="party-table">
-    <tr>
-        <td width="50%">
-            <div class="section-title">Billing Address</div>
-            <div class="info">
-                <?= $po->billing_address ?><br>
-                <?= $po->billing_city ?>, <?= $po->billing_state ?>, <?= $po->billing_country ?>
-            </div>
-        </td>
-        <td width="50%">
-            <div class="section-title">Shipping Address</div>
-            <div class="info">
-                <?= $po->shipping_address ?><br>
-                <?= $po->shipping_city ?>, <?= $po->shipping_state ?>, <?= $po->shipping_country ?>
-            </div>
-        </td>
-    </tr>
-</table>
+        <!-- =========================================================
+         COMPANY HEADER
+    ========================================================== -->
 
-<!-- Products -->
-<table class="products">
-    <thead>
-        <tr>
-            <th>#</th>
-            <th>Name</th>
-            <th>Description</th>
-            <th>Qty</th>
-            <th>Unit</th>
-            <th>Price</th>
-            <th>Currency</th>
-            <th>Total</th>
-        </tr>
-    </thead>
-    <tbody>
-        <?php $i=1; 
-        $total_before_vat = 0;
-        $total_discount = 0;
-        $grand_total = 0;
-        foreach($po_tr as $item): 
-            $total_before_vat += $item->price * $item->quantity;
-            $total_discount += $item->dis_amt;
-            $grand_total += $item->total;
-        ?>
-        <tr>
-            <td><?= $i++ ?></td>
-            <td><?= $item->product_name ?></td>
-            <td><?= $item->description ?></td>
-            <td><?= $item->quantity ?></td>
-            <td><?= $item->unit_name ?></td>
-            <td><?= number_format($item->price,2) ?></td>
-            <!-- <td><?= number_format($item->dis_amt,2) ?></td> -->
-            <td><?= $po->currency_abbr ?></td>
-            <td><?= number_format($item->total,2) ?></td>
-        </tr>
-        <?php endforeach; ?>
-    </tbody>
-</table>
+        <table class="header-table">
+            <tr>
 
-<!-- Totals -->
- <table width="100%" style="margin-top:10px;">
-    <tr>
+                <!-- COMPANY LOGO -->
+                <td width="55%">
 
-        <!-- LEFT: Amount in Words -->
-        <td style="width:60%; vertical-align:top; padding-right:10px;">
-            <strong>Amount in Words:</strong><br>
-            <?= numberToWordsAED((float)$po->grand_total); ?> 
-        </td>
+                    <?php if (!empty($company['company_logo'])) { ?>
 
-        <!-- RIGHT: Totals -->
-        <td style="width:40%; vertical-align:top;">
-            <table class="totals" style="width:100%;">
+                        <img
+                            src="<?= base_url($company['company_logo']) ?>"
+                            alt="Company Logo"
+                            class="company-logo">
+
+                    <?php } ?>
+
+                </td>
+
+
+                <!-- QR CODE + TRN -->
+                <td width="45%" style="text-align:right;">
+
+                    <?php if (file_exists(FCPATH . 'uploads/company/barcode.png')) { ?>
+
+                        <div class="barcode-container">
+
+                            <img
+                                src="<?= base_url('uploads/company/barcode.png') ?>"
+                                alt="QR Code"
+                                class="barcode">
+
+                            <div class="trn">
+                                TRN:
+                                <?= !empty($company['company_trn'])
+                                    ? $company['company_trn']
+                                    : '' ?>
+                            </div>
+
+                        </div>
+
+                    <?php } ?>
+
+                </td>
+
+            </tr>
+        </table>
+
+
+        <!-- =========================================================
+         TITLE
+    ========================================================== -->
+
+        <div class="document-title">
+            PURCHASE ORDER
+        </div>
+
+
+        <!-- =========================================================
+         PO INFORMATION
+    ========================================================== -->
+
+        <table class="document-info">
+
+            <tr>
+
+                <td class="label">
+                    PO No:
+                </td>
+
+                <td class="value">
+                    <strong><?= $po->po_code ?></strong>
+                </td>
+
+                <td class="label">
+                    PO Date:
+                </td>
+
+                <td class="value">
+                    <?= date('d-m-Y', strtotime($po->po_date)) ?>
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <td class="label">
+                    Currency:
+                </td>
+
+                <td class="value">
+                    <?= !empty($po->currency_abbr)
+                        ? $po->currency_abbr
+                        : '-' ?>
+                </td>
+
+                <td class="label">
+                    PO Type:
+                </td>
+
+                <td class="value">
+                    Direct
+                </td>
+
+            </tr>
+
+        </table>
+
+
+        <!-- =========================================================
+         SUPPLIER / BRANCH
+    ========================================================== -->
+
+        <table class="party-wrapper">
+
+            <tr>
+
+                <!-- SUPPLIER -->
+                <td>
+
+                    <div class="party-box">
+
+                        <div class="party-title">
+                            Supplier
+                        </div>
+
+                        <div class="party-info">
+
+                            <strong>
+                                <?= $po->supplier_name ?>
+                            </strong>
+
+                            <br>
+
+                            <?php if (!empty($po->contact_number)) { ?>
+                                <?= $po->contact_number ?><br>
+                            <?php } ?>
+
+                            <?php if (!empty($po->supplier_email)) { ?>
+                                <?= $po->supplier_email ?><br>
+                            <?php } ?>
+
+                            <?php if (!empty($po->billing_address)) { ?>
+                                <?= $po->billing_address ?><br>
+                            <?php } ?>
+
+                            <?= $po->billing_city ?>,
+                            <?= $po->billing_state ?>,
+                            <?= $po->billing_country ?>
+
+                        </div>
+
+                    </div>
+
+                </td>
+
+
+                <!-- BRANCH -->
+                <td>
+
+                    <div class="party-box">
+
+                        <div class="party-title">
+                            Branch
+                        </div>
+
+                        <div class="party-info">
+
+                            <strong>
+                                <?= $po->branch_name ?>
+                            </strong>
+
+                            <br>
+
+                            <?php if (!empty($po->branch_contact)) { ?>
+                                <?= $po->branch_contact ?><br>
+                            <?php } ?>
+
+                            <?php if (!empty($po->branch_email)) { ?>
+                                <?= $po->branch_email ?><br>
+                            <?php } ?>
+
+                            <?php if (!empty($po->branch_address)) { ?>
+                                <?= $po->branch_address ?><br>
+                            <?php } ?>
+
+                            <?php if (!empty($po->branch_location)) { ?>
+                                <?= $po->branch_location ?><br>
+                            <?php } ?>
+
+                            <?php if (!empty($po->branch_trn)) { ?>
+                                TRN: <?= $po->branch_trn ?><br>
+                            <?php } ?>
+
+                            <?php if (!empty($po->branch_web)) { ?>
+                                Web: <?= $po->branch_web ?>
+                            <?php } ?>
+
+                        </div>
+
+                    </div>
+
+                </td>
+
+            </tr>
+
+        </table>
+
+
+        <!-- =========================================================
+         BILLING / SHIPPING
+    ========================================================== -->
+
+        <table class="address-wrapper">
+
+            <tr>
+
+                <!-- BILLING -->
+                <td>
+
+                    <div class="address-box">
+
+                        <div class="address-title">
+                            Billing Address
+                        </div>
+
+                        <div class="address-info">
+
+                            <?= $po->billing_address ?><br>
+
+                            <?= $po->billing_city ?>,
+                            <?= $po->billing_state ?>,
+                            <?= $po->billing_country ?>
+
+                        </div>
+
+                    </div>
+
+                </td>
+
+
+                <!-- SHIPPING -->
+                <td>
+
+                    <div class="address-box">
+
+                        <div class="address-title">
+                            Shipping Address
+                        </div>
+
+                        <div class="address-info">
+
+                            <?= !empty($po->shipping_address)
+                                ? $po->shipping_address
+                                : '-' ?>
+
+                            <?php if (
+                                !empty($po->shipping_city) ||
+                                !empty($po->shipping_state) ||
+                                !empty($po->shipping_country)
+                            ) { ?>
+
+                                <br>
+
+                                <?= $po->shipping_city ?>,
+                                <?= $po->shipping_state ?>,
+                                <?= $po->shipping_country ?>
+
+                            <?php } ?>
+
+                        </div>
+
+                    </div>
+
+                </td>
+
+            </tr>
+
+        </table>
+
+
+        <!-- =========================================================
+         PRODUCTS
+    ========================================================== -->
+
+        <table class="products">
+
+            <thead>
+
                 <tr>
-                    <td class="label">Total Before VAT</td>
-                    <td><?= number_format($total_before_vat, 2) ?></td>
+
+                    <th width="5%">
+                        #
+                    </th>
+
+                    <th width="15%">
+                        Name
+                    </th>
+
+                    <th width="31%">
+                        Description
+                    </th>
+
+                    <th width="8%">
+                        Qty
+                    </th>
+
+                    <th width="9%">
+                        Unit
+                    </th>
+
+                    <th width="11%">
+                        Price
+                    </th>
+
+                    <th width="9%">
+                        Currency
+                    </th>
+
+                    <th width="12%">
+                        Total
+                    </th>
+
                 </tr>
 
-               <?php if (!empty($total_discount) && $total_discount > 0) { ?>
-<tr>
-    <td class="label">Discount Amount</td>
-    <td><?= number_format($total_discount, 2) ?></td>
-</tr>
-<?php } ?>
+            </thead>
 
-<?php if (!empty($po->vat_amt) && $po->vat_amt > 0) { ?>
-<tr>
-    <td class="label">VAT Amount</td>
-    <td><?= number_format($po->vat_amt, 2) ?></td>
-</tr>
-<?php } ?>
 
-                <tr>
-                    <td class="label total">Grand Total</td>
-                    <td class="total"><?= number_format($po->grand_total, 2) ?></td>
-                </tr>
-            </table>
-        </td>
-
-    </tr>
-</table>
-
-<div style="clear: both;"></div>
-
-<!-- Terms -->
-<div class="terms-title">Terms & Conditions</div>
-<table class="terms-table">
-    <tr>
-        <td>Validity</td>
-        <td><?= $po->validity ?? '-' ?></td>
-    </tr>
-    <tr>
-        <td>Payment Terms</td>
-        <td><?= $po->payment_term ?? '-' ?></td>
-    </tr>
-    <tr>
-        <td>Delivery Terms</td>
-        <td><?= $po->delivery_term ?? '-' ?></td>
-    </tr>
-    <tr>
-        <td>Other Conditions</td>
-        <td><?= $po->terms_and_condition ?? '-' ?></td>
-    </tr>
-    <tr>
-        <td>Remarks</td>
-        <td><?= $po->remarks ?? '-' ?></td>
-    </tr>
-</table>
-<table width="100%" style="border-collapse:collapse; table-layout:fixed; margin-top:20px;">
-    <tr>
-
-        <!-- Prepared By -->
-        <td style="text-align:left; vertical-align:top; width:25%; padding:0 5px;">
-            <strong>Prepared By:</strong><br>
-
-            <?php if (!empty($prepared_signature)) { ?>
-                <img src="<?= base_url('public/employee/' . $prepared_signature) ?>"
-                     style="height:60px; margin-top:5px;"><br>
-            <?php } ?>
-
-            <span><?= htmlspecialchars($prepared_by_name ?? '') ?></span>
-        </td>
-
-        <!-- Checked By -->
-        <td style="text-align:center; vertical-align:top; width:25%; padding:0 5px;">
-            <strong>Checked By:</strong><br>
-
-            <?php if (!empty($checked_signature)) { ?>
-                <img src="<?= base_url('public/employee/' . $checked_signature) ?>"
-                     style="height:60px; margin-top:5px;"><br>
-            <?php } ?>
-
-            <span><?= htmlspecialchars($checked_by_name ?? '') ?></span>
-        </td>
-
-        <!-- Approved By -->
-        <td style="text-align:center; vertical-align:top; width:25%; padding:0 5px;">
-            <strong>Approved By:</strong><br>
-
-            <?php if (!empty($approved_signature)) { ?>
-                <img src="<?= base_url('public/employee/' . $approved_signature) ?>"
-                     style="height:60px; margin-top:5px;"><br>
-            <?php } ?>
-
-            <span><?= htmlspecialchars($approved_by_name ?? '') ?></span>
-        </td>
-
-        <!-- Stamp -->
-        <td style="text-align:right; vertical-align:top; width:25%;">
-
-            <?php if (!empty($branch_stamp)) { ?>
+            <tbody>
 
                 <?php
-                $path = FCPATH . ltrim($branch_stamp, './');
 
-                if (file_exists($path)) {
-                    $type = pathinfo($path, PATHINFO_EXTENSION);
-                    $data = file_get_contents($path);
-                    $base64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
+                $i = 1;
+
+                $total_before_vat = 0;
+                $total_discount   = 0;
+                $grand_total      = 0;
+
+                if (!empty($po_tr)) {
+
+                    foreach ($po_tr as $item):
+
+                        $total_before_vat +=
+                            ((float)$item->price * (float)$item->quantity);
+
+                        $total_discount +=
+                            (float)$item->dis_amt;
+
+                        $grand_total +=
+                            (float)$item->total;
+
                 ?>
-                   <img src="<?= $base64 ?>"
-     style="max-width:140px; max-height:100px; margin-top:-10px;">
-                <?php } ?>
 
-            <?php } ?>
+                        <tr>
 
-        </td>
+                            <td class="text-center">
+                                <?= $i++ ?>
+                            </td>
 
-    </tr>
-</table>
+                            <td class="text-left">
+                                <?= $item->product_name ?>
+                            </td>
 
-</div>
+                            <td class="text-left">
+                                <?= $item->description ?>
+                            </td>
 
-    <!-- Footer -->
-    <div class="footer">
-        <img src="<?= $footerPath ?>" alt="Logo">
+                            <td class="text-center">
+                                <?= $item->quantity ?>
+                            </td>
+
+                            <td class="text-center">
+                                <?= $item->unit_name ?>
+                            </td>
+
+                            <td class="text-right">
+                                <?= number_format($item->price, 2) ?>
+                            </td>
+
+                            <td class="text-center">
+                                <?= $po->currency_abbr ?>
+                            </td>
+
+                            <td class="text-right">
+                                <?= number_format($item->total, 2) ?>
+                            </td>
+
+                        </tr>
+
+                <?php
+
+                    endforeach;
+                }
+
+                ?>
+
+            </tbody>
+
+        </table>
+
+
+        <!-- =========================================================
+         TOTALS
+    ========================================================== -->
+
+        <table class="summary-wrapper">
+
+            <tr>
+
+                <!-- AMOUNT IN WORDS -->
+                <td class="amount-words">
+
+                    <strong>
+                        Amount in Words:
+                    </strong>
+
+                    <br>
+
+                    <?= numberToWordsAED((float)$po->grand_total); ?>
+
+                </td>
+
+
+                <!-- TOTALS -->
+                <td class="totals-cell">
+
+                    <table class="totals">
+
+                        <tr>
+
+                            <td class="label">
+                                Total Before VAT
+                            </td>
+
+                            <td class="amount">
+                                <?= number_format($total_before_vat, 2) ?>
+                            </td>
+
+                        </tr>
+
+
+                        <?php if (!empty($total_discount) && $total_discount > 0) { ?>
+
+                            <tr>
+
+                                <td class="label">
+                                    Discount Amount
+                                </td>
+
+                                <td class="amount">
+                                    <?= number_format($total_discount, 2) ?>
+                                </td>
+
+                            </tr>
+
+                        <?php } ?>
+
+
+                        <?php if (!empty($po->vat_amt) && $po->vat_amt > 0) { ?>
+
+                            <tr>
+
+                                <td class="label">
+                                    VAT Amount
+                                </td>
+
+                                <td class="amount">
+                                    <?= number_format($po->vat_amt, 2) ?>
+                                </td>
+
+                            </tr>
+
+                        <?php } ?>
+
+
+                        <tr class="grand-total">
+
+                            <td class="label">
+                                Grand Total
+                            </td>
+
+                            <td class="amount">
+                                <?= number_format($po->grand_total, 2) ?>
+                            </td>
+
+                        </tr>
+
+                    </table>
+
+                </td>
+
+            </tr>
+
+        </table>
+
+
+        <!-- =========================================================
+         TERMS & CONDITIONS
+    ========================================================== -->
+
+        <div class="section-heading">
+            Terms & Conditions
+        </div>
+
+        <table class="terms-table">
+
+            <tr>
+
+                <td>
+                    Validity
+                </td>
+
+                <td>
+                    <?= !empty($po->validity)
+                        ? $po->validity
+                        : '-' ?>
+                </td>
+
+            </tr>
+
+
+            <tr>
+
+                <td>
+                    Payment Terms
+                </td>
+
+                <td>
+                    <?= !empty($po->payment_term)
+                        ? $po->payment_term
+                        : '-' ?>
+                </td>
+
+            </tr>
+
+
+            <tr>
+
+                <td>
+                    Delivery Terms
+                </td>
+
+                <td>
+                    <?= !empty($po->delivery_term)
+                        ? $po->delivery_term
+                        : '-' ?>
+                </td>
+
+            </tr>
+
+
+            <tr>
+
+                <td>
+                    Other Conditions
+                </td>
+
+                <td>
+                    <?= !empty($po->terms_and_condition)
+                        ? $po->terms_and_condition
+                        : '-' ?>
+                </td>
+
+            </tr>
+
+
+            <tr>
+
+                <td>
+                    Remarks
+                </td>
+
+                <td>
+                    <?= !empty($po->remarks)
+                        ? $po->remarks
+                        : '-' ?>
+                </td>
+
+            </tr>
+
+        </table>
+
+
+        <!-- =========================================================
+         APPROVALS / SIGNATURES
+    ========================================================== -->
+
+        <table class="approval-table">
+
+            <tr>
+
+                <!-- PREPARED BY -->
+                <td style="text-align:left;">
+
+                    <div class="approval-title">
+                        Prepared By:
+                    </div>
+
+                    <?php if (!empty($prepared_signature)) { ?>
+
+                        <img
+                            src="<?= base_url('public/employee/' . $prepared_signature) ?>"
+                            class="signature">
+
+                    <?php } ?>
+
+                    <div class="approval-name">
+                        <?= htmlspecialchars($prepared_by_name ?? '') ?>
+                    </div>
+
+                </td>
+
+
+                <!-- CHECKED BY -->
+                <td style="text-align:center;">
+
+                    <div class="approval-title">
+                        Checked By:
+                    </div>
+
+                    <?php if (!empty($checked_signature)) { ?>
+
+                        <img
+                            src="<?= base_url('public/employee/' . $checked_signature) ?>"
+                            class="signature"
+                            style="margin-left:auto;margin-right:auto;">
+
+                    <?php } ?>
+
+                    <div class="approval-name">
+                        <?= htmlspecialchars($checked_by_name ?? '') ?>
+                    </div>
+
+                </td>
+
+
+                <!-- APPROVED BY -->
+                <td style="text-align:center;">
+
+                    <div class="approval-title">
+                        Approved By:
+                    </div>
+
+                    <?php if (!empty($approved_signature)) { ?>
+
+                        <img
+                            src="<?= base_url('public/employee/' . $approved_signature) ?>"
+                            class="signature"
+                            style="margin-left:auto;margin-right:auto;">
+
+                    <?php } ?>
+
+                    <div class="approval-name">
+                        <?= htmlspecialchars($approved_by_name ?? '') ?>
+                    </div>
+
+                </td>
+
+
+                <!-- STAMP -->
+                <td style="text-align:right;">
+
+                    <?php if (!empty($branch_stamp)) { ?>
+
+                        <?php
+
+                        $path = FCPATH . ltrim($branch_stamp, './');
+
+                        if (file_exists($path)) {
+
+                            $type = pathinfo($path, PATHINFO_EXTENSION);
+
+                            $data = file_get_contents($path);
+
+                            $base64 =
+                                'data:image/' .
+                                $type .
+                                ';base64,' .
+                                base64_encode($data);
+
+                        ?>
+
+                            <img
+                                src="<?= $base64 ?>"
+                                alt="Stamp"
+                                class="stamp">
+
+                        <?php } ?>
+
+                    <?php } ?>
+
+                </td>
+
+            </tr>
+
+        </table>
+
     </div>
+
+
+    <!-- =============================================================
+     COMPANY FOOTER
+============================================================== -->
+
+    <div class="page-footer">
+
+        <?php if (!empty($company['company_footer'])) { ?>
+
+            <img
+                src="<?= base_url($company['company_footer']) ?>"
+                alt="Company Footer">
+
+        <?php } ?>
+
+    </div>
+
+
 </body>
+
 </html>

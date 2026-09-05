@@ -542,14 +542,14 @@ class Inventory_model extends CI_Model
 
     public function insert_mi($data)
     {
-        $this->db->insert('material_issues', $data);
+        $this->db->insert('material_issue', $data);
         return $this->db->insert_id();
     }
 
 
     public function update_mi($mi_id, $data)
     {
-        $this->db->where('mi_id', $mi_id)->update('material_issues', $data);
+        $this->db->where('mi_id', $mi_id)->update('material_issue', $data);
     }
 
 
