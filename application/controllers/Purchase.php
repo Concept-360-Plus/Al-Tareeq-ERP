@@ -298,21 +298,31 @@ class Purchase extends CI_Controller
 
     function print_quote()
     {
-        $this->load->model('Company_model');
-        $user             = $this->session->userdata('user_id');
+        $this->load->model('Setup_model');
 
-        $quotation_id     = $this->uri->segment(3);
+        $quotation_id = $this->uri->segment(3);
+
+        // Purchase quotation master
+        $data['quote'] = $this->Purchase_Model->get_pur_qtn_master_by_id($quotation_id);
+
+        if (empty($data['quote'])) {
+            show_404();
+            return;
+        }
+
+        // Purchase quotation details
         $data['quote_tr'] = $this->Purchase_Model->get_pur_qtn_tr_by_id($quotation_id);
-        $data['quote']    = $this->Purchase_Model->get_pur_qtn_master_by_id($quotation_id);
 
-        $branch_id        = $data['quote'][0]->branch_id;
-        $branch_data      = $this->Company_model->get_branch_by_id($branch_id);
-        $data['branch_header'] = $branch_data->branch_header;
-        $data['branch_footer'] = $branch_data->branch_footer;
+        // Company details - same approach as Sales quotation
+        $data['company'] = $this->Setup_model->get_company_details();
 
-        $this->load->view('purchase/print/quotation_print.php', $data);
-        // }
+        // Load print view
+        $this->load->view(
+            'purchase/print/quotation_print.php',
+            $data
+        );
     }
+
     function delete_quote($quote_id)
     {
         $user = $this->session->userdata('user_id');
@@ -478,6 +488,9 @@ class Purchase extends CI_Controller
     {
         $user = $this->session->userdata('user_id');
 
+        // -----------------------------------------
+        // Access Check
+        // -----------------------------------------
         if (!has_view_access($user, 'Purchase/purchase_order_list')) {
             $data['title'] = 'Access Denied';
             $data['main_content'] = 'errors/access_control.php';
@@ -485,98 +498,209 @@ class Purchase extends CI_Controller
             return;
         }
 
-        $this->load->model('Company_model');
-        $user = $this->session->userdata('user_id');
+        // -----------------------------------------
+        // Validate PO Type
+        // -----------------------------------------
+        if (!in_array((int)$po_type, [1, 2], true)) {
+            show_error('Invalid Purchase Order Type');
+            return;
+        }
 
-        // 1. Get PO Master + Products based on type
-        if ($po_type == 1) { // PO via quotation
+        // -----------------------------------------
+        // Models
+        // -----------------------------------------
+        $this->load->model('Company_model');
+
+        // -----------------------------------------
+        // Get PO Master
+        // -----------------------------------------
+        if ((int)$po_type === 1) {
+            // PO created from Purchase Quotation
             $po_master = $this->Purchase_Model->get_po_master_by_id($po_id);
-        } elseif ($po_type == 2) { // Direct PO
+        } else {
+            // Direct PO
             $po_master = $this->Purchase_Model->get_po_direct_master_by_id($po_id);
         }
-        // echo "<pre>";print_r($po_master);exit;
+
+        // Validate PO
+        if (empty($po_master)) {
+            show_404();
+            return;
+        }
+
+        $po = $po_master[0];
+
+        // -----------------------------------------
+        // Get PO Transaction Details
+        // -----------------------------------------
         $po_tr = $this->Purchase_Model->get_po_tr_by_id($po_id);
-        $this->load->model('Company_model');
-        $prepared_by_id = $po_master[0]->prepared_by ?? null;
-        $checked_by_id = $po_master[0]->checked_by ?? null;
-        $approved_by_id = $po_master[0]->approved_by ?? null;
+
+        // -----------------------------------------
+        // Employee / Approval Details
+        // -----------------------------------------
+        $prepared_by_id = $po->prepared_by ?? null;
+        $checked_by_id  = $po->checked_by ?? null;
+        $approved_by_id = $po->approved_by ?? null;
 
         $prepared_by_name = '';
-        $checked_by_name = '';
+        $checked_by_name  = '';
         $approved_by_name = '';
+
         $prepared_signature = '';
-        $checked_signature = '';
+        $checked_signature  = '';
         $approved_signature = '';
 
+        // Prepared By
         if (!empty($prepared_by_id)) {
-            $prepared_emp = $this->Company_model->get_employee_by_id($prepared_by_id);
-            $prepared_by_name = $prepared_emp->employee_name ?? '';
-            $prepared_signature = $prepared_emp->signature_file ?? '';
-        }
-        if (!empty($checked_by_id)) {
-            $checked_emp = $this->Company_model->get_employee_by_id($checked_by_id);
-            $checked_by_name = $checked_emp->employee_name ?? '';
-            $checked_signature = $checked_emp->signature_file ?? '';
-        }
-        if (!empty($approved_by_id)) {
-            $approved_emp = $this->Company_model->get_employee_by_id($approved_by_id);
-            $approved_by_name = $approved_emp->employee_name ?? '';
-            $approved_signature = $approved_emp->signature_file ?? '';
-        }
-        // 2. Get Branch Details (join branch_master in model if needed)
-        $branch_id = $po_master[0]->branch_id;
-        $branch = $this->Setup_model->get_branch_by_id($branch_id); // create this model function if not exists
 
-        // 3. Prepare data for view
-        $data['po'] = $po_master[0];
+            $prepared_emp = $this->Company_model->get_employee_by_id($prepared_by_id);
+
+            if ($prepared_emp) {
+                $prepared_by_name = $prepared_emp->employee_name ?? '';
+                $prepared_signature = $prepared_emp->signature_file ?? '';
+            }
+        }
+
+        // Checked By
+        if (!empty($checked_by_id)) {
+
+            $checked_emp = $this->Company_model->get_employee_by_id($checked_by_id);
+
+            if ($checked_emp) {
+                $checked_by_name = $checked_emp->employee_name ?? '';
+                $checked_signature = $checked_emp->signature_file ?? '';
+            }
+        }
+
+        // Approved By
+        if (!empty($approved_by_id)) {
+
+            $approved_emp = $this->Company_model->get_employee_by_id($approved_by_id);
+
+            if ($approved_emp) {
+                $approved_by_name = $approved_emp->employee_name ?? '';
+                $approved_signature = $approved_emp->signature_file ?? '';
+            }
+        }
+
+        // -----------------------------------------
+        // Branch Details
+        // IMPORTANT:
+        // Use Company_model here
+        // -----------------------------------------
+        $branch_id = $po->branch_id ?? null;
+
+        if (empty($branch_id)) {
+            show_error('Branch is not assigned to this Purchase Order.');
+            return;
+        }
+
+        $branch = $this->Setup_model->get_branch_by_id($branch_id);
+
+        if (empty($branch)) {
+            show_error('Branch details not found for this Purchase Order.');
+            return;
+        }
+
+        // -----------------------------------------
+        // Prepare View Data
+        // -----------------------------------------
+        $data['po']    = $po;
         $data['po_tr'] = $po_tr;
 
-        $data['branch_id']       = $branch->branch_id;
-        $data['branch_name']     = $branch->branch_name;
-        $data['branch_header']   = $branch->branch_header;
-        $data['branch_footer']   = $branch->branch_footer;
-        $data['branch_logo']     = $branch->branch_logo;
-        $data['branch_address']  = $branch->branch_address;
-        $data['branch_location'] = $branch->branch_location;
-        $data['branch_trn']      = $branch->branch_trn;
-        $data['branch_web']      = $branch->branch_web;
-        $data['branch_email']    = $branch->branch_email;
-        $data['branch_contact']  = $branch->branch_contact;
-        $data['branch_manager']  = $branch->branch_manager;
-        $data['branch_stamp']  = $branch->branch_stamp;
+        // Branch
+        $data['branch_id']       = $branch->branch_id ?? '';
+        $data['branch_name']     = $branch->branch_name ?? '';
+        $data['branch_header']   = $branch->branch_header ?? '';
+        $data['branch_footer']   = $branch->branch_footer ?? '';
+        $data['branch_logo']     = $branch->branch_logo ?? '';
+        $data['branch_address']  = $branch->branch_address ?? '';
+        $data['branch_location'] = $branch->branch_location ?? '';
+        $data['branch_trn']      = $branch->branch_trn ?? '';
+        $data['branch_web']      = $branch->branch_web ?? '';
+        $data['branch_email']    = $branch->branch_email ?? '';
+        $data['branch_contact']  = $branch->branch_contact ?? '';
+        $data['branch_manager']  = $branch->branch_manager ?? '';
+        $data['branch_stamp']    = $branch->branch_stamp ?? '';
+        $this->load->model('Setup_model');
 
-        $data['prepared_by_name'] = $prepared_by_name;
-        $data['checked_by_name'] = $checked_by_name;
-        $data['approved_by_name'] = $approved_by_name;
-        $data['prepared_signature'] = $prepared_signature ?? '';
-        $data['checked_signature'] = $checked_signature ?? '';
-        $data['approved_signature'] = $approved_signature ?? '';
+        $data['company'] = $this->Setup_model->get_company_details();
 
-        // echo "<pre>";print_r($data);exit;
+        // Employee approvals
+        $data['prepared_by_name']  = $prepared_by_name;
+        $data['checked_by_name']   = $checked_by_name;
+        $data['approved_by_name']  = $approved_by_name;
 
-        // 4. Dompdf Config
-        $options = new \Dompdf\Options();
-        $options->set('isHtml5ParserEnabled', true);
-        $options->set('isRemoteEnabled', true);
-        $options->set('chroot', realpath('C:/xampp/htdocs/aladel_erp/public/'));
-        $dompdf = new \Dompdf\Dompdf($options);
+        $data['prepared_signature'] = $prepared_signature;
+        $data['checked_signature']  = $checked_signature;
+        $data['approved_signature'] = $approved_signature;
 
-        $data['headerPath'] = base_url(ltrim($data['branch_header'], '/'));
-        $data['footerPath'] = base_url(ltrim($data['branch_footer'], '/'));
-        // echo "<pre>";
-        // print_r($data);exit;
-        if ($po_type == 1) {
-            $html = $this->load->view('purchase/print/po_print.php', $data, true);
-        } elseif ($po_type == 2) {
-            $html = $this->load->view('purchase/print/po_direct_print.php', $data, true);
+        // -----------------------------------------
+        // Header / Footer Paths
+        // -----------------------------------------
+        $data['headerPath'] = '';
+
+        if (!empty($data['branch_header'])) {
+            $data['headerPath'] = base_url(
+                ltrim(str_replace('./', '', $data['branch_header']), '/')
+            );
         }
 
+        $data['footerPath'] = '';
 
-        // 6. Generate PDF
+        if (!empty($data['branch_footer'])) {
+            $data['footerPath'] = base_url(
+                ltrim(str_replace('./', '', $data['branch_footer']), '/')
+            );
+        }
+
+        // -----------------------------------------
+        // Dompdf
+        // -----------------------------------------
+        $options = new \Dompdf\Options();
+
+        $options->set('isHtml5ParserEnabled', true);
+        $options->set('isRemoteEnabled', true);
+
+        // IMPORTANT:
+        // Do NOT use the old Windows path:
+        // C:/xampp/htdocs/aladel_erp/public/
+        //
+        // This application is running on Linux server.
+        $options->set('chroot', FCPATH);
+
+        $dompdf = new \Dompdf\Dompdf($options);
+
+        // -----------------------------------------
+        // Load Correct PO Print View
+        // -----------------------------------------
+        if ((int)$po_type === 1) {
+
+            $html = $this->load->view(
+                'purchase/print/po_print.php',
+                $data,
+                true
+            );
+        } else {
+
+            $html = $this->load->view(
+                'purchase/print/po_direct_print.php',
+                $data,
+                true
+            );
+        }
+
+        // -----------------------------------------
+        // Generate PDF
+        // -----------------------------------------
         $dompdf->loadHtml($html);
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();
-        $dompdf->stream("purchase_order_$po_id.pdf", array("Attachment" => 0));
+
+        $dompdf->stream(
+            "purchase_order_$po_id.pdf",
+            array("Attachment" => 0)
+        );
     }
 
     function approve_po()
@@ -785,20 +909,14 @@ class Purchase extends CI_Controller
     function print_grn()
     {
         $user = $this->session->userdata('user_id');
-        // if(!has_view_access($user,'Purchase/purchase_grn_list')){
-        //     $data['title'] = 'Access Denied';
-        //     $data['main_content']='errors/access_control.php';
-        //     $this->load->view('includes/template',$data);
-        // }
-        // else{
         $grn_id = $this->uri->segment('3');
         $data['grn_tr'] = $this->Purchase_Model->get_grn_tr_by_id($grn_id);
         $data['grn'] = $this->Purchase_Model->get_grn_master_by_id($grn_id);
-        // echo '<pre>';print_r($data);exit;
+
+        // Company details for print header/footer
+        $this->load->model('Setup_model');
+        $data['company'] = $this->Setup_model->get_company_details();
         $this->load->view('purchase/print/grn_print.php', $data);
-
-
-        // }
     }
 
     function print_grn_barcode()

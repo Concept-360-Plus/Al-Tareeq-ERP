@@ -1,202 +1,1110 @@
+<!DOCTYPE html>
 <html>
 
 <head>
-    <title>
-        Quotation
-    </title>
+
+    <title>Supplier Quotation</title>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0 5px;
+            font-family: Arial, sans-serif;
+            font-size: 13px;
+            color: #000;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        table th,
+        table td {
+            border: 1px solid #000;
+            padding: 8px;
+        }
+
+        .no-border,
+        .no-border td,
+        .no-border th {
+            border: none !important;
+        }
+
+        .header-table td {
+            border: none !important;
+            padding: 0;
+        }
+
+        .title {
+            font-size: 22px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            border-bottom: 2px solid #111;
+            padding-bottom: 4px;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .info-table td {
+            border: none !important;
+            padding: 2px 0;
+            vertical-align: top;
+        }
+
+        .info-label {
+            font-weight: bold;
+        }
+
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 25px;
+            font-size: 13px;
+        }
+
+        .items-table th {
+            background-color: #f7f7f7;
+            border-top: 1px solid #ddd;
+            border-bottom: 2px solid #ddd;
+            padding: 8px 5px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .items-table td {
+            border-left: 1px solid #000;
+            border-right: 1px solid #000;
+            border-top: none;
+            border-bottom: 1px solid #eee;
+            padding: 8px 6px;
+            vertical-align: top;
+        }
+
+        .items-table tbody tr:last-child td {
+            border-bottom: 1px solid #000;
+        }
+
+        .summary-wrapper {
+            width: 100%;
+            margin-top: 15px;
+        }
+
+        .summary-wrapper>tbody>tr>td {
+            border: none !important;
+            padding: 0;
+        }
+
+        .summary-table {
+            width: 280px;
+            margin-left: auto;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .summary-table td {
+            padding: 6px 0;
+            border: none;
+            border-bottom: 1px solid #eee;
+        }
+
+        .summary-label {
+            font-weight: bold;
+            text-align: left;
+        }
+
+        .summary-value {
+            text-align: right;
+        }
+
+        .grand-total td {
+            border-bottom: 2px double #111 !important;
+            padding: 8px 0;
+            font-size: 15px;
+            font-weight: bold;
+        }
+
+        .terms-section {
+            width: 100%;
+            margin-top: 20px;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .terms-section table td {
+            border: none !important;
+            padding: 1px 0;
+            vertical-align: top;
+        }
+
+        .terms-title {
+            font-weight: bold;
+            text-decoration: underline;
+            margin-bottom: 4px;
+        }
+
+        .signature-table td {
+            border: none !important;
+            padding: 0;
+        }
+
+        .footer {
+            width: 100%;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .footer img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .barcode-container {
+            display: inline-block;
+            text-align: right;
+        }
+
+        @media print {
+
+            .print-btn {
+                display: none;
+            }
+
+            @page {
+                margin: 8mm;
+            }
+
+            body {
+                margin: 0;
+            }
+
+        }
+    </style>
+
 </head>
 
-<body style="margin-left: 5px; margin-top:5px; font-family:Arial;font-size: 12px;text-align:center">
-    <table width=100% style='border: 0'>
-        <thead>
+
+<body>
+
+
+    <!-- =========================================================
+     HEADER
+========================================================= -->
+
+    <table class="header-table" style="width:100%; border-collapse:collapse; border:none;">
+
+        <tr>
+
+            <!-- LEFT : COMPANY LOGO -->
+            <td width="55%"
+                style="vertical-align:top; border:none; padding:0;">
+
+                <?php if (!empty($company['company_logo'])) { ?>
+
+                    <img
+                        src="<?= base_url($company['company_logo']) ?>"
+                        alt="Company Logo"
+                        style="
+                        width:300px;
+                        height:auto;
+                        max-height:150px;
+                        object-fit:contain;
+                        display:block;
+                    ">
+
+                <?php } ?>
+
+            </td>
+
+
+            <!-- RIGHT : QR / TRN -->
+            <td width="45%"
+                style="
+                text-align:right;
+                vertical-align:top;
+                border:none;
+                padding:0;
+            ">
+
+                <div class="barcode-container">
+
+                    <img
+                        src="<?= base_url('uploads/company/barcode.png') ?>"
+                        alt="QR Code"
+                        style="
+                        height:70px;
+                        width:100px;
+                        max-width:350px;
+                        display:block;
+                        margin-left:auto;
+                    ">
+
+                    <div style="
+                    font-family:Arial,sans-serif;
+                    font-size:12px;
+                    color:#333;
+                    margin-top:5px;
+                    font-weight:bold;
+                    text-align:right;
+                ">
+
+                        TRN:
+                        <?= !empty($company['company_trn'])
+                            ? $company['company_trn']
+                            : '' ?>
+
+                    </div>
+
+                </div>
+
+            </td>
+
+        </tr>
+
+    </table>
+
+
+
+    <!-- =========================================================
+     SUPPLIER + DOCUMENT INFORMATION
+========================================================= -->
+
+    <div style="
+    width:100%;
+    margin-top:20px;
+    font-family:Arial,sans-serif;
+    font-size:13px;
+    line-height:1.6;
+    color:#333;
+">
+
+        <table style="
+        width:100%;
+        border-collapse:collapse;
+        border:none;
+    ">
+
             <tr>
-                <th>
-                    <img align="left" src="<?php echo base_url($branch_header); ?>" alt="Header Image" width="50%">
+
+
+                <!-- =================================================
+                 LEFT : SUPPLIER INFORMATION
+            ================================================== -->
+
+                <td style="
+                width:55%;
+                vertical-align:top;
+                border:none;
+                padding:0;
+            ">
+
+                    <table class="info-table"
+                        style="
+                           width:100%;
+                           border-collapse:collapse;
+                           border:none;
+                       ">
+
+                        <!-- Supplier Code -->
+
+                        <?php if (!empty($quote[0]->supplier_code)) { ?>
+
+                            <tr>
+
+                                <td style="
+                            width:110px;
+                            font-weight:bold;
+                            padding:2px 0;
+                            border:none;
+                        ">
+                                    Supplier ID
+                                </td>
+
+                                <td style="
+                            padding:2px 0;
+                            border:none;
+                        ">
+                                    : <?= $quote[0]->supplier_code ?>
+                                </td>
+
+                            </tr>
+
+                        <?php } ?>
+
+
+                        <!-- Supplier Name -->
+
+                        <tr>
+
+                            <td style="
+                            width:110px;
+                            font-weight:bold;
+                            padding:2px 0;
+                            border:none;
+                            vertical-align:top;
+                        ">
+                                Name
+                            </td>
+
+                            <td style="
+                            padding:2px 0;
+                            border:none;
+                            vertical-align:top;
+                        ">
+                                :
+                                <?= !empty($quote[0]->supplier_name)
+                                    ? $quote[0]->supplier_name
+                                    : '' ?>
+                            </td>
+
+                        </tr>
+
+
+                        <!-- Address -->
+
+                        <?php if (!empty($quote[0]->billing_address)) { ?>
+
+                            <tr>
+
+                                <td style="
+                            font-weight:bold;
+                            padding:2px 0;
+                            border:none;
+                            vertical-align:top;
+                        ">
+                                    Address
+                                </td>
+
+                                <td style="
+                            padding:2px 0;
+                            border:none;
+                            vertical-align:top;
+                        ">
+                                    :
+                                    <?= nl2br($quote[0]->billing_address) ?>
+                                </td>
+
+                            </tr>
+
+                        <?php } ?>
+
+
+                        <!-- Contact -->
+
+                        <?php if (!empty($quote[0]->contact_number)) { ?>
+
+                            <tr>
+
+                                <td style="
+                            font-weight:bold;
+                            padding:2px 0;
+                            border:none;
+                        ">
+                                    Contact No
+                                </td>
+
+                                <td style="
+                            padding:2px 0;
+                            border:none;
+                        ">
+                                    :
+                                    <?= $quote[0]->contact_number ?>
+                                </td>
+
+                            </tr>
+
+                        <?php } ?>
+
+
+                        <!-- Email -->
+
+                        <?php if (!empty($quote[0]->supplier_email)) { ?>
+
+                            <tr>
+
+                                <td style="
+                            font-weight:bold;
+                            padding:2px 0;
+                            border:none;
+                        ">
+                                    Email
+                                </td>
+
+                                <td style="
+                            padding:2px 0;
+                            border:none;
+                        ">
+                                    :
+                                    <?= $quote[0]->supplier_email ?>
+                                </td>
+
+                            </tr>
+
+                        <?php } ?>
+
+                    </table>
+
+                </td>
+
+
+
+                <!-- =================================================
+                 RIGHT : DOCUMENT INFORMATION
+            ================================================== -->
+
+                <td style="
+                width:45%;
+                vertical-align:top;
+                border:none;
+                padding:0;
+            ">
+
+                    <table style="
+                    width:280px;
+                    margin-left:auto;
+                    margin-top:-15px;
+                    border-collapse:collapse;
+                    border:none;
+                ">
+
+
+                        <!-- TITLE -->
+
+                        <tr>
+
+                            <td colspan="2"
+                                style="
+                                border:none;
+                                padding-bottom:12px;
+                            ">
+
+                                <div class="title">
+                                    SUPPLIER QUOTATION
+                                </div>
+
+                            </td>
+
+                        </tr>
+
+
+                        <!-- DOCUMENT NUMBER -->
+
+                        <tr>
+
+                            <td style="
+                            width:110px;
+                            font-size:13px;
+                            font-weight:bold;
+                            padding:2px 0;
+                            border:none;
+                        ">
+                                Reference No
+                            </td>
+
+                            <td style="
+                            font-size:13px;
+                            padding:2px 0;
+                            border:none;
+                        ">
+                                :
+                                <?= !empty($quote[0]->quotation_code)
+                                    ? $quote[0]->quotation_code
+                                    : '' ?>
+                            </td>
+
+                        </tr>
+
+
+                        <!-- DATE -->
+
+                        <tr>
+
+                            <td style="
+                            font-size:13px;
+                            font-weight:bold;
+                            padding:2px 0;
+                            border:none;
+                        ">
+                                Date
+                            </td>
+
+                            <td style="
+                            font-size:13px;
+                            padding:2px 0;
+                            border:none;
+                        ">
+                                :
+
+                                <?php
+                                if (!empty($quote[0]->quotation_date)) {
+                                    echo date(
+                                        'd/m/Y',
+                                        strtotime($quote[0]->quotation_date)
+                                    );
+                                }
+                                ?>
+
+                            </td>
+
+                        </tr>
+
+
+                        <!-- SUPPLIER ID -->
+
+                        <tr>
+
+                            <td style="
+                            font-size:13px;
+                            font-weight:bold;
+                            padding:2px 0;
+                            border:none;
+                        ">
+                                Supplier ID
+                            </td>
+
+                            <td style="
+                            font-size:13px;
+                            padding:2px 0;
+                            border:none;
+                        ">
+                                :
+                                <?= !empty($quote[0]->supplier_code)
+                                    ? $quote[0]->supplier_code
+                                    : '' ?>
+                            </td>
+
+                        </tr>
+
+
+                    </table>
+
+                </td>
+
+            </tr>
+
+        </table>
+
+    </div>
+
+
+
+    <!-- =========================================================
+     ITEM DETAILS
+========================================================= -->
+
+    <table class="items-table">
+
+        <thead>
+
+            <tr>
+
+                <th width="5%">
+                    #
+                </th>
+
+                <th width="13%">
+                    Code
+                </th>
+
+                <th width="30%"
+                    style="text-align:left;">
+                    Item Description
+                </th>
+
+                <th width="9%">
+                    Qty
+                </th>
+
+                <th width="9%">
+                    Unit
+                </th>
+
+                <th width="12%"
+                    style="text-align:right;">
+                    Rate
+                </th>
+
+                <th width="10%"
+                    style="text-align:right;">
+                    Discount
+                </th>
+
+                <th width="12%"
+                    style="text-align:right;">
+                    Amount
                 </th>
 
             </tr>
+
         </thead>
-        <tbody id="table-body">
-            <tr class='calc'>
-                <td>
-                    <table cellpadding=5 width=95% style='font-size: 16px;text-align:center;border-top:1px solid #ccc;border-bottom:1px solid #ccc;'>
-                        <tr height='22px' style="">
-                            <td width=100% style="color:#000">Supplier Quotation</td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
-            <tr class='calc'>
-                <td>
-                    <table cellpadding=5 border=0 width=95% style=' border-collapse: collapse;border:0'>
-                        <tr>
-                            <td width='60%'>
-                                <table width=100% style='font-size: 12px;'>
-                                    <tr>
-                                        <td width=30%>Name</td>
-                                        <td>:</td>
-                                        <td width=70%><?php echo $quote[0]->supplier_name; ?></td>
-                                    </tr>
-
-                                    <tr>
-                                        <td width=30%>Address</td>
-                                        <td>:</td>
-                                        <td width=70%><?php echo $quote[0]->billing_address; ?></td>
-                                    </tr>
-                                    <tr>
-                                        <td width=30%>Contact No</td>
-                                        <td>:</td>
-                                        <td width=70%><?php echo $quote[0]->contact_number; ?></td>
-                                    </tr>
-                                    <tr>
-                                        <td width=30%>Email</td>
-                                        <td>:</td>
-                                        <td width=70%><?php echo $quote[0]->supplier_email; ?></td>
-                                    </tr>
-                                </table>
-                            </td>
-
-                            <td width='40%'>
-                                <table width=100% style='font-size: 12px;'>
-
-                                    <tr>
-                                        <td width=30%>Date:</td>
-                                        <td>:</td>
-                                        <td width=70%><?php echo $quote[0]->quotation_date; ?></td>
-                                    </tr>
-                                    <tr>
-                                        <td width=30%>Doc No:</td>
-                                        <td>:</td>
-                                        <td width=70%><?php echo $quote[0]->quotation_code; ?></td>
-                                    </tr>
-                                    <tr>
-                                        <td width=30%>Supplier ID:</td>
-                                        <td>:</td>
-                                        <td width=70%><?php echo $quote[0]->supplier_code; ?></td>
-                                    </tr>
-
-                                </table>
-                            </td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
-            <tr class='calc' height=5px style="background-color: #525453;">
-                <td></td>
-            </tr>
-            <tr class='calc'>
 
 
-            </tr>
-            <tr>
-                <td>
-                    <table cellpadding=10 width=100% style='font-size: 12px; border-collapse:collapse;border:1px solid'>
-                        <thead>
-                            <tr class='calc' style="background-color: #525453;color:#e8b41a">
-                                <td style="width:5%">Sl No</td>
-                                <td style="width:15%">Product Code</td>
-                                <td style="width:35%">Description</td>
-                                <td style="width:10%">Qty</td>
-                                <td style="width:10%">Unit</td>
-                                <td style="width:10%">Price</td>
-                                <td style="width:10%">Discount</td>
-                                <td style="width:10%">Total</td>
-                            </tr>
-                        </thead>
-                        <tbody style="background-color:#edebe4">
-                            <?php
-                            $sl_no = 1;
-                            $total_before_vat = 0;
-                            $total_discount = 0;
-                            $vat_amount = 0;
-                            $grand_total = 0;
-                            $sub_total = 0;
+        <tbody>
 
-                            foreach ($quote_tr as $detail):
-                                // $total_before_vat += $detail->price * $detail->quantity;
-                                // $total_discount += $detail->dis_amt;
-                                // $grand_total += $detail->total;
-                                $sub_total += $detail->total;
-                            endforeach;
+            <?php
 
-                            // Example VAT Calculation (adjust if VAT is calculated differently)
-                            // $vat_amount = $grand_total - ($total_before_vat - $total_discount);
-                            $vat_percent = $quote[0]->vat_percent;
-                            $vat_amount  = $quote[0]->vat_amt;
-                            $grand_total = $quote[0]->grand_total;
+            $sl_no = 1;
 
-                            foreach ($quote_tr as $detail): ?>
-                                <tr class='calc' style="font-weight:bold" valign='top'>
-                                    <td><?php echo $sl_no++; ?></td>
-                                    <td><?php echo $detail->product_code; ?></td>
-                                    <td><?php echo $detail->description; ?></td>
-                                    <td><?php echo number_format($detail->quantity, 2); ?></td>
-                                    <td><?php echo $detail->unit_name; ?></td>
-                                    <td><?php echo number_format($detail->price, 2); ?></td>
-                                    <td><?php echo number_format($detail->dis_amt, 2); ?></td>
-                                    <td><?php echo number_format($detail->total, 2); ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                            <!-- Totals Row -->
-                                <tr style="font-weight:bold;">
-                                    <td colspan="7" align="right">Sub Total</td>
-                                    <td><?php echo number_format($sub_total, 2); ?></td>
-                                </tr>
+            $sub_total = 0;
 
-                                <tr style="font-weight:bold;">
-                                    <td colspan="7" align="right">VAT (<?php echo $vat_percent; ?>%)</td>
-                                    <td><?php echo number_format($vat_amount, 2); ?></td>
-                                </tr>
+            if (!empty($quote_tr)) {
 
-                                <tr style="font-weight:bold; font-size:14px;">
-                                    <td colspan="7" align="right"><strong>Grand Total</strong></td>
-                                    <td><strong><?php echo number_format($grand_total, 2); ?></strong></td>
-                                </tr>
-                        </tbody>
-                    </table>
-                </td>
-            </tr>
-            <tr>
-                <td>
-                    <table cellpadding="8" width="100%"
-                        style="border-collapse:collapse; border:0; font-weight:bold; font-size:11px;">
+                foreach ($quote_tr as $detail) {
 
-                        <tr>
-                            <td width="22%" style="vertical-align:top;">PAYMENT TERMS</td>
-                            <td width="3%" style="vertical-align:top;">:</td>
-                            <td><?php echo $quote[0]->payment_term; ?></td>
-                        </tr>
+                    $sub_total += (float)$detail->total;
 
-                        <tr>
-                            <td style="vertical-align:top;">DELIVERY TERMS</td>
-                            <td style="vertical-align:top;">:</td>
-                            <td><?php echo $quote[0]->delivery_term; ?></td>
-                        </tr>
+            ?>
 
-                        <tr>
-                            <td style="vertical-align:top;">GENERAL TERMS</td>
-                            <td style="vertical-align:top;">:</td>
-                            <td><?php echo $quote[0]->general_term; ?></td>
-                        </tr>
+                    <tr>
 
-                        <tr>
-                            <td style="vertical-align:top;">VALIDITY</td>
-                            <td style="vertical-align:top;">:</td>
-                            <td><?php echo $quote[0]->validity; ?></td>
-                        </tr>
+                        <!-- SL NO -->
 
-                    </table>
-                </td>
-            </tr>
+                        <td style="text-align:center;">
+                            <?= $sl_no++ ?>
+                        </td>
 
 
+                        <!-- PRODUCT CODE -->
 
+                        <td style="text-align:left;">
+                            <?= !empty($detail->product_code)
+                                ? $detail->product_code
+                                : '' ?>
+                        </td>
+
+
+                        <!-- DESCRIPTION -->
+
+                        <td style="text-align:left;">
+
+                            <span style="
+                    font-weight:bold;
+                    color:#111;
+                ">
+
+                                <?= !empty($detail->description)
+                                    ? $detail->description
+                                    : '' ?>
+
+                            </span>
+
+                        </td>
+
+
+                        <!-- QTY -->
+
+                        <td style="text-align:center;">
+
+                            <?= number_format(
+                                (float)$detail->quantity,
+                                2
+                            ) ?>
+
+                        </td>
+
+
+                        <!-- UNIT -->
+
+                        <td style="text-align:center;">
+
+                            <?= !empty($detail->unit_name)
+                                ? $detail->unit_name
+                                : '' ?>
+
+                        </td>
+
+
+                        <!-- RATE -->
+
+                        <td style="text-align:right;">
+
+                            <?= number_format(
+                                (float)$detail->price,
+                                2
+                            ) ?>
+
+                        </td>
+
+
+                        <!-- DISCOUNT -->
+
+                        <td style="text-align:right;">
+
+                            <?= number_format(
+                                (float)$detail->dis_amt,
+                                2
+                            ) ?>
+
+                        </td>
+
+
+                        <!-- AMOUNT -->
+
+                        <td style="text-align:right;">
+
+                            <?= number_format(
+                                (float)$detail->total,
+                                2
+                            ) ?>
+
+                        </td>
+
+                    </tr>
+
+            <?php
+
+                }
+            }
+
+            ?>
 
         </tbody>
-        <tfoot class='footer'>
 
-        </tfoot>
     </table>
+
+
+
+    <!-- =========================================================
+     TOTAL SUMMARY
+========================================================= -->
+
+    <table class="summary-wrapper">
+
+        <tr>
+
+            <!-- LEFT SPACER -->
+
+            <td style="
+            width:50%;
+            border:none;
+        ">
+            </td>
+
+
+            <!-- RIGHT SUMMARY -->
+
+            <td style="
+            width:50%;
+            vertical-align:top;
+            border:none;
+            padding:0;
+        ">
+
+                <table class="summary-table">
+
+
+                    <!-- SUB TOTAL -->
+
+                    <tr>
+
+                        <td class="summary-label">
+                            Sub Total
+                        </td>
+
+                        <td class="summary-value">
+
+                            :
+                            <?= number_format(
+                                $sub_total,
+                                2
+                            ) ?>
+
+                        </td>
+
+                    </tr>
+
+
+                    <!-- VAT -->
+
+                    <tr>
+
+                        <td class="summary-label">
+
+                            VAT
+                            (<?= !empty($quote[0]->vat_percent)
+                                    ? $quote[0]->vat_percent
+                                    : '0' ?>%)
+
+                        </td>
+
+                        <td class="summary-value">
+
+                            :
+                            <?= number_format(
+                                (float)$quote[0]->vat_amt,
+                                2
+                            ) ?>
+
+                        </td>
+
+                    </tr>
+
+
+                    <!-- GRAND TOTAL -->
+
+                    <tr class="grand-total">
+
+                        <td class="summary-label">
+                            Grand Total
+                        </td>
+
+                        <td class="summary-value">
+
+                            :
+                            <?= number_format(
+                                (float)$quote[0]->grand_total,
+                                2
+                            ) ?>
+
+                        </td>
+
+                    </tr>
+
+
+                </table>
+
+            </td>
+
+        </tr>
+
+    </table>
+
+
+
+    <!-- =========================================================
+     TERMS & CONDITIONS
+========================================================= -->
+
+    <div class="terms-section">
+
+        <div class="terms-title">
+            Purchase Terms :-
+        </div>
+
+
+        <table style="
+        width:100%;
+        border-collapse:collapse;
+        border:none;
+    ">
+
+
+            <!-- PAYMENT -->
+
+            <tr>
+
+                <td style="
+                width:150px;
+                border:none;
+                padding:1px 0;
+                vertical-align:top;
+            ">
+                    Payment :-
+                </td>
+
+                <td style="
+                border:none;
+                padding:1px 0;
+            ">
+
+                    <?php
+                    echo !empty($quote[0]->payment_term)
+                        ? nl2br($quote[0]->payment_term)
+                        : '---';
+                    ?>
+
+                </td>
+
+            </tr>
+
+
+            <!-- VALIDITY -->
+
+            <tr>
+
+                <td style="
+                border:none;
+                padding:1px 0;
+                vertical-align:top;
+            ">
+                    Validity :-
+                </td>
+
+                <td style="
+                border:none;
+                padding:1px 0;
+            ">
+
+                    <?php
+                    echo !empty($quote[0]->validity)
+                        ? nl2br($quote[0]->validity)
+                        : '---';
+                    ?>
+
+                </td>
+
+            </tr>
+
+
+            <!-- DELIVERY -->
+
+            <tr>
+
+                <td style="
+                border:none;
+                padding:1px 0;
+                vertical-align:top;
+            ">
+                    Delivery :-
+                </td>
+
+                <td style="
+                border:none;
+                padding:1px 0;
+            ">
+
+                    <?php
+                    echo !empty($quote[0]->delivery_term)
+                        ? nl2br($quote[0]->delivery_term)
+                        : '---';
+                    ?>
+
+                </td>
+
+            </tr>
+
+
+            <!-- GENERAL TERMS -->
+
+            <?php if (!empty($quote[0]->general_term)) { ?>
+
+                <tr>
+
+                    <td style="
+                border:none;
+                padding:1px 0;
+                vertical-align:top;
+            ">
+                        General Terms :-
+                    </td>
+
+                    <td style="
+                border:none;
+                padding:1px 0;
+            ">
+
+                        <?= nl2br($quote[0]->general_term) ?>
+
+                    </td>
+
+                </tr>
+
+            <?php } ?>
+
+
+        </table>
+
+    </div>
+
+
+
+    <br><br>
+
+
+
+    <!-- =========================================================
+     PREPARED / APPROVED
+========================================================= -->
+
+    <table class="signature-table"
+        style="
+           width:100%;
+           border-collapse:collapse;
+           margin-top:15px;
+       ">
+
+        <tr>
+
+
+            <!-- PREPARED BY -->
+
+            <td width="50%"
+                style="
+                border:none;
+                text-align:left;
+                vertical-align:top;
+            ">
+
+                Prepared By:
+
+                <br><br><br>
+
+                ____________________
+
+            </td>
+
+
+            <!-- APPROVED BY -->
+
+            <td width="50%"
+                style="
+                border:none;
+                text-align:right;
+                vertical-align:top;
+            ">
+
+                Approved By:
+
+                <br><br><br>
+
+                ____________________
+
+            </td>
+
+
+        </tr>
+
+    </table>
+
+
+
+    <!-- =========================================================
+     FOOTER
+========================================================= -->
+
+    <div class="footer">
+
+        <?php if (!empty($company['company_footer'])) { ?>
+
+            <img
+                src="<?= base_url($company['company_footer']) ?>"
+                alt="Company Footer">
+
+        <?php } ?>
+
+    </div>
+
+
+
 </body>
 
 </html>
+
+
+
+<!-- =========================================================
+     AUTO PRINT
+========================================================= -->
+
+<script type="text/javascript">
+    window.addEventListener('DOMContentLoaded', function() {
+
+        setTimeout(function() {
+
+            window.print();
+
+        }, 500);
+
+    });
+</script>

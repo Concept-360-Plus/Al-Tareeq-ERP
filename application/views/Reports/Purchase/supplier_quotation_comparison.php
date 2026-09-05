@@ -3,48 +3,12 @@
     <section class="content">
 
         <!-- =====================================================
-             PAGE HEADER
+             FILTER
         ====================================================== -->
 
-        <div class="row">
+        <div class="card">
 
-            <div class="col-md-12">
-
-                <h1 style="margin-top:10px;">
-                    Supplier Quotation Comparison
-                </h1>
-
-                <ol class="breadcrumb">
-
-                    <li>
-                        <a href="<?php echo base_url(); ?>">
-                            <i class="fa fa-dashboard"></i>
-                            Home
-                        </a>
-                    </li>
-
-                    <li>
-                        Reports
-                    </li>
-
-                    <li class="active">
-                        Supplier Quotation Comparison
-                    </li>
-
-                </ol>
-
-            </div>
-
-        </div>
-
-
-        <!-- =====================================================
-             FILTER CARD
-        ====================================================== -->
-
-        <div class="box box-default">
-
-            <div class="box-body">
+            <div class="card-body">
 
                 <form
                     id="quotationComparisonForm"
@@ -54,10 +18,7 @@
 
                     <div class="row">
 
-                        <!-- =========================
-                             FROM DATE
-                        ========================== -->
-
+                        <!-- FROM DATE -->
                         <div class="col-md-3">
 
                             <label>
@@ -75,15 +36,12 @@
                                             ? date('Y-m-d', strtotime($from))
                                             : date('Y-m-01');
                                         ?>"
-                                required>
+                                required />
 
                         </div>
 
 
-                        <!-- =========================
-                             TO DATE
-                        ========================== -->
-
+                        <!-- TO DATE -->
                         <div class="col-md-3">
 
                             <label>
@@ -101,21 +59,36 @@
                                             ? date('Y-m-d', strtotime($to))
                                             : date('Y-m-d');
                                         ?>"
-                                required>
+                                required />
 
                         </div>
 
 
-                        <!-- =========================
-                             RFQ SELECTION
-                        ========================== -->
-
+                        <!-- RFQ SELECTION -->
                         <div class="col-md-6">
 
                             <label>
                                 Select RFQs
                                 <span class="text-danger">*</span>
                             </label>
+
+                            <?php
+                            $selected_rfqs = array();
+
+                            if (!empty($selected_rfqs)) {
+
+                                if (is_array($selected_rfqs)) {
+
+                                    $selected_rfqs = $selected_rfqs;
+                                } else {
+
+                                    $selected_rfqs = explode(
+                                        ',',
+                                        $selected_rfqs
+                                    );
+                                }
+                            }
+                            ?>
 
                             <select
                                 name="rfq_ids[]"
@@ -125,29 +98,9 @@
                                 data-placeholder="Select RFQs"
                                 style="width:100%;">
 
-                                <?php
+                                <?php if (!empty($rfq_list)) { ?>
 
-                                $selected_rfqs = array();
-
-                                if (!empty($rfq_ids)) {
-
-                                    if (is_array($rfq_ids)) {
-
-                                        $selected_rfqs = $rfq_ids;
-                                    } else {
-
-                                        $selected_rfqs = explode(
-                                            ',',
-                                            $rfq_ids
-                                        );
-                                    }
-                                }
-
-                                ?>
-
-                                <?php if (!empty($rfq_records)) { ?>
-
-                                    <?php foreach ($rfq_records as $rfq) { ?>
+                                    <?php foreach ($rfq_list as $rfq) { ?>
 
                                         <option
                                             value="<?php echo $rfq->rfq_id; ?>"
@@ -199,7 +152,7 @@
                          ACTION BUTTONS
                     ================================================== -->
 
-                    <div class="row" style="margin-top:20px;">
+                    <div class="row mt-3">
 
                         <div class="col-md-12">
 
@@ -253,14 +206,14 @@
 
         <?php if (isset($records)) { ?>
 
-            <div class="box box-default">
+            <div class="card mt-3">
 
-                <div class="box-body">
+                <div class="card-body">
 
                     <?php if (!empty($records)) { ?>
 
-
                         <?php
+
                         /*
                          * =================================================
                          * BUILD SUPPLIER LIST
@@ -271,6 +224,12 @@
 
                         foreach ($records as $row) {
 
+                            /*
+                             * One quotation = one comparison column.
+                             *
+                             * This is important because two different
+                             * RFQs can belong to the same supplier.
+                             */
                             $supplier_key =
                                 !empty($row->quotation_id)
                                 ? $row->quotation_id
@@ -454,37 +413,21 @@
 
                                     <tr>
 
-                                        <th>
-                                            Supplier
-                                        </th>
+                                        <th>Supplier</th>
 
-                                        <th>
-                                            RFQ
-                                        </th>
+                                        <th>RFQ</th>
 
-                                        <th>
-                                            Quotation
-                                        </th>
+                                        <th>Quotation</th>
 
-                                        <th>
-                                            Revision
-                                        </th>
+                                        <th>Revision</th>
 
-                                        <th>
-                                            Subtotal
-                                        </th>
+                                        <th>Subtotal</th>
 
-                                        <th>
-                                            VAT
-                                        </th>
+                                        <th>VAT</th>
 
-                                        <th>
-                                            Grand Total
-                                        </th>
+                                        <th>Grand Total</th>
 
-                                        <th>
-                                            PO Status
-                                        </th>
+                                        <th>PO Status</th>
 
                                     </tr>
 
@@ -500,7 +443,6 @@
                                         <tr>
 
                                             <td>
-
                                                 <?php
                                                 echo !empty($supplier['supplier_name'])
                                                     ? html_escape(
@@ -508,11 +450,9 @@
                                                     )
                                                     : '-';
                                                 ?>
-
                                             </td>
 
                                             <td>
-
                                                 <?php
                                                 echo !empty($supplier['rfq_code'])
                                                     ? html_escape(
@@ -520,11 +460,9 @@
                                                     )
                                                     : '-';
                                                 ?>
-
                                             </td>
 
                                             <td>
-
                                                 <?php
                                                 echo !empty($supplier['quotation_code'])
                                                     ? html_escape(
@@ -532,11 +470,9 @@
                                                     )
                                                     : '-';
                                                 ?>
-
                                             </td>
 
                                             <td class="text-center">
-
                                                 <?php
                                                 echo isset(
                                                     $supplier['revision']
@@ -544,44 +480,35 @@
                                                     ? $supplier['revision']
                                                     : '0';
                                                 ?>
-
                                             </td>
 
                                             <td class="text-right">
-
                                                 <?php
                                                 echo number_format(
                                                     (float)$supplier['subtotal'],
                                                     2
                                                 );
                                                 ?>
-
                                             </td>
 
                                             <td class="text-right">
-
                                                 <?php
                                                 echo number_format(
                                                     (float)$supplier['vat_amt'],
                                                     2
                                                 );
                                                 ?>
-
                                             </td>
 
                                             <td class="text-right">
-
                                                 <strong>
-
                                                     <?php
                                                     echo number_format(
                                                         (float)$supplier['grand_total'],
                                                         2
                                                     );
                                                     ?>
-
                                                 </strong>
-
                                             </td>
 
                                             <td class="text-center">
@@ -685,11 +612,8 @@
                                             as $supplier_key => $supplier
                                         ) { ?>
 
-                                            <th
-                                                class="text-center">
-
+                                            <th class="text-center">
                                                 Unit Price
-
                                             </th>
 
                                         <?php } ?>
@@ -701,9 +625,7 @@
 
                                 <tbody>
 
-                                    <?php
-                                    $sl = 1;
-                                    ?>
+                                    <?php $sl = 1; ?>
 
                                     <?php foreach (
                                         $products
@@ -753,15 +675,10 @@
                                         <tr>
 
                                             <td class="text-center">
-
-                                                <?php
-                                                echo $sl++;
-                                                ?>
-
+                                                <?php echo $sl++; ?>
                                             </td>
 
                                             <td>
-
                                                 <?php
                                                 echo !empty($product['product_code'])
                                                     ? html_escape(
@@ -769,11 +686,9 @@
                                                     )
                                                     : '-';
                                                 ?>
-
                                             </td>
 
                                             <td>
-
                                                 <?php
                                                 echo !empty($product['product_name'])
                                                     ? html_escape(
@@ -781,11 +696,9 @@
                                                     )
                                                     : '-';
                                                 ?>
-
                                             </td>
 
                                             <td class="text-center">
-
                                                 <?php
                                                 echo !empty($product['unit_name'])
                                                     ? html_escape(
@@ -793,18 +706,15 @@
                                                     )
                                                     : '-';
                                                 ?>
-
                                             </td>
 
                                             <td class="text-right">
-
                                                 <?php
                                                 echo number_format(
                                                     (float)$product['quantity'],
                                                     2
                                                 );
                                                 ?>
-
                                             </td>
 
 
@@ -865,9 +775,7 @@
 
                                                             <small
                                                                 style="font-weight:bold;">
-
                                                                 Lowest
-
                                                             </small>
 
                                                         <?php } ?>
@@ -916,8 +824,7 @@
 
                     <?php } else { ?>
 
-                        <table
-                            class="table table-bordered">
+                        <table class="table table-bordered">
 
                             <thead>
 
@@ -963,26 +870,23 @@
 
 <script>
     /* =========================================================
-   PRINT SUPPLIER QUOTATION COMPARISON
-========================================================= */
+       PRINT SUPPLIER QUOTATION COMPARISON
+    ========================================================= */
 
     function printSupplierQuotationComparison(event) {
+
         if (event) {
             event.preventDefault();
         }
 
-
         var fromDate =
             document.getElementById('from_date').value;
-
 
         var toDate =
             document.getElementById('to_date').value;
 
-
         var rfqIds =
             $('#rfq_ids').val();
-
 
         if (!rfqIds || rfqIds.length === 0) {
 
@@ -991,28 +895,23 @@
             return false;
         }
 
-
         var baseUrl =
             "<?php echo base_url(
                     'index.php/Reports/print_supplier_quotation_comparison'
                 ); ?>";
 
-
         var params =
             new URLSearchParams();
-
 
         params.append(
             'from_date',
             fromDate
         );
 
-
         params.append(
             'to_date',
             toDate
         );
-
 
         $.each(
             rfqIds,
@@ -1026,12 +925,10 @@
             }
         );
 
-
         window.open(
             baseUrl + '?' + params.toString(),
             '_blank'
         );
-
 
         return false;
     }
@@ -1042,22 +939,19 @@
     ========================================================= */
 
     function exportSupplierQuotationComparisonExcel(event) {
+
         if (event) {
             event.preventDefault();
         }
 
-
         var fromDate =
             document.getElementById('from_date').value;
-
 
         var toDate =
             document.getElementById('to_date').value;
 
-
         var rfqIds =
             $('#rfq_ids').val();
-
 
         if (!rfqIds || rfqIds.length === 0) {
 
@@ -1066,28 +960,23 @@
             return false;
         }
 
-
         var baseUrl =
             "<?php echo base_url(
                     'index.php/Reports/export_supplier_quotation_comparison_excel'
                 ); ?>";
 
-
         var params =
             new URLSearchParams();
-
 
         params.append(
             'from_date',
             fromDate
         );
 
-
         params.append(
             'to_date',
             toDate
         );
-
 
         $.each(
             rfqIds,
@@ -1101,10 +990,8 @@
             }
         );
 
-
         window.location.href =
             baseUrl + '?' + params.toString();
-
 
         return false;
     }

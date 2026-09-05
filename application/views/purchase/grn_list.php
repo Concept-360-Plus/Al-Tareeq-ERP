@@ -38,7 +38,7 @@
                                        <th>Warehouse</th>
                                        <th>Store</th>
                                        <th>Amount</th>
-                                       <th></th>
+                                       <th>Action</th>
                                    </tr>
                                </thead>
 
@@ -63,7 +63,7 @@
                                            <td><?php echo $row->store_name; ?></td>
                                            <td><?php echo $row->grand_total; ?></td>
                                            <td>
-                                               <a target="_blank" href="<?php echo base_url() . 'index.php/Purchase/print_grn/' . $row->grn_id . '/1'; ?>" style="margin-right:10px;">
+                                               <a target="_blank" href="<?php echo base_url() . 'index.php/Purchase/print_grn/' . $row->grn_id . '/1'; ?>" style="margin-right:5px;">
                                                    <i class="fa fa-print"></i>&nbsp;
                                                </a>
 

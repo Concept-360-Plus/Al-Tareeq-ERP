@@ -781,29 +781,16 @@ class Inventory extends CI_Controller
             ->get_stock_transfer_items($transfer_id);
 
 
-        $branch = $this->Setup_model->get_branch_by_id(1);
+        // Company details for common print header/footer
+        $this->load->model('Setup_model');
 
-        $data['headerPath'] = '';
+        $data['company'] = $this->Setup_model
+            ->get_company_details();
 
-        if (!empty($branch->branch_header)) {
 
-            $data['headerPath'] = base_url(
-                ltrim($branch->branch_header, '/')
-            );
-        }
-
-        $data['footerPath'] = '';
-
-        if (!empty($branch->branch_footer)) {
-
-            $data['footerPath'] = base_url(
-                ltrim($branch->branch_footer, '/')
-            );
-        }
-
-        $data['branch'] = $branch;
         $data['master'] = $master;
         $data['items']  = $items;
+
 
         $this->load->view(
             'Print/print_stock_transfer',
