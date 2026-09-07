@@ -231,11 +231,14 @@ class Purchase extends CI_Controller
             $this->load->view('includes/template', $data);
             return;
         }
+
         $this->load->model('Setup_model');
         $this->load->model('Company_model');
         $this->load->model('Project_model');
-        $quotation_id           = $this->uri->segment('3');
-        $data['view_only']      = $this->uri->segment('4');
+        $this->load->model('Purchase_Model');
+
+        $quotation_id = $this->uri->segment('3');
+        $data['view_only'] = $this->uri->segment('4');
 
         if ($data['view_only'] == 0) {
             $data['title'] = 'Edit Quotation';
@@ -243,24 +246,52 @@ class Purchase extends CI_Controller
             $data['title'] = 'View Quotation';
         }
 
-        //master
-        $data['records1']           = $this->Purchase_Model->get_pur_qtn_master_by_id($quotation_id);
-        $data['branch_records']     = $this->Company_model->get_all_branches();
-        // $data['supplier_records']     = $this->Company_model->get_supplier_by_branch($data['records1'][0]->branch_id);
-        $data['supplier_records']   = $this->Setup_model->get_active_supplier_list();
+        // Get quotation master
+        $data['records1'] = $this->Purchase_Model->get_pur_qtn_master_by_id($quotation_id);
 
-        // Project list
+        if (empty($data['records1'])) {
+            show_404();
+            return;
+        }
+
+        // Get RFQs - include current RFQ even if its status is no longer 0
+        $current_rfq_id = $data['records1'][0]->rfq_master_id;
+
+        $data['rfq_records'] = $this->Purchase_Model->get_RFQ_list_for_quotation($current_rfq_id);
+
+        // Branches
+        $data['branch_records'] = $this->Company_model->get_all_branches();
+
+        // Suppliers
+        $data['supplier_records'] = $this->Setup_model->get_active_supplier_list();
+
+        // Projects
         $data['project_records'] = $this->Project_model->get_approved_projects();
-        $data['unit_records']        = $this->Setup_model->get_active_unit_list();
-        $data['records2']            = $this->Purchase_Model->get_pur_qtn_tr_by_id($quotation_id);
-        $data['quote_doc']           = $this->Purchase_Model->get_quote_doc($quotation_id, "Quote File");
 
-        $data['payment_terms_list']  = $this->Setup_model->get_active_terms_conditions_by_type('PAYMENT');
-        $data['delivery_terms_list'] = $this->Setup_model->get_active_terms_conditions_by_type('DELIVERY');
-        $data['general_terms_list']  = $this->Setup_model->get_active_terms_conditions_by_type('GENERAL');
+        // Units
+        $data['unit_records'] = $this->Setup_model->get_active_unit_list();
 
-        $data['main_content']        = 'purchase/quotation_edit.php';
-        // }
+        // Transaction
+        $data['records2'] = $this->Purchase_Model->get_pur_qtn_tr_by_id($quotation_id);
+
+        // Document
+        $data['quote_doc'] = $this->Purchase_Model->get_quote_doc(
+            $quotation_id,
+            "Quote File"
+        );
+
+        // Terms
+        $data['payment_terms_list'] =
+            $this->Setup_model->get_active_terms_conditions_by_type('PAYMENT');
+
+        $data['delivery_terms_list'] =
+            $this->Setup_model->get_active_terms_conditions_by_type('DELIVERY');
+
+        $data['general_terms_list'] =
+            $this->Setup_model->get_active_terms_conditions_by_type('GENERAL');
+
+        $data['main_content'] = 'purchase/quotation_edit.php';
+
         $this->load->view('includes/template.php', $data);
     }
 
