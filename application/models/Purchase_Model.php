@@ -462,6 +462,28 @@ class Purchase_Model extends CI_Model
 		return $query->result();
 	}
 
+	function get_RFQ_list_for_quotation($current_rfq_id = 0)
+	{
+		$current_rfq_id = (int) $current_rfq_id;
+
+		$query = $this->db->query("
+			SELECT
+				r.*,
+				em.user_name AS rfq_created_by,
+				sp.supplier_name
+			FROM purchase_rfq r
+			LEFT JOIN users em
+				ON r.created_by = em.user_id
+			LEFT JOIN supplier_master sp
+				ON r.supplier_id = sp.supplier_id
+			WHERE r.status = 0
+			OR r.rfq_id = ?
+			ORDER BY r.rfq_date DESC, r.rfq_id DESC
+		", array($current_rfq_id));
+
+		return $query->result();
+	}
+
 	function get_quotation_list()
 	{
 		$query = $this->db->query("

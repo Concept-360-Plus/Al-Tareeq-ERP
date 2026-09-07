@@ -21,12 +21,57 @@ $user = $this->session->userdata('user_id');
           <!-- Row 1: Select RFQ, Code, Revision -->
           <div class="row mb-3">
 
-            <div class="col-md-4">
+            <!-- <div class="col-md-4">
               <label for="rfq_id" class="form-label">Select RFQ</label>
               <select class="form-control" id="rfq_id" name="rfq_id" readonly>
                 <option value="<?php echo $records1[0]->reference; ?>">
                   <?php echo $records1[0]->reference; ?>
                 </option>
+              </select>
+            </div> -->
+
+            <div class="col-md-4">
+              <label for="rfq_id" class="form-label">Select RFQ</label>
+
+              <select
+                class="form-control select2"
+                id="rfq_id"
+                name="rfq_id"
+                required>
+
+                <option value="">Select RFQ</option>
+
+                <?php if (!empty($rfq_records)) { ?>
+
+                  <?php foreach ($rfq_records as $rfq) { ?>
+
+                    <option
+                      value="<?php echo $rfq->rfq_id; ?>"
+                      <?php echo (
+                        isset($records1[0]->rfq_master_id) &&
+                        $records1[0]->rfq_master_id == $rfq->rfq_id
+                      ) ? 'selected' : ''; ?>>
+
+                      <?php echo htmlspecialchars(
+                        $rfq->rfq_code,
+                        ENT_QUOTES,
+                        'UTF-8'
+                      ); ?>
+
+                      <?php if (!empty($rfq->supplier_name)) { ?>
+                        - <?php echo htmlspecialchars(
+                            $rfq->supplier_name,
+                            ENT_QUOTES,
+                            'UTF-8'
+                          ); ?>
+                      <?php } ?>
+
+                    </option>
+
+                  <?php } ?>
+
+                <?php } ?>
+
               </select>
             </div>
 
@@ -56,14 +101,38 @@ $user = $this->session->userdata('user_id');
 
             <div class="col-md-6">
               <label for="branch_id" class="form-label">Branch</label>
-              <select name="branch_id" id="branch_id" class="form-control select2" required tabindex="1" readonly>
-                <option value="">Please select branch</option>
-                <?php foreach ($branch_records as $b) { ?>
-                  <option value="<?php echo $b->branch_id; ?>"
-                    <?= ($records1[0]->branch_id == $b->branch_id) ? "selected" : "" ?>>
-                    <?php echo $b->branch_name; ?>
-                  </option>
+
+              <select
+                name="branch_id"
+                id="branch_id"
+                class="form-control select2"
+                required>
+
+                <option value="">Select Branch</option>
+
+                <?php if (!empty($branch_records)) { ?>
+
+                  <?php foreach ($branch_records as $b) { ?>
+
+                    <option
+                      value="<?php echo $b->branch_id; ?>"
+                      <?php echo (
+                        isset($records1[0]->branch_id) &&
+                        $records1[0]->branch_id == $b->branch_id
+                      ) ? 'selected' : ''; ?>>
+
+                      <?php echo htmlspecialchars(
+                        $b->branch_name,
+                        ENT_QUOTES,
+                        'UTF-8'
+                      ); ?>
+
+                    </option>
+
+                  <?php } ?>
+
                 <?php } ?>
+
               </select>
             </div>
 
@@ -73,11 +142,42 @@ $user = $this->session->userdata('user_id');
           <div class="row mb-3">
 
             <div class="col-md-6">
-              <label for="supplier_name" class="form-label">Supplier</label>
-              <input type="text" readonly name="supplier_name" id="supplier_name" class="form-control"
-                value="<?php echo $records1[0]->supplier_name; ?>">
-              <input type="hidden" readonly name="supplier_id" id="supplier_id"
-                value="<?php echo $records1[0]->supplier_id; ?>">
+              <label for="supplier_id" class="form-label">Supplier</label>
+
+              <select
+                name="supplier_id"
+                id="supplier_id"
+                class="form-control select2"
+                required>
+
+                <option value="">Select Supplier</option>
+
+                <?php if (!empty($supplier_records)) { ?>
+
+                  <?php foreach ($supplier_records as $supplier) { ?>
+
+                    <option
+                      value="<?php echo $supplier->supplier_id; ?>"
+                      <?php echo (
+                        isset($records1[0]->supplier_id) &&
+                        $records1[0]->supplier_id == $supplier->supplier_id
+                      ) ? 'selected' : ''; ?>>
+
+                      <?php
+                      echo htmlspecialchars(
+                        $supplier->supplier_code . ' - ' . $supplier->supplier_name,
+                        ENT_QUOTES,
+                        'UTF-8'
+                      );
+                      ?>
+
+                    </option>
+
+                  <?php } ?>
+
+                <?php } ?>
+
+              </select>
             </div>
 
             <div class="col-md-6">
@@ -144,377 +244,377 @@ $user = $this->session->userdata('user_id');
 
             <input type="hidden" name="existing_quote_doc"
               value="<?php echo $records1[0]->quote_doc; ?>">
+          </div>
+          <!-- Row 5: RFQ By -->
+          <div class="row mb-3">
 
-            <!-- Row 5: RFQ By -->
-            <div class="row mb-3">
+            <div class="col-md-6">
+              <label for="rfq_by" class="form-label">RFQ By</label>
+              <input type="text" class="form-control" name="rfq_by" id="rfq_by"
+                value="<?php echo $records1[0]->rfq_created_by_name; ?>">
+            </div>
 
-              <div class="col-md-6">
-                <label for="rfq_by" class="form-label">RFQ By</label>
-                <input type="text" class="form-control" name="rfq_by" id="rfq_by"
-                  value="<?php echo $records1[0]->rfq_created_by_name; ?>">
-              </div>
-
-              <div class="col-md-6">
-                <label class="form-label">Prepared By</label>
-                <input type="text" class="form-control" name="sales_person" id="sales_person"
-                  value="<?php echo $records1[0]->sales_person; ?>">
-              </div>
-
+            <div class="col-md-6">
+              <label class="form-label">Prepared By</label>
+              <input type="text" class="form-control" name="sales_person" id="sales_person"
+                value="<?php echo $records1[0]->sales_person; ?>">
             </div>
 
           </div>
+
         </div>
       </div>
+    </div>
 
 
 
-      <div class="row col-md-12 col-sm-12" style="overflow: scroll;">
-        <div class="x_content" id="rfq_items_list">
-          <table class="table-striped table-bordered dt-responsive nowrap" cellspacing="0" width="100%">
-            <thead>
+    <div class="row col-md-12 col-sm-12" style="overflow: scroll;">
+      <div class="x_content" id="rfq_items_list">
+        <table class="table-striped table-bordered dt-responsive nowrap" cellspacing="0" width="100%">
+          <thead>
+            <tr>
+              <th>Product Code</th>
+              <!-- <th>Brand</th> -->
+              <th>Description</th>
+              <th style="width:70px;">Qty</th>
+
+              <!-- UNIT SMALL -->
+              <th style="width:60px;">Unit</th>
+
+              <!-- <th style="width:70px;">Packing</th> -->
+
+              <th style="width:90px;">Price</th>
+              <th style="width:80px;">Dis 1%</th>
+              <th style="width:80px;">Dis</th>
+              <th style="width:90px;">Unit Price</th>
+              <th style="width:90px;">Total</th>
+
+            </tr>
+          </thead>
+          <tbody>
+            <?php
+            $i = 5000;
+            $up = 0;
+            $itot = 0;
+            $subtot = 0;
+            $ivat = 0;
+            foreach ($records2 as $r) { ?>
               <tr>
-                <th>Product Code</th>
-                <!-- <th>Brand</th> -->
-                <th>Description</th>
-                <th style="width:70px;">Qty</th>
+                <td>
+                  <input type="text" class="form-control" name="item_model[]" value="<?php echo $r->product_name; ?>" />
+                  <input type="hidden" class="form-control" name="item_id[]" value="<?php echo $r->product_id; ?>" />
+                </td>
+                <!-- <td><input type="text" class="form-control" name="item_brand[]" value="<?php echo $r->brand_name; ?>" /></td> -->
+                <td><input type="text" class="form-control" name="item_description[]" value="<?php echo $r->description; ?>" /></td>
+                <td><input type="number" class="form-control qty" name="item_quantity[]" id="item_quantity<?php echo $i; ?>" value="<?php echo $r->quantity; ?>" /></td>
+                <td>
+                  <select class="form-control" name="item_unit[]" id="unit<?php echo $i; ?>">
+                    <option value="">Select</option>
+                    <?php foreach ($active_units as $unit) { ?>
+                      <option
+                        value="<?php echo $unit->unit_id; ?>"
+                        <?php echo ($r->unit_id == $unit->unit_id) ? 'selected' : ''; ?>>
+                        <?php echo $unit->unit_name; ?>
+                      </option>
+                    <?php } ?>
+                  </select>
+                </td>
 
-                <!-- UNIT SMALL -->
-                <th style="width:60px;">Unit</th>
-
-                <!-- <th style="width:70px;">Packing</th> -->
-
-                <th style="width:90px;">Price</th>
-                <th style="width:80px;">Dis 1%</th>
-                <th style="width:80px;">Dis</th>
-                <th style="width:90px;">Unit Price</th>
-                <th style="width:90px;">Total</th>
-
-              </tr>
-            </thead>
-            <tbody>
-              <?php
-              $i = 5000;
-              $up = 0;
-              $itot = 0;
-              $subtot = 0;
-              $ivat = 0;
-              foreach ($records2 as $r) { ?>
-                <tr>
-                  <td>
-                    <input type="text" class="form-control" name="item_model[]" value="<?php echo $r->product_name; ?>" />
-                    <input type="hidden" class="form-control" name="item_id[]" value="<?php echo $r->product_id; ?>" />
-                  </td>
-                  <!-- <td><input type="text" class="form-control" name="item_brand[]" value="<?php echo $r->brand_name; ?>" /></td> -->
-                  <td><input type="text" class="form-control" name="item_description[]" value="<?php echo $r->description; ?>" /></td>
-                  <td><input type="number" class="form-control qty" name="item_quantity[]" id="item_quantity<?php echo $i; ?>" value="<?php echo $r->quantity; ?>" /></td>
-                  <td>
-                    <select class="form-control" name="item_unit[]" id="unit<?php echo $i; ?>">
-                      <option value="">Select</option>
-                      <?php foreach ($active_units as $unit) { ?>
-                        <option
-                          value="<?php echo $unit->unit_id; ?>"
-                          <?php echo ($r->unit_id == $unit->unit_id) ? 'selected' : ''; ?>>
-                          <?php echo $unit->unit_name; ?>
-                        </option>
-                      <?php } ?>
-                    </select>
-                  </td>
-
-                  <!-- <td><select class="form-control" name="item_packing[]">
+                <!-- <td><select class="form-control" name="item_packing[]">
                       <option>CTN</option>
                     </select></td> -->
 
-                  <td><input type="number" class="form-control unit_price" name="unit_price[]" step='any' id="unit_price<?php echo $i; ?>" value="<?php echo $r->price; ?>" /></td>
-                  <td><input type="number" class="form-control dis_per" id="discount_per<?php echo $i; ?>" step='any' name="dis_per[]" value="<?php echo $r->dis_per; ?>" /></td>
-                  <td><input type="number" class="form-control dis_amt" id="discount_amt<?php echo $i; ?>" step='any' name="dis_amt[]" value="<?php echo $r->dis_amt; ?>" /></td>
-                  <!-- <td><input type="number" class="form-control dis_per2" id="discount_per2<?php echo $i; ?>" step='any' name="dis_per2[]" value="<?php echo $r->dis_per2; ?>"/></td> -->
-                  <!-- <td><input type="number" class="form-control dis_amt2" id="discount_amt2<?php echo $i; ?>" step='any' name="dis_amt2[]" value="<?php echo $r->dis_amt2; ?>"/></td> -->
-                  <td><input type="number" class="form-control final_unit_price" name="final_unit_price[]" step='any' id="final_unit_price<?php echo $i; ?>" value="<?php echo $r->unit_price; ?>" /></td>
+                <td><input type="number" class="form-control unit_price" name="unit_price[]" step='any' id="unit_price<?php echo $i; ?>" value="<?php echo $r->price; ?>" /></td>
+                <td><input type="number" class="form-control dis_per" id="discount_per<?php echo $i; ?>" step='any' name="dis_per[]" value="<?php echo $r->dis_per; ?>" /></td>
+                <td><input type="number" class="form-control dis_amt" id="discount_amt<?php echo $i; ?>" step='any' name="dis_amt[]" value="<?php echo $r->dis_amt; ?>" /></td>
+                <!-- <td><input type="number" class="form-control dis_per2" id="discount_per2<?php echo $i; ?>" step='any' name="dis_per2[]" value="<?php echo $r->dis_per2; ?>"/></td> -->
+                <!-- <td><input type="number" class="form-control dis_amt2" id="discount_amt2<?php echo $i; ?>" step='any' name="dis_amt2[]" value="<?php echo $r->dis_amt2; ?>"/></td> -->
+                <td><input type="number" class="form-control final_unit_price" name="final_unit_price[]" step='any' id="final_unit_price<?php echo $i; ?>" value="<?php echo $r->unit_price; ?>" /></td>
 
-                  <td><input type="number" class="form-control total_price" id="total_price<?php echo $i; ?>" step='any' name="total_price[]" value="<?php echo $r->total; ?>" /></td>
+                <td><input type="number" class="form-control total_price" id="total_price<?php echo $i; ?>" step='any' name="total_price[]" value="<?php echo $r->total; ?>" /></td>
 
-                </tr>
-              <?php $i++;
-              } ?>
-            </tbody>
-          </table>
+              </tr>
+            <?php $i++;
+            } ?>
+          </tbody>
+        </table>
 
 
+      </div>
+    </div>
+
+    <div class="x_content">
+      <!-- Row 1: Amounts -->
+      <div class="row mb-3">
+        <div class="col-md-3">
+          <label class="form-label">Taxable Amount</label>
+          <input type="text" class="form-control" name="sub_total" id="sub_total"
+            value="<?php echo $records1[0]->subtotal; ?>" readonly>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">VAT(%)</label>
+          <input type="text" class="form-control" name="vat_per" id="vat_per"
+            value="<?php echo $records1[0]->vat_percent; ?>">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Tax Amount</label>
+          <input type="text" class="form-control" name="vat_amount" id="vat_amount"
+            value="<?php echo $records1[0]->vat_amt; ?>">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Grand Total</label>
+          <input type="text" class="form-control" name="grand_total" id="grand_total"
+            value="<?php echo $records1[0]->grand_total; ?>">
         </div>
       </div>
 
-      <div class="x_content">
-        <!-- Row 1: Amounts -->
-        <div class="row mb-3">
-          <div class="col-md-3">
-            <label class="form-label">Taxable Amount</label>
-            <input type="text" class="form-control" name="sub_total" id="sub_total"
-              value="<?php echo $records1[0]->subtotal; ?>" readonly>
-          </div>
-          <div class="col-md-2">
-            <label class="form-label">VAT(%)</label>
-            <input type="text" class="form-control" name="vat_per" id="vat_per"
-              value="<?php echo $records1[0]->vat_percent; ?>">
-          </div>
-          <div class="col-md-3">
-            <label class="form-label">Tax Amount</label>
-            <input type="text" class="form-control" name="vat_amount" id="vat_amount"
-              value="<?php echo $records1[0]->vat_amt; ?>">
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">Grand Total</label>
-            <input type="text" class="form-control" name="grand_total" id="grand_total"
-              value="<?php echo $records1[0]->grand_total; ?>">
-          </div>
-        </div>
+      <!-- Row 2: Prepared/Approved -->
+      <div class="row mb-3">
 
-        <!-- Row 2: Prepared/Approved -->
-        <div class="row mb-3">
-
-          <!-- <div class="col-md-6">
+        <!-- <div class="col-md-6">
             <label class="form-label">Approved By</label>
             <input type="text" class="form-control" name="approved_by" id="approved_by">
           </div> -->
+      </div>
+
+
+
+      <!-- Row 3: Validity & Payment -->
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <label class="form-label">Validity</label>
+          <input type="text" class="form-control" name="validity" id="validity"
+            value="<?php echo $records1[0]->validity; ?>">
         </div>
+        <!-- Payment Terms -->
+        <div class="col-md-6">
 
+          <label for="payment_terms_select" class="form-label">
+            Payment Terms
+          </label>
 
+          <select
+            class="form-control term-select"
+            id="payment_terms_select"
+            name="payment_term_id">
 
-        <!-- Row 3: Validity & Payment -->
-        <div class="row mb-3">
-          <div class="col-md-6">
-            <label class="form-label">Validity</label>
-            <input type="text" class="form-control" name="validity" id="validity"
-              value="<?php echo $records1[0]->validity; ?>">
-          </div>
-          <!-- Payment Terms -->
-          <div class="col-md-6">
+            <option value="">
+              Please select payment terms
+            </option>
 
-            <label for="payment_terms_select" class="form-label">
-              Payment Terms
-            </label>
+            <?php if (!empty($payment_terms_list)) { ?>
 
-            <select
-              class="form-control term-select"
-              id="payment_terms_select"
-              name="payment_term_id">
+              <?php foreach ($payment_terms_list as $term) { ?>
 
-              <option value="">
-                Please select payment terms
-              </option>
-
-              <?php if (!empty($payment_terms_list)) { ?>
-
-                <?php foreach ($payment_terms_list as $term) { ?>
-
-                  <option
-                    value="<?php echo $term->terms_id; ?>"
-                    data-description="<?php echo htmlspecialchars(
-                                        $term->terms_description ?? '',
-                                        ENT_QUOTES,
-                                        'UTF-8'
-                                      ); ?>"
-                    <?php
-                    echo (
-                      isset($records1[0]->payment_term) &&
-                      $records1[0]->payment_term == $term->terms_description
-                    ) ? 'selected' : '';
-                    ?>>
-                    <?php echo htmlspecialchars(
-                      $term->terms_name,
-                      ENT_QUOTES,
-                      'UTF-8'
-                    ); ?>
-                  </option>
-
-                <?php } ?>
+                <option
+                  value="<?php echo $term->terms_id; ?>"
+                  data-description="<?php echo htmlspecialchars(
+                                      $term->terms_description ?? '',
+                                      ENT_QUOTES,
+                                      'UTF-8'
+                                    ); ?>"
+                  <?php
+                  echo (
+                    isset($records1[0]->payment_term) &&
+                    $records1[0]->payment_term == $term->terms_description
+                  ) ? 'selected' : '';
+                  ?>>
+                  <?php echo htmlspecialchars(
+                    $term->terms_name,
+                    ENT_QUOTES,
+                    'UTF-8'
+                  ); ?>
+                </option>
 
               <?php } ?>
 
-            </select>
+            <?php } ?>
+
+          </select>
 
 
-            <small>
-              <a href="#"
-                class="add-term-link"
-                data-term-type="PAYMENT">
-                + Add New Payment Term
-              </a>
-            </small>
+          <small>
+            <a href="#"
+              class="add-term-link"
+              data-term-type="PAYMENT">
+              + Add New Payment Term
+            </a>
+          </small>
 
 
-            <!-- Existing field retained for controller -->
-            <input
-              type="hidden"
-              name="payment_terms"
-              id="payment_terms"
-              value="<?php echo htmlspecialchars(
-                        $records1[0]->payment_term ?? '',
-                        ENT_QUOTES,
-                        'UTF-8'
-                      ); ?>">
-
-          </div>
-        </div>
-
-        <!-- Row 4: Delivery + General -->
-        <div class="row mb-3">
-
-          <!-- Delivery Terms -->
-          <div class="col-md-6">
-
-            <label for="delivery_terms_select" class="form-label">
-              Delivery Terms
-            </label>
-
-            <select
-              class="form-control term-select"
-              id="delivery_terms_select"
-              name="delivery_term_id">
-
-              <option value="">
-                Please select delivery terms
-              </option>
-
-              <?php if (!empty($delivery_terms_list)) { ?>
-
-                <?php foreach ($delivery_terms_list as $term) { ?>
-
-                  <option
-                    value="<?php echo $term->terms_id; ?>"
-                    data-description="<?php echo htmlspecialchars(
-                                        $term->terms_description ?? '',
-                                        ENT_QUOTES,
-                                        'UTF-8'
-                                      ); ?>"
-                    <?php
-                    echo (
-                      isset($records1[0]->delivery_term) &&
-                      $records1[0]->delivery_term == $term->terms_description
-                    ) ? 'selected' : '';
-                    ?>>
-                    <?php echo htmlspecialchars(
-                      $term->terms_name,
+          <!-- Existing field retained for controller -->
+          <input
+            type="hidden"
+            name="payment_terms"
+            id="payment_terms"
+            value="<?php echo htmlspecialchars(
+                      $records1[0]->payment_term ?? '',
                       ENT_QUOTES,
                       'UTF-8'
-                    ); ?>
-                  </option>
+                    ); ?>">
 
-                <?php } ?>
-
-              <?php } ?>
-
-            </select>
-
-
-            <small>
-              <a href="#"
-                class="add-term-link"
-                data-term-type="DELIVERY">
-                + Add New Delivery Term
-              </a>
-            </small>
-
-
-            <!-- Existing field retained for controller -->
-            <input
-              type="hidden"
-              name="delivery_terms"
-              id="delivery_terms"
-              value="<?php echo htmlspecialchars(
-                        $records1[0]->delivery_term ?? '',
-                        ENT_QUOTES,
-                        'UTF-8'
-                      ); ?>">
-
-          </div>
-
-
-          <!-- General Terms -->
-          <div class="col-md-6">
-
-            <label for="general_terms_select" class="form-label">
-              General Terms
-            </label>
-
-            <select
-              class="form-control term-select"
-              id="general_terms_select"
-              name="general_term_id">
-
-              <option value="">
-                Please select general terms
-              </option>
-
-              <?php if (!empty($general_terms_list)) { ?>
-
-                <?php foreach ($general_terms_list as $term) { ?>
-
-                  <option
-                    value="<?php echo $term->terms_id; ?>"
-                    data-description="<?php echo htmlspecialchars(
-                                        $term->terms_description ?? '',
-                                        ENT_QUOTES,
-                                        'UTF-8'
-                                      ); ?>"
-                    <?php
-                    echo (
-                      isset($records1[0]->general_term) &&
-                      $records1[0]->general_term == $term->terms_description
-                    ) ? 'selected' : '';
-                    ?>>
-                    <?php echo htmlspecialchars(
-                      $term->terms_name,
-                      ENT_QUOTES,
-                      'UTF-8'
-                    ); ?>
-                  </option>
-
-                <?php } ?>
-
-              <?php } ?>
-
-            </select>
-
-
-            <small>
-              <a href="#"
-                class="add-term-link"
-                data-term-type="GENERAL">
-                + Add New General Term
-              </a>
-            </small>
-
-
-            <!-- Existing field retained for controller -->
-            <input
-              type="hidden"
-              name="general_terms"
-              id="general_terms"
-              value="<?php echo htmlspecialchars(
-                        $records1[0]->general_term ?? '',
-                        ENT_QUOTES,
-                        'UTF-8'
-                      ); ?>">
-
-          </div>
-
-        </div>
-
-        <!-- Checkbox and Submit Button in same row -->
-        <div class="row mb-3 align-items-center">
-          <div class="col-md-6">
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" value="1" id="createRevision" name="create_revision">
-              <label class="form-check-label" for="createRevision">Create New Revision</label>
-            </div>
-          </div>
-          <div class="col-md-6 text-end">
-            <button type="submit" class="btn btn-success">Update</button>
-          </div>
         </div>
       </div>
 
+      <!-- Row 4: Delivery + General -->
+      <div class="row mb-3">
+
+        <!-- Delivery Terms -->
+        <div class="col-md-6">
+
+          <label for="delivery_terms_select" class="form-label">
+            Delivery Terms
+          </label>
+
+          <select
+            class="form-control term-select"
+            id="delivery_terms_select"
+            name="delivery_term_id">
+
+            <option value="">
+              Please select delivery terms
+            </option>
+
+            <?php if (!empty($delivery_terms_list)) { ?>
+
+              <?php foreach ($delivery_terms_list as $term) { ?>
+
+                <option
+                  value="<?php echo $term->terms_id; ?>"
+                  data-description="<?php echo htmlspecialchars(
+                                      $term->terms_description ?? '',
+                                      ENT_QUOTES,
+                                      'UTF-8'
+                                    ); ?>"
+                  <?php
+                  echo (
+                    isset($records1[0]->delivery_term) &&
+                    $records1[0]->delivery_term == $term->terms_description
+                  ) ? 'selected' : '';
+                  ?>>
+                  <?php echo htmlspecialchars(
+                    $term->terms_name,
+                    ENT_QUOTES,
+                    'UTF-8'
+                  ); ?>
+                </option>
+
+              <?php } ?>
+
+            <?php } ?>
+
+          </select>
+
+
+          <small>
+            <a href="#"
+              class="add-term-link"
+              data-term-type="DELIVERY">
+              + Add New Delivery Term
+            </a>
+          </small>
+
+
+          <!-- Existing field retained for controller -->
+          <input
+            type="hidden"
+            name="delivery_terms"
+            id="delivery_terms"
+            value="<?php echo htmlspecialchars(
+                      $records1[0]->delivery_term ?? '',
+                      ENT_QUOTES,
+                      'UTF-8'
+                    ); ?>">
+
+        </div>
+
+
+        <!-- General Terms -->
+        <div class="col-md-6">
+
+          <label for="general_terms_select" class="form-label">
+            General Terms
+          </label>
+
+          <select
+            class="form-control term-select"
+            id="general_terms_select"
+            name="general_term_id">
+
+            <option value="">
+              Please select general terms
+            </option>
+
+            <?php if (!empty($general_terms_list)) { ?>
+
+              <?php foreach ($general_terms_list as $term) { ?>
+
+                <option
+                  value="<?php echo $term->terms_id; ?>"
+                  data-description="<?php echo htmlspecialchars(
+                                      $term->terms_description ?? '',
+                                      ENT_QUOTES,
+                                      'UTF-8'
+                                    ); ?>"
+                  <?php
+                  echo (
+                    isset($records1[0]->general_term) &&
+                    $records1[0]->general_term == $term->terms_description
+                  ) ? 'selected' : '';
+                  ?>>
+                  <?php echo htmlspecialchars(
+                    $term->terms_name,
+                    ENT_QUOTES,
+                    'UTF-8'
+                  ); ?>
+                </option>
+
+              <?php } ?>
+
+            <?php } ?>
+
+          </select>
+
+
+          <small>
+            <a href="#"
+              class="add-term-link"
+              data-term-type="GENERAL">
+              + Add New General Term
+            </a>
+          </small>
+
+
+          <!-- Existing field retained for controller -->
+          <input
+            type="hidden"
+            name="general_terms"
+            id="general_terms"
+            value="<?php echo htmlspecialchars(
+                      $records1[0]->general_term ?? '',
+                      ENT_QUOTES,
+                      'UTF-8'
+                    ); ?>">
+
+        </div>
+
+      </div>
+
+      <!-- Checkbox and Submit Button in same row -->
+      <div class="row mb-3 align-items-center">
+        <div class="col-md-6">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" value="1" id="createRevision" name="create_revision">
+            <label class="form-check-label" for="createRevision">Create New Revision</label>
+          </div>
+        </div>
+        <div class="col-md-6 text-end">
+          <button type="submit" class="btn btn-success">Update</button>
+        </div>
+      </div>
     </div>
+
+  </div>
 
 </form>
 <div
