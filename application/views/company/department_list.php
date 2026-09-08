@@ -70,7 +70,7 @@ $logged_user = $this->session->userdata('user_id');
 
 									<td class="action-icons">
 										<?php if (has_access($logged_user, $page_name, 'E')) { ?>
-											<a href="<?= base_url('index.php/Company/edit_department/' . $row->dept_id); ?>" title='Edit'>
+											<a href="<?= base_url('index.php/Hr/edit_department/' . $row->dept_id); ?>" title='Edit'>
 												<i class="fa fa-edit"></i>
 											</a>
 										<?php } ?>

@@ -13,7 +13,7 @@ label,h4 {
                 <div class="clearfix"></div>
             </div>
             <div class="x_content">
-                <form action="<?= base_url('index.php/Company/save_employee/') ?>" method="post" enctype="multipart/form-data" autocomplete='off' id="employee">
+                <form action="<?= base_url('index.php/Hr/save_employee/') ?>" method="post" enctype="multipart/form-data" autocomplete='off' id="employee">
 
                         <!-- Basic Details -->
                         <div class="form-group row">
@@ -291,7 +291,7 @@ label,h4 {
                         <div class="ln_solid"></div>
                         <div class="form-group row">
                             <div class="col-md-6 offset-md-3">
-                                <!-- <a href="<?= base_url('index.php/Company/list_employee') ?>" class="btn btn-secondary">Back</a> -->
+                                <!-- <a href="<?= base_url('index.php/Hr/list_employee') ?>" class="btn btn-secondary">Back</a> -->
                                 <button type="button" id="saveBtn" class="btn btn-success">Save</button>
                             </div>
                         </div>

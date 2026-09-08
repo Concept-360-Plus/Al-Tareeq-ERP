@@ -13,7 +13,7 @@ label,h4 {
 				<div class="clearfix"></div>
 			</div>
 			<div class="x_content">
-				<form action="<?= base_url('index.php/Company/save_designation') ?>" method="post" autocomplete="off">
+				<form action="<?= base_url('index.php/Hr/save_designation') ?>" method="post" autocomplete="off">
 
 					<div class="form-row">
 						<div class="col-md-6">
