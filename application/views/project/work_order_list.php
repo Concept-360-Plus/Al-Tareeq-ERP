@@ -18,6 +18,7 @@
 
                     <!-- <th> Department</th> -->
                     <th>Work Order Date</th>
+                    <th>Status</th>
                     <th>Action</th>
                 </tr>
             </thead>
@@ -50,18 +51,21 @@
                                 <?php endif; ?>
                             <?php endforeach; ?>
                         </td> -->
-
+                        
                         <td>
-                            <?php echo date('d-M-Y', strtotime($row->work_order_date)); ?>
+                            <?php if($row->work_order_date): ?>
+                                <?php echo date('d-M-Y', strtotime($row->work_order_date)); ?>
+                            <?php endif; ?>
                         </td>
-
-
+                        <td>
+                            <?php echo $row->status; ?>
+                        </td>
                         <td>
                             
                             <a href="<?php echo base_url() . 'index.php/Project/edit_work_order/' . $row->work_id; ?>"
-                                title="Edit" class="btn btn-primary btn-sm"><?php //echo $this->session->userdata('edit_icon'); ?> Edit</a>
+                                title="Edit"><?php //echo $this->session->userdata('edit_icon'); ?> <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span></a>
                             <a  onclick="return confirm('Are you sure you want to delete this work order?');" href="<?php echo base_url() . 'index.php/Project/delete_work_order/' . $row->work_id; ?>"
-                                title="Delete" class="btn btn-danger btn-sm" onclick="return confirmcancel(<?php echo $row->work_id; ?>);"><?php //echo $this->session->userdata('delete_icon'); ?>Delete</a>
+                                title="Delete" onclick="return confirmcancel(<?php echo $row->work_id; ?>);"><?php //echo $this->session->userdata('delete_icon'); ?> <span class="glyphicon glyphicon-trash" aria-hidden="true"></span></a>
                             <!--<a class="btn btn-primary btn-sm" href="<?php echo base_url() . 'index.php/Project/print_work_order/' . $row->work_id; ?>"
                                 title="Print" target="_blank"><i class="fa fa-print" style="font-size:18px"></i></a>-->
 

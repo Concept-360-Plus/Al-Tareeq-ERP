@@ -32,7 +32,7 @@ th{
 }
 
 .heading{
-    text-align:center;
+    text-align:left;
     font-size:22px;
     font-weight:bold;
 }
@@ -77,9 +77,167 @@ margin:10mm;
 }
 
 }
+  @media screen {
+
+            .st-print-area {
+                background: #fff;
+                padding: 10px;
+            }
+
+            .st-header {
+                display: none;
+            }
+
+            .st-remarks-box {
+                width: 80%;
+            }
+        }
+
+        /* =========================================================
+         * PRINT
+         * ========================================================= */
+
+        @media print {
+
+           .st-print-area{
+            padding:10px;
+           }
+           .title_left{
+            display: none !important;}
+           
+            #stockTransferPrintArea,
+            #stockTransferPrintArea * {
+                visibility: visible;
+            }
+
+            #stockTransferPrintArea {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                margin: 0;
+                padding: 0;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            .st-header {
+                width: 100%;
+                height: 135px;
+                display: flex !important;
+                justify-content: space-between;
+                align-items: flex-start;
+                margin-bottom: 5px;
+            }
+
+            .st-header-logo {
+                width: 55%;
+            }
+
+            .st-header-logo img {
+                width: 380px;
+                max-width: 100%;
+                max-height: 125px;
+                height: auto;
+                object-fit: cover;
+            }
+
+            .st-header-right {
+                width: 45%;
+                text-align: right;
+            }
+
+            .st-header-right img {
+                width: 80px;
+                height: 80px;
+                display: block;
+                margin-left: auto;
+            }
+
+            .st-trn {
+                font-size: 11px;
+                font-weight: bold;
+                text-align: right;
+                margin-top: 3px;
+            }
+}
 
 </style>
+ <style>
+    @media print {
+        .menu_toggle{
+            display: none !important;
+        }
+        .no-print {
+            display: none !important;
+        }
 
+        .print-hide {
+            display: none !important;
+        }
+
+        @page {
+            margin: 10mm;
+        }
+
+        body {
+            background: #fff !important;
+        }
+         .st-header {
+            width: 100%;
+            height: 140px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .st-header-logo {
+            width: 55%;
+        }
+
+        .st-header-logo img {
+            width: 380px;
+            max-width: 100%;
+            max-height: 130px;
+            height: auto;
+            object-fit: cover;
+            display: block;
+        }
+
+        .st-header-right {
+            width: 45%;
+            text-align: right;
+        }
+
+        .st-header-right img {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+            display: block;
+            margin-left: auto;
+        }
+
+        .st-trn {
+            font-size: 11px;
+            font-weight: bold;
+            margin-top: 3px;
+        }
+        .title_left{ display: none !important; }
+        .btn-group { display: none !important; }
+        .nav_menu{ display: none !important; }
+
+    }
+    @media screen {
+        .st-header {
+            display: none !important;
+        }
+
+       
+    }
+</style>
 </head>
 
 <body>
@@ -88,16 +246,36 @@ margin:10mm;
     <button class="btn btn-sm btn-primary" onclick="window.print()">Print</button>
 </div>
 
-<div class="company">
-<img src="<?= base_url('public/assets/images/altariq_logo.jpeg'); ?>"
-             alt="Logo"
-             style="height:70px; width:90px; object-fit:contain; ">
+<div class="st-header">
 
-   <br>
+        <div class="st-header-logo">
 
-    AL TAREEQ ENGINEERING LLC
+            <?php if (!empty($company['company_logo'])) { ?>
 
-</div>
+                <img
+                    src="<?= base_url($company['company_logo']) ?>"
+                    alt="Company Logo"
+                >
+
+            <?php } ?>
+
+        </div>
+
+        <div class="st-header-right">
+
+            <img
+                src="<?= base_url('uploads/company/barcode.png') ?>"
+                alt="QR Code"
+            >
+
+            <div class="st-trn">
+                TRN:
+                <?= htmlspecialchars($company['company_trn'] ?? '') ?>
+            </div>
+
+        </div>
+
+    </div>
 
 <div class="heading">
 
@@ -129,7 +307,7 @@ WORK ORDER
 
 </tr>
 
-<tr>
+<!--<tr>
 
 <td><b>Fabrication Start</b></td>
 <td><?=date('d-m-Y',strtotime($workorder->fsdate));?></td>
@@ -157,7 +335,7 @@ WORK ORDER
 <td><b>Installation Man Hours</b></td>
 <td><?= $workorder->installation_manhr;?></td>
 
-</tr>
+</tr>-->
 
 <tr>
 
@@ -334,12 +512,38 @@ foreach($attachments as $row)
 <td><?=$i++;?></td>
 
 <td>
+<?php
+$file = './public/uploded_documents/' . $row->attachment_one;
 
-<a href="<?php echo base_url() . 'public/uploded_documents/' . $row->attachment_one; ?>" target="_blank">
+if (!empty($row->attachment_one) && file_exists($file)) {
 
-<?=$row->attachment_one;?>
+    $url = base_url('public/uploded_documents/' . $row->attachment_one);
+    $ext = strtolower(pathinfo($row->attachment_one, PATHINFO_EXTENSION));
 
-</a>
+    if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'])) {
+        // Image
+        ?>
+        <a href="<?= $url ?>" target="_blank">
+            <img src="<?= $url ?>" width="100" height="100" alt="Attachment">
+        </a>
+        <?php
+    } elseif ($ext == 'pdf') {
+        // PDF
+        ?>
+        <a href="<?= $url ?>" target="_blank">
+            📄 View PDF
+        </a>
+        <?php
+    } else {
+        // Other files (Word, Excel, ZIP, etc.)
+        ?>
+        <a href="<?= $url ?>" target="_blank">
+            📎 Download <?= htmlspecialchars($row->attachment_one) ?>
+        </a>
+        <?php
+    }
+}
+?>
 
 </td>
 

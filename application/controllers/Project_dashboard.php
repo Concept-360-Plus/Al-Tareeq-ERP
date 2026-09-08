@@ -9,9 +9,8 @@ class Project_dashboard extends CI_Controller
         parent::__construct();
 
         // Check Login
-        if (!$this->session->userdata('user_id'))
-        {
-            redirect('login');
+        if (!$this->session->userdata('is_logged_in')) {
+            redirect('Login/login');
         }
 
         $this->load->model('Project_dashboard_model','dashboard');
@@ -39,14 +38,11 @@ class Project_dashboard extends CI_Controller
             Dashboard Cards
         ====================================================*/
 
-        $data['total_projects']
-            = $this->dashboard->count_total_projects();
+        $data['total_projects']  = $this->dashboard->count_total_projects();
 
-        $data['active_projects']
-            = $this->dashboard->count_active_projects();
+        $data['active_projects'] = $this->dashboard->count_active_projects();
 
-        $data['completed_projects']
-            = $this->dashboard->count_completed_projects();
+        $data['completed_projects'] = $this->dashboard->count_completed_projects();
 
         $data['pending_workorders']
             = $this->dashboard->count_pending_workorders();
@@ -91,23 +87,17 @@ class Project_dashboard extends CI_Controller
             Dashboard Tables
         ====================================================*/
 
-        $data['recent_projects']
-            = $this->dashboard->recent_projects();
+        $data['recent_projects'] = $this->dashboard->recent_projects();
 
-        $data['recent_workorders']
-            = $this->dashboard->recent_workorders();
+        $data['recent_workorders'] = $this->dashboard->recent_workorders();
 
-        $data['recent_progress']
-            = $this->dashboard->recent_progress();
+        $data['recent_progress'] = $this->dashboard->recent_progress();
 
-        $data['pending_outsource_list']
-            = $this->dashboard->pending_outsource_list();
+        $data['pending_outsource_list'] = $this->dashboard->pending_outsource_list();
 
-        $data['delayed_project_list']
-            = $this->dashboard->delayed_projects();
+        $data['delayed_project_list']= $this->dashboard->delayed_projects();
 
-        $data['due_project_list']
-            = $this->dashboard->due_projects();
+        $data['due_project_list'] = $this->dashboard->due_projects();
 
 
         /*====================================================
@@ -337,7 +327,9 @@ class Project_dashboard extends CI_Controller
 
     public function chart_project_status()
     {
-        $result = $this->dashboard->project_status_chart();
+        $from_date = $this->input->get('from_date');
+        $to_date   = $this->input->get('to_date');
+        $result = $this->dashboard->project_status_chart($from_date, $to_date);
 
         $labels = array();
         $values = array();
@@ -363,7 +355,9 @@ class Project_dashboard extends CI_Controller
 
     public function chart_monthly_projects()
     {
-        $result = $this->dashboard->monthly_projects_chart();
+        $from_date = $this->input->get('from_date');
+        $to_date   = $this->input->get('to_date');
+        $result = $this->dashboard->monthly_projects_chart($from_date, $to_date);
 
         $labels = array();
         $values = array();
@@ -389,7 +383,9 @@ class Project_dashboard extends CI_Controller
 
     public function chart_workorder_status()
     {
-        $result = $this->dashboard->workorder_chart();
+        $from_date = $this->input->get('from_date');
+        $to_date   = $this->input->get('to_date');
+        $result = $this->dashboard->workorder_chart($from_date, $to_date);
 
         $labels = array();
         $values = array();
@@ -415,8 +411,9 @@ class Project_dashboard extends CI_Controller
 
     public function chart_progress_distribution()
     {
-
-        $result = $this->dashboard->progress_distribution_chart();
+        $from_date = $this->input->get('from_date');
+        $to_date   = $this->input->get('to_date');
+        $result = $this->dashboard->progress_distribution_chart($from_date, $to_date);
 
         $labels = array();
         $values = array();
@@ -484,19 +481,10 @@ class Project_dashboard extends CI_Controller
             ),
 
             'charts' => array(
-
-                'project_status'
-                    => $this->dashboard->project_status_chart(),
-
-                'monthly_projects'
-                    => $this->dashboard->monthly_projects_chart(),
-
-                'workorder_status'
-                    => $this->dashboard->workorder_chart(),
-
-                'progress_distribution'
-                    => $this->dashboard->progress_distribution_chart()
-
+                'project_status' => $this->dashboard->project_status_chart(),
+                'monthly_projects' => $this->dashboard->monthly_projects_chart(),
+                'workorder_status' => $this->dashboard->workorder_chart(),
+                'progress_distribution' => $this->dashboard->progress_distribution_chart()
             )
 
         );
@@ -839,5 +827,201 @@ class Project_dashboard extends CI_Controller
 
     }
 
+    
+    /*
+    |--------------------------------------------------------------------------
+    | DASHBOARD - DATE FILTERS
+    |--------------------------------------------------------------------------
+    */
+    public function filter_dashboard_date()
+    {
+        $from_date = $this->input->post('from_date', TRUE);
+        $to_date   = $this->input->post('to_date', TRUE);
+
+
+        if (empty($from_date) || empty($to_date)) {
+
+            echo json_encode(array(
+                'status'  => false,
+                'message' => 'Please select both dates.'
+            ));
+
+            return;
+        }
+
+
+        if ($from_date > $to_date) {
+
+            echo json_encode(array(
+                'status'  => false,
+                'message' => 'From Date cannot be greater than To Date.'
+            ));
+
+            return;
+        }
+
+
+        /*
+        ================================================
+        ONLY TOTAL PROJECTS FOR NOW
+        ================================================
+        */
+
+        $total_projects = $this->dashboard->count_total_projects(
+                $from_date,
+                $to_date
+            );
+        $active_projects = $this->dashboard->count_active_projects(
+                $from_date,
+                $to_date
+            );
+        $completed_projects = $this->dashboard->count_completed_projects($from_date,$to_date);
+        //$average_progress = $this->dashboard->count_completed_projects($from_date,$to_date);
+        $estimated_cost     = $this->dashboard->total_estimated_cost($from_date,$to_date);
+        $outsource_cost     = $this->dashboard->total_outsource_cost($from_date,$to_date);
+        $material_request_cost = $this->dashboard->total_material_request_cost($from_date,$to_date);
+        echo json_encode(array(
+            'status' => true,
+            'total_projects'    => $total_projects,
+            'active_projects'   => $active_projects,
+            'completed_projects'=> $completed_projects,
+            'estimated_cost'    => $estimated_cost,
+            'outsource_cost'    => $outsource_cost,
+            'material_request_cost' => $material_request_cost
+        ));
+    }
+
+    public function filter_recent_projects()
+    {
+        $from_date = $this->input->post('from_date');
+        $to_date   = $this->input->post('to_date');
+
+        $projects = $this->dashboard->recent_projects(
+            10,
+            $from_date,
+            $to_date
+        );
+
+        $data = [];
+
+        foreach ($projects as $p) {
+
+            $data[] = [
+                'project_code'  => $p->project_code,
+                'customer_name' => $p->customer_name,
+                'start_date'    => !empty($p->start_date)
+                                    ? date('d-m-Y', strtotime($p->start_date))
+                                    : '',
+                'end_date'      => !empty($p->end_date)
+                                    ? date('d-m-Y', strtotime($p->end_date))
+                                    : '',
+                'status'        => $p->status,
+                'progress'      => (float)$p->progress
+            ];
+        }
+
+        echo json_encode([
+            'status' => true,
+            'data'   => $data
+        ]);
+    }
+
+    public function filter_recent_workorders()
+    {
+        $from_date = $this->input->post('from_date');
+        $to_date   = $this->input->post('to_date');
+
+        $workorders = $this->dashboard->recent_workorders(
+            10,
+            $from_date,
+            $to_date
+        );
+
+        $data = [];
+
+        foreach ($workorders as $wo) {
+
+            $data[] = [
+                'wo_code'         => $wo->wo_code,
+                'project_code'    => $wo->project_code,
+                'project_name'    => $wo->project_name,
+                'work_order_date' => !empty($wo->work_order_date)
+                                    ? date('d-m-Y', strtotime($wo->work_order_date))
+                                    : '',
+                'status'          => ($wo->approve_flag == 1)
+                                    ? 'Approved'
+                                    : 'Pending'
+            ];
+        }
+
+        echo json_encode([
+            'status' => true,
+            'data'   => $data
+        ]);
+    }
+
+    public function filter_recent_progress()
+    {
+        $from_date = $this->input->post('from_date');
+        $to_date   = $this->input->post('to_date');
+
+        $progress = $this->dashboard->recent_progress(
+            10,
+            $from_date,
+            $to_date
+        );
+
+        $data = [];
+
+        foreach ($progress as $p) {
+
+            $data[] = [
+                'project_code'       => $p->project_code,
+                'project_name'       => $p->project_name,
+                'progress_percentage'=> (float)$p->progress_percentage,
+                'current_status'     => $p->current_status,
+                'last_updated'       => !empty($p->last_updated)
+                                        ? date('d-m-Y H:i', strtotime($p->last_updated))
+                                        : ''
+            ];
+        }
+
+        echo json_encode([
+            'status' => true,
+            'data'   => $data
+        ]);
+    }
+
+    public function filter_delayed_projects()
+    {
+        $from_date = $this->input->post('from_date');
+        $to_date   = $this->input->post('to_date');
+
+        $projects = $this->dashboard->delayed_projects(
+            $from_date,
+            $to_date
+        );
+
+        $data = [];
+
+        foreach ($projects as $p) {
+
+            $data[] = [
+                'project_code'  => $p->project_code,
+                'project_name'  => $p->project_name,
+                'customer_name' => $p->customer_name,
+                'end_date'      => !empty($p->end_date)
+                                    ? date('d-m-Y', strtotime($p->end_date))
+                                    : '',
+                'delay_days'    => (int)$p->delay_days
+            ];
+        }
+
+        echo json_encode([
+            'status' => true,
+            'data'   => $data
+        ]);
+    }
 }
+?>
 

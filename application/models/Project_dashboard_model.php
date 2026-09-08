@@ -15,9 +15,23 @@ class Project_dashboard_model extends CI_Model
     |--------------------------------------------------------------------------
     */
 
-    public function count_total_projects()
+    public function count_total_projects($from_date = null, $to_date = null)
     {
-        return $this->db->count_all('project_master');
+        $this->db->from('project_master');
+
+        if (!empty($from_date)) {
+
+            $this->db->where('created_on >=', $from_date);
+
+        }
+
+        if (!empty($to_date)) {
+
+            $this->db->where('created_on <=', $to_date);
+
+        }
+
+        return $this->db->count_all_results();
     }
 
 
@@ -27,11 +41,24 @@ class Project_dashboard_model extends CI_Model
     |--------------------------------------------------------------------------
     */
 
-    public function count_active_projects()
+    public function count_active_projects($from_date = null, $to_date = null)
     {
-        return $this->db
-            ->where('project_complete',0)
-            ->count_all_results('project_master');
+        $this->db->where('project_complete', 0);
+        if (!empty($from_date)) {
+            $this->db->where(
+                'created_on >=',
+                $from_date
+            );
+
+        }
+        if (!empty($to_date)) {
+            $this->db->where(
+                'created_on <=',
+                $to_date
+            );
+
+        }
+        return $this->db->count_all_results('project_master');
     }
 
 
@@ -41,11 +68,24 @@ class Project_dashboard_model extends CI_Model
     |--------------------------------------------------------------------------
     */
 
-    public function count_completed_projects()
+    public function count_completed_projects($from_date = null, $to_date = null)
     {
-        return $this->db
-            ->where('project_complete',1)
-            ->count_all_results('project_master');
+        $this->db->where('project_complete', 1);
+        if (!empty($from_date)) {
+            $this->db->where(
+                'created_on >=',
+                $from_date
+            );
+
+        }
+        if (!empty($to_date)) {
+            $this->db->where(
+                'created_on <=',
+                $to_date
+            );
+
+        }
+        return $this->db->count_all_results('project_master'); 
     }
 
 
@@ -211,17 +251,23 @@ class Project_dashboard_model extends CI_Model
     |--------------------------------------------------------------------------
     */
 
-    public function project_status_chart()
+   public function project_status_chart($from_date = null, $to_date = null)
     {
+        $this->db->select('status, COUNT(*) as total')->from('project_master');
+
+        if (!empty($from_date)) {
+            $this->db->where('start_date >=', $from_date);
+        }
+
+        if (!empty($to_date)) {
+            $this->db->where('start_date <=', $to_date);
+        }
 
         return $this->db
-            ->select('status, COUNT(*) as total')
-            ->from('project_master')
             ->group_by('status')
             ->order_by('status')
             ->get()
             ->result();
-
     }
 
 
@@ -231,21 +277,29 @@ class Project_dashboard_model extends CI_Model
     |--------------------------------------------------------------------------
     */
 
-    public function monthly_projects_chart()
+    public function monthly_projects_chart($from_date = null, $to_date = null)
     {
-
-        return $this->db
+        $this->db
             ->select("
                 MONTH(created_on) as month_no,
                 DATE_FORMAT(created_on,'%b') as month_name,
                 COUNT(project_id) as total
             ", FALSE)
-            ->from('project_master')
+            ->from('project_master');
+
+        if (!empty($from_date)) {
+            $this->db->where('created_on >=', $from_date . ' 00:00:00');
+        }
+
+        if (!empty($to_date)) {
+            $this->db->where('created_on <=', $to_date . ' 23:59:59');
+        }
+
+        return $this->db
             ->group_by('MONTH(created_on)')
             ->order_by('MONTH(created_on)')
             ->get()
             ->result();
-
     }
 
 
@@ -255,33 +309,50 @@ class Project_dashboard_model extends CI_Model
     |--------------------------------------------------------------------------
     */
 
-    public function workorder_chart()
+  public function workorder_chart($from_date = null, $to_date = null)
     {
+        $this->db->where('approve_flag', 1);
+
+        if (!empty($from_date)) {
+            $this->db->where('created_date >=', $from_date . ' 00:00:00');
+        }
+
+        if (!empty($to_date)) {
+            $this->db->where('created_date <=', $to_date . ' 23:59:59');
+        }
 
         $approved = $this->db
-            ->where('approve_flag',1)
             ->count_all_results('project_work_order');
 
+
+        $this->db->where('approve_flag', 0);
+
+        if (!empty($from_date)) {
+            $this->db->where('created_date >=', $from_date . ' 00:00:00');
+        }
+
+        if (!empty($to_date)) {
+            $this->db->where('created_date <=', $to_date . ' 23:59:59');
+        }
+
         $pending = $this->db
-            ->where('approve_flag',0)
             ->count_all_results('project_work_order');
+
 
         return array(
 
             (object)array(
-                'status'=>'Approved',
-                'total'=>$approved
+                'status' => 'Approved',
+                'total'  => $approved
             ),
 
             (object)array(
-                'status'=>'Pending',
-                'total'=>$pending
+                'status' => 'Pending',
+                'total'  => $pending
             )
 
         );
-
     }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -289,7 +360,7 @@ class Project_dashboard_model extends CI_Model
     |--------------------------------------------------------------------------
     */
 
-    public function progress_distribution_chart()
+    /*public function progress_distribution_chart()
     {
 
         $range1 = $this->db
@@ -337,6 +408,61 @@ class Project_dashboard_model extends CI_Model
         );
 
     }
+        */
+    public function progress_distribution_chart()
+{
+    // A single query that groups your dynamic calculation into the four buckets
+    $query = $this->db->query("
+        SELECT 
+            SUM(CASE WHEN progress_percentage >= 0 AND progress_percentage <= 25 THEN 1 ELSE 0 END) as range1,
+            SUM(CASE WHEN progress_percentage > 25 AND progress_percentage <= 50 THEN 1 ELSE 0 END) as range2,
+            SUM(CASE WHEN progress_percentage > 50 AND progress_percentage <= 75 THEN 1 ELSE 0 END) as range3,
+            SUM(CASE WHEN progress_percentage > 75 AND progress_percentage <= 100 THEN 1 ELSE 0 END) as range4
+        FROM (
+            SELECT 
+                ROUND(
+                    COALESCE(
+                        (
+                            (SELECT COUNT(*) FROM project_task_items WHERE project_id = p.project_id AND status = 'completed') +
+                            (SELECT COUNT(*) FROM project_outsource WHERE project_id = p.project_id AND status = 'Finished') +
+                            (SELECT COUNT(*) FROM material_issue WHERE project_id = p.project_id AND status = 'Issued')
+                        ) / 
+                        NULLIF(
+                            (
+                                (SELECT COUNT(*) FROM project_task_items WHERE project_id = p.project_id) +
+                                (SELECT COUNT(*) FROM project_outsource WHERE project_id = p.project_id) +
+                                (SELECT COUNT(*) FROM material_issue WHERE project_id = p.project_id)
+                            ), 0
+                        ) * 100
+                    , 0)
+                ) AS progress_percentage
+            FROM project_master p
+        ) as dynamic_project_percentages
+    ");
+
+    $result = $query->row();
+
+    // Keeping your exact same object return format so your chart JS script doesn't break
+    return array(
+        (object)array(
+            'range' => '0-25%',
+            'total' => (int)($result->range1 ?? 0)
+        ),
+        (object)array(
+            'range' => '26-50%',
+            'total' => (int)($result->range2 ?? 0)
+        ),
+        (object)array(
+            'range' => '51-75%',
+            'total' => (int)($result->range3 ?? 0)
+        ),
+        (object)array(
+            'range' => '76-100%',
+            'total' => (int)($result->range4 ?? 0)
+        )
+    );
+}
+
 
 
     /*
@@ -378,10 +504,9 @@ class Project_dashboard_model extends CI_Model
     |--------------------------------------------------------------------------
     */
 
-    public function recent_projects($limit = 10)
+   public function recent_projects($limit = 10, $from_date = null, $to_date = null)
     {
-
-        return $this->db
+        $this->db
             ->select('
                 pm.project_id,
                 pm.project_code,
@@ -392,22 +517,38 @@ class Project_dashboard_model extends CI_Model
                 pm.status,
                 pm.project_complete,
                 IFNULL(pp.progress_percentage,0) AS progress
-            ',FALSE)
+            ', FALSE)
             ->from('project_master pm')
             ->join(
                 '(SELECT project_id,
                         MAX(progress_percentage) progress_percentage
-                 FROM project_progress
-                 GROUP BY project_id) pp',
+                FROM project_progress
+                GROUP BY project_id) pp',
                 'pp.project_id = pm.project_id',
                 'left',
                 FALSE
-            )
-            ->order_by('pm.created_on','DESC')
+            );
+
+        // Date filter
+        if (!empty($from_date)) {
+            $this->db->where(
+                'pm.created_on >=',
+                $from_date . ' 00:00:00'
+            );
+        }
+
+        if (!empty($to_date)) {
+            $this->db->where(
+                'pm.created_on <=',
+                $to_date . ' 23:59:59'
+            );
+        }
+
+        return $this->db
+            ->order_by('pm.created_on', 'DESC')
             ->limit($limit)
             ->get()
             ->result();
-
     }
 
 
@@ -417,10 +558,9 @@ class Project_dashboard_model extends CI_Model
     |--------------------------------------------------------------------------
     */
 
-    public function recent_workorders($limit = 10)
+   public function recent_workorders($limit = 10, $from_date = null, $to_date = null)
     {
-
-        return $this->db
+        $this->db
             ->select('
                 pwo.work_id,
                 pwo.wo_code,
@@ -432,16 +572,31 @@ class Project_dashboard_model extends CI_Model
             ->from('project_work_order pwo')
             ->join(
                 'project_master pm',
-                'pm.project_id=pwo.project_id',
+                'pm.project_id = pwo.project_id',
                 'left'
-            )
-            ->order_by('pwo.work_order_date','DESC')
+            );
+
+        // Common dashboard date filter
+        if (!empty($from_date)) {
+            $this->db->where(
+                'pwo.created_date >=',
+                $from_date . ' 00:00:00'
+            );
+        }
+
+        if (!empty($to_date)) {
+            $this->db->where(
+                'pwo.created_date <=',
+                $to_date . ' 23:59:59'
+            );
+        }
+
+        return $this->db
+            ->order_by('pwo.work_order_date', 'DESC')
             ->limit($limit)
             ->get()
             ->result();
-
     }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -449,10 +604,9 @@ class Project_dashboard_model extends CI_Model
     |--------------------------------------------------------------------------
     */
 
-    public function recent_progress($limit = 10)
+   public function recent_progress($limit = 10, $from_date = null, $to_date = null)
     {
-
-        return $this->db
+        $this->db
             ->select('
                 pp.progress_percentage,
                 pp.current_status,
@@ -463,14 +617,30 @@ class Project_dashboard_model extends CI_Model
             ->from('project_progress pp')
             ->join(
                 'project_master pm',
-                'pm.project_id=pp.project_id',
+                'pm.project_id = pp.project_id',
                 'left'
-            )
-            ->order_by('pp.last_updated','DESC')
+            );
+
+        // Common dashboard date filter
+        if (!empty($from_date)) {
+            $this->db->where(
+                'pp.last_updated >=',
+                $from_date . ' 00:00:00'
+            );
+        }
+
+        if (!empty($to_date)) {
+            $this->db->where(
+                'pp.last_updated <=',
+                $to_date . ' 23:59:59'
+            );
+        }
+
+        return $this->db
+            ->order_by('pp.last_updated', 'DESC')
             ->limit($limit)
             ->get()
             ->result();
-
     }
 
 
@@ -490,7 +660,7 @@ class Project_dashboard_model extends CI_Model
                 po.outsource_finish_date,
                 po.quality_check_done,
                 pm.project_code,
-                pm.project_name
+                pm.project_name,po.supplier_id
             ')
             ->from('project_outsource po')
             ->join(
@@ -507,35 +677,7 @@ class Project_dashboard_model extends CI_Model
     }
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | Delayed Projects
-    |--------------------------------------------------------------------------
-    */
-
-    public function delayed_projects()
-    {
-
-        return $this->db
-            ->select('
-                project_id,
-                project_code,
-                project_name,
-                customer_name,
-                end_date,
-                DATEDIFF(CURDATE(),end_date) AS delay_days
-            ',FALSE)
-            ->from('project_master')
-            ->where('project_complete',0)
-            ->where('end_date <',date('Y-m-d'))
-            ->order_by('end_date','ASC')
-            ->get()
-            ->result();
-
-    }
-
-
-    /*
+       /*
     |--------------------------------------------------------------------------
     | Projects Due This Week
     |--------------------------------------------------------------------------
@@ -964,20 +1106,32 @@ class Project_dashboard_model extends CI_Model
 |--------------------------------------------------------------------------
 */
 
-public function total_estimated_cost()
+public function total_estimated_cost($from_date = null, $to_date = null)
 {
-
     $this->db->select_sum('total');
+    $this->db->from('project_items');
 
-    $query = $this->db->get('project_items');
+    if (!empty($from_date)) {
+        $this->db->where(
+            'DATE(created_at) >=',
+            $from_date
+        );
+    }
 
-    if($query->num_rows())
-    {
+    if (!empty($to_date)) {
+        $this->db->where(
+            'DATE(created_at) <=',
+            $to_date
+        );
+    }
+
+    $query = $this->db->get();
+
+    if ($query->num_rows()) {
         return $query->row()->total ?: 0;
     }
 
     return 0;
-
 }
 
 
@@ -1012,15 +1166,36 @@ public function estimated_cost_per_project()
 |--------------------------------------------------------------------------
 */
 
-public function total_outsource_cost()
+public function total_outsource_cost($from_date = null, $to_date = null)
 {
-    $this->db->select('SUM(quantity * item_price) AS total_cost', FALSE);
+    $this->db->select(
+        'SUM(quantity * item_price) AS total_cost',
+        FALSE
+    );
+
     $this->db->from('project_outsource_details');
+
+    if (!empty($from_date)) {
+        $this->db->where(
+            'DATE(created_at) >=',
+            $from_date
+        );
+    }
+
+    if (!empty($to_date)) {
+        $this->db->where(
+            'DATE(created_at) <=',
+            $to_date
+        );
+    }
 
     $query = $this->db->get();
 
     if ($query->num_rows() > 0) {
-        return ($query->row()->total_cost != NULL) ? $query->row()->total_cost : 0;
+
+        return ($query->row()->total_cost != NULL)
+            ? $query->row()->total_cost
+            : 0;
     }
 
     return 0;
@@ -1032,19 +1207,80 @@ public function total_outsource_cost()
 |--------------------------------------------------------------------------
 */
 
-public function total_material_request_cost()
-{
-    $this->db->select('SUM(mri.quantity * im.retail_price) AS total_cost', FALSE);
-    $this->db->from('material_request_items mri');
-    $this->db->join('item_master im', 'im.product_id = mri.product_id', 'left');
+    public function total_material_request_cost($from_date = null, $to_date = null)
+    {
+        $this->db->select(
+            'SUM(mri.quantity * im.retail_price) AS total_cost',
+            FALSE
+        );
 
-    $query = $this->db->get();
+        $this->db->from('material_request_items mri');
 
-    if ($query->num_rows() > 0) {
-        return ($query->row()->total_cost != NULL) ? $query->row()->total_cost : 0;
+        $this->db->join(
+            'item_master im',
+            'im.product_id = mri.product_id',
+            'left'
+        );
+
+        if (!empty($from_date)) {
+            $this->db->where(
+                'DATE(mri.created_at) >=',
+                $from_date
+            );
+        }
+
+        if (!empty($to_date)) {
+            $this->db->where(
+                'DATE(mri.created_at) <=',
+                $to_date
+            );
+        }
+
+        $query = $this->db->get();
+
+        if ($query->num_rows() > 0) {
+
+            return ($query->row()->total_cost != NULL)
+                ? $query->row()->total_cost
+                : 0;
+        }
+
+        return 0;
     }
 
-    return 0;
-}
+    public function delayed_projects($from_date = null, $to_date = null)
+    {
+        $this->db
+            ->select('
+                project_id,
+                project_code,
+                project_name,
+                customer_name,
+                end_date,
+                DATEDIFF(CURDATE(), end_date) AS delay_days
+            ', FALSE)
+            ->from('project_master')
+            ->where('project_complete', 0)
+            ->where('end_date <', date('Y-m-d'));
 
+        // Common dashboard date filter
+        if (!empty($from_date)) {
+            $this->db->where(
+                'end_date >=',
+                $from_date
+            );
+        }
+
+        if (!empty($to_date)) {
+            $this->db->where(
+                'end_date <=',
+                $to_date
+            );
+        }
+
+        return $this->db
+            ->order_by('end_date', 'ASC')
+            ->get()
+            ->result();
+    }
 }

@@ -135,7 +135,7 @@
     </div>
 </div>
                 <div class="form-group row">
-				<table class="table table-bordered table-hover" id="tab_logic">
+				<table class="table table-bordered table-hover"  style="width:83%" id="tab_logic">
 					<thead>
 						<tr>
 							<th>Item</th>
@@ -194,11 +194,51 @@
 				</table>
 			</div>
 
-                <div class="form-group row">
-                    <div class="col-sm-10">
+        <div class="form-group row">
+            <label class="col-md-1 col-form-label pr-1">Status</label>
+            <div class="col-md-3">
+                <select class="form-control form-control-sm"id="status" name="status"
+                                style='width:155px'>
+                         <option value="">Select</option>
+                         <option <?php if ($row->status == 'Outsourced') echo 'selected'; ?> value="Outsourced">Outsourced</option>
+                         <option <?php if ($row->status == 'Finished') echo 'selected'; ?> value="Finished">Finished</option>
+                        </select> 
+                     </div> 
+                    
+                    <!--<div class="col-md-4">
+                        <label>
+                            Progress <span class="text-danger">*</span> :
+                            <span id="progressValue"><?= $row->progress_percentage ?>%</span>
+                        </label>
+
+                        <input type="range"
+                            name="progress_percentage"
+                            id="progressRange"
+                            class="form-range"
+                            min="0"
+                            max="100"
+                            value="<?= $row->progress_percentage ?>"
+                            required
+                            oninput="updateProgress(this.value)">
+
+                        <div class="progress mt-2" style="height:25px;">
+                            <div id="progressBar"
+                                class="progress-bar progress-bar-striped progress-bar-animated"
+                                style="width:<?= $row->progress_percentage ?>%">
+                                <?= $row->progress_percentage ?>%
+                            
+                        </div>
+				    </div>
+                    
+                    </div>-->
+                     
+</div>
+                <div class="form-group row col-md-3">
+                 
+                <div class="col-sm-10" style="margin-left:-10px;">
                         <input type="hidden" id="outsource_id" name="outsource_id"
                             value='<?php echo $row->outsource_id; ?>'>
-                        <button type="submit" tabindex="" id="add" class="btn btn-primary m-b-0 pull-left">Submit</button>
+                        <button type="submit" tabindex="" id="add" class="btn btn-success m-b-0 pull-left">Submit</button>
 
                     </div>
                 </div>
@@ -358,14 +398,10 @@ $.ajax({
             get_project_info();
         }
     };
-    /*$(document).ready(function () {
-
-        $('.select2').select2({
-            placeholder: '-- Select Project --',
-            allowClear: true,
-            width: '100%'
-        });
-
-    });
-    */
+    function updateProgress(value) {
+        $('#progressValue').text(value + '%');
+        $('#progressBar')
+            .css('width', value + '%')
+            .text(value + '%');
+    }
 </script>

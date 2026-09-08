@@ -1,0 +1,52 @@
+   th {
+        background: #f5f5f5;
+        font-weight: bold;
+    }
+    td, th {
+        vertical-align: middle !important;
+    }
+    .dropdown-menu{
+    min-width:220px;
+    border-radius:8px;
+    box-shadow:0 5px 15px rgba(0,0,0,.15);
+}
+
+.dropdown-item{
+    padding:8px 15px;
+}
+
+.dropdown-item i{
+    width:20px;
+}
+.dt-top-row {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.dt-length {
+    flex: 0 0 auto;
+}
+
+.dt-buttons {
+    margin-left: 15px;
+}
+
+.dt-search {
+    margin-left: auto;
+}
+
+.dt-length select {
+    width: auto;
+    display: inline-block;
+}
+
+.dt-buttons .btn {
+    margin-right: 5px;
+}
+
+.dt-search input {
+    margin-left: 5px;
+}
+#reset_project_filters{border:1px;}

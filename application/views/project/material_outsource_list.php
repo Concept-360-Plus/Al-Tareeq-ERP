@@ -3,8 +3,8 @@
 <div class="x_panel">
     <div class="mb-3">
         <a href="<?php echo base_url() . 'index.php/Project/material_outsource_processing'; ?>"
-            class="btn btn-primary btn-sm">
-            <span class="fa fa-plus"></span> Add New
+            class="btn btn-success btn-sm">
+             Add New
         </a>
     </div>
 
@@ -15,6 +15,8 @@
                     <th>Project Name/<br>Project Code</th>
                     <th>Supplier Name/ <br>Supplier Code</th>
                     <th>Outsource Date</th>
+                    <th>Status</th>
+                    <th>Progress</th>
                     <th>Action</th>
                 </tr>
             </thead>
@@ -37,8 +39,17 @@
                         <td>
                             <?php echo date('d-M-Y', strtotime($row->outsource_date)); ?>
                         </td>
-
-
+                         <td>
+                            <?php echo $row->status; ?>
+                        </td>
+                        <td>
+                            <div class="progress">
+                                <div class="progress-bar bg-success"
+                                    style="width: <?= $row->progress_percentage ?? 0 ?>%">
+                                    <?= $row->progress_percentage ?? 0 ?>%
+                                </div>
+                            </div>
+                        </td>
                         <td>
                                    
                             <a  title="Edit" class="btn btn-primary btn-sm" href="<?php echo base_url() . 'index.php/Project/edit_material_outsource_processing/' . $row->outsource_id; ?>"

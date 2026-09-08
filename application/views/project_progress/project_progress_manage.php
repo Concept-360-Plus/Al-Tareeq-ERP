@@ -3,8 +3,10 @@ $lastMilestone = $last_log['milestone'] ?? '';
 $lastStatus    = $last_log['current_status'] ?? 'Not Started';
 $lastProgress  = $last_log['progress_percentage'] ?? 0;
 ?>
-
-<h4>Project Progress – <?= htmlspecialchars($project['project_name']) ?></h4>
+<div class="row">
+<div class="col-md-12">
+<div class="x_panel">
+<h4><?= htmlspecialchars($project['project_name']) ?></h4>
 
 <div class="mb-3">
     <strong>Start Date:</strong>
@@ -21,7 +23,7 @@ $lastProgress  = $last_log['progress_percentage'] ?? 0;
 <input type="hidden" name="project_id" value="<?= $project['project_id'] ?>">
 
 <div class="row">
-    <div class="col-md-3">
+    <div class="col-md-2">
         <label>Date <span class="text-danger">*</span></label>
         <input type="date"
                name="log_date"
@@ -30,7 +32,7 @@ $lastProgress  = $last_log['progress_percentage'] ?? 0;
                required>
     </div>
 
-    <div class="col-md-3">
+    <div class="col-md-2">
         <label>Start Time <span class="text-danger">*</span></label>
         <input type="time"
                name="start_time"
@@ -38,7 +40,7 @@ $lastProgress  = $last_log['progress_percentage'] ?? 0;
                required>
     </div>
 
-    <div class="col-md-3">
+    <div class="col-md-2">
         <label>End Time <span class="text-danger">*</span></label>
         <input type="time"
                name="end_time"
@@ -46,7 +48,7 @@ $lastProgress  = $last_log['progress_percentage'] ?? 0;
                required>
     </div>
 
-    <div class="col-md-3">
+    <div class="col-md-2">
         <label>Milestone <span class="text-danger">*</span></label>
         <input type="text"
                name="milestone"
@@ -57,7 +59,7 @@ $lastProgress  = $last_log['progress_percentage'] ?? 0;
 </div>
 
 <div class="row mt-3">
-    <div class="col-md-6">
+    <div class="col-md-4">
         <label>Status <span class="text-danger">*</span></label>
         <select name="current_status" class="form-control" required>
             <option value="Not Started" <?= $lastStatus=='Not Started'?'selected':'' ?>>Not Started</option>
@@ -66,13 +68,13 @@ $lastProgress  = $last_log['progress_percentage'] ?? 0;
         </select>
     </div>
 
-    <div class="col-md-6">
+    <div class="col-md-4">
         <label>
             Progress <span class="text-danger">*</span> :
-            <span id="progressValue"><?= $lastProgress ?>%</span>
+            <!-- <span id="progressValue"><?= $lastProgress ?>%</span> -->
         </label>
 
-        <input type="range"
+        <!--<input type="range"
                name="progress_percentage"
                id="progressRange"
                class="form-range"
@@ -88,6 +90,15 @@ $lastProgress  = $last_log['progress_percentage'] ?? 0;
                  style="width:<?= $lastProgress ?>%">
                 <?= $lastProgress ?>%
             </div>
+        </div>-->
+        <?php  $row['progress']      = $this->Project_model->get_project_progress_byid($project['project_id']);
+       ?>
+        <div class="progress mt-2" style="height:25px;">
+            <div id="progressBar"
+                 class="progress-bar progress-bar-striped progress-bar-animated" readonly
+                 style="width:<?= $row['progress'] ?>%">
+                <?= $row['progress'] ?>%
+            </div>
         </div>
     </div>
 </div>
@@ -100,12 +111,13 @@ $lastProgress  = $last_log['progress_percentage'] ?? 0;
            accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx">
     <div id="selectedFiles" class="mt-2"></div>
 </div>
-
+<div class="col-md-8">
 <div class="mt-3">
     <label>Remarks</label>
-    <textarea name="remarks" class="form-control"></textarea>
-</div>
-
+    <textarea name="remarks" class="form-control" colspan="4" rowspan="4" style="height: 125px;
+    width: 75%;"></textarea>
+</div></div>
+<div class="col-md-10">
 <div class="mt-3 text-end">
     <button type="submit" class="btn btn-success">
         Save Progress
@@ -125,7 +137,7 @@ $lastProgress  = $last_log['progress_percentage'] ?? 0;
     <th>End</th>
     <th>Milestone</th>
     <th>Status</th>
-    <th>Progress</th>
+    <!-- <th>Progress</th> -->
     <th>Files</th>
     <th>Remarks</th>
     <th>Action</th>
@@ -145,7 +157,7 @@ $lastProgress  = $last_log['progress_percentage'] ?? 0;
             <?= $log['current_status'] ?>
         </span>
     </td>
-    <td><?= $log['progress_percentage'] ?>%</td>
+    <!-- <td><?= $log['progress_percentage'] ?>%</td> -->
     <td>
         <?php if (!empty($log['site_files'])):
             foreach (json_decode($log['site_files'], true) as $file):
@@ -174,122 +186,492 @@ $lastProgress  = $last_log['progress_percentage'] ?? 0;
 <?php endforeach; ?>
 </tbody>
 </table>
-
+</div></div></div>
 <script>
+
 let allFiles = [];
 
-function updateProgress(val){
-    document.getElementById('progressValue').innerText = val + '%';
-    document.getElementById('progressBar').style.width = val + '%';
-    document.getElementById('progressBar').innerText = val + '%';
-}
 
-document.getElementById('siteFilesInput').addEventListener('change', function () {
+/* ==========================================================
+   FILE SELECTION
+========================================================== */
 
-    let newFiles = Array.from(this.files);
+document.getElementById('siteFilesInput').addEventListener(
+    'change',
+    function () {
 
-    newFiles.forEach(newFile => {
+        let newFiles = Array.from(this.files);
 
-        let isDuplicate = allFiles.some(existingFile =>
-            existingFile.name === newFile.name &&
-            existingFile.size === newFile.size &&
-            existingFile.lastModified === newFile.lastModified
-        );
+        newFiles.forEach(function (newFile) {
 
-        if (isDuplicate) {
-            alert('File already added: ' + newFile.name);
-        } else {
-            allFiles.push(newFile);
-        }
+            let isDuplicate = allFiles.some(function (existingFile) {
 
-    });
+                return existingFile.name === newFile.name &&
+                       existingFile.size === newFile.size &&
+                       existingFile.lastModified === newFile.lastModified;
 
-    renderFiles();
+            });
 
-    // VERY IMPORTANT
-    this.value = ''; // reset input
-});
 
-function renderFiles(){
-    const list = document.getElementById('selectedFiles');
+            if (isDuplicate) {
+
+                alert(
+                    'File already added: ' +
+                    newFile.name
+                );
+
+            } else {
+
+                allFiles.push(newFile);
+
+            }
+
+        });
+
+
+        renderFiles();
+
+
+        /*
+         * Reset input so the same file can be selected again
+         * after removing it.
+         */
+
+        this.value = '';
+
+    }
+);
+
+
+/* ==========================================================
+   DISPLAY SELECTED FILES
+========================================================== */
+
+function renderFiles()
+{
+
+    const list =
+        document.getElementById('selectedFiles');
+
+
     list.innerHTML = '';
-    allFiles.forEach((file, i) => {
-        const d = document.createElement('div');
-        d.innerHTML = `${file.name}
-            <button type="button" onclick="removeFile(${i})">Remove</button>`;
+
+
+    allFiles.forEach(function (file, i) {
+
+        const d =
+            document.createElement('div');
+
+
+        d.className =
+            'mb-1';
+
+
+        d.innerHTML =
+            '<span>' +
+            file.name +
+            '</span> ' +
+
+            '<button type="button" ' +
+            'class="btn btn-xs btn-danger" ' +
+            'onclick="removeFile(' + i + ')">' +
+
+            'Remove' +
+
+            '</button>';
+
+
         list.appendChild(d);
+
     });
+
 }
 
-function removeFile(i){
-    allFiles.splice(i,1);
+
+/* ==========================================================
+   REMOVE SELECTED FILE
+========================================================== */
+
+function removeFile(i)
+{
+
+    allFiles.splice(i, 1);
+
     renderFiles();
+
 }
 
-document.getElementById('progressForm').addEventListener('submit', function (e) {
+
+/* ==========================================================
+   SAVE PROJECT PROGRESS
+========================================================== */
+
+document.getElementById('progressForm')
+.addEventListener('submit', function (e) {
+
     e.preventDefault();
 
-    const status   = document.querySelector('select[name="current_status"]').value;
-    const progress = parseFloat(document.getElementById('progressRange').value) || 0;
 
-    // ✅ NEW VALIDATION
-    if (status === 'Completed' && progress < 100) {
-        alert('A project cannot be marked as Completed until progress reaches 100%.');
+    const form = this;
+
+
+    /*
+     * Get status
+     */
+
+    const statusElement =
+        form.querySelector(
+            'select[name="current_status"]'
+        );
+
+
+    const status =
+        statusElement
+            ? statusElement.value
+            : '';
+
+
+    /*
+     * Get current project progress.
+     *
+     * We are no longer using #progressRange
+     * because the progress slider was removed.
+     */
+
+    const progressElement =
+        document.getElementById(
+            'progressPercentage'
+        );
+
+
+    const progress =
+        progressElement
+            ? parseFloat(progressElement.value) || 0
+            : 0;
+
+
+    /* ======================================================
+       COMPLETED VALIDATION
+    ====================================================== */
+
+    if (
+        status === 'Completed' &&
+        progress < 100
+    ) {
+
+        alert(
+            'A project cannot be marked as Completed until progress reaches 100%.'
+        );
+
         return;
+
     }
 
-    // Existing validation
-    if (this.start_time.value >= this.end_time.value) {
-        alert('End time must be greater than start time');
+
+    /* ======================================================
+       TIME VALIDATION
+    ====================================================== */
+
+    const startTimeElement =
+        form.querySelector(
+            'input[name="start_time"]'
+        );
+
+
+    const endTimeElement =
+        form.querySelector(
+            'input[name="end_time"]'
+        );
+
+
+    if (
+        !startTimeElement ||
+        !endTimeElement
+    ) {
+
+        alert('Start time and End time are required.');
+
         return;
+
     }
 
-    const fd = new FormData(this);
-    allFiles.forEach(f => fd.append('site_files[]', f));
 
-    fetch(this.action, { method: 'POST', body: fd })
-        .then(() => location.reload())
-        .catch(err => console.error(err));
-});
+    const startTime =
+        startTimeElement.value;
 
-document.addEventListener('DOMContentLoaded', () => {
-    updateProgress(document.getElementById('progressRange').value);
-});
-document.querySelector('select[name="current_status"]').addEventListener('change', function(){
-    const progress = parseFloat(document.getElementById('progressRange').value) || 0;
 
-    if(this.value === 'Completed' && progress < 100){
-        alert('Progress must be 100% before marking as Completed.');
-        this.value = 'In Progress';
+    const endTime =
+        endTimeElement.value;
+
+
+    if (!startTime || !endTime) {
+
+        alert(
+            'Start time and End time are required.'
+        );
+
+        return;
+
     }
-});
 
-document.addEventListener('click', function(e){
-    if(e.target.classList.contains('delete-log')){
 
-        const logId = e.target.getAttribute('data-id');
+    if (startTime >= endTime) {
 
-        if(!confirm('Are you sure you want to delete this entry?')){
-            return;
+        alert(
+            'End time must be greater than start time'
+        );
+
+        return;
+
+    }
+
+
+    /* ======================================================
+       CREATE FORM DATA
+    ====================================================== */
+
+    const fd =
+        new FormData(form);
+
+
+    /*
+     * Add selected files
+     */
+
+    allFiles.forEach(function (file) {
+
+        fd.append(
+            'site_files[]',
+            file
+        );
+
+    });
+
+
+    /* ======================================================
+       DISABLE BUTTON
+    ====================================================== */
+
+    const submitButton =
+        form.querySelector(
+            'button[type="submit"]'
+        );
+
+
+    if (submitButton) {
+
+        submitButton.disabled = true;
+
+        submitButton.innerHTML =
+            '<i class="fa fa-spinner fa-spin"></i> Saving...';
+
+    }
+
+
+    /* ======================================================
+       SAVE USING FETCH
+    ====================================================== */
+
+    fetch(
+        form.action,
+        {
+            method: 'POST',
+            body: fd
+        }
+    )
+
+    .then(function (response) {
+
+        /*
+         * We don't know whether your controller returns
+         * JSON or redirects/HTML, so don't force response.json().
+         */
+
+        return response.text();
+
+    })
+
+    .then(function (response) {
+
+        /*
+         * Save successful.
+         *
+         * Reload page to show the new progress log.
+         */
+
+        location.reload();
+
+    })
+
+    .catch(function (error) {
+
+        console.error(
+            'Save Progress Error:',
+            error
+        );
+
+
+        alert(
+            'Unable to save project progress.'
+        );
+
+
+        if (submitButton) {
+
+            submitButton.disabled = false;
+
+            submitButton.innerHTML =
+                'Save Progress';
+
         }
 
-        fetch('<?= base_url("index.php/Project/delete_progress_log") ?>', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: 'log_id=' + logId
-        })
-        .then(res => res.json())
-        .then(res => {
-            if(res.status === 'success'){
-                alert('Deleted successfully');
-                location.reload();
-            } else {
-                alert(res.message || 'Delete failed');
-            }
-        })
-        .catch(err => console.error(err));
-    }
+    });
+
 });
+
+
+/* ==========================================================
+   STATUS CHANGE
+========================================================== */
+
+const statusSelect =
+    document.querySelector(
+        'select[name="current_status"]'
+    );
+
+
+if (statusSelect) {
+
+    statusSelect.addEventListener(
+        'change',
+        function () {
+
+            const progressElement =
+                document.getElementById(
+                    'progressPercentage'
+                );
+
+
+            const progress =
+                progressElement
+                    ? parseFloat(progressElement.value) || 0
+                    : 0;
+
+
+            if (
+                this.value === 'Completed' &&
+                progress < 100
+            ) {
+
+                alert(
+                    'Progress must be 100% before marking as Completed.'
+                );
+
+
+                this.value =
+                    'In Progress';
+
+            }
+
+        }
+    );
+
+}
+
+
+/* ==========================================================
+   DELETE PROGRESS LOG
+========================================================== */
+
+document.addEventListener(
+    'click',
+    function (e) {
+
+        if (
+            e.target.classList.contains(
+                'delete-log'
+            )
+        ) {
+
+            const logId =
+                e.target.getAttribute(
+                    'data-id'
+                );
+
+
+            if (
+                !confirm(
+                    'Are you sure you want to delete this entry?'
+                )
+            ) {
+
+                return;
+
+            }
+
+
+            fetch(
+                '<?= base_url("index.php/Project/delete_progress_log") ?>',
+                {
+                    method: 'POST',
+
+                    headers: {
+                        'Content-Type':
+                            'application/x-www-form-urlencoded'
+                    },
+
+                    body:
+                        'log_id=' +
+                        encodeURIComponent(logId)
+
+                }
+            )
+
+            .then(function (res) {
+
+                return res.json();
+
+            })
+
+            .then(function (res) {
+
+                if (
+                    res.status === 'success'
+                ) {
+
+                    alert(
+                        'Deleted successfully'
+                    );
+
+                    location.reload();
+
+                } else {
+
+                    alert(
+                        res.message ||
+                        'Delete failed'
+                    );
+
+                }
+
+            })
+
+            .catch(function (err) {
+
+                console.error(
+                    'Delete Error:',
+                    err
+                );
+
+                alert(
+                    'Unable to delete progress log.'
+                );
+
+            });
+
+        }
+
+    }
+);
+
 </script>

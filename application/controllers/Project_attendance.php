@@ -7,6 +7,9 @@ class Project_attendance extends CI_Controller
     public function __construct()
     {
         parent::__construct();
+        if (!$this->session->userdata('is_logged_in')) {
+            redirect('Login/login');
+        }
 
         $this->load->model('Project_attendance_model','attendance');
         $this->load->helper(array('url','form'));
@@ -22,10 +25,10 @@ class Project_attendance extends CI_Controller
     public function index()
     {
 
-        $data['title']="Project Employee Attendance";
+        $data['title']="Project Employee Time Sheet";
 
-        $data['attendance_list'] =$this->attendance->get_today_task_employees();
-        $data['main_content']       = 'project/project_attendance_list.php';
+        $data['attendance_list']    =  $this->attendance->get_today_task_employees();
+        $data['main_content']       =  'project/project_attendance_list.php';
         $this->load->view('includes/template.php', $data);
 
     }
@@ -132,7 +135,7 @@ class Project_attendance extends CI_Controller
 
    public function report()
     {
-        $data['title'] = "Attendance Report";
+        $data['title'] = "Time Sheet Report";
 
         // Dropdown data
         $data['projects'] = $this->attendance->get_projects();

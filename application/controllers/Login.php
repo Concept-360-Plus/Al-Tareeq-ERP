@@ -37,6 +37,7 @@ class Login extends CI_Controller {
                 $this->session->sess_regenerate(); 
                 $dashboard = $this->Login_model->get_user_dashboard($key->user_id);
 
+
                 if ($dashboard) {
                     $this->session->set_userdata('dashboard_controller', $dashboard->controller_name);
                 }
@@ -109,6 +110,14 @@ class Login extends CI_Controller {
 
             case 'sales_dashboard':
                 redirect('Dashboard/sales_dashboard');
+                break;
+                
+            case 'project_dashboard':
+                redirect('Dashboard/project_dashboard');
+                break;
+
+            case 'production_dashboard':
+                redirect('Dashboard/production_dashboard');
                 break;
 
             default:

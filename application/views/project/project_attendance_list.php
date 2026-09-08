@@ -25,7 +25,7 @@
 
 <label>Project</label>
 
-<select class="form-control" id="project_filter">
+<select class="form-control select2" id="project_filter">
 
 <option value="">All Projects</option>
 
@@ -106,7 +106,7 @@ placeholder="Employee Name">
 
 <div class="x_title">
 
-<h2>Today's Attendance</h2>
+<h2>Today's Time Sheet</h2>
 
 <div class="clearfix"></div>
 
@@ -417,7 +417,7 @@ $(document).ready(function(){
 
     $(document).on('click','.start',function(){
 
-        if(!confirm("Start attendance?")){
+        if(!confirm("Start task?")){
             return false;
         }
 
@@ -443,7 +443,7 @@ $(document).ready(function(){
 
                 if(res.status){
 
-                    alert("Attendance Started");
+                    alert("Task Started");
 
                     location.reload();
 
@@ -463,7 +463,7 @@ $(document).ready(function(){
 
     $(document).on('click','.pause',function(){
 
-        if(!confirm("Pause attendance?")){
+        if(!confirm("Pause task?")){
             return false;
         }
 
@@ -485,7 +485,7 @@ $(document).ready(function(){
 
                 if(res.status){
 
-                    alert("Attendance Paused");
+                    alert("Task Paused");
 
                     location.reload();
 
@@ -505,7 +505,7 @@ $(document).ready(function(){
 
     $(document).on('click','.resume',function(){
 
-        if(!confirm("Resume attendance?")){
+        if(!confirm("Resume task?")){
             return false;
         }
 
@@ -527,7 +527,7 @@ $(document).ready(function(){
 
                 if(res.status){
 
-                    alert("Attendance Resumed");
+                    alert("Task Resumed");
 
                     location.reload();
 
@@ -547,7 +547,7 @@ $(document).ready(function(){
 
     $(document).on('click','.finish',function(){
 
-        if(!confirm("Finish attendance?")){
+        if(!confirm("Finish task?")){
             return false;
         }
 
@@ -569,7 +569,7 @@ $(document).ready(function(){
 
                 if(res.status){
 
-                    alert("Attendance Completed");
+                    alert("Task Completed");
 
                     location.reload();
 
@@ -602,6 +602,15 @@ $('#status_filter').change(function(){
     .column(6)
     .search($(this).val())
     .draw();
+
+});
+$(document).ready(function () {
+
+    $('.select2').select2({
+        placeholder: '-- Select Project --',
+        allowClear: true,
+        width: '100%'
+    });
 
 });
 </script>

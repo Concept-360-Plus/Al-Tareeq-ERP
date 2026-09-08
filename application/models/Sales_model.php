@@ -1352,7 +1352,7 @@ public function get_enquiry_by_id($id)
         $this->db->join('customer_master cm', 'cm.customer_id = qm.quotation_customer', 'left');
         $this->db->join('branch_master bm', 'bm.branch_id = qm.quotation_branch_id', 'left');
         // Exclude SOs already used in project_master
-        $this->db->where("so.so_id NOT IN (SELECT so_id FROM project_master)", NULL, FALSE);
+        //$this->db->where("so.so_id NOT IN (SELECT so_id FROM project_master)", NULL, FALSE);
         $this->db->order_by('so.so_date', 'DESC');
 
         return $this->db->get()->result_array();

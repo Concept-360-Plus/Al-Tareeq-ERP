@@ -2,7 +2,11 @@
     label,
     h4 {
         color: black;
-        font-weight: bold;
+        font-weight: normal;
+    }
+
+    .modal-title {
+        color: #fff;
     }
 
     table th,
@@ -10,1223 +14,2980 @@
         vertical-align: middle !important;
     }
 
-    .task-modal-dialog {
-        max-width: calc(100vw - 2rem);
+    .so {
+        margin-right: -10px;
     }
 
-    .task-modal-body {
-        max-height: calc(100vh - 10rem);
-        overflow-y: auto;
+    .product-add-btn {
+        margin-top: 25px;
     }
 
-    .task-table-responsive {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
+    #itemMasterTable input[type="number"] {
+        min-width: 80px;
     }
-
-    #taskModal #popupTaskTable {
-        min-width: 1250px;
-        margin-bottom: 0;
-    }
-
-    @media (max-width: 767.98px) {
-        .task-modal-dialog {
-            margin: .5rem;
-            max-width: calc(100vw - 1rem);
-        }
-
-        #taskModal .modal-header,
-        #taskModal .modal-footer {
-            padding: .75rem;
-        }
-    }
+    .table-bordered td, .table-bordered th{border:none !important;}
 </style>
-<link rel="stylesheet" href="<?= base_url('assets/select2.min.css');?>">
-<script src="<?= base_url('assets/select2.min.js');?>"></script> 
+
+<link href="<?= base_url('public/assets/task.css'); ?>" rel="stylesheet">
+<link rel="stylesheet" href="<?= base_url('assets/select2.min.css'); ?>">
+
+<script src="<?= base_url('assets/select2.min.js'); ?>"></script>
+
+
 <div class="clearfix"></div>
+
 <div class="row">
+
     <div class="col-md-12 col-sm-12">
+
         <div class="x_panel">
-            <div >
-                <!-- <h4><?= !empty($project) ? "Edit Project" : "Add Project" ?></h4> -->
-                <div class="clearfix"></div>
 
-                <?php if ($this->session->flashdata('success')): ?>
-                    <div class="alert alert-success alert-dismissible fade show">
-                        <?= $this->session->flashdata('success'); ?>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                <?php endif; ?>
+            <div class="clearfix"></div>
 
-                <?php if ($this->session->flashdata('error')): ?>
-                    <div class="alert alert-danger alert-dismissible fade show">
-                        <?= $this->session->flashdata('error'); ?>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                <?php endif; ?>
-            </div>
+            <!-- ===================================================== -->
+            <!-- FLASH MESSAGES -->
+            <!-- ===================================================== -->
+
+            <?php if ($this->session->flashdata('success')): ?>
+
+                <div class="alert alert-success alert-dismissible fade show">
+
+                    <?= $this->session->flashdata('success'); ?>
+
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="alert">
+                    </button>
+
+                </div>
+
+            <?php endif; ?>
+
+
+            <?php if ($this->session->flashdata('error')): ?>
+
+                <div class="alert alert-danger alert-dismissible fade show">
+
+                    <?= $this->session->flashdata('error'); ?>
+
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="alert">
+                    </button>
+
+                </div>
+
+            <?php endif; ?>
+
 
             <div class="x_content">
-                <form action="<?= base_url('index.php/Project/save_project') ?>" method="post">
-                    <input type="hidden" name="project_id" value="<?= $project['project_id'] ?? '' ?>">
 
-                    <!-- Select Sales Order -->
-                    <!--<div class="form-group mb-3">
-                        <label>Select Sales Order</label>
-                        <select name="so_id" id="so_select" class="form-control" required>
-                        <option value="">-- Select --</option>
-                        <?php foreach ($sales_orders as $so): ?>
-                            <option value="<?= $so['so_id'] ?>" 
-                                <?= (!empty($selected_so_id) && $selected_so_id == $so['so_id']) ? 'selected' : '' ?>>
-                                <?= $so['so_code'] ?> (SO ID: <?= $so['so_id'] ?>)
+                <!-- ===================================================== -->
+                <!-- PROJECT FORM -->
+                <!-- ===================================================== -->
+
+                <form action="<?= base_url('index.php/Project/save_project'); ?>"
+                      method="post"
+                      id="projectForm">
+
+                    <input type="hidden"
+                           name="project_id"
+                           value="<?= $project['project_id'] ?? ''; ?>">
+
+
+                    <!-- ================================================= -->
+                    <!-- SALES ORDER -->
+                    <!-- ================================================= -->
+
+                    <div class="form-group"
+                         style="width:35%;">
+
+                        <label>
+                            Sales Order
+                        </label>
+
+                        <select name="so_id"
+                                id="so_select123"
+                                class="form-control select2"
+                                style="width:100%;">
+
+                            <option value="">
+                                -- Select --
                             </option>
-                        <?php endforeach; ?>
-                    </select>
 
-                    </div>-->
-                    <div class="row">
+                            <?php foreach ($sales_orders as $so): ?>
 
-                        <!-- Enquiry
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Enquiry</label>
-                                <select name="e_id" id="se_select" class="form-control" required>
-                                    <option value="">-- Select Enquiry --</option>
-                                    <?php foreach ($enquires as $eq): ?>
-                                        <option value="<?= $eq['enquiry_id']; ?>">
-                                            <?= $eq['enquiry_code']; ?> - <?= $eq['customer_name']; ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                        </div> -->
+                                <option value="<?= $so['so_id']; ?>~<?= $so['qtn_id']; ?>"
+                                    <?= (
+                                        !empty($selected_so_id)
+                                        &&
+                                        $selected_so_id == $so['so_id']
+                                    )
+                                    ? 'selected'
+                                    : ''; ?>>
 
-                        <!-- Quotation -->
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Quotation</label>
-                                <select name="quotation_id" id="quotation_select" class="form-control select2" required>
-                                    <option value="">-- Select Quotation --</option>
-                                    <?php foreach ($quotations as $qtn): ?>
-                                        <option value="<?= $qtn['qtn_id'] ?>" 
-                                            <?= (!empty($selected_qtn_id) && $selected_qtn_id == $qtn['qtn_id']) ? 'selected' : '' ?>>
-                                            <?= $qtn['quotation_code'] ?> (<?= $qtn['quotation_type'] ?>)
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                        </div>
+                                    <?= htmlspecialchars($so['so_code']); ?>
+
+                                    (SO ID: <?= $so['so_id']; ?>)
+
+                                </option>
+
+                            <?php endforeach; ?>
+
+                        </select>
 
                     </div>
 
-                    <!-- Project & Customer Details -->
-                    <table class="table table-bordered" style="width:100%; font-size:13px; margin-bottom:20px;">
-                        <tr>
-                            <th>Project Name</th>
-                            <td><input type="text" name="project_name" id="project_name" class="form-control" value="<?= $project['project_name'] ?? '' ?>" required></td>
-                            <th>Project Location</th>
-                            <td><input type="text" name="project_location" id="project_location" class="form-control" value="<?= $project['project_location'] ?? '' ?>"></td>
-                        </tr>
-                        <tr>
-                            <th>Customer</th>
-                            <td><input type="text" name="customer_name" id="customer_name" class="form-control" value="<?= $project['customer_name'] ?? '' ?>" readonly></td>
-                            <th>Branch</th>
-                            <td><input type="text" name="branch_name" id="branch_name" class="form-control" value="<?= $project['branch_name'] ?? '' ?>" readonly></td>
-                        </tr>
+
+                    <input type="hidden"
+                           name="bit_quo"
+                           id="bit_quo"
+                           value="0">
+
+
+                    <!-- ================================================= -->
+                    <!-- PROJECT DETAILS -->
+                    <!-- ================================================= -->
+
+                    <table class="table table-bordered"
+                           style="width:95%; border:none;font-size:13px; margin-bottom:20px;">
 
                         <tr>
-                            <th>Start Date</th>
-                            <td><input type="date" name="start_date1" id="start_date" class="form-control" value="<?= $project['start_date'] ?? '' ?>"></td>
-                            <th>End Date</th>
-                            <td><input type="date" name="end_date1" id="end_date" class="form-control" value="<?= $project['end_date'] ?? '' ?>"></td>
+
+                            <th>
+                                Project Name
+                            </th>
+
+                            <td>
+
+                                <input type="text"
+                                       name="project_name"
+                                       id="project_name"
+                                       class="form-control"
+                                       value="<?= htmlspecialchars($project['project_name'] ?? ''); ?>"
+                                       required>
+
+                            </td>
+
+
+                            <th>
+                                Project Location
+                            </th>
+
+                            <td>
+
+                                <input type="text"
+                                       name="project_location"
+                                       id="project_location"
+                                       class="form-control"
+                                       value="<?= htmlspecialchars($project['project_location'] ?? ''); ?>">
+
+                            </td>
+
+                            
+                            <th>
+                                Customer
+                            </th>
+
+                            <td>
+
+                                <input type="text"
+                                       name="customer_name"
+                                       id="customer_name"
+                                       class="form-control"
+                                       value="<?= htmlspecialchars($project['customer_name'] ?? ''); ?>"
+                                       >
+
+                                <input type="hidden"
+                                       name="customer_id"
+                                       id="customer_id"
+                                       value="<?= $project['customer_id'] ?? ''; ?>">
+
+                            </td>
+
+
                         </tr>
+
+
                         <tr>
-                            <th>Project Duration (Days)</th>
-                            <td colspan="3"><input type="text" name="duration" id="duration" class="form-control" value="<?= $project['duration'] ?? '' ?>" readonly></td>
+
+
+                            <th>
+                                Branch
+                            </th>
+
+                            <td>
+
+                                <input type="text"
+                                       name="branch_name"
+                                       id="branch_name"
+                                       class="form-control"
+                                       value="<?= htmlspecialchars($project['branch_name'] ?? ''); ?>"
+                                       readonly>
+
+                            </td>
+                            
+                            <th>
+                                Start Date
+                            </th>
+
+                            <td>
+
+                                <input type="date"
+                                       name="start_date1"
+                                       id="start_date"
+                                       class="form-control"
+                                       value="<?= $project['start_date'] ?? ''; ?>">
+
+                            </td>
+
+
+                            <th>
+                                End Date
+                            </th>
+
+                            <td>
+
+                                <input type="date"
+                                       name="end_date1"
+                                       id="end_date"
+                                       class="form-control"
+                                       value="<?= $project['end_date'] ?? ''; ?>">
+
+                            </td>
+
+
                         </tr>
+
+
+
+
+                        <tr>
+
+                            <th>
+                                Project Duration (Days)
+                            </th>
+
+                            <td>
+
+                                <input type="text"
+                                       name="duration"
+                                       id="duration"
+                                       class="form-control"
+                                       value="<?= $project['duration'] ?? ''; ?>"
+                                       readonly>
+
+                            </td>
+
+                             <th>
+                                Subject
+                            </th>
+
+                            <td>
+                            <input type="text"
+                                       name="subject"
+                                       value="<?= htmlspecialchars($project['subject'] ?? ''); ?>"
+                                       class="form-control">
+
+                            </td>
+
+                             <th>
+                                  Client PO Number
+                            </th>
+
+                            <td>
+                            <input type="text"
+                                       name="po_number"
+                                       id="po_number"
+                                       value="<?= htmlspecialchars($project['po_number'] ?? ''); ?>"
+                                       class="form-control">
+
+                            </td>
+
+                        </tr>
+
+                          <tr>
+
+                            <th>
+                                LOA Received
+                            </th>
+
+                            <td>
+
+                                <?php
+                                $loa_received =
+                                    $project['loa_received'] ?? '';
+                                ?>
+
+                                <select name="loa_received"
+                                        id="loa_received"
+                                        class="form-control">
+
+                                    <option value="">
+                                        -- Select --
+                                    </option>
+
+                                    <option value="Yes"
+                                        <?= $loa_received == 'Yes'
+                                            ? 'selected'
+                                            : ''; ?>>
+                                        Yes
+                                    </option>
+
+                                    <option value="No"
+                                        <?= $loa_received == 'No'
+                                            ? 'selected'
+                                            : ''; ?>>
+                                        No
+                                    </option>
+
+                                </select>
+
+                            </td>
+
+                             <th>
+                                LOA Received Date
+                            </th>
+
+                            <td>
+                            <input type="date"
+                                       name="loa_date"
+                                       id="loa_date"
+                                       value="<?= $project['loa_date'] ?? ''; ?>"
+                                       class="form-control">
+
+                            </td>
+                            </tr>
 
                     </table>
 
-                    <div class="row">
-                        <!-- Enquiry -->
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Subject</label>
-                                <input type="text" name="subject" value="<?= $project['subject'] ?? '' ?>" class="form-control qty_input text-end">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Client Po Number</label>
-                                <input type="text" name="po_number" id="po_number" class="form-control">
-                            </div>
-                        </div>
-                        <!-- Enquiry -->
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>LOA Received</label>
-                                <select name="loa_received" id="loa_received" class="form-control" >
-                                    <option value="">-- Select --</option>
-                                    <?php $project['loa_received'] = $project['loa_received']??'';?>
-                                    <option value="Yes"<?php if($project['loa_received']=='Yes'):?> selected="selected"<?php endif;?>>Yes</option>
-                                    <option value="No"<?php if($project['loa_received']=='No'):?> selected="selected"<?php endif;?>>No</option>>
-                                </select>
-                        </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>LOA Received Date</label>
-                                <input type="date" name="loa_date" id="loa_date" value="<?= $project['loa_date'] ?? '' ?>" class="form-control">
-                            </div>
-                        </div>
-                        
+                   
+
+
+                    <!-- ================================================= -->
+                    <!-- PROJECT ITEMS TITLE -->
+                    <!-- ================================================= -->
+
+                    <div class="d-flex justify-content-between align-items-center mb-2"
+                         style="width:66%;">
+
+                        <h5 class="mb-0">
+                            Project Items
+                        </h5>
+
+
+                        <button type="button"
+                                class="btn btn-primary btn-sm"
+                                id="addItemBtn">
+
+                            <i class="fa fa-plus"></i>
+                            Add Item
+
+                        </button>
+
                     </div>
 
-                    <!-- Project Items Table -->
-                    <h5>Project Items</h5>
+
+                    <!-- ================================================= -->
+                    <!-- PROJECT ITEMS TABLE -->
+                    <!-- ================================================= -->
+
                     <div class="table-responsive">
-                        <table class="table table-bordered" id="project_items_table">
+
+                        <table class="table table-bordered"
+                               id="project_items_table"
+                               style="width:66%;">
+
                             <thead class="table-light">
+
                                 <tr>
-                                    <th>#</th>
-                                    <th>Product</th>
-                                    <!--<th class="text-end">Qty</th>
-                                    <th class="text-end">Unit Price</th>
-                                    <th class="text-end">Total</th>-->
+
+                                    <th>
+                                        #
+                                    </th>
+
+                                    <th>
+                                        Product
+                                    </th>
+
+                                    <th class="text-end">
+                                        Qty
+                                    </th>
+
+                                    <th class="text-end">
+                                        Unit
+                                    </th>
+
+                                   <!-- <th class="text-end">
+                                        Total
+                                    </th>-->
+
                                 </tr>
+
                             </thead>
+
+
                             <tbody>
+
                                 <?php if (!empty($project_items)): ?>
+
                                     <?php foreach ($project_items as $i => $item): ?>
+
                                         <tr>
-                                            <td><?= $i+1 ?></td>
+
                                             <td>
-                                                <input type="hidden" name="product_id[]" value="<?= $item['product_id'] ?>">
-                                                <?= htmlspecialchars($item['product_name']) ?>
+                                                <?= $i + 1; ?>
                                             </td>
-                                            <td class="text-end"><input type="text" name="quantity[]" value="<?= $item['quantity'] ?>" class="form-control qty_input text-end" readonly></td>
-                                             <!--<td class="text-end"><input type="text" name="unit_price[]" value="<?= $item['unit_price'] ?>" class="form-control price_input text-end" readonly></td>
-                                            <td class="text-end total"><?= number_format($item['total'], 2) ?></td>-->
+
+
+                                            <td>
+
+                                                <input type="hidden"
+                                                       name="product_id[]"
+                                                       value="<?= $item['product_id']; ?>">
+
+                                                <?= htmlspecialchars(
+                                                    $item['product_name']
+                                                ); ?>
+
+                                            </td>
+
+
+                                            <td class="text-end">
+
+                                                <input type="text"
+                                                       name="quantity[]"
+                                                       value="<?= $item['quantity']; ?>"
+                                                       class="form-control qty_input text-end"
+                                                       readonly>
+
+                                            </td>
+
+
+                                            <td class="text-end">
+
+                                                <input type="text"
+                                                       name="unit[]"
+                                                       value="<?= htmlspecialchars($item['unit_abbr']); ?>"
+                                                       class="form-control text-end"
+                                                       readonly>
+
+                                            </td>
+
+
+                                            <td class="text-end">
+
+                                                <?= number_format(
+                                                    $item['total'] ?? 0,
+                                                    2
+                                                ); ?>
+
+                                            </td>
+
                                         </tr>
+
                                     <?php endforeach; ?>
+
                                 <?php else: ?>
-                                    <tr>
-                                        <td colspan="5" class="text-center">Select a Quotation Order to populate items</td>
+
+                                    <tr class="no-project-item">
+
+                                        <td colspan="5"
+                                            class="text-center">
+
+                                            Select a Sales Order or click
+                                            Add Item to select products
+
+                                        </td>
+
                                     </tr>
+
                                 <?php endif; ?>
+
                             </tbody>
+
                         </table>
+
                     </div>
 
-                    <!-- Financial Summary -->
-                    <!--<div class="col-md-6">
-                        <div class="table-responsive mt-3">
-                            <table class="table table-bordered">
-                                <tr>
-                                    <th>Subtotal</th>
-                                    <td><input type="text" name="subtotal" id="subtotal" class="form-control" value="<?= $project['subtotal'] ?? '0.00' ?>" readonly></td>
-                                </tr>
-                                <tr>
-                                    <th>VAT (%)</th>
-                                    <td><input type="text" name="vat_percentage" id="vat_percentage" class="form-control" value="<?= $project['vat_percentage'] ?? '5' ?>" readonly></td>
-                                </tr>
-                                <tr>
-                                    <th>VAT Amount</th>
-                                    <td><input type="text" name="vat_amount" id="vat_amount" class="form-control" value="<?= $project['vat_amount'] ?? '0.00' ?>" readonly></td>
-                                </tr>
-                                <tr>
-                                    <th>Grand Total</th>
-                                    <td><input type="text" name="grand_total" id="grand_total" class="form-control" value="<?= $project['grand_total'] ?? '0.00' ?>" readonly></td>
-                                </tr>
-                            </table>
-                        </div>
-                    </div>-->
-                    
-                    <div class="row">
 
-                        
-                    </div>
-                    <!--Task Assignment Table-->
+                    <!-- ================================================= -->
+                    <!-- TASKS -->
+                    <!-- ================================================= -->
+
                     <div class="card mt-3">
+
                         <div class="card-header d-flex justify-content-between">
-                            <h5 class="mb-0">Project Tasks</h5>
+
+                            <h5 class="mb-0">
+                                Project Tasks
+                            </h5>
+
 
                             <button type="button"
                                     class="btn btn-primary btn-sm"
                                     data-toggle="modal"
                                     data-target="#taskModal">
-                                <i class="fa fa-plus"></i> Assign Task
+
+                                <i class="fa fa-plus"></i>
+                                Assign Task
+
                             </button>
+
                         </div>
+
 
                         <div class="card-body">
 
-                            <table class="table table-bordered table-striped" id="taskTable">
+                            <table class="table table-bordered table-striped"
+                                   id="taskTable">
+
                                 <thead>
+
                                     <tr>
-                                        <th width="5%">#</th>
-                                        <th>Category</th>
-                                        <th>Task</th>
-                                        <th>Milestone</th>
-                                        <th>Employee</th>
-                                        <th>Priority</th>
-                                        <th>Start</th>
-                                        <th>End</th>
-                                        <th>Status</th>
-                                        <th width="10%">Action</th>
+
+                                        <th width="5%">
+                                            #
+                                        </th>
+
+                                        <th>
+                                            Task
+                                        </th>
+
+                                        <th>
+                                            Employee
+                                        </th>
+
+                                        <th>
+                                            Priority
+                                        </th>
+
+                                        <th>
+                                            Start
+                                        </th>
+
+                                        <th>
+                                            End
+                                        </th>
+
+                                        <th>
+                                            Status
+                                        </th>
+
+                                        <th width="10%">
+                                            Action
+                                        </th>
+
                                     </tr>
+
                                 </thead>
 
-                                <tbody>
 
+                                <tbody>
                                 </tbody>
 
                             </table>
 
                         </div>
+
                     </div>
+
 
                     <div id="hiddenTaskInputs"></div>
 
-                    <!-- Task Assignment Table -->
-                                    
-                <!--<div class="table-responsive">
-                    <h5>Technician & Resource Assignment</h5>
-                    <table class="table table-bordered" id="technician_table">
-                        <thead class="table-light">
-                            <tr>
-                                <th>#</th>
-                                <th>Technician</th>
-                                <th>Role / Designation</th>
-                                <th>Assignment Start</th>
-                                <th>Assignment End</th>
-                              
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>1</td>
-                                <td>
-                                    <select name="technician_id[]" class="form-control technician_select" required>
-                    <option value="">-- Select Technician --</option>
-                    <?php foreach ($employees as $emp): ?>
-                        <option value="<?= $emp['employee_id'] ?>"><?= $emp['employee_name'] ?></option>
-                    <?php endforeach; ?>
-                </select>
-                                </td>
-                                <td>
-                                    <select name="designation_id[]" class="form-control designation_select" required>
-                    <option value="">-- Select Role --</option>
-                    <?php foreach ($designations as $des): ?>
-                        <option value="<?= $des['id'] ?>"><?= $des['designation_name'] ?></option>
-                    <?php endforeach; ?>
-                </select>
-                </td>
-                <td><input type="date" name="assignment_start[]" class="form-control assignment_start"></td>
-                <td><input type="date" name="assignment_end[]" class="form-control assignment_end"></td>
-               
-                <td><button type="button" class="btn btn-danger btn-sm remove_row">Remove</button></td>
-            </tr>
-        </tbody>
-    </table>
-    <button type="button" class="btn btn-primary btn-sm mt-2" id="add_technician">Add Technician</button>
-</div>-->
+
+                    <!-- ================================================= -->
+                    <!-- APPROVER -->
+                    <!-- ================================================= -->
+
+                    <div class="row">
+
+                        <div class="col-md-4">
+
+                            <div class="form-group mt-3">
+
+                                <label>
+                                    Assign Approver
+                                </label>
 
 
-                    <!-- Remarks -->
-                    <div class="form-group mt-3">
-                        <label>Remarks</label>
-                        <textarea name="remarks" class="form-control" rows="3"><?= $project['remarks'] ?? '' ?></textarea>
+                                <?php
+                                $approver_id =
+                                    $project['approver_id'] ?? '';
+                                ?>
+
+
+                                <select name="approver_id"
+                                        class="form-control"
+                                        required>
+
+                                    <option value="">
+                                        -- Select Approver --
+                                    </option>
+
+                                    <?php foreach ($users as $user): ?>
+
+                                        <option value="<?= $user['user_id']; ?>"
+                                            <?= $approver_id == $user['user_id']
+                                                ? 'selected'
+                                                : ''; ?>>
+
+                                            <?= htmlspecialchars(
+                                                $user['user_name']
+                                            ); ?>
+
+                                        </option>
+
+                                    <?php endforeach; ?>
+
+                                </select>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="col-md-4">
+
+                            <div class="form-group mt-3">
+
+                                <label>
+                                    Remarks
+                                </label>
+
+                                <textarea name="remarks"
+                                          class="form-control"
+                                          rows="3"><?= htmlspecialchars(
+                                              $project['remarks'] ?? ''
+                                          ); ?></textarea>
+
+                            </div>
+
+                        </div>
+
                     </div>
-                    <div class="form-group mt-3">
-    <label>Assign Approver</label>
-    <select name="approver_id" class="form-control" required>
-        <option value="">-- Select Approver --</option>
-        <?php $project['approver_id'] = $project['approver_id'] ?? ''; ?>
-        <?php foreach($users as $user): ?>
-            <option value="<?= $user['user_id'] ?>"
-                <?= !empty($project) && $project['approver_id'] == $user['user_id'] ? 'selected' : '' ?>>
-                <?= htmlspecialchars($user['user_name']) ?>
-            </option>
-        <?php endforeach; ?>
-    </select>
-</div>
 
 
-                    <div class="text-end mt-3">
-                        <button type="submit" class="btn btn-success"><?= !empty($project) ? "Update Project" : "Save Project" ?></button>
-                        <a href="<?= base_url('index.php/Project/add_project') ?>" class="btn btn-secondary">Cancel</a>
+                    <!-- ================================================= -->
+                    <!-- FORM BUTTONS -->
+                    <!-- ================================================= -->
+
+                    <div class="col-md-12">
+
+                        <div class="text-end mt-3">
+
+                            <button type="submit"
+                                    class="btn btn-success">
+
+                                <?= !empty($project)
+                                    ? 'Update Project'
+                                    : 'Save Project'; ?>
+
+                            </button>
+
+
+                            <a href="<?= base_url('index.php/Project/add_project'); ?>"
+                               class="btn btn-secondary">
+
+                                Cancel
+
+                            </a>
+
+                        </div>
+
                     </div>
+
                 </form>
+
             </div>
+
         </div>
+
     </div>
-</div>
-
-<!-- add task-->
-<div class="modal fade" id="taskModal">
-
-<div class="modal-dialog modal-xl task-modal-dialog">
-
-<div class="modal-content">
-
-<div class="modal-header bg-primary text-white">
-
-<h4 class="modal-title">
-Assign Task
-</h4>
-
-<button type="button" class="close" data-dismiss="modal">
-&times;
-</button>
-
-</div>
-
-<div class="modal-body task-modal-body">
-
-<button type="button"
-        class="btn btn-success btn-sm mb-3"
-        id="addTaskRow">
-
-<i class="fa fa-plus"></i>
-
-Add Task
-
-</button>
-
-<div class="task-table-responsive">
-<table class="table table-bordered" id="popupTaskTable">
-
-<thead>
-
-<tr>
-
-<th>Category</th>
-
-<th>Task</th>
-
-<th>Milestone</th>
-
-<th>Designation</th>
-
-<th>Employee</th>
-
-<th>Priority</th>
-
-<th>Start</th>
-
-<th>End</th>
-
-<th>Status</th>
-
-<th>Description</th>
-
-<th></th>
-
-</tr>
-
-</thead>
-
-<tbody>
-
-</tbody>
-
-</table>
-</div>
-
-</div>
-
-<div class="modal-footer">
-
-<button class="btn btn-success" id="saveTask">
-Save Tasks
-</button>
-
-<button class="btn btn-secondary"
-data-dismiss="modal">
-Close
-</button>
-
-</div>
-
-</div>
-
-</div>
 
 </div>
 
 
-<!-- add task-->
-<!-- JS for fetching SO and calculating totals -->
- <script>
-var taskNo=0;
+<!-- ============================================================= -->
+<!-- TASK MODAL -->
+<!-- ============================================================= -->
+
+<div class="modal fade"
+     id="taskModal">
+
+    <div class="modal-dialog modal-lg task-modal-dialog">
+
+        <div class="modal-content">
+
+            <div class="modal-header bg-primary text-white">
+
+                <h4 class="modal-title">
+                    Assign Task
+                </h4>
+
+                <button type="button"
+                        class="close"
+                        data-dismiss="modal">
+
+                    &times;
+
+                </button>
+
+            </div>
+
+
+            <div class="modal-body task-modal-body">
+
+                <button type="button"
+                        class="btn btn-success btn-sm mb-3"
+                        id="addTaskRow">
+
+                    <i class="fa fa-plus"></i>
+                    Add Task
+
+                </button>
+
+
+                <div class="task-table-responsive">
+
+                    <table class="table table-bordered"
+                           id="popupTaskTable">
+
+                        <thead>
+
+                            <tr>
+
+                                <th>
+                                    Task
+                                </th>
+
+                                <th>
+                                    Designation
+                                </th>
+
+                                <th>
+                                    Employee
+                                </th>
+
+                                <th>
+                                    Priority
+                                </th>
+
+                                <th>
+                                    Start
+                                </th>
+
+                                <th>
+                                    End
+                                </th>
+
+                                <th>
+                                    Status
+                                </th>
+
+                                <th></th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody>
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+
+            <div class="modal-footer">
+
+                <button class="btn btn-success"
+                        id="saveTask">
+
+                    Save Tasks
+
+                </button>
+
+
+                <button class="btn btn-secondary"
+                        data-dismiss="modal">
+
+                    Close
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================= -->
+<!-- ADD ITEM MODAL -->
+<!-- ============================================================= -->
+
+<div class="modal fade"
+     id="addItemModal"
+     tabindex="-1"
+     role="dialog">
+
+    <div class="modal-dialog modal-lg"
+         role="document">
+
+        <div class="modal-content">
+
+
+            <div class="modal-header bg-primary text-white">
+
+                <h5 class="modal-title">
+                    Add Project Items
+                </h5>
+
+
+                <button type="button"
+                        class="close text-white"
+                        data-dismiss="modal">
+
+                    &times;
+
+                </button>
+
+            </div>
+
+
+            <div class="modal-body">
+
+
+                <!-- SEARCH + ADD PRODUCT -->
+
+                <div class="row mb-3">
+
+                    <div class="col-md-8">
+
+                        <input type="text"
+                               id="itemSearch"
+                               class="form-control"
+                               placeholder="Search product by name or code...">
+
+                    </div>
+
+
+                    <div class="col-md-4 text-right">
+
+                        <button type="button"
+                                class="btn btn-primary btn-sm"
+                                id="addProductBtn">
+
+                            <i class="fa fa-plus"></i>
+                            Add Product
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ITEM MASTER TABLE -->
+
+                <div class="table-responsive">
+
+                    <table class="table table-bordered table-striped"
+                           id="itemMasterTable">
+
+                        <thead>
+
+                            <tr>
+
+                                <th width="5%">
+                                    #
+                                </th>
+
+                                <th>
+                                    Item
+                                </th>
+
+                                <th>
+                                    Code
+                                </th>
+
+                                <th>
+                                    Unit
+                                </th>
+
+                                <th width="15%">
+                                    Qty
+                                </th>
+
+                                <th width="10%">
+                                    Select
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody>
+
+                            <tr>
+
+                                <td colspan="6"
+                                    class="text-center">
+
+                                    Click Add Item to load products
+
+                                </td>
+
+                            </tr>
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+
+            <div class="modal-footer">
+
+                <button type="button"
+                        class="btn btn-success"
+                        id="addSelectedItems">
+
+                    <i class="fa fa-plus"></i>
+                    Add Selected Items
+
+                </button>
+
+
+                <button type="button"
+                        class="btn btn-secondary"
+                        data-dismiss="modal">
+
+                    Close
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================= -->
+<!-- ADD PRODUCT MODAL -->
+<!-- ============================================================= -->
+
+<div class="modal fade"
+     id="addProductModal"
+     tabindex="-1"
+     role="dialog">
+
+    <div class="modal-dialog"
+         role="document">
+
+        <div class="modal-content">
+
+
+            <div class="modal-header bg-primary text-white">
+
+                <h5 class="modal-title">
+                    Add Product
+                </h5>
+
+
+                <button type="button"
+                        class="close text-white"
+                        data-dismiss="modal">
+
+                    &times;
+
+                </button>
+
+            </div>
+
+
+            <form id="addProductForm">
+
+                <div class="modal-body">
+
+
+                    <!-- PRODUCT CODE -->
+
+                    <div class="form-group">
+
+                        <label>
+                            Product Code
+                        </label>
+
+                        <input type="text"
+                               name="product_code"
+                               id="new_product_code"
+                               class="form-control"
+                               required>
+
+                    </div>
+
+
+                    <!-- PRODUCT NAME -->
+
+                    <div class="form-group">
+
+                        <label>
+                            Product Name
+                        </label>
+
+                        <input type="text"
+                               name="product_name"
+                               id="new_product_name"
+                               class="form-control"
+                               required>
+
+                    </div>
+
+
+                    <!-- UNIT -->
+
+                    <div class="form-group">
+
+                        <label>
+                            Unit
+                        </label>
+
+                        <select name="unit_id"
+                                id="new_unit_id"
+                                class="form-control"
+                                required>
+
+                            <option value="">
+                                -- Select Unit --
+                            </option>
+
+                            <?php if (!empty($units)): ?>
+
+                                <?php foreach ($units as $unit): ?>
+
+                                    <option value="<?= $unit['unit_id']; ?>">
+
+                                        <?= htmlspecialchars(
+                                            $unit['unit_name']
+                                        ); ?>
+
+                                    </option>
+
+                                <?php endforeach; ?>
+
+                            <?php endif; ?>
+
+                        </select>
+
+                    </div>
+
+
+                    <!-- PRICE -->
+
+                    <div class="form-group">
+
+                        <label>
+                            Price
+                        </label>
+
+                        <input type="number"
+                               name="retail_price"
+                               id="new_retail_price"
+                               class="form-control"
+                               min="0"
+                               step="0.01"
+                               value="0.00"
+                               required>
+
+                    </div>
+
+
+                </div>
+
+
+                <div class="modal-footer">
+
+                    <button type="submit"
+                            class="btn btn-success"
+                            id="saveProductBtn">
+
+                        <i class="fa fa-save"></i>
+                        Save Product
+
+                    </button>
+
+
+                    <button type="button"
+                            class="btn btn-secondary"
+                            data-dismiss="modal">
+
+                        Close
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================= -->
+<!-- JAVASCRIPT -->
+<!-- ============================================================= -->
+
+<script>
+
+var taskNo = 0;
+
+
+/* ============================================================= */
+/* TASK ROW */
+/* ============================================================= */
 
 function newTaskRow()
 {
-taskNo++;
+    taskNo++;
 
-var row='';
+    var row = '';
 
-row+='<tr>';
+    row += '<tr>';
 
-row+='<td>';
+    row += '<td>';
 
-row+='<select name="task_category[]" class="form-control">';
+    row += '<input type="text" ';
+    row += 'class="form-control" ';
+    row += 'name="task_name[]">';
 
-row+='<option value="">Select</option>';
+    row += '</td>';
 
-<?php foreach($task_categories as $cat){ ?>
 
-row+='<option value="<?= $cat["project_task_id"] ?>"><?= $cat["project_task_name"] ?></option>';
+    row += '<td>';
 
-<?php } ?>
+    row += '<select name="designation_id[]" ';
+    row += 'class="designation form-control designation_select">';
 
-row+='</select>';
+    row += '<option value="">Select</option>';
 
-row+='</td>';
+    <?php foreach ($designations as $d): ?>
 
-row+='<td>';
+    row += '<option value="<?= $d['id']; ?>">';
+    row += '<?= htmlspecialchars($d['designation_name']); ?>';
+    row += '</option>';
 
-row+='<input type="text" class="form-control" name="task_name[]">';
+    <?php endforeach; ?>
 
-row+='</td>';
+    row += '</select>';
 
-row+='<td>';
+    row += '</td>';
 
-row+='<select name="milestone[]" class="form-control">';
 
-row+='<option value="">Select</option>';
+    row += '<td>';
 
-<?php foreach($milestones as $m){ ?>
+    row += '<select name="employee_id[]" ';
+    row += 'class="employee_select form-control">';
 
-row+='<option value="<?= $m["milestone_id"] ?>"><?= $m["milestone_name"] ?></option>';
+    row += '<option value="">Select</option>';
 
-<?php } ?>
+    row += '</select>';
 
-row+='</select>';
+    row += '</td>';
 
-row+='</td>';
 
-row+='<td>';
+    row += '<td>';
 
-row+='<select name="designation_id[]" class="designation form-control  designation_select">';
+    row += '<select name="priority[]" class="form-control">';
 
-row+='<option value="">Select</option>';
+    row += '<option value="Low">Low</option>';
+    row += '<option value="Medium">Medium</option>';
+    row += '<option value="High">High</option>';
+    row += '<option value="Critical">Critical</option>';
 
-<?php foreach($designations as $d){ ?>
+    row += '</select>';
 
-row+='<option value="<?= $d["id"] ?>"><?= $d["designation_name"] ?></option>';
+    row += '</td>';
 
-<?php } ?>
 
-row+='</select>';
+    row += '<td>';
 
-row+='</td>';
+    row += '<input type="date" ';
+    row += 'name="start_date[]" ';
+    row += 'class="form-control">';
 
-row+='<td>';
+    row += '</td>';
 
-row+='<select name="employee_id[]" class="employee_select form-control">';
 
-row+='<option value="">Select</option>';
+    row += '<td>';
 
-row+='</select>';
+    row += '<input type="date" ';
+    row += 'name="end_date[]" ';
+    row += 'class="form-control">';
 
-row+='</td>';
+    row += '</td>';
 
-row+='<td>';
 
-row+='<select name="priority[]" class="form-control">';
+    row += '<td>';
 
-row+='<option>Low</option>';
+    row += '<select name="status[]" class="form-control">';
 
-row+='<option>Medium</option>';
+    row += '<option value="not_started">Not Started</option>';
+    row += '<option value="in_progress">In Progress</option>';
+    row += '<option value="completed">Completed</option>';
+    row += '<option value="hold">Hold</option>';
 
-row+='<option>High</option>';
+    row += '</select>';
 
-row+='<option>Critical</option>';
+    row += '</td>';
 
-row+='</select>';
 
-row+='</td>';
+    row += '<td>';
 
-row+='<td>';
+    row += '<button class="btn btn-danger removeRow" type="button">';
 
-row+='<input type="date" name="start_date[]" class="form-control">';
+    row += '<i class="fa fa-trash"></i>';
 
-row+='</td>';
+    row += '</button>';
 
-row+='<td>';
+    row += '</td>';
 
-row+='<input type="date" name="end_date[]" class="form-control">';
+    row += '</tr>';
 
-row+='</td>';
 
-row+='<td>';
-
-row+='<select name="status[]" class="form-control">';
-
-row+='<option value="not_started">Not Started</option>';
-
-row+='<option value="in_progress">In Progress</option>';
-
-row+='<option value="completed">Completed</option>';
-
-row+='<option value="hold">Hold</option>';
-
-row+='</select>';
-
-row+='</td>';
-
-row+='<td>';
-
-row+='<textarea class="form-control" name="task_description[]"></textarea>';
-
-row+='</td>';
-
-row+='<td>';
-
-row+='<button class="btn btn-danger removeRow">';
-
-row+='<i class="fa fa-trash"></i>';
-
-row+='</button>';
-
-row+='</td>';
-
-row+='</tr>';
-
-$('#popupTaskTable tbody').append(row);
-
+    $('#popupTaskTable tbody').append(row);
 }
 
-$('#addTaskRow').click(function(){
+
+$('#addTaskRow').click(function()
+{
+    newTaskRow();
+});
+
 
 newTaskRow();
 
+
+$(document).on('click', '.removeRow', function()
+{
+    $(this).closest('tr').remove();
 });
 
-newTaskRow();
 
-$(document).on('click','.removeRow',function(e){
+/* ============================================================= */
+/* SAVE TASKS */
+/* ============================================================= */
 
-e.preventDefault();
+/* ============================================================= */
+/* SAVE TASKS */
+/* ============================================================= */
 
-$(this).closest('tr').remove();
-
-});
-
-$('#saveTask').click(function(){
-
+$('#saveTask').click(function()
+{
     $('#taskTable tbody').empty();
     $('#hiddenTaskInputs').empty();
 
-    var i=1;
+    var i = 1;
 
-    $('#popupTaskTable tbody tr').each(function(){
+    $('#popupTaskTable tbody tr').each(function()
+    {
+        var row = $(this);
 
-        var category_id=$(this).find('[name="task_category[]"]').val();
-        var category=$(this).find('[name="task_category[]"] option:selected').text();
+        var task = $.trim(
+            row.find('[name="task_name[]"]').val()
+        );
 
-        var task=$(this).find('[name="task_name[]"]').val();
+        var designation_id =
+            row.find('[name="designation_id[]"]').val();
 
-        var milestone_id=$(this).find('[name="milestone[]"]').val();
-        var milestone=$(this).find('[name="milestone[]"] option:selected').text();
+        var employee_id =
+            row.find('[name="employee_id[]"]').val();
 
-        var designation_id=$(this).find('[name="designation_id[]"]').val();
+        var employee =
+            row.find('[name="employee_id[]"] option:selected').text();
 
-        var employee_id=$(this).find('[name="employee_id[]"]').val();
-        var employee=$(this).find('[name="employee_id[]"] option:selected').text();
+        var priority =
+            row.find('[name="priority[]"]').val();
 
-        var priority=$(this).find('[name="priority[]"]').val();
+        var start =
+            row.find('[name="start_date[]"]').val();
 
-        var start=$(this).find('[name="start_date[]"]').val();
+        var end =
+            row.find('[name="end_date[]"]').val();
 
-        var end=$(this).find('[name="end_date[]"]').val();
+        var status =
+            row.find('[name="status[]"]').val();
 
-        var status=$(this).find('[name="status[]"]').val();
 
-        var description=$(this).find('[name="task_description[]"]').val();
+        /* ----------------------------------------------------- */
+        /* IGNORE EMPTY TASK ROWS */
+        /* ----------------------------------------------------- */
 
-        $('#taskTable tbody').append(
-        '<tr>'+
-        '<td>'+i+'</td>'+
-        '<td>'+category+'</td>'+
-        '<td>'+task+'</td>'+
-        '<td>'+milestone+'</td>'+
-        '<td>'+employee+'</td>'+
-        '<td>'+priority+'</td>'+
-        '<td>'+start+'</td>'+
-        '<td>'+end+'</td>'+
-        '<td>'+status+'</td>'+
-        '<td><button type="button" class="btn btn-danger btn-sm removeSavedTask">Delete</button></td>'+
-        '</tr>'
+        if (!task) {
+            return;
+        }
+
+
+        /* ----------------------------------------------------- */
+        /* DISPLAY TASK IN MAIN TABLE */
+        /* ----------------------------------------------------- */
+
+        var displayRow = $('<tr>');
+
+        displayRow.append(
+            $('<td>').text(i)
+        );
+
+        displayRow.append(
+            $('<td>').text(task)
+        );
+
+        displayRow.append(
+            $('<td>').text(
+                employee_id ? employee : ''
+            )
+        );
+
+        displayRow.append(
+            $('<td>').text(priority)
+        );
+
+        displayRow.append(
+            $('<td>').text(start)
+        );
+
+        displayRow.append(
+            $('<td>').text(end)
+        );
+
+        displayRow.append(
+            $('<td>').text(status)
+        );
+
+        var actionTd = $('<td>');
+
+        actionTd.append(
+            $('<button>', {
+                type: 'button',
+                class: 'btn btn-danger btn-sm removeSavedTask',
+                text: 'Delete'
+            })
+        );
+
+        displayRow.append(actionTd);
+
+        $('#taskTable tbody').append(displayRow);
+
+
+        /* ----------------------------------------------------- */
+        /* CREATE HIDDEN INPUTS PROPERLY */
+        /* ----------------------------------------------------- */
+
+        $('#hiddenTaskInputs').append(
+            $('<input>', {
+                type: 'hidden',
+                name: 'task_name[]',
+                value: task
+            })
         );
 
         $('#hiddenTaskInputs').append(
-
-            '<input type="hidden" name="task_category[]" value="'+category_id+'">'+
-
-            '<input type="hidden" name="task_name[]" value="'+task+'">'+
-
-            '<input type="hidden" name="milestone[]" value="'+milestone_id+'">'+
-
-            '<input type="hidden" name="designation_id[]" value="'+designation_id+'">'+
-
-            '<input type="hidden" name="employee_id[]" value="'+employee_id+'">'+
-
-            '<input type="hidden" name="priority[]" value="'+priority+'">'+
-
-            '<input type="hidden" name="start_date[]" value="'+start+'">'+
-
-            '<input type="hidden" name="end_date[]" value="'+end+'">'+
-
-            '<input type="hidden" name="status[]" value="'+status+'">'+
-
-            '<input type="hidden" name="task_description[]" value="'+description+'">'
+            $('<input>', {
+                type: 'hidden',
+                name: 'designation_id[]',
+                value: designation_id
+            })
         );
 
-        i++;
+        $('#hiddenTaskInputs').append(
+            $('<input>', {
+                type: 'hidden',
+                name: 'employee_id[]',
+                value: employee_id
+            })
+        );
 
+        $('#hiddenTaskInputs').append(
+            $('<input>', {
+                type: 'hidden',
+                name: 'priority[]',
+                value: priority
+            })
+        );
+
+        $('#hiddenTaskInputs').append(
+            $('<input>', {
+                type: 'hidden',
+                name: 'start_date[]',
+                value: start
+            })
+        );
+
+        $('#hiddenTaskInputs').append(
+            $('<input>', {
+                type: 'hidden',
+                name: 'end_date[]',
+                value: end
+            })
+        );
+
+        $('#hiddenTaskInputs').append(
+            $('<input>', {
+                type: 'hidden',
+                name: 'status[]',
+                value: status
+            })
+        );
+
+
+        i++;
     });
+
+
+    /* --------------------------------------------------------- */
+    /* CLOSE MODAL */
+    /* --------------------------------------------------------- */
 
     $('#taskModal').modal('hide');
-
 });
 
-</script>
-<script>
-//task
+/* ============================================================= */
+/* DELETE SAVED TASK */
+/* ============================================================= */
 
-//task
-$(document).ready(function(){
+$(document).on('click', '.removeSavedTask', function()
+{
 
-    // Function to fetch SO details
-    /*function fetchSO(so_id){
-        if(!so_id) return;
-        $.ajax({
-            url: '<?= base_url("index.php/Project/fetch_so_details") ?>',
-            type: 'POST',
-            data: {so_id: so_id},
-            dataType: 'json',
-            success: function(data){
-                $('#project_name').val(data.so_master.project_name);
-                $('#branch_name').val(data.so_master.branch_name);
-                $('#customer_name').val(data.so_master.customer_name);
-                $('#project_location').val(data.so_master.project_location);
+    var index =
+        $(this).closest('tr').index();
 
-                var html = '';
-                $.each(data.so_products, function(i, prod){
-                    html += '<tr>'+
-                        '<td>'+(i+1)+'</td>'+
-                        '<td><input type="hidden" name="product_id[]" value="'+prod.product_id+'">'+prod.item_name+'</td>'+
-                        '<td class="text-end"><input type="text" name="quantity[]" value="'+prod.quantity+'" class="form-control qty_input text-end" readonly></td>'+
-                        '<td class="text-end"><input type="text" name="unit_price[]" value="'+prod.unit_price+'" class="form-control price_input text-end" readonly></td>'+
-                        '<td class="text-end total">'+(prod.quantity * prod.unit_price).toFixed(2)+'</td>'+
-                    '</tr>';
-                });
-                $('#project_items_table tbody').html(html);
 
-                calculateTotals();
-            }
-        });
-    }
-
-    // Trigger when user manually selects SO
-    $('#so_select').change(function(){
-        var so_id = $(this).val();
-        fetchSO(so_id);
-    });
-
-    // ✅ Auto-fetch if SO is preselected via URL
-    var preselected_so_id = '<?= $selected_so_id ?? '' ?>';
-    if(preselected_so_id){
-        fetchSO(preselected_so_id);
-    }
-
-    // Recalculate totals on quantity or price change
-    $(document).on('keyup change', '.qty_input, .price_input', function(){
-        calculateTotals();
-    });
-
-    function calculateTotals(){
-        var subtotal = 0;
-        $('#project_items_table tbody tr').each(function(){
-            var qty = parseFloat($(this).find('.qty_input').val()) || 0;
-            var price = parseFloat($(this).find('.price_input').val()) || 0;
-            var total = qty * price;
-            $(this).find('.total').text(total.toFixed(2));
-            subtotal += total;
-        });
-        $('#subtotal').val(subtotal.toFixed(2));
-
-        var vat_percentage = parseFloat($('#vat_percentage').val()) || 0;
-        var vat_amount = subtotal * vat_percentage / 100;
-        $('#vat_amount').val(vat_amount.toFixed(2));
-
-        $('#grand_total').val((subtotal + vat_amount).toFixed(2));
-    }
-
-    // Recalculate VAT & grand total if VAT percentage changes
-    $('#vat_percentage').on('keyup change', function(){
-        calculateTotals();
-    });
-
-    // Initial calculation
-    calculateTotals();
-});
-*/
-
-
-function calculateDuration() {
-    var start = $('#start_date').val();
-    var end = $('#end_date').val();
-
-    if (start && end) {
-        var startDate = new Date(start);
-        var endDate = new Date(end);
-
-        // Calculate difference in milliseconds
-        var diffTime = endDate - startDate;
-        var diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end day
-
-        $('#duration').val(diffDays >= 0 ? diffDays : 0);
-    } else {
-        $('#duration').val('');
-    }
-}
-
-// Trigger on date change
-$('#start_date, #end_date').on('change', calculateDuration);
-
-// Optional: calculate on page load if dates are prefilled
-calculateDuration();
-
-
-
-
- // ------------------------------
-    // Technician & Resource Assignment
-    // ------------------------------
-    $(document).ready(function(){
-
-    // Pass PHP arrays to JS
-    var employees = <?= json_encode($employees); ?>;
-    var designations = <?= json_encode($designations); ?>;
-
-    var rowCount = $('#technician_table tbody tr').length;
-
-    // Generate dropdown options
-    function getTechnicianOptions() {
-        var options = '<option value="">-- Select Technician --</option>';
-        employees.forEach(function(emp){
-            options += `<option value="${emp.employee_id}">${emp.employee_name}</option>`;
-        });
-        return options;
-    }
-
-    function getDesignationOptions() {
-        var options = '<option value="">-- Select Role --</option>';
-        designations.forEach(function(des){
-            options += `<option value="${des.id}">${des.designation_name}</option>`;
-        });
-        return options;
-    }
-
-    // Add new technician row
-  $('#add_technician').click(function(){
-    rowCount++;
-    
-    var newRow = `<tr>
-        <td>${rowCount}</td>
-        <td>
-            <select name="technician_id[]" class="form-control technician_select" required>
-                ${getTechnicianOptions()}
-            </select>
-        </td>
-        <td>
-            <select name="designation_id[]" class="form-control designation_select" required>
-                ${getDesignationOptions()}
-            </select>
-        </td>
-        <td><input type="date" name="assignment_start[]" class="form-control assignment_start"></td>
-        <td><input type="date" name="assignment_end[]" class="form-control assignment_end"></td>
-        <td><button type="button" class="btn btn-danger btn-sm remove_row">Remove</button></td>
-    </tr>`;
-    
-    $('#technician_table tbody').append(newRow);
-
-    // ✅ Fill dates immediately after adding the row
-    var lastRow = $('#technician_table tbody tr').last();
-    lastRow.find('.assignment_start').val($('#start_date').val());
-    lastRow.find('.assignment_end').val($('#end_date').val());
-
-    // Optionally check availability immediately
-    checkAvailability(lastRow);
-});
-    // Auto-fill assignment dates from project dates
-    function fillAssignmentDates() {
-        var projectStart = $('#start_date').val();
-        var projectEnd = $('#end_date').val();
-        $('.assignment_start').val(projectStart);
-        $('.assignment_end').val(projectEnd);
-    }
-
-    $('#start_date, #end_date').on('change', fillAssignmentDates);
-    fillAssignmentDates(); // fill on page load
-});
-
-function checkAvailability(row) {
-    var technician_id = row.find('.technician_select').val();
-    var start_date    = row.find('.assignment_start').val();
-    var end_date      = row.find('.assignment_end').val();
-    var project_id    = $('input[name="project_id"]').val();
-
-    if (!technician_id || !start_date || !end_date) return;
-
-    $.ajax({
-        url: '<?= base_url("index.php/Project/check_technician_availability") ?>',
-        type: 'POST',
-        dataType: 'json',
-        data: {
-            technician_id: technician_id,
-            start_date: start_date,
-            end_date: end_date,
-            project_id: project_id
-        },
-        success: function (res) {
-            var badge = row.find('.availability_status span');
-
-            if (res.status === 'Available') {
-                badge
-                    .removeClass()
-                    .addClass('badge bg-success')
-                    .text('Available');
-            } else if (res.status === 'Not Available') {
-                badge
-                    .removeClass()
-                    .addClass('badge bg-danger')
-                    .text('Not Available');
-            }
-        }
-    });
-}
-
-
-$(document).on('change', '.technician_select, .assignment_start, .assignment_end', function () {
-    var row = $(this).closest('tr');
-    checkAvailability(row);
-});
-
-// Validate technician assignment dates before form submission
-$('form').on('submit', function(e) {
-    var valid = true;
-
-    $('#technician_table tbody tr').each(function(index){
-        var start = $(this).find('.assignment_start').val();
-        var end = $(this).find('.assignment_end').val();
-
-        // Remove previous error
-        $(this).find('.text-danger').remove();
-
-        if(start && end) {
-            var startDate = new Date(start);
-            var endDate = new Date(end);
-
-            if(startDate > endDate){
-                valid = false;
-                $(this).find('td:last').before('<td class="text-danger">Start Date cannot be later than End Date</td>');
-            }
-        }
-    });
-
-    if(!valid){
-        e.preventDefault();
-        alert("Please correct technician assignment dates.");
-        return false;
-    }
-});
-function isTechnicianDuplicate(newTechId, newStart, newEnd, excludeRow=null) {
-    var duplicate = false;
-
-    $('#technician_table tbody tr').each(function(){
-        if(excludeRow && $(this).is(excludeRow)) return; // skip current row when editing
-
-        var techId = $(this).find('.technician_select').val();
-        var start = $(this).find('.assignment_start').val();
-        var end = $(this).find('.assignment_end').val();
-
-        if(!techId || !start || !end) return;
-
-        if(techId == newTechId) {
-            // Check date overlap
-            var s1 = new Date(newStart);
-            var e1 = new Date(newEnd);
-            var s2 = new Date(start);
-            var e2 = new Date(end);
-
-            if(s1 <= e2 && s2 <= e1) {
-                duplicate = true;
-                return false; // break loop
-            }
-        }
-    });
-
-    return duplicate;
-}
-
-$(document).on('change', '.technician_select, .assignment_start, .assignment_end', function () {
-    var row = $(this).closest('tr');
-    checkAvailability(row);
-
-    var techId = row.find('.technician_select').val();
-    var start = row.find('.assignment_start').val();
-    var end = row.find('.assignment_end').val();
-
-    if(techId && start && end) {
-        if(isTechnicianDuplicate(techId, start, end, row)) {
-            alert('This technician is already assigned during the selected dates!');
-            // Optionally reset selection
-            row.find('.technician_select').val('');
-        }
-    }
-});
-
-
-$(document).ready(function(){
-
-    $('#se_select').change(function(){
-
-        var enquiry_id = $(this).val();
-
-        if(enquiry_id != ''){
-
-            $.ajax({
-                url: "<?php echo base_url()?>index.php/Project/getQuotationByEnquiry",
-                type: "POST",
-                data: {enquiry_id: enquiry_id},
-                dataType: "json",
-                success: function(response){
-
-                    $('#quotation_select').html('<option value="">-- Select Quotation --</option>');
-
-                    $.each(response, function(index, row){
-
-                        $('#quotation_select').append(
-                            '<option value="'+row.qtn_id+'">'+row.quotation_code+'</option>'
-                        );
-
-                    });
-
-                }
-            });
-
-
-
-
-
-        }else{
-
-            $('#quotation_select').html('<option value="">-- Select Quotation --</option>');
-
-        }
-
-    });
-
-});
-/*$(document).ready(function () {
-
-    $('#se_select').change(function () {
-
-        var enquiry_id = $(this).val();
-
-        if (enquiry_id != '') {
-
-            $.ajax({
-                url: "<?php echo base_url()?>index.php/Project/getProjectDetailsByEnquiry",
-                type: "POST",
-                data: { enquiry_id: enquiry_id },
-                dataType: "json",
-                success: function (response) {
-
-                    // Auto fill project details
-                    $('#project_name').val(response.project_name);
-                    $('#project_location').val(response.project_location);
-
-                }
-            });
-
-        } else {
-
-            $('#project_name').val('');
-            $('#project_location').val('');
-            $('#quotation_select').html('<option value="">-- Select Quotation --</option>');
-
-        }
-
-    });
-
-});
-*/
-$(document).ready(function () {
-
-    $('#quotation_select').change(function () {
-
-        var quotation_id = $(this).val();
-
-        if (quotation_id != '') {
-
-            $.ajax({
-                url: "<?php echo base_url()?>index.php/Project/getcustomerDetails",
-                type: "POST",
-                data: {
-                    quotation_id: quotation_id
-                },
-                dataType: "json",
-                success: function (response) {
-
-                    $('#customer_name').val(response.customer);
-                    $('#branch_name').val(response.branch);
-                    $('#project_name').val(response.project_name);
-                    $('#project_location').val(response.project_location);
-
-                    $('#customer_name').prop('readonly', !!$.trim(response.customer || ''));
-                    $('#branch_name').prop('readonly', !!$.trim(response.branch || ''));
-
-                }
-            });
-
-        } else {
-
-            $('#customer_name').val('');
-            $('#branch_name').val('');
-            $('#customer_name, #branch_name').prop('readonly', false);
-
-        }
-
-    });
+    $(this).closest('tr').remove();
 
 });
 
 
-function fetchQuotation(q_id){
-        if(!q_id) return;
-        $.ajax({
-            url: '<?= base_url("index.php/Project/fetch_quotation_details") ?>',
-            type: 'POST',
-            data: {q_id: q_id},
-            dataType: 'json',
-            success: function(data){
-                var html = '';
-                $.each(data.q_products, function(i, prod){
-                    html += '<tr>'+
-                        '<td>'+(i+1)+'</td>'+
-                        '<td><input type="hidden" name="product_id[]" value="'+prod.prd_id+'">'+prod.product_name+'</td>'+
-                        '<td class="text-end"><input type="text" name="quantity[]" value="'+prod.qty+'" class="form-control qty_input text-end" readonly></td>'+
-                        //'<td class="text-end"><input type="text" name="unit_price[]" value="'+prod.unit_price+'" class="form-control price_input text-end" readonly></td>'+
-                        //'<td class="text-end total">'+(prod.qty * prod.unit_price).toFixed(2)+'</td>'+
-                    '</tr>';
-                });
-                $('#project_items_table tbody').html(html);
+/* ============================================================= */
+/* DOCUMENT READY */
+/* ============================================================= */
 
-                calculateTotals();
-            }
-        });
-    }
+$(document).ready(function()
+{
 
-    // Trigger when user manually selects quotation
-    $('#quotation_select').change(function(){
-        var q_id = $(this).val();
-        fetchQuotation(q_id);
-    });
 
-    // ✅ Auto-fetch if SO is preselected via URL
-    var preselected_so_id = '<?= $selected_so_id ?? '' ?>';
-    if(preselected_so_id){
-        fetchSO(preselected_so_id);
-    }
-
-    // Recalculate totals on quantity or price change
-    $(document).on('keyup change', '.qty_input, .price_input', function(){
-        calculateTotals();
-    });
-
-    function calculateTotals(){
-        var subtotal = 0;
-        $('#project_items_table tbody tr').each(function(){
-            var qty = parseFloat($(this).find('.qty_input').val()) || 0;
-            var price = parseFloat($(this).find('.price_input').val()) || 0;
-            var total = qty * price;
-            $(this).find('.total').text(total.toFixed(2));
-            subtotal += total;
-        });
-        $('#subtotal').val(subtotal.toFixed(2));
-
-        var vat_percentage = parseFloat($('#vat_percentage').val()) || 0;
-        var vat_amount = subtotal * vat_percentage / 100;
-        $('#vat_amount').val(vat_amount.toFixed(2));
-
-        $('#grand_total').val((subtotal + vat_amount).toFixed(2));
-    }
-
-    // Recalculate VAT & grand total if VAT percentage changes
-    $('#vat_percentage').on('keyup change', function(){
-        calculateTotals();
-    });
-
-    // Initial calculation
-    calculateTotals();
-});
-
-$(document).on('change', '.designation_select', function () {
-
-    var designation_id = $(this).val();
-    var employeeSelect = $(this).closest('tr').find('.employee_select');
-
-    employeeSelect.html('<option value="">Loading...</option>');
-
-    if (designation_id != '') {
-
-        $.ajax({
-            url: "<?= base_url('index.php/Project/get_employee_by_designation'); ?>",
-            type: "POST",
-            data: {
-                designation_id: designation_id
-            },
-            dataType: "json",
-
-            success: function (response) {
-
-                var html = '<option value="">-- Select Employee --</option>';
-
-                $.each(response, function (i, row) {
-
-                    html += '<option value="' + row.employee_id + '">'
-                            + row.employee_name +
-                            '</option>';
-
-                });
-
-                employeeSelect.html(html);
-
-            }
-
-        });
-
-    } else {
-
-        employeeSelect.html('<option value="">-- Select Employee --</option>');
-
-    }
-
-});
-$(document).ready(function () {
+    /* ========================================================= */
+    /* SELECT2 */
+    /* ========================================================= */
 
     $('.select2').select2({
-        placeholder: '-- Select Quotation --',
+        placeholder: '-- Select Sales Order --',
         allowClear: true,
         width: '100%'
     });
 
+
+    /* ========================================================= */
+    /* SALES ORDER */
+    /* ========================================================= */
+
+    function fetchSO(so_id)
+    {
+
+        if (!so_id) {
+            return;
+        }
+
+
+        $.ajax({
+
+            url:
+                '<?= base_url("index.php/Project/fetch_so_details"); ?>',
+
+            type: 'POST',
+
+            data: {
+                so_id: so_id
+            },
+
+            dataType: 'json',
+
+
+            success: function(data)
+            {
+
+                if (!data) {
+                    return;
+                }
+
+
+                if (data.so_master)
+                {
+
+                    $('#project_name')
+                        .val(data.so_master.project_name);
+
+                    $('#branch_name')
+                        .val(data.so_master.branch_name);
+
+                    $('#customer_name')
+                        .val(data.so_master.customer_name);
+
+                    $('#project_location')
+                        .val(data.so_master.project_location);
+
+                }
+
+
+                var html = '';
+
+
+                $.each(
+                    data.so_products || [],
+                    function(i, prod)
+                    {
+
+                        html += '<tr>';
+
+
+                        html +=
+                            '<td>' +
+                            (i + 1) +
+                            '</td>';
+
+
+                        html +=
+                            '<td>' +
+
+                            '<input type="hidden" ' +
+                            'name="product_id[]" ' +
+                            'value="' +
+                            prod.product_id +
+                            '">' +
+
+                            $('<span>')
+                                .text(prod.product_name)
+                                .prop('outerHTML') +
+
+                            '</td>';
+
+
+                        html +=
+                            '<td class="text-end">' +
+
+                            '<input type="number" ' +
+                            'name="quantity[]" ' +
+                            'value="' +
+                            prod.quantity +
+                            '" ' +
+                            'class="form-control qty_input text-end" ' +
+                            'readonly>' +
+
+                            '</td>';
+
+
+                        html +=
+                            '<td class="text-end">' +
+
+                            '<input type="text" ' +
+                            'name="unit[]" ' +
+                            'value="' +
+                            prod.unit_abbr +
+                            '" ' +
+                            'class="form-control text-end" ' +
+                            'readonly>' +
+
+                            '</td>';
+
+                        /*
+                        html +=
+                            '<td class="text-end">' +
+
+                            (
+                                parseFloat(prod.quantity || 0) *
+                                parseFloat(prod.unit_price || 0)
+                            ).toFixed(2) +
+
+                            '</td>';
+                        */
+
+                        html += '</tr>';
+
+                    }
+                );
+
+
+                if (html !== '')
+                {
+                    $('#project_items_table tbody')
+                        .html(html);
+                }
+
+
+               // calculateTotals();
+
+            }
+
+        });
+
+    }
+
+
+    $('#so_select123').change(function()
+    {
+
+        var value = $(this).val();
+
+
+        if (!value) {
+            return;
+        }
+
+
+        var pieces =
+            value.split('~');
+
+
+        var so_id =
+            pieces[0];
+
+
+        var quotation_id =
+            pieces[1] || '';
+
+
+        fetchSO(so_id);
+
+
+        if (quotation_id)
+        {
+
+            $('#bit_quo').val('1');
+
+            fetchQuotation(quotation_id);
+
+        }
+        else
+        {
+
+            $('#bit_quo').val('0');
+
+        }
+
+    });
+
+
+    var preselected_so_id =
+        '<?= $selected_so_id ?? ''; ?>';
+
+
+    if (preselected_so_id)
+    {
+        fetchSO(preselected_so_id);
+    }
+
+
+    /* ========================================================= */
+    /* DURATION */
+    /* ========================================================= */
+
+    function calculateDuration()
+    {
+
+        var start =
+            $('#start_date').val();
+
+
+        var end =
+            $('#end_date').val();
+
+
+        if (start && end)
+        {
+
+            var startDate =
+                new Date(start);
+
+
+            var endDate =
+                new Date(end);
+
+
+            var diffTime =
+                endDate - startDate;
+
+
+            var diffDays =
+                Math.ceil(
+                    diffTime /
+                    (1000 * 60 * 60 * 24)
+                ) + 1;
+
+
+            $('#duration')
+                .val(diffDays >= 0 ? diffDays : 0);
+
+        }
+        else
+        {
+
+            $('#duration').val('');
+
+        }
+
+    }
+
+
+    $('#start_date, #end_date')
+        .on('change', calculateDuration);
+
+
+    calculateDuration();
+
+
+    /* ========================================================= */
+    /* ITEM MASTER - OPEN MODAL */
+    /* ========================================================= */
+
+    $('#addItemBtn').on('click', function()
+    {
+
+        $('#itemSearch').val('');
+
+
+        $('#itemMasterTable tbody').html(
+
+            '<tr>' +
+
+            '<td colspan="6" class="text-center">' +
+
+            '<i class="fa fa-spinner fa-spin"></i> ' +
+            'Loading items...' +
+
+            '</td>' +
+
+            '</tr>'
+
+        );
+
+
+        $('#addItemModal').modal('show');
+
+
+        loadItemMaster();
+
+    });
+
+
+    /* ========================================================= */
+    /* LOAD ITEM MASTER */
+    /* ========================================================= */
+
+    function loadItemMaster(search = '')
+    {
+
+        $.ajax({
+
+            url:
+                "<?= base_url('index.php/Project/get_item_master'); ?>",
+
+            type: "POST",
+
+            data: {
+                search: search
+            },
+
+            dataType: "json",
+
+
+            beforeSend: function()
+            {
+
+                $('#itemMasterTable tbody').html(
+
+                    '<tr>' +
+
+                    '<td colspan="6" class="text-center">' +
+
+                    '<i class="fa fa-spinner fa-spin"></i> ' +
+                    'Loading...' +
+
+                    '</td>' +
+
+                    '</tr>'
+
+                );
+
+            },
+
+
+            success: function(response)
+            {
+
+                var html = '';
+
+
+                if (!response || response.length === 0)
+                {
+
+                    html =
+
+                        '<tr>' +
+
+                        '<td colspan="6" ' +
+                        'class="text-center">' +
+
+                        'No products found. ' +
+
+                        'Click "Add Product" to create one.' +
+
+                        '</td>' +
+
+                        '</tr>';
+
+                }
+                else
+                {
+
+                    $.each(
+                        response,
+                        function(i, item)
+                        {
+
+                            html += '<tr>';
+
+
+                            html +=
+                                '<td>' +
+                                (i + 1) +
+                                '</td>';
+
+
+                            html += '<td>';
+
+
+                            html +=
+                                '<input type="hidden" ' +
+                                'class="item_id" ' +
+                                'value="' +
+                                item.product_id +
+                                '">';
+
+
+                            html +=
+                                '<input type="hidden" ' +
+                                'class="unit_price" ' +
+                                'value="' +
+                                (item.retail_price || 0) +
+                                '">';
+
+
+                            html +=
+
+                                $('<span>')
+                                    .text(
+                                        item.product_name
+                                    )
+                                    .prop('outerHTML');
+
+
+                            html += '</td>';
+
+
+                            html += '<td>';
+
+
+                            html +=
+
+                                $('<span>')
+                                    .text(
+                                        item.product_code || ''
+                                    )
+                                    .prop('outerHTML');
+
+
+                            html += '</td>';
+
+
+                            html +=
+                                '<td class="item_unit">';
+
+
+                            html +=
+
+                                $('<span>')
+                                    .text(
+                                        item.unit_abbr || ''
+                                    )
+                                    .prop('outerHTML');
+
+
+                            html += '</td>';
+
+
+                            html += '<td>';
+
+
+                            html +=
+                                '<input type="number" ' +
+                                'class="form-control item_qty" ' +
+                                'value="1" ' +
+                                'min="0.01" ' +
+                                'step="0.01">';
+
+
+                            html += '</td>';
+
+
+                            html +=
+                                '<td class="text-center">';
+
+
+                            html +=
+                                '<input type="checkbox" ' +
+                                'class="item_select" ' +
+                                'value="' +
+                                item.product_id +
+                                '">';
+
+
+                            html += '</td>';
+
+
+                            html += '</tr>';
+
+                        }
+                    );
+
+                }
+
+
+                $('#itemMasterTable tbody')
+                    .html(html);
+
+            },
+
+
+            error: function(xhr)
+            {
+
+                console.log(
+                    'get_item_master error:',
+                    xhr.responseText
+                );
+
+
+                $('#itemMasterTable tbody').html(
+
+                    '<tr>' +
+
+                    '<td colspan="6" ' +
+                    'class="text-center text-danger">' +
+
+                    'Unable to load products.' +
+
+                    '</td>' +
+
+                    '</tr>'
+
+                );
+
+            }
+
+        });
+
+    }
+
+
+    /* ========================================================= */
+    /* SEARCH ITEM */
+    /* ========================================================= */
+
+    var itemSearchTimer;
+
+
+    $('#itemSearch').on('keyup', function()
+    {
+
+        var search =
+            $(this).val();
+
+
+        clearTimeout(itemSearchTimer);
+
+
+        itemSearchTimer =
+            setTimeout(
+                function()
+                {
+
+                    loadItemMaster(search);
+
+                },
+                300
+            );
+
+    });
+
+
+    /* ========================================================= */
+    /* ADD PRODUCT POPUP */
+    /* ========================================================= */
+
+    $('#addProductBtn').on('click', function()
+    {
+
+        $('#addProductForm')[0].reset();
+
+
+        $('#new_retail_price')
+            .val('0.00');
+
+
+        $('#addProductModal')
+            .modal('show');
+
+    });
+
+
+    /* ========================================================= */
+    /* SAVE PRODUCT */
+    /* ========================================================= */
+
+    $('#addProductForm').on('submit', function(e)
+    {
+
+        e.preventDefault();
+
+
+        var form =
+            $(this);
+
+
+        var button =
+            $('#saveProductBtn');
+
+
+        $.ajax({
+
+            url:
+                "<?= base_url('index.php/Project/add_product'); ?>",
+
+            type: "POST",
+
+            data:
+                form.serialize(),
+
+            dataType: "json",
+
+
+            beforeSend: function()
+            {
+
+                button
+                    .prop('disabled', true)
+                    .html(
+                        '<i class="fa fa-spinner fa-spin"></i> ' +
+                        'Saving...'
+                    );
+
+            },
+
+
+            success: function(response)
+            {
+
+                if (response.status)
+                {
+
+                    alert(
+                        response.message ||
+                        'Product added successfully.'
+                    );
+
+
+                    $('#addProductModal')
+                        .modal('hide');
+
+
+                    form[0].reset();
+
+
+                    /*
+                     * Reload Item Master.
+                     *
+                     * The newly inserted product will now
+                     * appear in the Add Item popup.
+                     */
+
+                    loadItemMaster(
+                        $('#itemSearch').val()
+                    );
+
+
+                    /*
+                     * Keep Add Item popup open.
+                     */
+
+                    $('#addItemModal')
+                        .modal('show');
+
+                }
+                else
+                {
+
+                    alert(
+                        response.message ||
+                        'Unable to add product.'
+                    );
+
+                }
+
+            },
+
+
+            error: function(xhr)
+            {
+
+                console.log(
+                    'add_product error:',
+                    xhr.responseText
+                );
+
+
+                alert(
+                    'Unable to save product.'
+                );
+
+            },
+
+
+            complete: function()
+            {
+
+                button
+                    .prop('disabled', false)
+                    .html(
+                        '<i class="fa fa-save"></i> ' +
+                        'Save Product'
+                    );
+
+            }
+
+        });
+
+    });
+
+
+    /* ========================================================= */
+    /* ADD SELECTED ITEMS */
+    /* ========================================================= */
+
+    $('#addSelectedItems').on('click', function()
+    {
+
+        var selectedCount = 0;
+
+        var duplicateCount = 0;
+
+
+        $('#itemMasterTable tbody tr')
+            .each(function()
+            {
+
+                var row =
+                    $(this);
+
+
+                var checkbox =
+                    row.find('.item_select');
+
+
+                if (
+                    !checkbox.length ||
+                    !checkbox.is(':checked')
+                )
+                {
+                    return;
+                }
+
+
+                selectedCount++;
+
+
+                var productId =
+                    row.find('.item_id').val();
+
+
+                var productName =
+                    row.find('td:eq(1)')
+                       .text()
+                       .trim();
+
+
+                var productCode =
+                    row.find('td:eq(2)')
+                       .text()
+                       .trim();
+
+
+                var unit =
+                    row.find('.item_unit')
+                       .text()
+                       .trim();
+
+
+                var quantity =
+                    parseFloat(
+                        row.find('.item_qty').val()
+                    );
+
+
+                var unit_price =
+                    row.find('.unit_price').val();
+
+
+                if (!quantity || quantity <= 0)
+                {
+
+                    alert(
+                        'Please enter a valid quantity for "' +
+                        productName +
+                        '".'
+                    );
+
+
+                    row.find('.item_qty')
+                       .focus();
+
+
+                    return false;
+
+                }
+
+
+                /* ============================================= */
+                /* CHECK DUPLICATE */
+                /* ============================================= */
+
+                var duplicate = false;
+
+
+                $('#project_items_table tbody tr')
+                    .each(function()
+                    {
+
+                        var existingProductId =
+                            $(this)
+                                .find(
+                                    'input[name="product_id[]"]'
+                                )
+                                .val();
+
+
+                        if (
+                            existingProductId ==
+                            productId
+                        )
+                        {
+
+                            duplicate = true;
+
+                            return false;
+
+                        }
+
+                    });
+
+
+                if (duplicate)
+                {
+
+                    duplicateCount++;
+
+                    return;
+
+                }
+
+
+                /* ============================================= */
+                /* REMOVE EMPTY ROW */
+                /* ============================================= */
+
+                $('#project_items_table tbody')
+                    .find('.no-project-item')
+                    .remove();
+
+
+                /* ============================================= */
+                /* ROW NUMBER */
+                /* ============================================= */
+
+                var rowNo =
+                    $('#project_items_table tbody tr')
+                    .length + 1;
+
+
+                /* ============================================= */
+                /* CREATE ROW */
+                /* ============================================= */
+
+                var newRow = '';
+
+
+                newRow += '<tr>';
+
+
+                newRow +=
+                    '<td>' +
+                    rowNo +
+                    '</td>';
+
+
+                newRow += '<td>';
+
+
+                newRow +=
+                    '<input type="hidden" ' +
+                    'name="product_id[]" ' +
+                    'value="' +
+                    productId +
+                    '">';
+
+
+                newRow +=
+                    '<input type="hidden" ' +
+                    'name="unit_price[]" ' +
+                    'value="' +
+                    unit_price +
+                    '">';
+
+
+                newRow +=
+
+                    $('<span>')
+                        .text(productName)
+                        .prop('outerHTML');
+
+
+                newRow += '</td>';
+
+
+                newRow +=
+                    '<td class="text-end">';
+
+
+                newRow +=
+                    '<input type="number" ' +
+                    'name="quantity[]" ' +
+                    'value="' +
+                    quantity +
+                    '" ' +
+                    'class="form-control qty_input text-end" ' +
+                    'min="0.01" ' +
+                    'step="0.01">';
+
+
+                newRow += '</td>';
+
+
+                newRow +=
+                    '<td class="text-end">';
+
+
+                newRow +=
+
+                    $('<span>')
+                        .text(unit)
+                        .prop('outerHTML');
+
+
+                newRow += '</td>';
+
+
+                newRow +=
+                    '<td class="text-center">';
+
+
+                newRow +=
+                    '<button type="button" ' +
+                    'class="btn btn-danger btn-sm removeProjectItem">' +
+
+                    '<i class="fa fa-trash"></i>' +
+
+                    '</button>';
+
+
+                newRow += '</td>';
+
+
+                newRow += '</tr>';
+
+
+                $('#project_items_table tbody')
+                    .append(newRow);
+
+            });
+
+
+        if (selectedCount === 0)
+        {
+
+            alert(
+                'Please select at least one product.'
+            );
+
+            return;
+
+        }
+
+
+        if (duplicateCount > 0)
+        {
+
+            alert(
+                duplicateCount +
+                ' product(s) already exist in the project.'
+            );
+
+        }
+
+
+        $('#addItemModal')
+            .modal('hide');
+
+
+        renumberProjectItems();
+
+
+        calculateTotals();
+
+    });
+
+
+    /* ========================================================= */
+    /* REMOVE PROJECT ITEM */
+    /* ========================================================= */
+
+    $(document).on(
+        'click',
+        '.removeProjectItem',
+        function()
+        {
+
+            $(this)
+                .closest('tr')
+                .remove();
+
+
+            renumberProjectItems();
+
+
+            calculateTotals();
+
+        }
+    );
+
+
+    /* ========================================================= */
+    /* RENUMBER PROJECT ITEMS */
+    /* ========================================================= */
+
+    function renumberProjectItems()
+    {
+
+        $('#project_items_table tbody tr')
+            .each(function(index)
+            {
+
+                $(this)
+                    .find('td:first')
+                    .text(index + 1);
+
+            });
+
+    }
+
+
+    /* ========================================================= */
+    /* EMPLOYEE BY DESIGNATION */
+    /* ========================================================= */
+
+    $(document).on(
+        'change',
+        '.designation_select',
+        function()
+        {
+
+            var designation_id =
+                $(this).val();
+
+
+            var employeeSelect =
+                $(this)
+                    .closest('tr')
+                    .find('.employee_select');
+
+
+            employeeSelect.html(
+                '<option value="">Loading...</option>'
+            );
+
+
+            if (designation_id)
+            {
+
+                $.ajax({
+
+                    url:
+                        "<?= base_url('index.php/Project/get_employee_by_designation'); ?>",
+
+                    type: "POST",
+
+                    data: {
+                        designation_id:
+                            designation_id
+                    },
+
+                    dataType: "json",
+
+
+                    success: function(response)
+                    {
+
+                        var html =
+                            '<option value="">-- Select Employee --</option>';
+
+
+                        $.each(
+                            response,
+                            function(i, row)
+                            {
+
+                                html +=
+                                    '<option value="' +
+                                    row.employee_id +
+                                    '">' +
+
+                                    $('<span>')
+                                        .text(
+                                            row.employee_name
+                                        )
+                                        .text() +
+
+                                    '</option>';
+
+                            }
+                        );
+
+
+                        employeeSelect.html(html);
+
+                    },
+
+
+                    error: function()
+                    {
+
+                        employeeSelect.html(
+                            '<option value="">Unable to load</option>'
+                        );
+
+                    }
+
+                });
+
+            }
+            else
+            {
+
+                employeeSelect.html(
+                    '<option value="">-- Select Employee --</option>'
+                );
+
+            }
+
+        }
+    );
+
 });
+
+
+/* ============================================================= */
+/* QUOTATION DETAILS */
+/* ============================================================= */
+
+function fetchQuotation(q_id)
+{
+
+    if (!q_id) {
+        return;
+    }
+    var so_id = $('#so_select123').val();
+
+    $.ajax({
+
+        url:
+            '<?= base_url("index.php/Project/fetch_quotation_details"); ?>',
+
+        type: 'POST',
+
+        data: {
+            q_id: q_id,so_id
+        },
+
+        dataType: 'json',
+
+
+        success: function(data)
+        {
+
+            var html = '';
+
+
+            $.each(
+                data.q_products || [],
+                function(i, prod)
+                {
+
+                    html += '<tr>';
+
+
+                    html +=
+                        '<td>' +
+                        (i + 1) +
+                        '</td>';
+
+
+                    html +=
+                        '<td>' +
+
+                        '<input type="hidden" ' +
+                        'name="product_id[]" ' +
+                        'value="' +
+                        prod.prd_id +
+                        '">' +
+
+                        $('<span>')
+                            .text(prod.product_name)
+                            .prop('outerHTML') +
+
+                        '</td>';
+
+
+                    html +=
+                        '<td class="text-end">' +
+
+                        '<input type="number" ' +
+                        'name="quantity[]" ' +
+                        'value="' +
+                        prod.qty +
+                        '" ' +
+                        'class="form-control qty_input text-end" ' +
+                        'readonly>' +
+
+                        '</td>';
+
+
+                    html +=
+                        '<td class="text-end">' +
+
+                        '<input type="text" ' +
+                        'name="unit[]" ' +
+                        'value="' +
+                        prod.unit_abbr +
+                        '" ' +
+                        'class="form-control text-end" ' +
+                        'readonly>' +
+
+                        '<input type="hidden" ' +
+                        'name="unit_price[]" ' +
+                        'value="' +
+                        prod.unit_price +
+                        '">' +
+
+                        '</td>';
+
+
+                    /*html +=
+                        '<td class="text-end">' +
+
+                        (
+                            parseFloat(prod.qty || 0) *
+                            parseFloat(prod.unit_price || 0)
+                        ).toFixed(2) +
+
+                        '</td>';
+                        */
+
+
+                    html += '</tr>';
+
+                }
+            );
+
+
+            $('#project_items_table tbody')
+                .html(html);
+
+
+            calculateTotals();
+
+        }
+
+    });
+
+}
+
+
+/* ============================================================= */
+/* TOTAL CALCULATION */
+/* ============================================================= */
+
+function calculateTotals()
+{
+
+    var subtotal = 0;
+
+
+    $('#project_items_table tbody tr')
+        .each(function()
+        {
+
+            var qty =
+                parseFloat(
+                    $(this)
+                        .find('.qty_input')
+                        .val()
+                ) || 0;
+
+
+            var price =
+                parseFloat(
+                    $(this)
+                        .find('.price_input')
+                        .val()
+                ) || 0;
+
+
+            var total =
+                qty * price;
+
+
+            $(this)
+                .find('.total')
+                .text(
+                    total.toFixed(2)
+                );
+
+
+            subtotal += total;
+
+        });
+
+
+    $('#subtotal')
+        .val(subtotal.toFixed(2));
+
+
+    var vat_percentage =
+        parseFloat(
+            $('#vat_percentage').val()
+        ) || 0;
+
+
+    var vat_amount =
+        subtotal *
+        vat_percentage /
+        100;
+
+
+    $('#vat_amount')
+        .val(vat_amount.toFixed(2));
+
+
+    $('#grand_total')
+        .val(
+            (
+                subtotal +
+                vat_amount
+            ).toFixed(2)
+        );
+
+}
+
+
+/* ============================================================= */
+/* TECHNICIAN AVAILABILITY - EXISTING FUNCTIONALITY */
+/* ============================================================= */
+
+function checkAvailability(row)
+{
+
+    var technician_id =
+        row.find('.technician_select').val();
+
+
+    var start_date =
+        row.find('.assignment_start').val();
+
+
+    var end_date =
+        row.find('.assignment_end').val();
+
+
+    var project_id =
+        $('input[name="project_id"]').val();
+
+
+    if (
+        !technician_id ||
+        !start_date ||
+        !end_date
+    )
+    {
+        return;
+    }
+
+
+    $.ajax({
+
+        url:
+            '<?= base_url("index.php/Project/check_technician_availability"); ?>',
+
+        type: 'POST',
+
+        dataType: 'json',
+
+        data: {
+
+            technician_id:
+                technician_id,
+
+            start_date:
+                start_date,
+
+            end_date:
+                end_date,
+
+            project_id:
+                project_id
+
+        }
+
+    });
+
+}
+
+
+/* ============================================================= */
+/* TECHNICIAN DUPLICATE CHECK */
+/* ============================================================= */
+
+function isTechnicianDuplicate(
+    newTechId,
+    newStart,
+    newEnd,
+    excludeRow = null
+)
+{
+
+    var duplicate = false;
+
+
+    $('#technician_table tbody tr')
+        .each(function()
+        {
+
+            if (
+                excludeRow &&
+                $(this).is(excludeRow)
+            )
+            {
+                return;
+            }
+
+
+            var techId =
+                $(this)
+                    .find('.technician_select')
+                    .val();
+
+
+            var start =
+                $(this)
+                    .find('.assignment_start')
+                    .val();
+
+
+            var end =
+                $(this)
+                    .find('.assignment_end')
+                    .val();
+
+
+            if (
+                !techId ||
+                !start ||
+                !end
+            )
+            {
+                return;
+            }
+
+
+            if (techId == newTechId)
+            {
+
+                var s1 =
+                    new Date(newStart);
+
+
+                var e1 =
+                    new Date(newEnd);
+
+
+                var s2 =
+                    new Date(start);
+
+
+                var e2 =
+                    new Date(end);
+
+
+                if (
+                    s1 <= e2 &&
+                    s2 <= e1
+                )
+                {
+
+                    duplicate = true;
+
+                    return false;
+
+                }
+
+            }
+
+        });
+
+
+    return duplicate;
+
+}
+
 </script>

@@ -2,169 +2,233 @@
    Task Modal
 =========================== */
 
-.task-modal-dialog{
-    max-width:98vw;
-    width:98vw;
-    margin:10px auto;
+.task-modal-dialog {
+    width: 90%;
+    max-width: 1200px;
+    margin: 20px auto;
 }
 
-.task-modal-body{
-    max-height:80vh;
-    overflow-y:auto;
-    overflow-x:hidden;
+.task-modal-body {
+    max-height: 85vh;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
-/* Horizontal Scroll */
-.task-table-responsive{
-    width:100%;
-    overflow-x:auto;
-    overflow-y:hidden;
-    white-space:nowrap;
-    border:1px solid #ddd;
-    border-radius:5px;
-    -webkit-overflow-scrolling:touch;
+
+/* ===========================
+   Task Table
+=========================== */
+
+.task-table-responsive {
+    width: 100%;
+    overflow-x: hidden;
+    overflow-y: visible;
+    border: 1px solid #ddd;
+    border-radius: 5px;
 }
+
 
 /* Table */
-#popupTaskTable{
-    min-width:1900px;
-    width:max-content;
-    margin-bottom:0;
-    table-layout:auto;
+
+#popupTaskTable {
+    width: 100% !important;
+    min-width: 0 !important;
+    margin-bottom: 0;
+    table-layout: fixed;
 }
+
 
 /* Header */
-#popupTaskTable th{
-    background:#f8f9fa;
-    text-align:center;
-    vertical-align:middle;
-    white-space:nowrap;
-    font-weight:600;
-    padding:8px;
+
+#popupTaskTable th {
+    background: #f8f9fa;
+    text-align: center;
+    vertical-align: middle;
+    white-space: normal;
+    font-weight: 600;
+    padding: 6px 4px;
+    font-size: 12px;
 }
+
 
 /* Cells */
-#popupTaskTable td{
-    vertical-align:middle;
-    padding:6px;
+
+#popupTaskTable td {
+    vertical-align: middle;
+    padding: 4px;
+    word-wrap: break-word;
 }
 
-/* Inputs */
-#popupTaskTable .form-control{
-    min-width:170px;
+
+/* ===========================
+   Column Widths
+=========================== */
+
+/* Task */
+#popupTaskTable th:nth-child(1),
+#popupTaskTable td:nth-child(1) {
+    width: 18%;
 }
 
-/* Select2 */
-#popupTaskTable .select2-container{
-    min-width:170px !important;
-    width:170px !important;
+/* Designation */
+#popupTaskTable th:nth-child(2),
+#popupTaskTable td:nth-child(2) {
+    width: 13%;
 }
 
-/* Description */
-#popupTaskTable textarea{
-    min-width:280px;
-    resize:vertical;
+/* Employee */
+#popupTaskTable th:nth-child(3),
+#popupTaskTable td:nth-child(3) {
+    width: 16%;
 }
+
+/* Priority */
+#popupTaskTable th:nth-child(4),
+#popupTaskTable td:nth-child(4) {
+    width: 9%;
+}
+
+/* Start */
+#popupTaskTable th:nth-child(5),
+#popupTaskTable td:nth-child(5) {
+    width: 11%;
+}
+
+/* End */
+#popupTaskTable th:nth-child(6),
+#popupTaskTable td:nth-child(6) {
+    width: 11%;
+}
+
+/* Status */
+#popupTaskTable th:nth-child(7),
+#popupTaskTable td:nth-child(7) {
+    width: 13%;
+}
+
+/* Action */
+#popupTaskTable th:nth-child(8),
+#popupTaskTable td:nth-child(8) {
+    width: 7%;
+}
+
+
+/* ===========================
+   Inputs
+=========================== */
+
+#popupTaskTable .form-control {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100%;
+    padding: 4px 5px;
+    font-size: 12px;
+    height: 32px;
+}
+
 
 /* Date */
-#popupTaskTable input[type=date]{
-    min-width:145px;
+
+#popupTaskTable input[type="date"] {
+    min-width: 0 !important;
+    width: 100%;
 }
 
-/* Buttons */
-#popupTaskTable .btn{
-    white-space:nowrap;
+
+/* Select2 */
+
+#popupTaskTable .select2-container {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100%;
 }
 
-/* Nice Scrollbar */
-
-.task-table-responsive::-webkit-scrollbar{
-    height:12px;
+#popupTaskTable .select2-selection--single {
+    height: 32px;
 }
 
-.task-table-responsive::-webkit-scrollbar-track{
-    background:#f1f1f1;
+#popupTaskTable .select2-selection__rendered {
+    line-height: 30px;
+    font-size: 12px;
 }
 
-.task-table-responsive::-webkit-scrollbar-thumb{
-    background:#999;
-    border-radius:10px;
+#popupTaskTable .select2-selection__arrow {
+    height: 30px;
 }
 
-.task-table-responsive::-webkit-scrollbar-thumb:hover{
-    background:#666;
-}
-#popupTaskTable th:nth-child(1),
-#popupTaskTable td:nth-child(1){
-    min-width:180px;
+
+/* Button */
+
+#popupTaskTable .btn {
+    white-space: nowrap;
+    padding: 4px 7px;
 }
 
-#popupTaskTable th:nth-child(2),
-#popupTaskTable td:nth-child(2){
-    min-width:250px;
+
+/* ===========================
+   Responsive
+=========================== */
+
+@media (max-width: 1200px) {
+
+    .task-modal-dialog {
+        width: 99%;
+    }
+
+    #popupTaskTable th,
+    #popupTaskTable td {
+        font-size: 11px;
+    }
+
+    #popupTaskTable .form-control {
+        font-size: 11px;
+        padding: 3px;
+    }
+
 }
 
-#popupTaskTable th:nth-child(3),
-#popupTaskTable td:nth-child(3){
-    min-width:180px;
+
+@media (max-width: 992px) {
+
+    /*
+       On smaller screens allow horizontal scrolling
+       rather than making controls unusably small.
+    */
+
+    .task-table-responsive {
+        overflow-x: auto;
+    }
+
+    #popupTaskTable {
+        min-width: 900px !important;
+        table-layout: auto;
+    }
+
+    #popupTaskTable th,
+    #popupTaskTable td {
+        white-space: nowrap;
+    }
+
 }
 
-#popupTaskTable th:nth-child(4),
-#popupTaskTable td:nth-child(4){
-    min-width:180px;
-}
 
-#popupTaskTable th:nth-child(5),
-#popupTaskTable td:nth-child(5){
-    min-width:220px;
-}
+/* ===========================
+   Scrollbar only for tablet/mobile
+=========================== */
 
-#popupTaskTable th:nth-child(6),
-#popupTaskTable td:nth-child(6){
-    min-width:130px;
-}
+@media (max-width: 992px) {
 
-#popupTaskTable th:nth-child(7),
-#popupTaskTable td:nth-child(7),
-#popupTaskTable th:nth-child(8),
-#popupTaskTable td:nth-child(8){
-    min-width:140px;
-}
+    .task-table-responsive::-webkit-scrollbar {
+        height: 8px;
+    }
 
-#popupTaskTable th:nth-child(9),
-#popupTaskTable td:nth-child(9){
-    min-width:140px;
-}
+    .task-table-responsive::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
 
-#popupTaskTable th:nth-child(10),
-#popupTaskTable td:nth-child(10){
-    min-width:300px;
-}
+    .task-table-responsive::-webkit-scrollbar-thumb {
+        background: #999;
+        border-radius: 10px;
+    }
 
-#popupTaskTable th:nth-child(11),
-#popupTaskTable td:nth-child(11){
-    min-width:70px;
-}
-label{
-    font-weight:bold;
-    color:#000;
-}
-.bg-soft-success {
-    background-color: #d4edda !important;
-    color: #155724;
-}
-
-.bg-soft-danger {
-    background-color: #f8d7da !important;
-    color: #721c24;
-}
-
-.bg-soft-warning {
-    background-color: #fff3cd !important;
-    color: #856404;
-}
-
-.bg-soft-info {
-    background-color: #d1ecf1 !important;
-    color: #0c5460;
 }

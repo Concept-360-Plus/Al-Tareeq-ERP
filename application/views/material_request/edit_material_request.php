@@ -1,422 +1,919 @@
 <link href="<?php echo base_url()."public/build/css/popup.css"; ?>" rel="stylesheet">
+
 <div class="clearfix"></div>
+
 <div class="row">
+
     <div class="col-md-12 col-sm-12">
+
         <div class="x_panel">
-<form id="mr_form" action="<?= base_url('index.php/Project/update_material_request') ?>" method="post">
 
-<input type="hidden" name="mr_id" value="<?= $mr['mr_id'] ?>">
+            <form id="mr_form"
+                  action="<?= base_url('index.php/Project/update_material_request') ?>"
+                  method="post">
 
-<!-- Select Approved Project mb-3-->
-<div class="col-md-5">
-    <label for="project_id" class="form-label">Approved Project</label>
-    <select name="project_id" id="project_id" class="form-control" required>
-        <option value="">-- Select Project --</option>
-        <?php foreach ($approved_projects as $proj): ?>
-            <option value="<?= $proj['project_id'] ?>"
-                <?= ($proj['project_id'] == $mr['project_id']) ? 'selected' : '' ?>>
-                <?= $proj['project_name'] ?> (<?= $proj['project_code'] ?>)
-            </option>
-        <?php endforeach; ?>
-    </select>
-</div>
-
-<!-- Initiated By -->
-<div class="col-md-5">
-    <label for="initiated_by" class="form-label">Initiated By</label>
-    <select name="initiated_by" id="initiated_by" class="form-control" required>
-        <option value="">-- Select User --</option>
-        <?php foreach ($users as $user): ?>
-            <option value="<?= $user['user_id'] ?>"
-                <?= ($user['user_id'] == $mr['initiated_by']) ? 'selected' : '' ?>>
-                <?= $user['user_name'] ?>
-            </option>
-        <?php endforeach; ?>
-    </select>
-</div>
-
-<div class="col-md-12 clear topp">
-<!-- Auto-filled Project Info -->
-<table class="table table-bordered">
-<tr>
-    <th>Project</th>
-    <td id="project_name"><?= $mr['project_name'] ?></td>
-</tr>
-<tr>
-    <th>Customer</th>
-    <td id="customer_name"><?= $mr['customer_name'] ?></td>
-</tr>
-<tr>
-    <th>Branch</th>
-    <td id="branch_name"><?= $mr['branch_name'] ?></td>
-</tr>
-<tr>
-    <th>Requested Date</th>
-    <td>
-        <input type="date" name="requested_date" class="form-control"
-               value="<?= $mr['requested_date'] ?>" required>
-    </td>
-</tr>
-<tr>
-    <th>Required Date</th>
-    <td>
-        <input type="date" name="required_date" class="form-control"
-               value="<?= $mr['required_date'] ?>" required>
-    </td>
-</tr>
-</table>
-</div>
-
-<div class="col-md-12 mt-2">
-    <label><strong>Items</strong></label>
-</div>
-
-<div class="col-md-12 mt-2">
-
-<table class="table table-bordered table-hover" id="tab_logic">
-
-    <thead>
-        <tr>
-            <th>Item Name</th>
-            <th width="120">Quantity</th>
-            <th >Description</th>
-            <th>Remarks</th>
-            <th width="50">
-                <a id="add_row" class="btn btn-xs bg-orange" title="Add">
-                    <span class="fa fa-plus"></span>
-                </a>
-            </th>
-        </tr>
-    </thead>
-
-    <tbody id="mytbbody">
-
-    <?php
-
-    if(!empty($mitems))
-    {
-        $i=0;
-        foreach($mitems as $r)
-        {
-    ?>
-
-        <tr id="addr<?= $i; ?>">
-
-            <td>
+                <!-- =====================================================
+                     HIDDEN MR ID
+                ====================================================== -->
 
                 <input type="hidden"
-                       name="m_id[]"
-                       value="<?= $r['pjt_material_id'] ?>">
+                       name="mr_id"
+                       value="<?= $mr['mr_id'] ?>">
 
-                <select name="product[]" class="form-control">
 
-                    <option value="">-- Select Product --</option>
+                <!-- =====================================================
+                     PROJECT
+                ====================================================== -->
 
-                    <?php foreach($pitems as $itm){ ?>
+                <div class="col-md-3">
 
-                        <option value="<?= $itm['product_id']; ?>"
-                        <?= ($itm['product_id']==$r['fk_item_id'])?'selected':''; ?>>
+                    <label for="project_id" class="form-label">
+                        Approved Project
+                    </label>
 
-                            <?= htmlspecialchars($itm['product_name']); ?>
+                    <select name="project_id"
+                            id="project_id"
+                            class="form-control select2"
+                            required>
 
+                        <option value="">
+                            -- Select Project --
                         </option>
 
-                    <?php } ?>
+                        <?php foreach ($approved_projects as $proj): ?>
 
-                </select>
+                            <option value="<?= $proj['project_id'] ?>"
+                                <?= ($proj['project_id'] == $mr['project_id'])
+                                    ? 'selected'
+                                    : '' ?>>
 
-            </td>
+                                <?= htmlspecialchars($proj['project_name']) ?>
+                                (<?= htmlspecialchars($proj['project_code']) ?>)
 
-            <td>
+                            </option>
 
-                <input
-                    type="number"
-                    name="pdt_qty[]"
-                    class="form-control"
-                    value="<?= $r['item_qty']?>">
+                        <?php endforeach; ?>
 
-            </td>
-            <td>
+                    </select>
 
-                <textarea
-                    name="desc[]"
-                    id="desc<?= $i; ?>"
-                    rows="4"
-                    class="form-control"><?= $r['item_desc']; ?></textarea>
+                </div>
 
-            </td>
-            <td>
 
-                <textarea
-                    name="item_remark[]"
-                    id="item_remark<?= $i; ?>"
-                    class="form-control" rows="4"><?= $r['item_remarks'] ?></textarea>
+                <!-- =====================================================
+                     INITIATED BY
+                ====================================================== -->
 
-            </td>
+                <div class="col-md-3">
 
-            <td>
+                    <label for="initiated_by" class="form-label">
+                        Initiated By
+                    </label>
 
-                <a href="javascript:void(0)"
-                   onclick="remove_row(<?= $i; ?>)"
-                   class="btn btn-xs bg-orange">
+                    <select name="initiated_by"
+                            id="initiated_by"
+                            class="form-control"
+                            required>
 
-                    <span class="fa fa-trash"></span>
-
-                </a>
-
-            </td>
-
-        </tr>
-
-    <?php
-        $i++;
-        }
-    ?>
-
-        <tr id="addr<?= $i; ?>"></tr>
-
-    <?php
-    }
-    else
-    {
-    ?>
-
-        <tr id="addr0">
-
-            <td>
-
-                <select name="product[]" class="form-control">
-
-                    <option value="">-- Select Product --</option>
-
-                    <?php foreach($pitems as $itm){ ?>
-
-                        <option value="<?= $itm['product_id']; ?>">
-
-                            <?= htmlspecialchars($itm['product_name']); ?>
-
+                        <option value="">
+                            -- Select User --
                         </option>
 
-                    <?php } ?>
+                        <?php foreach ($users as $user): ?>
 
-                </select>
+                            <option value="<?= $user['user_id'] ?>"
+                                <?= ($user['user_id'] == $mr['initiated_by'])
+                                    ? 'selected'
+                                    : '' ?>>
 
-            </td>
+                                <?= htmlspecialchars($user['user_name']) ?>
 
-            
+                            </option>
 
-            <td>
+                        <?php endforeach; ?>
 
-                <input
-                    type="number"
-                    name="pdt_qty[]"
-                    class="form-control">
+                    </select>
 
-            </td>
-            <td>
+                </div>
 
-                <textarea
-                    name="desc[]"
-                    id="desc0"
-                    rows="4"
-                    class="form-control"></textarea>
 
-            </td>
+                <div class="col-md-12"></div>
 
-            <td>
 
-                <textarea
-                    name="item_remark[]"
-                    id="item_remark0"
-                    class="form-control" rows="4"></textarea>
+                <!-- =====================================================
+                     PROJECT INFORMATION
+                ====================================================== -->
 
-            </td>
+                <div class="col-md-6">
 
-            <td>
+                    <div class="project-info-card">
 
-                <a href="javascript:void(0)"
-                   onclick="remove_row(0)"
-                   class="btn btn-xs bg-orange">
+                        <div class="project-info-header">
 
-                    <span class="fa fa-trash"></span>
+                            <i class="fa fa-folder-open"></i>
 
-                </a>
+                            <span>
+                                Project Information
+                            </span>
 
-            </td>
+                        </div>
 
-        </tr>
 
-        <tr id="addr1"></tr>
+                        <div class="project-info-body">
 
-    <?php } ?>
+                            <div class="row">
 
-    </tbody>
 
-</table>
+                                <!-- Project Name -->
+
+                                <div class="col-md-5">
+
+                                    <div class="project-info-item">
+
+                                        <label>
+                                            Project Name
+                                        </label>
+
+                                        <div id="project_name"
+                                             class="project-info-value">
+
+                                            <?= htmlspecialchars($mr['project_name']) ?>
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+
+                                <!-- Customer -->
+
+                                <div class="col-md-3">
+
+                                    <div class="project-info-item">
+
+                                        <label>
+                                            Customer
+                                        </label>
+
+                                        <div id="customer_name"
+                                             class="project-info-value">
+
+                                            <?= htmlspecialchars($mr['customer_name']) ?>
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+
+                                <!-- Branch -->
+
+                                <div class="col-md-4">
+
+                                    <div class="project-info-item">
+
+                                        <label>
+                                            Branch
+                                        </label>
+
+                                        <div id="branch_name"
+                                             class="project-info-value">
+
+                                            <?= htmlspecialchars($mr['branch_name']) ?>
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="col-md-12"></div>
+
+
+                <!-- =====================================================
+                     REQUESTED DATE
+                ====================================================== -->
+
+                <div class="col-md-3">
+
+                    <label class="form-label">
+                        Requested Date
+                    </label>
+
+                    <input type="date"
+                           name="requested_date"
+                           class="form-control"
+                           value="<?= $mr['requested_date'] ?>"
+                           required>
+
+                </div>
+
+
+                <!-- =====================================================
+                     REQUIRED DATE
+                ====================================================== -->
+
+                <div class="col-md-3">
+
+                    <label class="form-label">
+                        Required Date
+                    </label>
+
+                    <input type="date"
+                           name="required_date"
+                           class="form-control"
+                           value="<?= $mr['required_date'] ?>"
+                           required>
+
+                </div>
+
+
+                <div class="col-md-12 mt-2">
+
+                    <label>
+                        <strong>Items</strong>
+                    </label>
+
+                </div>
+
+
+                <!-- =====================================================
+                     MATERIAL ITEMS TABLE
+                ====================================================== -->
+
+                <div class="col-md-12 mt-2">
+
+                    <table class="table table-bordered table-hover"
+                           id="tab_logic">
+
+                        <thead>
+
+                            <tr>
+
+                                <th>
+                                    Item Name
+                                </th>
+
+                                <th width="120">
+                                    Quantity
+                                </th>
+
+                                <th>
+                                    Unit
+                                </th>
+
+                                <th>
+                                    Description
+                                </th>
+
+                                <th>
+                                    Remarks
+                                </th>
+
+                                <th width="50">
+
+                                    <a href="javascript:void(0);"
+                                       id="add_row"
+                                       class="btn btn-xs bg-orange"
+                                       title="Add">
+
+                                        <span class="fa fa-plus"></span>
+
+                                    </a>
+
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody id="mytbbody">
+
+
+                        <?php if (!empty($mitems)): ?>
+
+
+                            <?php foreach ($mitems as $i => $r): ?>
+
+                                <tr id="addr<?= $i ?>">
+
+                                    <!-- =================================
+                                         ITEM NAME
+                                    ================================== -->
+
+                                    <td>
+
+                                        <input type="hidden"
+                                               name="m_id[]"
+                                               value="<?= $r['pjt_material_id'] ?>">
+
+                                        <select name="product[]"
+                                                class="form-control select2-product">
+
+                                            <option value="">
+                                                -- Select Product --
+                                            </option>
+
+                                            <?php foreach ($pitems as $itm): ?>
+
+                                                <option value="<?= $itm['product_id'] ?>"
+                                                    <?= ($itm['product_id'] == $r['fk_item_id'])
+                                                        ? 'selected'
+                                                        : '' ?>>
+
+                                                    <?= htmlspecialchars($itm['product_name']) ?>
+
+                                                </option>
+
+                                            <?php endforeach; ?>
+
+                                        </select>
+
+                                    </td>
+
+
+                                    <!-- =================================
+                                         QUANTITY
+                                    ================================== -->
+
+                                    <td>
+
+                                        <input type="number"
+                                               name="pdt_qty[]"
+                                               class="form-control"
+                                               value="<?= htmlspecialchars($r['item_qty']) ?>"
+                                               step="any">
+
+                                    </td>
+
+
+                                    <!-- =================================
+                                         UNIT
+                                    ================================== -->
+
+                                    <td>
+
+                                        <select name="unit[]"
+                                                class="form-control">
+
+                                            <option value="">
+                                                -- Select Unit --
+                                            </option>
+
+                                            <?php foreach ($units as $ut): ?>
+
+                                                <option value="<?= $ut['unit_id'] ?>"
+                                                    <?= ($r['item_unit'] == $ut['unit_id'])
+                                                        ? 'selected'
+                                                        : '' ?>>
+
+                                                    <?= htmlspecialchars($ut['unit_abbr']) ?>
+
+                                                </option>
+
+                                            <?php endforeach; ?>
+
+                                        </select>
+
+                                    </td>
+
+
+                                    <!-- =================================
+                                         DESCRIPTION
+                                    ================================== -->
+
+                                    <td>
+
+                                        <textarea name="desc[]"
+                                                  id="desc<?= $i ?>"
+                                                  rows="4"
+                                                  class="form-control"><?= htmlspecialchars($r['item_desc']) ?></textarea>
+
+                                    </td>
+
+
+                                    <!-- =================================
+                                         REMARKS
+                                    ================================== -->
+
+                                    <td>
+
+                                        <textarea name="item_remark[]"
+                                                  id="item_remark<?= $i ?>"
+                                                  rows="4"
+                                                  class="form-control"><?= htmlspecialchars($r['item_remarks']) ?></textarea>
+
+                                    </td>
+
+
+                                    <!-- =================================
+                                         DELETE
+                                    ================================== -->
+
+                                    <td>
+
+                                        <a href="javascript:void(0);"
+                                           onclick="remove_row(<?= $i ?>);"
+                                           class="btn btn-xs bg-orange">
+
+                                            <span class="fa fa-trash"></span>
+
+                                        </a>
+
+                                    </td>
+
+                                </tr>
+
+
+                            <?php endforeach; ?>
+
+
+                        <?php else: ?>
+
+
+                            <!-- =========================================
+                                 FIRST EMPTY ROW
+                            ========================================== -->
+
+                            <tr id="addr0">
+
+                                <td>
+
+                                    <input type="hidden"
+                                           name="m_id[]"
+                                           value="">
+
+                                    <select name="product[]"
+                                            class="form-control select2-product">
+
+                                        <option value="">
+                                            -- Select Product --
+                                        </option>
+
+                                        <?php foreach ($pitems as $itm): ?>
+
+                                            <option value="<?= $itm['product_id'] ?>">
+
+                                                <?= htmlspecialchars($itm['product_name']) ?>
+
+                                            </option>
+
+                                        <?php endforeach; ?>
+
+                                    </select>
+
+                                </td>
+
+
+                                <td>
+
+                                    <input type="number"
+                                           name="pdt_qty[]"
+                                           class="form-control"
+                                           step="any">
+
+                                </td>
+
+
+                                <td>
+
+                                    <select name="unit[]"
+                                            class="form-control">
+
+                                        <option value="">
+                                            -- Select Unit --
+                                        </option>
+
+                                        <?php foreach ($units as $ut): ?>
+
+                                            <option value="<?= $ut['unit_id'] ?>">
+
+                                                <?= htmlspecialchars($ut['unit_abbr']) ?>
+
+                                            </option>
+
+                                        <?php endforeach; ?>
+
+                                    </select>
+
+                                </td>
+
+
+                                <td>
+
+                                    <textarea name="desc[]"
+                                              id="desc0"
+                                              rows="4"
+                                              class="form-control"></textarea>
+
+                                </td>
+
+
+                                <td>
+
+                                    <textarea name="item_remark[]"
+                                              id="item_remark0"
+                                              rows="4"
+                                              class="form-control"></textarea>
+
+                                </td>
+
+
+                                <td>
+
+                                    <a href="javascript:void(0);"
+                                       onclick="remove_row(0);"
+                                       class="btn btn-xs bg-orange">
+
+                                        <span class="fa fa-trash"></span>
+
+                                    </a>
+
+                                </td>
+
+                            </tr>
+
+
+                        <?php endif; ?>
+
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+
+                <!-- =====================================================
+                     HIDDEN PROJECT INFORMATION
+                ====================================================== -->
+
+                <input type="hidden"
+                       name="project_code"
+                       id="project_code"
+                       value="<?= htmlspecialchars($mr['project_code']) ?>">
+
+
+                <input type="hidden"
+                       name="customer_name"
+                       id="hidden_customer_name"
+                       value="<?= htmlspecialchars($mr['customer_name']) ?>">
+
+
+                <input type="hidden"
+                       name="branch_name"
+                       id="hidden_branch_name"
+                       value="<?= htmlspecialchars($mr['branch_name']) ?>">
+
+
+                <!-- =====================================================
+                     BUTTONS
+                ====================================================== -->
+
+                <div class="col-md-12 text-end mt-3">
+
+                    <button type="submit"
+                            class="btn btn-success">
+
+                        Update MR
+
+                    </button>
+
+                    <a href="<?= base_url('index.php/Project/list_material_request') ?>"
+                       class="btn btn-secondary">
+
+                        Cancel
+
+                    </a>
+
+                </div>
+
+
+            </form>
+
+        </div>
+
+    </div>
 
 </div>
-</div>
-</div>
 
 
-
-<!--<h5>Items</h5>
-<table class="table table-bordered" id="items_table">
-<thead>
-<tr>
-    <th>#</th>
-    <th>Item</th>
-    <th>Unit</th>
-    <th>Required Quantity</th>
-</tr>
-</thead>
-<tbody>
-<?php if(!empty($mr_items)): ?>
-    <?php foreach($mr_items as $i => $item): ?>
-    <tr>
-        <td><?= $i+1 ?></td>
-        <td><?= $item['product_name'] ?></td>
-        <td>
-            <select name="unit_id[]" class="form-control" required>
-                <option value="">-- Select Unit --</option>
-                <?php foreach($units as $u): ?>
-                    <option value="<?= $u['unit_id'] ?>" 
-                        <?= ($u['unit_id'] == $item['unit']) ? 'selected' : '' ?>>
-                        <?= $u['unit_name'] ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </td>
-        <td>
-            <input type="hidden" name="product_id[]" value="<?= $item['product_id'] ?>">
-            <input type="number" name="quantity[]" value="<?= $item['quantity'] ?>" class="form-control">
-        </td>
-    </tr>
-    <?php endforeach; ?>
-<?php else: ?>
-    <tr>
-        <td colspan="4">Select a project to load items</td>
-    </tr>
-<?php endif; ?>
-</tbody>
-</table>-->
-
-
-<input type="hidden" name="project_code" id="project_code" value="<?= $mr['project_code'] ?>">
-<input type="hidden" name="customer_name" id="hidden_customer_name" value="<?= $mr['customer_name'] ?>">
-<input type="hidden" name="branch_name" id="hidden_branch_name" value="<?= $mr['branch_name'] ?>">
-
-<div class="col-md-12 text-end mt-3">
-    <button type="submit" class="btn btn-success">Update MR</button>
-    <a href="<?= base_url('index.php/Project/list_material_request') ?>" class="btn btn-secondary">Cancel</a>
-</div>
-
-</form>
 <?php
-$productOptions="";
-$productOptions .= '<option value="">-- Select Product --</option>';
+
+/* ==========================================================
+   PRODUCT OPTIONS FOR AJAX/JS ROW CREATION
+========================================================== */
+
+$productOptions = '<option value="">-- Select Product --</option>';
 
 foreach ($pitems as $itm) {
-    $id = $itm['product_id'];
-    $name = $itm['product_name'];
-    $productOptions .= '<option value="' . $id . '">' .
-                        htmlspecialchars($name) .
-                       '</option>';
+
+    $productOptions .=
+        '<option value="' . htmlspecialchars($itm['product_id'], ENT_QUOTES) . '">'
+        . htmlspecialchars($itm['product_name'])
+        . '</option>';
 }
+
+
+/* ==========================================================
+   UNIT OPTIONS FOR AJAX/JS ROW CREATION
+========================================================== */
+
+$unitOptions = '<option value="">-- Select Unit --</option>';
+
+foreach ($units as $unit) {
+
+    $unitOptions .=
+        '<option value="' . htmlspecialchars($unit['unit_id'], ENT_QUOTES) . '">'
+        . htmlspecialchars($unit['unit_abbr'])
+        . '</option>';
+}
+
 ?>
+
+
 <script>
-var productOptions = `<?= $productOptions ?>`;
-var j=1;
-function remove_row(append_id){    	 
-    $('#addr'+append_id).attr("id","addr"+append_id+"x");
-    $('#addr'+append_id+"x").remove();
-}  
 
-</script>
-<script>
-$(document).ready(function(){
-    var i = 1;
-    $("#add_row").click(function () {
+$(document).ready(function () {
 
-        var html = "";
 
-        html += "<td>";
-        html += "<select name='product[]' class='form-control' tabindex='2'>";
-        html += productOptions;
-        html += "</select>";
-        html += "</td>";
+    /* ==========================================================
+       PRODUCT OPTIONS
+    ========================================================== */
 
-        html += "<td>";
-        html += "<input type='number' name='pdt_qty[]' class='form-control form-control-sm' tabindex='14'>";
-        html += "</td>";
+    var productOptions =
+        <?= json_encode($productOptions) ?>;
 
-        html += "<td>";
-        html += "<textarea rows='4' cols='20' name='desc[]' id='desc" + i + "' ";
-        html += "class='form-control form-control-sm' ";
-        html += "style='font-size:11px;font-weight:bold;' ";
-        html += "placeholder='Description'></textarea>";
-        html += "</td>";
 
-        html += "<td>";
-        html += "<textarea name='item_remark[]' rows='4' id='item_remark" + i + "' ";
-        html += "class='form-control form-control-sm' ";
-        html += "placeholder='Remark'></textarea>";
-        html += "</td>";
+    /* ==========================================================
+       UNIT OPTIONS
+    ========================================================== */
 
-        html += "<td width='30px'>";
-        html += "<a onclick='remove_row(" + i + ");' class='btn btn-xs bg-orange remove1'>";
-        html += "<span class='fa fa-trash'></span>";
-        html += "</a>";
-        html += "</td>";
+    var unitOptions =
+        <?= json_encode($unitOptions) ?>;
 
-        $("#addr" + i).html(html);
 
-        $("#mytbbody tr:last").after('<tr id="addr' + (i + 1) + '"></tr>');
+    /* ==========================================================
+       INITIALIZE PROJECT SELECT2
+    ========================================================== */
 
-        i++;
+    $('#project_id').select2({
+
+        placeholder: '-- Select Project --',
+
+        allowClear: true,
+
+        width: '100%'
+
     });
 
-    
 
-    $('#project_id').change(function(){
-        var project_id = $(this).val();
-        if(!project_id){
-            $('#project_name').text('-');
-            $('#customer_name').text('-');
-            $('#branch_name').text('-');
-            $('#items_table tbody').html('<tr><td colspan="3">Select a project to load items</td></tr>');
-            return;
-        }
+    /* ==========================================================
+       INITIALIZE EXISTING PRODUCT SELECT2
+    ========================================================== */
 
-        $.ajax({
-            url: '<?= base_url("index.php/Project/get_project_details_ajax") ?>',
-            type: 'POST',
-            data: { project_id: project_id },
-            dataType: 'json',
-            success: function(res){
-                $('#project_name').text(res.project.project_name);
-                $('#customer_name').text(res.project.customer_name);
-                $('#branch_name').text(res.project.branch_name);
+    $('.select2-product').select2({
 
-                $('#project_code').val(res.project.project_code);
-                $('#hidden_customer_name').val(res.project.customer_name);
-                $('#hidden_branch_name').val(res.project.branch_name);
+        placeholder: '-- Select Product --',
 
-                var rows = '';
-                res.items.forEach(function(item, i){
-                    rows += `<tr>
-                        <td>${i+1}</td>
-                        <td>${item.product_name}</td>
-                        <td>
-                            <input type="hidden" name="product_id[]" value="${item.product_id}">
-                            <input type="number" name="quantity[]" value="${item.quantity}" class="form-control">
-                        </td>
-                    </tr>`;
-                });
+        allowClear: true,
 
-                $('#items_table tbody').html(rows);
+        width: '100%'
+
+    });
+
+
+    /* ==========================================================
+       FIND NEXT ROW ID
+       
+       IMPORTANT:
+       Do NOT use:
+       
+           var i = 1;
+       
+       because existing rows may already use addr1,
+       addr2, addr3 etc.
+    ========================================================== */
+
+    function getNextRowId()
+    {
+
+        var maxId = -1;
+
+
+        $('#mytbbody tr').each(function () {
+
+            var id =
+                $(this).attr('id');
+
+
+            if (id && id.indexOf('addr') === 0) {
+
+                var number =
+                    parseInt(
+                        id.replace('addr', ''),
+                        10
+                    );
+
+
+                if (!isNaN(number) && number > maxId) {
+
+                    maxId = number;
+
+                }
+
             }
+
         });
+
+
+        return maxId + 1;
+
+    }
+
+
+    /* ==========================================================
+       ADD NEW MATERIAL ROW
+    ========================================================== */
+
+    $('#add_row').on('click', function (e) {
+
+        e.preventDefault();
+
+
+        /* Get a completely new ID */
+
+        var i =
+            getNextRowId();
+
+
+        /* Create NEW TR */
+
+        var html = '';
+
+
+        html +=
+            '<tr id="addr' + i + '">';
+
+
+        /* ======================================================
+           PRODUCT
+        ====================================================== */
+
+        html += '<td>';
+
+        html +=
+            '<input type="hidden" ' +
+            'name="m_id[]" ' +
+            'value="">';
+
+        html +=
+            '<select name="product[]" ' +
+            'class="form-control select2-product">';
+
+        html += productOptions;
+
+        html += '</select>';
+
+        html += '</td>';
+
+
+        /* ======================================================
+           QUANTITY
+        ====================================================== */
+
+        html += '<td>';
+
+        html +=
+            '<input type="number" ' +
+            'name="pdt_qty[]" ' +
+            'class="form-control" ' +
+            'step="any">';
+
+        html += '</td>';
+
+
+        /* ======================================================
+           UNIT
+        ====================================================== */
+
+        html += '<td>';
+
+        html +=
+            '<select name="unit[]" ' +
+            'class="form-control">';
+
+        html += unitOptions;
+
+        html += '</select>';
+
+        html += '</td>';
+
+
+        /* ======================================================
+           DESCRIPTION
+        ====================================================== */
+
+        html += '<td>';
+
+        html +=
+            '<textarea name="desc[]" ' +
+            'id="desc' + i + '" ' +
+            'rows="4" ' +
+            'class="form-control" ' +
+            'placeholder="Description"></textarea>';
+
+        html += '</td>';
+
+
+        /* ======================================================
+           REMARKS
+        ====================================================== */
+
+        html += '<td>';
+
+        html +=
+            '<textarea name="item_remark[]" ' +
+            'id="item_remark' + i + '" ' +
+            'rows="4" ' +
+            'class="form-control" ' +
+            'placeholder="Remark"></textarea>';
+
+        html += '</td>';
+
+
+        /* ======================================================
+           DELETE
+        ====================================================== */
+
+        html += '<td>';
+
+        html +=
+            '<a href="javascript:void(0);" ' +
+            'onclick="remove_row(' + i + ');" ' +
+            'class="btn btn-xs bg-orange">';
+
+        html +=
+            '<span class="fa fa-trash"></span>';
+
+        html += '</a>';
+
+        html += '</td>';
+
+
+        html += '</tr>';
+
+
+        /* ======================================================
+           APPEND — NEVER REPLACE EXISTING ROW
+        ====================================================== */
+
+        $('#mytbbody').append(html);
+
+
+        /* ======================================================
+           INITIALIZE SELECT2 ONLY FOR NEW ROW
+        ====================================================== */
+
+        $('#addr' + i)
+            .find('.select2-product')
+            .select2({
+
+                placeholder: '-- Select Product --',
+
+                allowClear: true,
+
+                width: '100%'
+
+            });
+
     });
+
+
 });
+
+
+/* ==========================================================
+   REMOVE MATERIAL ROW
+========================================================== */
+
+function remove_row(rowId)
+{
+
+    $('#addr' + rowId).remove();
+
+}
+
 </script>

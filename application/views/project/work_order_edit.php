@@ -1,3 +1,5 @@
+
+<link href="<?php echo base_url()."public/build/css/popup.css"; ?>" rel="stylesheet">
 <style type="text/css">
     .select2Width {
         overflow: hidden;
@@ -7,13 +9,33 @@
         min-width: 220px !important;
     }
     .btn-sm .fa{color:#fff;}
+     .table {
+    width: 82% !important;}
+    .col-form-label{font-weight:normal;}
+    .form-group.row {
+    margin-bottom: 8px;
+}
+
+.form-group.row .col-form-label {
+    padding-top: 4px;
+    padding-bottom: 4px;
+    margin-bottom: 0;
+    white-space: nowrap;
+}
+
+.form-group.row > div {
+    padding-left: 5px;
+    padding-right: 5px;
+}
+.tbl th,td{ border: 1px solid #dee2e6;padding:8px;}
+ label{ font-weight: bold;}
 </style>
 
 <div class="x_panel">
     <div class="x_title">
         
         <div class="clearfix"></div>
-        <a class="btn btn-sm btn-primary" href="<?php echo base_url() . 'index.php/'; ?>Project/print_work_order/<?php echo $id; ?>">Print</a>
+        <a class="btn btn-sm btn-primary" target="_blank" href="<?php echo base_url() . 'index.php/'; ?>Project/print_work_order/<?php echo $id; ?>">Print</a>
     </div>
 
     <div class="x_content">
@@ -21,11 +43,12 @@
         autocomplete="off" enctype="multipart/form-data">
         <?php foreach ($records1 as $row1) { ?>
             <div class="form-group row">
+                <div class="col-md-8">
                 <label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">Project Name:<span
                         style="color: red;"> *</span></label>
                 <div class="col-xs-12 col-sm-9 col-md-3 col-lg-3" role='group'>
                     <select tabindex="1" class="form-control" id="project_id" name="project_id"
-                        readonly onchange="get_project_info()">
+                        readonly onchange="get_project_info()" disabled>
                         <option value="">Select</option>
                         <?php foreach ($records as $s) { ?>
                             <option value="<?php echo $s->project_id ?>" <?php if ($row1->project_id == $s->project_id)
@@ -47,36 +70,88 @@
                     </select>
                 </div>
 
-
+            </div>
 
             </div>
             <div class="form-group row">
+                <div class="col-md-8">
                 <label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">Work Order Date :</label>
                 <div class="col-xs-12 col-sm-9 col-md-3 col-lg-3">
                     <div class="input-group date datepicker1">
-                        <input type="text" class="form-control form-control datepicker1" id="work_order_date"
-                            name="work_order_date" value="<?php echo date('d-m-Y', strtotime($row1->work_order_date)); ?>"
+                        <input type="date" class="form-control form-control datepicker1" id="work_order_date"
+                            name="work_order_date" value="<?= !empty($row1->work_order_date) ? $row1->work_order_date : '' ?>"
                             tabindex="3">
-                        <div class="input-group-addon"><i class="fa fa-calendar"></i></div>
+                        
                     </div>
                 </div>
                 <label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label"> Work Order Code:</label>
                 <div class="col-xs-12 col-sm-9 col-md-3 col-lg-3" role='group'>
                     <input type="text" name="wo_code" id="wo_code" class="form-control form-control bg-soft-gray" value="<?php echo $row1->wo_code; ?>" readonly>
                 </div>
-
             </div>
 
-            <div class="form-group row">
+            </div>
+            
+            
+            <div class="col-md-12"></div>
+<div class="form-group row">
+                <div class="col-md-8">
+<div class="project-info-card">
+
+    <div class="project-info-header">
+        <i class="fa fa-folder-open"></i>
+        <span>Project Information</span><br>
+    </div>
+
+    <div class="project-info-body">
+
+        <div class="row">
+
+            <div class="col-md-3">
+                <div class="project-info-item">
+                    <label>Project Start Date</label>
+                    <div id="sdate" class="project-info-value"><?php $start_date = $pinfo[0]['start_date'] ?? null;
+    echo !empty($start_date) ? date('d-m-Y', strtotime($start_date)) : ''; ?></div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="project-info-item">
+                    <label>Project End Date</label>
+                    <div id="edate" class="project-info-value"><?php $end_date = $pinfo[0]['end_date'] ?? null;
+    echo !empty($end_date) ? date('d-m-Y', strtotime($end_date)) : ''; ?></div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="project-info-item">
+                    <label>Project Manager</label>
+                    <div id="manager_id" class="project-info-value"><?php echo $pinfo[0]['user_name'];?></div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="project-info-item">
+                    <label>Customer</label>
+                    <div id="customer_id" class="project-info-value"></div>
+                </div>
+            </div>
+
+        </div>
+
+        </div>
+</div></div>
+
+</div>
+<div class="col-md-8"></div>
+
+            <!--<div class="form-group row">
                 <label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">Fabrication Manhours :</label>
                 <div class="col-xs-12 col-sm-9 col-md-3 col-lg-3">
-                    <!-- <input type="number" step="0.01" class="form-control form-control" id="fm" name="fm" tabindex="3" min='0' value="<?php echo $row->overtime; ?>"> -->
                     <input type="number" step="0.01" class="form-control form-control" id="fm" name="fm" tabindex="3" min='0' value="<?php echo $row1->fabrication_manhr; ?>">
 
                 </div>
                 <label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">Installation Manhours :</label>
                 <div class="col-xs-12 col-sm-9 col-md-3 col-lg-3">
-                    <!-- <input type="number" step="0.01" class="form-control form-control" id="im" name="im" tabindex="3" min='0' value="<?php echo $row->overtime; ?>"> -->
                     <input type="number" step="0.01" class="form-control form-control" id="im" name="im" tabindex="3" min='0' value="<?php echo $row1->installation_manhr; ?>">
 
                 </div>
@@ -89,7 +164,7 @@
                     <div class="input-group date ">
                         <input type="text" class="form-control form-control bg-soft-gray" id="sdate"
                             name="sdate" value="<?php echo date('d-m-Y') ?>" tabindex="3" readonly>
-                        <!-- <div class="input-group-addon"><i class="fa fa-calendar"></i></div> -->
+                        
                     </div>
                 </div>
 
@@ -98,7 +173,7 @@
                     <div class="input-group date ">
                         <input type="text" class="form-control form-control bg-soft-gray" id="edate" name="edate"
                             value="<?php echo date('d-m-Y') ?>" tabindex=4 readonly>
-                        <!-- <div class="input-group-addon"><i class="fa fa-calendar"></i></div> -->
+                        
                     </div>
                 </div>
             </div>
@@ -116,7 +191,7 @@
                         name="customer_id" value=" " tabindex="3">
                 </div>
 
-            </div>
+            </div>-->
 
 
             <!-- <div class="form-group row">
@@ -183,26 +258,32 @@
                     </tbody>
                 </table>
             </div> -->
-
+<div class="col-md-12" min></div><div class="col-md-12">
             <h7>items Details:</h7>
 
-            <div class="form-group row">
+            <div class="form-group row ">
 
-                <table border='1' width='90%' cellpadding='0' cellspacing=0>
+                <table class="tbl" style="border: 1px solid #dee2e6;width: 66.5%;"  cellpadding='0' cellspacing=0>
                     <thead>
-                        <tr height="50px">
-                            <th style="width: 80px;" rowspan=2>SL.NO</th>
-                            <th style="width: 80px;" rowspan=2>ITEM CODE</th>
-                            <th style="width: 100px;" rowspan=2>DESCRIPTION</th>
-                            <th style="width: 90px;" rowspan=2>COLOUR/FINISH</th>
-                            <th style="width: 80px;" align='center' rowspan=2>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;QTY</th>
-                            <th style="width: 80px;" align='center' rowspan=2>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;UNIT</th>
+                        <tr height="50px" style="border: 1px solid #dee2e6;">
+                            <th style="width: 10%;" rowspan=1>SL.NO</th>
+                            <th rowspan=2>ITEM CODE</th>
+                            <th  rowspan=2>DESCRIPTION</th>
+                           
+                            <th   rowspan=2>Required Qty</th>
+                            <th   rowspan=2>Received Qty</th>
+                            <th  ' rowspan=2>UNIT</th>
 
 
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody  style="border: 1px solid #dee2e6;">
                         <?php foreach ($records2 as $r) { ?>
+                        <input type="hidden" name="desc[]" value="<?php echo $r->product_desc; ?>" /> 
+                        <input type="hidden" name="trans_id[]" value="<?php echo $r->trans_id; ?>" />
+                        <input type="hidden" name="revision[]" value="<?php echo $r->revision + 1; ?>" />  
+                        <input type="hidden" name="pid[]" value="<?php echo $r->pid; ?>" />
+                        <input type="hidden" name="qid[]" value="<?php echo $r->qid; ?>" />
                             <!--<tr class="bg-soft-gray">
                                 <td></td>
                                 <td></td>
@@ -241,23 +322,23 @@
                                             <?php echo $tr->item_name; ?>
                                             <!-- <input type="text" name="item_name[]" value="<?php echo $tr->item_name; ?>" /> -->
                                         </td>
-                                        <td style="width: 80px;" align='center'><?php echo $tr->colour_finish; ?></td>
+                                        <!--<td style="width: 80px;" align='center'><?php echo $tr->colour_finish; ?></td>-->
                                         <!-- <td style="width: 90px;"><input type="text" name="colour_finish[]" class="form-control form-control" style="margin-right: 30px;" value="<?php echo $tr->colour_finish; ?>" /></td> -->
                                         <!-- <td style="width: 80px;"><input type="text" name="qty<?php echo $r->trans_id; ?>[]" class="form-control form-control" value="<?php echo intval($tr->qty); ?>" readonly /></td> -->
-                                        <td style="width: 80px;" align='center'><input type="text" name="qty<?php echo $r->trans_id; ?>[]" class="form-control form-control" value=" &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <?php echo intval($tr->qty); ?>" readonly style="border: none; background-color: transparent;" /></td>
-
-                                        <td style="width: 80px;" align='center'><?php echo $tr->unit_abbr; ?></td>
+                                        <td style="width: 80px;" ><input type="text" name="qty<?php echo $r->trans_id; ?>[]" class="form-control form-control" value="<?php echo intval($tr->qty); ?>" readonly style="border: none; background-color: transparent;" /></td>
+                                        <td style="width: 80px;"><input type="number" name="received_qty<?php echo $r->trans_id; ?>[]" class="form-control form-control" value="<?php echo isset($tr->received_qty) ? intval($tr->received_qty) : 0; ?>" /></td>
+                                        <td style="width: 80px;"><?php echo $tr->unit_abbr; ?></td>
                                         <input type="hidden" name="sub_details<?php echo $r->trans_id; ?>[]" value="<?php echo $tr->sub_details; ?>" />
                                         <input type="hidden" name="width<?php echo $r->trans_id; ?>[]" value="<?php echo $tr->width; ?>" />
                                         <input type="hidden" name="height<?php echo $r->trans_id; ?>[]" value="<?php echo $tr->height; ?>" />
                                         <input type="hidden" name="unit<?php echo $r->trans_id; ?>[]" value="<?php echo $tr->unit; ?>" />
                                         <input type="hidden" name="price<?php echo $r->trans_id; ?>[]" value="<?php echo $tr->price; ?>" />
                                         <input type="hidden" name="total<?php echo $r->trans_id; ?>[]" value="<?php echo $tr->total; ?>" />
+                                        <input type="hidden" name="qty1<?php echo $r->trans_id; ?>[]" class="form-control form-control" value="<?php echo intval($tr->qty); ?>" />
                                         <input type="hidden" name="item_name[]" value="<?php echo $tr->item_name; ?>" />
                                         <input type="hidden" name="item_code[]" value="<?php echo $tr->item_code; ?>" />
                                         <input type="hidden" name="product_id[]" value="<?php echo $tr->product_id; ?>" />
-								
-
+                                        </td>
                                     </tr>
                         <?php $i++;
                                 }  //end of if
@@ -272,16 +353,17 @@
             <div class="form-group row">
                 <!-- <label class="col-xs-12 col-sm-3 col-md-3 col-lg-3 col-form-label">Upload("jpeg","jpg","png","doc","pdf"):</label> -->
                 <!-- <div class="col-sm-8"> -->
-                <table class="table table-bordered table-hover" id="tab_logic1">
+                <table class=" table-bordered table-hover" id="tab_logic1" style="width: 66.5%;" >
                     <thead>
                         <tr>
                             <th></th>
                             <th>Upload("jpeg","jpg","png","doc","pdf")</th>
                             <th>Select Type</th>
-                            <th width='10%'>
+                            <th width='15%'>
+                                <div  align="center"">
                                 <a id="add_row1" title="Add" class="btn btn-sm btn-primary"><span class="fa fa-plus"></span></a>
-                                <a id='delete_row1' title="Delete" class="btn btn-sm bg-red"><span class="fa fa-trash"></span></a>
-                            </th>
+                                &nbsp;<a id='delete_row1' title="Delete" class="btn btn-sm bg-red"><span class="fa fa-trash"></span></a>
+                    </div></th>
                         </tr>
                     </thead>
                     <tbody id="mytbbody1">
@@ -363,18 +445,18 @@
                  <!-- </div> -->
                    </div>
                
-            <h7 >Product Process Route:</h7>
+            <!--<h7 >Product Process Route:</h7>
             <div  class="form-group row">
                 <table class="table table-bordered table-hover" id="tab_logic2">
                      <thead>
                          <tr>
-                             <!-- <th></th> -->
+                            
                             <th>Select Type</th>
                              <th>Description</th>
-                             <th width='10%'>
+                             <th width='10%'><div class="row">
                                   <a id="add_row2" title="Add" class="btn btn-sm btn-primary"><span class="fa fa-plus"></span></a>
-                                <a id='delete_row2' title="Delete" class="btn btn-sm bg-red"><span class="fa fa-trash"></span></a>
-                             </th>
+                                &nbsp;<a id='delete_row2' title="Delete" class="btn btn-sm bg-red"><span class="fa fa-trash"></span></a>
+                        </div></th>
                         </ tr>
                     </thead >
                     <tbody id="mytbbody2">
@@ -480,13 +562,13 @@
                  <table class="table table-bordered table-hover" id="tab_logic3">
                      <thead>
                          <tr>
-                             <!-- <th></th> -->
+                            
                              <th>Select Type</th>
                              <th>Description</th>
-                            <th width='10%'>
+                            <th width='10%'><div class="row">
                                   <a id="add_row3" title="Add" class="btn btn-sm btn-primary"><span class="fa fa-plus"></span></a>
-                                 <a id='delete_row3' title="Delete" class="btn btn-sm bg-red"><span class="fa fa-trash"></span></a>
-                            </th>
+                                 &nbsp;<a id='delete_row3' title="Delete" class="btn btn-sm bg-red"><span class="fa fa-trash"></span></a>
+                        </div></th>
                          </tr>
                      </thead>
                      <tbody id="mytbbody3">
@@ -495,7 +577,7 @@
                              if ($row->wo_type == 'Work Order Distribution Plan'):
                          ?>
                          <tr id='ddr0'>
-                             <!-- <td>1</td> -->
+                             
                              <td>
                                  <div class="form-group row">
                                     <div class="col-sm-10">
@@ -538,15 +620,16 @@
                      <tr id='ddr1'></tr>
                      </tbody>
                  </table>
-             </div>
+             </div>-->
  
  
  
-             <div class="form-group row">
-                 <label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">Prepared By:</label>
-                 <div class="col-xs-12 col-sm-9 col-md-2 col-lg-2">
-                    <select tabindex="1" class="form-control" id="prepared_id" name="prepared_id"
-                         style='width:155px'>
+           <div class="form-group row align-items-center"  style="width: 80%;margin-top: 16px;">
+
+                <label class="col-md-1 col-form-label pr-1">Prepared By</label>
+                <div class="col-md-2">
+                    <select tabindex="1" class="form-control form-control-sm" id="prepared_id" name="prepared_id"
+                        >
                          <option value="">Select</option>
                          <?php foreach ($user_records as $s) { ?>
                              <option <?php if ($row1->prepared_by == $s->user_id)
@@ -554,12 +637,12 @@
                                  value="<?php echo $s->user_id ?>"><?php echo $s->user_name; ?></option>
                          <?php } ?>
                      </select>
-                 </div>
- 
-                 <label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">Checked By:</label>
-                 <div class="col-xs-12 col-sm-9 col-md-2 col-lg-2">
-                    <select tabindex="1" class="form-control" id="checked_id" name="checked_id"
-                         style='width:155px'>
+                  </div>
+
+                <label class="col-md-1 col-form-label pr-1">Checked By</label>
+                <div class="col-md-2">
+                    <select class="form-control form-control-sm" id="checked_id" name="checked_id"
+                         >
                          <option value="">Select</option>
                          <?php foreach ($user_records as $s) { ?>
                              <option <?php if ($row1->checked_by == $s->user_id)
@@ -567,11 +650,12 @@
                                  value="<?php echo $s->user_id ?>"><?php echo $s->user_name; ?></option>
                          <?php } ?>
                     </select>
-                 </div>
-                 <label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">Approved By:</label>
-                 <div class="col-xs-12 col-sm-9 col-md-2 col-lg-2">
-                     <select tabindex="1" class="form-control" id="approved_id" name="approved_id"
-                         style='width:155px'>
+                  </div>
+
+                <label class="col-md-1 col-form-label pr-1">Approved By</label>
+                <div class="col-md-2">
+                    <select class="form-control form-control-sm"  id="approved_id" name="approved_id"
+                       >
                          <option value="">Select</option>
                          <?php foreach ($user_records as $s) { ?>
                              <option <?php if ($row1->approved_by == $s->user_id)
@@ -580,17 +664,26 @@
                          <?php } ?>
                     </select>
                 </div>
- 
+
+
+            <label class="col-md-1 col-form-label pr-1">Status</label>
+            <div class="col-md-2">
+                <select class="form-control form-control-sm"id="status" name="status"
+                                style='width:155px'>
+                         <option value="">Select</option>
+                         <option <?php if ($row1->status == 'start') echo 'selected'; ?> value="start">Start</option>
+                         <option <?php if ($row1->status == 'in_progress') echo 'selected'; ?> value="in_progress">In progress</option>
+                         <option <?php if ($row1->status == 'complete') echo 'selected'; ?> value="complete">Complete</option>
+                   
+                    </select>
+                </div>
+                
              </div>
  
-                                                                                                                                                                                      
-
-
-
-            <table>
+            <table style="border:none;margin-top: 16px;">
                 <tr>
-                    <td>
-                        <div class="form-group row">
+                    <td style="border:none;">
+                        <div class="form-group row"  align="center">
                             <label class="col-sm-2"></label>
                             <div class="col-sm-10">
                                 <input type="hidden" id="work_id" name="work_id" value='<?php echo $row1->work_id; ?>'>
@@ -607,13 +700,15 @@
 
 
     </td>
-    <td>
+    <td style="border:none;">
 
         <form id="main" method="post" action="<?php echo base_url() . 'index.php/Project/approve_work_order'; ?>"
             autocomplete="off" enctype="multipart/form-data">
             <div class="form-group row">
-                <label class="col-sm-2"></label>
-                <div class="col-sm-10">
+                
+                <div class="col-sm-10" style="
+    margin-top: 6px;
+">
                     <input type="hidden" id="work_id" name="work_id" value='<?php echo $row1->work_id; ?>'>
                     <?php if ($row1->approve_flag == 0): ?>
                         <button type="submit" name="action" value="1" class="btn btn-success m-b-0">Accept</button>
@@ -749,10 +844,12 @@
                 },
                 dataType: "json",
                 success: function(msg) {
-                    document.getElementById("customer_id").value = msg.customer_id;
-                    document.getElementById("manager_id").value = msg.user_id;
-                    document.getElementById("sdate").value = msg.sdate;
-                    document.getElementById("edate").value = msg.edate;
+                    //document.getElementById("customer_id").value = msg.customer_id;
+                    document.getElementById("customer_id").innerHTML = msg.customer_id;
+                    //document.getElementById("manager_id").value = msg.user_id;
+                     document.getElementById("manager_id").innerHTML = msg.user_id;
+                    document.getElementById("sdate").innerHTML = msg.sdate;
+                    document.getElementById("edate").innerHTML = msg.edate;
 
                 },
                 error: function(xhr, status, error) {
@@ -760,10 +857,10 @@
                 }
             });
         } else {
-            document.getElementById("customer_id").value = '';
-            document.getElementById("manager_id").value = '';
-            document.getElementById("sdate").value = '';
-            document.getElementById("edate").value = '';
+             document.getElementById("customer_id").innerHTML = '';
+            document.getElementById("manager_id").innerHTML = '';
+            document.getElementById("sdate").innerHTML = '';
+            document.getElementById("edate").innerHTML = '';
         }
     }
 
@@ -850,4 +947,28 @@
     }
 
 });
+
+$(document).on('input change', 'input[name^="received_qty"]', function() {
+    var $receivedInput = $(this);
+    var $row = $receivedInput.closest('tr');
+    
+    // 1. Find the required quantity field in the same row
+    var $requiredInput = $row.find('input[name^="qty"]');
+    
+    // 2. Convert both values to numbers (use 0 if empty or invalid)
+    var receivedQty = parseFloat($receivedInput.val()) || 0;
+    var requiredQty = parseFloat($requiredInput.val()) || 0;
+    
+    // 3. Compare the values
+    if (receivedQty > requiredQty) {
+        alert('Warning: Received quantity cannot be greater than the required quantity (' + requiredQty + ').');
+        
+        // Reset the value back to the maximum allowed or leave empty
+        $receivedInput.val(requiredQty); 
+        
+        // Highlight the field to show an error (optional)
+        $receivedInput.focus();
+    }
+});
+
 </script>

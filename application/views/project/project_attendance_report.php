@@ -19,7 +19,7 @@
 
 <label>Project</label>
 
-<select name="project_id" class="form-control">
+<select name="project_id" class="form-control select2">
 
 <option value="">All Projects</option>
 
@@ -158,7 +158,7 @@ Reset
 
 <div class="x_title">
 
-<h2>Attendance Report</h2>
+<h2>Time Sheet Report</h2>
 
 <div class="clearfix"></div>
 
@@ -367,5 +367,13 @@ title:'Project Employee Attendance Report'
 });
 
 });
+$(document).ready(function () {
 
+    $('.select2').select2({
+        placeholder: '-- Select Project --',
+        allowClear: true,
+        width: '100%'
+    });
+
+});
 </script>
