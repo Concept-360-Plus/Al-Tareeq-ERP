@@ -29,7 +29,7 @@
                     </div>
                 <?php endif; ?>
 
-                <form action="<?= base_url()?>index.php/Company/list_designation" method="post">
+                <form action="<?= base_url()?>index.php/Hr/list_designation" method="post">
             <div class="col-md-4"  >
                 <input type="text" id="smart_filter" name="filter" class="form-control" placeholder="Type filter..." style="width: 400px;">
                 <ul id="filter_list" style="border: 1px solid #ccc; list-style: none; margin: 0; padding: 5px; position: absolute; display: none; background: #fff; width: 400px; z-index: 10;">
@@ -82,7 +82,7 @@
                                     <td><?= $des->status ?></td>
                                     <td class="action-icons">
                                         <?php if (has_access($user, $page_name, 'E')): ?>
-                                            <a href="<?= base_url('index.php/Company/edit_designation/' . $des->id ); ?>" title="Edit">
+                                            <a href="<?= base_url('index.php/Hr/edit_designation/' . $des->id ); ?>" title="Edit">
                                                 <i class="fa fa-edit"></i>
                                             </a>
                                         <?php endif; ?>
@@ -132,7 +132,7 @@ function confirmDeleteDesignation(id) {
     if (!confirm("Are you sure you want to delete this record?")) return false;
 
     $.ajax({
-        url: "<?= base_url('index.php/Company/delete_designation') ?>",
+        url: "<?= base_url('index.php/Hr/delete_designation') ?>",
         type: "POST",
         data: { id: id },
         success: function(response) {
