@@ -168,12 +168,15 @@ class Dashboard extends CI_Controller
     {
         $this->load->model('Project_dashboard_model','dashboard');
         $this->load->helper(array('url','form'));
+        $this->load->model('Project_dashboard_model', 'dashboard');
+        $this->load->helper(array('url', 'form'));
         $data['title'] = 'Project Dashboard';
         $data['total_projects']  = $this->dashboard->count_total_projects();
         $data['active_projects'] = $this->dashboard->count_active_projects();
         $data['completed_projects'] = $this->dashboard->count_completed_projects();
         $data['pending_workorders']  = $this->dashboard->count_pending_workorders();
         $data['approved_workorders']= $this->dashboard->count_approved_workorders();
+        $data['approved_workorders'] = $this->dashboard->count_approved_workorders();
         $data['pending_outsource'] = $this->dashboard->count_pending_outsource();
         $data['completed_outsource'] = $this->dashboard->count_completed_outsource();
         $data['delayed_projects'] = $this->dashboard->count_delayed_projects();
@@ -187,6 +190,15 @@ class Dashboard extends CI_Controller
         $data['monthly_projects'] = $this->dashboard->monthly_projects_chart();
         $data['workorder_chart']  = $this->dashboard->workorder_chart();
         $data['progress_chart']= $this->dashboard->progress_distribution_chart();
+        $data['average_progress'] = $this->dashboard->average_progress();
+        $data['estimated_cost'] = $this->dashboard->total_estimated_cost();
+        $data['outsource_cost'] = $this->dashboard->total_outsource_cost();
+        $data['material_request_cost'] = $this->dashboard->total_material_request_cost();
+
+        $data['project_status'] = $this->dashboard->project_status_chart();
+        $data['monthly_projects'] = $this->dashboard->monthly_projects_chart();
+        $data['workorder_chart']  = $this->dashboard->workorder_chart();
+        $data['progress_chart'] = $this->dashboard->progress_distribution_chart();
 
         $data['recent_projects'] = $this->dashboard->recent_projects();
         $data['recent_workorders'] = $this->dashboard->recent_workorders();
@@ -220,5 +232,15 @@ class Dashboard extends CI_Controller
             $data
         );
        
+    }
+        $data['delayed_project_list'] = $this->dashboard->delayed_projects();
+        $data['due_project_list'] = $this->dashboard->due_projects();
+
+        $data['page_title'] = 'Project Manager Dashboard';
+        $data['module'] = 'Project Management';
+        $data['icon']  = 'fa fa-dashboard';
+        $data['cost_summary'] = $this->dashboard->estimated_cost_per_project();
+        $data['main_content'] = 'project/dashboard.php';
+        $this->load->view('includes/template', $data);;
     }
 }

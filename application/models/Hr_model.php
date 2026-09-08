@@ -1,6 +1,342 @@
 <?php
 class Hr_model extends CI_Model
 {
+	/* ============= HR DASHBOARD START ===================================== */
+
+	public function get_dashboard_employee_count()
+	{
+		return $this->db->count_all('employee_master');
+	}
+
+	public function get_dashboard_today_attendance()
+	{
+		$sql = "
+			SELECT
+				SUM(
+					CASE
+						WHEN LOWER(attendence) = 'present'
+						THEN 1 ELSE 0
+					END
+				) AS present_count,
+				SUM(
+					CASE
+						WHEN LOWER(attendence) = 'absent'
+						THEN 1 ELSE 0
+					END
+				) AS absent_count,
+				SUM(
+					CASE
+						WHEN LOWER(attendence) IN ('leave','vacation')
+						THEN 1 ELSE 0
+					END
+				) AS leave_count
+			FROM employee_attendance
+			WHERE Attendance_date = CURDATE()
+		";
+
+		return $this->db->query($sql)->row();
+	}
+
+	public function get_dashboard_monthly_leave_count()
+	{
+		$this->db->where('application_date >=', date('Y-m-01'))->where('application_date <=', date('Y-m-t'));
+		return $this->db->count_all_results('employee_leave');
+	}
+
+	public function get_dashboard_monthly_payroll_cost()
+	{
+		$this->db->select_sum('gross_salary');
+		$this->db->where('salary_month >=', date('Y-m-01'));
+		$this->db->where('salary_month <=', date('Y-m-t'));
+		$row = $this->db->get('employee_monthly_salary')->row();
+
+		return (float)($row->gross_salary ?? 0);
+	}
+
+	public function get_dashboard_new_hires()
+	{
+		$this->db->where('joining_date >=', date('Y-m-01'))->where('joining_date <=', date('Y-m-t'));
+		return $this->db->count_all_results('employee_joining');
+	}
+
+	public function get_dashboard_resignations()
+	{
+		$this->db->where('resignation_date >=', date('Y-m-01'))->where('resignation_date <=', date('Y-m-t'));
+		return $this->db->count_all_results('employee_resignation');
+	}
+
+	public function get_dashboard_pending_leave()
+	{
+		$sql = "
+			SELECT COUNT(*) AS total
+			FROM employee_leave l
+			LEFT JOIN leave_approval a
+				ON a.approval_leave_id = l.leave_id
+			WHERE
+				a.approval_leave_id IS NULL
+				OR LOWER(a.leave_status) = 'pending'
+		";
+
+		$row = $this->db->query($sql)->row();
+		return (int)($row->total ?? 0);
+	}
+
+	public function get_dashboard_payroll_pending()
+	{
+		$sql = "
+			SELECT COUNT(*) AS total
+			FROM employee_master e
+			WHERE e.employee_id NOT IN
+			(
+				SELECT emp_id
+				FROM employee_monthly_salary
+				WHERE salary_month = ?
+			)
+		";
+
+		$row = $this->db->query($sql, [date('Y-m-01')])->row();
+		return (int)($row->total ?? 0);
+	}
+
+	public function get_dashboard_attendance_trend()
+	{
+		$sql = "
+			SELECT
+				DATE(Attendance_date) AS attendance_date,
+				SUM(
+					CASE
+						WHEN LOWER(attendence) = 'present'
+						THEN 1 ELSE 0
+					END
+				) AS present,
+				SUM(
+					CASE
+						WHEN LOWER(attendence) = 'absent'
+						THEN 1 ELSE 0
+					END
+				) AS absent,
+				SUM(
+					CASE
+						WHEN LOWER(attendence) IN ('leave','vacation')
+						THEN 1 ELSE 0
+					END
+				) AS leave_count
+			FROM employee_attendance
+			WHERE Attendance_date >= DATE_SUB(
+				CURDATE(),
+				INTERVAL 6 DAY
+			)
+			GROUP BY DATE(Attendance_date)
+			ORDER BY attendance_date ASC
+		";
+		return $this->db->query($sql)->result();
+	}
+
+	public function get_dashboard_employee_movement()
+	{
+		$sql = "
+			SELECT
+				m.month,
+				COALESCE(j.new_hires, 0) AS new_hires,
+				COALESCE(r.resignations, 0) AS resignations
+			FROM
+			(
+				SELECT 1 AS month
+				UNION SELECT 2
+				UNION SELECT 3
+				UNION SELECT 4
+				UNION SELECT 5
+				UNION SELECT 6
+				UNION SELECT 7
+				UNION SELECT 8
+				UNION SELECT 9
+				UNION SELECT 10
+				UNION SELECT 11
+				UNION SELECT 12
+			) m
+			LEFT JOIN
+			(
+				SELECT
+					MONTH(joining_date) AS month,
+					COUNT(*) AS new_hires
+				FROM employee_joining
+				WHERE YEAR(joining_date) = YEAR(CURDATE())
+				GROUP BY MONTH(joining_date)
+			) j
+				ON j.month = m.month
+			LEFT JOIN
+			(
+				SELECT
+					MONTH(resignation_date) AS month,
+					COUNT(*) AS resignations
+				FROM employee_resignation
+				WHERE YEAR(resignation_date) = YEAR(CURDATE())
+				GROUP BY MONTH(resignation_date)
+			) r
+				ON r.month = m.month
+			ORDER BY m.month
+		";
+
+		return $this->db->query($sql)->result();
+	}
+
+	public function get_dashboard_leave_analysis()
+	{
+		$sql = "
+			SELECT
+				leave_type,
+				COUNT(*) AS total
+			FROM employee_leave
+			WHERE YEAR(application_date) = YEAR(CURDATE())
+			GROUP BY leave_type
+			ORDER BY total DESC
+		";
+
+		return $this->db->query($sql)->result();
+	}
+
+	public function get_dashboard_payroll_trend()
+	{
+		$sql = "
+			SELECT
+				DATE_FORMAT(
+					salary_month,
+					'%b'
+				) AS month,
+				SUM(gross_salary) AS gross_salary,
+				SUM(net_salary) AS net_salary
+			FROM employee_monthly_salary
+			WHERE salary_month >= DATE_SUB(
+				DATE_FORMAT(
+					CURDATE(),
+					'%Y-%m-01'
+				),
+				INTERVAL 11 MONTH
+			)
+			GROUP BY
+				YEAR(salary_month),
+				MONTH(salary_month)
+			ORDER BY salary_month ASC
+		";
+
+		return $this->db->query($sql)->result();
+	}
+
+	public function get_dashboard_pending_leave_list($limit = 8)
+	{
+		$sql = "
+        SELECT
+            l.leave_id,
+            l.leave_code,
+            l.start_date,
+            l.end_date,
+            l.leave_type,
+            e.employee_name,
+            a.leave_status
+        FROM employee_leave l
+        INNER JOIN employee_master e
+            ON e.employee_id = l.employee_id
+        LEFT JOIN leave_approval a
+            ON a.approval_leave_id = l.leave_id
+        WHERE
+            a.approval_leave_id IS NULL
+            OR LOWER(a.leave_status) = 'pending'
+        ORDER BY l.application_date DESC
+        LIMIT " . (int)$limit;
+
+		return $this->db->query($sql)->result();
+	}
+
+	public function get_dashboard_today_attendance_list($limit = 10)
+	{
+		$sql = "
+        SELECT
+            a.emp_aId,
+            a.employee_id,
+            e.employee_name,
+            a.attendence,
+            a.in_time,
+            a.out_time
+        FROM employee_attendance a
+        INNER JOIN employee_master e
+            ON e.employee_id = a.employee_id
+        WHERE a.Attendance_date = CURDATE()
+        ORDER BY e.employee_name ASC
+        LIMIT " . (int)$limit;
+
+		return $this->db->query($sql)->result();
+	}
+
+	public function get_dashboard_recent_joinings($limit = 5)
+	{
+		$sql = "
+        SELECT
+            j.jid,
+            j.joining_code,
+            j.joining_date,
+            j.joining_type,
+            e.employee_name
+        FROM employee_joining j
+        LEFT JOIN employee_master e
+            ON e.employee_id = j.employee_id
+        ORDER BY j.joining_date DESC
+        LIMIT " . (int)$limit;
+
+		return $this->db->query($sql)->result();
+	}
+
+	public function get_dashboard_recent_resignations($limit = 5)
+	{
+		$sql = "
+        SELECT
+            r.resig_id,
+            r.resign_code,
+            r.resignation_date,
+            r.last_working_date,
+            e.employee_name
+        FROM employee_resignation r
+        INNER JOIN employee_master e
+            ON e.employee_id = r.employee_id
+        ORDER BY r.resignation_date DESC
+        LIMIT " . (int)$limit;
+
+		return $this->db->query($sql)->result();
+	}
+
+	public function get_dashboard_recent_activities($limit = 10)
+	{
+		$sql = "
+        SELECT
+            joining_code AS code,
+            joining_date AS activity_date,
+            'Joining' AS activity_type
+        FROM employee_joining
+
+        UNION ALL
+        SELECT
+            leave_code,
+            application_date,
+            'Leave'
+        FROM employee_leave
+        UNION ALL
+        SELECT
+            resign_code,
+            resignation_date,
+            'Resignation'
+        FROM employee_resignation
+        UNION ALL
+        SELECT
+            CAST(emp_aId AS CHAR),
+            Attendance_date,
+            'Attendance'
+        FROM employee_attendance
+        ORDER BY activity_date DESC
+        LIMIT " . (int)$limit;
+
+		return $this->db->query($sql)->result();
+	}
+
+	/* ============= HR DASHBOARD END ===================================== */
 
 
 	/////////////////  allowance & deductions start  ///////////////////
@@ -59,7 +395,7 @@ class Hr_model extends CI_Model
 		$this->db->where('sno', $id);
 		$this->db->delete('allowance_master');
 	}
-	
+
 	/////////////////  employee_leave start  ///////////////////
 
 	function add_employee_leave_data()
@@ -270,27 +606,26 @@ class Hr_model extends CI_Model
 			'approval_leave_id' => $leave_id,
 			'approved_date'     => date('Y-m-d', strtotime($this->input->post('approve_date'))),
 			'leave_status'      => $this->input->post('leave_status'),
-			'approve_start_date'=> !empty($this->input->post('approve_start_date'))
-									? date('Y-m-d', strtotime($this->input->post('approve_start_date')))
-									: NULL,
+			'approve_start_date' => !empty($this->input->post('approve_start_date'))
+				? date('Y-m-d', strtotime($this->input->post('approve_start_date')))
+				: NULL,
 			'approve_end_date'  => !empty($this->input->post('approve_end_date'))
-									? date('Y-m-d', strtotime($this->input->post('approve_end_date')))
-									: NULL,
+				? date('Y-m-d', strtotime($this->input->post('approve_end_date')))
+				: NULL,
 			'remark'            => $this->input->post('approve_remark'),
 			'admin_md'          => $this->input->post('approve_admin'),
 			'hr'                => $this->input->post('approve_hr'),
 		);
 
 		$exists = $this->db->where('approval_leave_id', $leave_id)
-						->get('leave_approval')
-						->row();
+			->get('leave_approval')
+			->row();
 
 		if ($exists) {
 			$this->db->where('approval_leave_id', $leave_id);
 			$this->db->update('leave_approval', $data);
 
 			return true;
-
 		} else {
 			$this->db->insert('leave_approval', $data);
 			$insert_id = $this->db->insert_id();
@@ -385,13 +720,13 @@ class Hr_model extends CI_Model
 		return $id;
 	}
 	public function get_employee_joining_by_id($id)
-{
-    $this->db->select('j.*, COALESCE(u.user_name, j.employee_id) as user_name');
-    $this->db->from('employee_joining j');
-    $this->db->join('users u', 'j.employee_id = u.user_id', 'left');
-    $this->db->where('j.jid', $id);
-    return $this->db->get()->row();
-}
+	{
+		$this->db->select('j.*, COALESCE(u.user_name, j.employee_id) as user_name');
+		$this->db->from('employee_joining j');
+		$this->db->join('users u', 'j.employee_id = u.user_id', 'left');
+		$this->db->where('j.jid', $id);
+		return $this->db->get()->row();
+	}
 
 	// function get_employee_joining_list()
 	// {
@@ -400,16 +735,16 @@ class Hr_model extends CI_Model
 	// }
 
 	public function get_employee_joining_list()
-{
-    $this->db->select('j.*, u.user_name as name');
-    $this->db->from('employee_joining j');
-    $this->db->join('users u', 'j.employee_id = u.user_id', 'left');
-    $this->db->order_by('j.joining_date', 'desc');
-    return $this->db->get()->result();
-}
+	{
+		$this->db->select('j.*, u.user_name as name');
+		$this->db->from('employee_joining j');
+		$this->db->join('users u', 'j.employee_id = u.user_id', 'left');
+		$this->db->order_by('j.joining_date', 'desc');
+		return $this->db->get()->result();
+	}
 	function get_joining_new_list()
-{
-    $query = $this->db->query("
+	{
+		$query = $this->db->query("
         SELECT user_id, user_name
         FROM users
         WHERE user_id NOT IN (
@@ -419,8 +754,8 @@ class Hr_model extends CI_Model
         )
         ORDER BY user_name ASC
     ");
-    return $query->result();
-}
+		return $query->result();
+	}
 
 
 
@@ -458,40 +793,40 @@ class Hr_model extends CI_Model
 		if ($insert_id) {
 			if (!empty($_FILES["documents_res"]["name"][0])) {
 
-    $allowedExts = array("jpeg", "jpg", "png", "doc", "pdf");
-    $upload_path = FCPATH . 'public/uploaded_documents/';
+				$allowedExts = array("jpeg", "jpg", "png", "doc", "pdf");
+				$upload_path = FCPATH . 'public/uploaded_documents/';
 
-    if (!is_dir($upload_path)) {
-        mkdir($upload_path, 0777, true);
-    }
+				if (!is_dir($upload_path)) {
+					mkdir($upload_path, 0777, true);
+				}
 
-    foreach ($_FILES['documents_res']["name"] as $key => $filename) {
+				foreach ($_FILES['documents_res']["name"] as $key => $filename) {
 
-        if (!empty($filename)) {
+					if (!empty($filename)) {
 
-            $temp = explode(".", $filename);
-            $extension = strtolower(end($temp));
+						$temp = explode(".", $filename);
+						$extension = strtolower(end($temp));
 
-            if (in_array($extension, $allowedExts)) {
+						if (in_array($extension, $allowedExts)) {
 
-                $file_tmp = $_FILES["documents_res"]["tmp_name"][$key];
+							$file_tmp = $_FILES["documents_res"]["tmp_name"][$key];
 
-                $other_file = time() . "_" . rand(1000,9999) . "_" . $filename;
+							$other_file = time() . "_" . rand(1000, 9999) . "_" . $filename;
 
-                move_uploaded_file($file_tmp, $upload_path . $other_file);
+							move_uploaded_file($file_tmp, $upload_path . $other_file);
 
-                $data1 = array(
-                    'resig_id' => $insert_id,
-                    'employee_id' => $this->input->post('employee_id'),
-                    'document_name' => $this->input->post('document_types')[$key],
-                    'document_path' => $other_file,
-                );
+							$data1 = array(
+								'resig_id' => $insert_id,
+								'employee_id' => $this->input->post('employee_id'),
+								'document_name' => $this->input->post('document_types')[$key],
+								'document_path' => $other_file,
+							);
 
-                $this->db->insert('employee_resignation_documents', $data1);
-            }
-        }
-    }
-}
+							$this->db->insert('employee_resignation_documents', $data1);
+						}
+					}
+				}
+			}
 		}
 
 		if ($insert_id) {
@@ -520,40 +855,40 @@ class Hr_model extends CI_Model
 		if ($id) {
 			if (!empty($_FILES["documents_res"]["name"][0])) {
 
-    $allowedExts = array("jpeg", "jpg", "png", "doc", "pdf");
-    $upload_path = FCPATH . 'public/uploaded_documents/';
+				$allowedExts = array("jpeg", "jpg", "png", "doc", "pdf");
+				$upload_path = FCPATH . 'public/uploaded_documents/';
 
-    if (!is_dir($upload_path)) {
-        mkdir($upload_path, 0777, true);
-    }
+				if (!is_dir($upload_path)) {
+					mkdir($upload_path, 0777, true);
+				}
 
-    foreach ($_FILES['documents_res']["name"] as $key => $filename) {
+				foreach ($_FILES['documents_res']["name"] as $key => $filename) {
 
-        if (!empty($filename)) {
+					if (!empty($filename)) {
 
-            $temp = explode(".", $filename);
-            $extension = strtolower(end($temp));
+						$temp = explode(".", $filename);
+						$extension = strtolower(end($temp));
 
-            if (in_array($extension, $allowedExts)) {
+						if (in_array($extension, $allowedExts)) {
 
-                $file_tmp = $_FILES["documents_res"]["tmp_name"][$key];
+							$file_tmp = $_FILES["documents_res"]["tmp_name"][$key];
 
-                $other_file = time() . "_" . rand(1000,9999) . "_" . $filename;
+							$other_file = time() . "_" . rand(1000, 9999) . "_" . $filename;
 
-                move_uploaded_file($file_tmp, $upload_path . $other_file);
+							move_uploaded_file($file_tmp, $upload_path . $other_file);
 
-                $data1 = array(
-                    'resig_id' => $id,
-                    'employee_id' => $this->input->post('employee_id_hidden'),
-                    'document_name' => $this->input->post('document_types')[$key],
-                    'document_path' => $other_file,
-                );
+							$data1 = array(
+								'resig_id' => $id,
+								'employee_id' => $this->input->post('employee_id_hidden'),
+								'document_name' => $this->input->post('document_types')[$key],
+								'document_path' => $other_file,
+							);
 
-                $this->db->insert('employee_resignation_documents', $data1);
-            }
-        }
-    }
-}
+							$this->db->insert('employee_resignation_documents', $data1);
+						}
+					}
+				}
+			}
 		}
 
 		if ($res) {
@@ -573,14 +908,14 @@ class Hr_model extends CI_Model
 
 
 	function get_employee_resignation_list()
-{
-    $this->db->select('r.*, u.employee_name as name');
-    $this->db->from('employee_resignation r');
-    $this->db->join('employee_master u', 'r.employee_id = u.employee_id', 'inner');
-    $this->db->order_by('r.resignation_date', 'desc');
-    $query = $this->db->get();
-    return $query->result();
-}
+	{
+		$this->db->select('r.*, u.employee_name as name');
+		$this->db->from('employee_resignation r');
+		$this->db->join('employee_master u', 'r.employee_id = u.employee_id', 'inner');
+		$this->db->order_by('r.resignation_date', 'desc');
+		$query = $this->db->get();
+		return $query->result();
+	}
 
 
 
@@ -618,15 +953,15 @@ class Hr_model extends CI_Model
 	// }
 
 	function get_employee_resigning_by_id($id)
-{
-    $this->db->select('r.*, u.*, u.joining_date as jdate');
-    $this->db->from('employee_resignation r');
-    $this->db->join('employee_master u', 'r.employee_id = u.employee_id', 'inner');
-    $this->db->where('r.resig_id', $id);
-    $query = $this->db->get();
+	{
+		$this->db->select('r.*, u.*, u.joining_date as jdate');
+		$this->db->from('employee_resignation r');
+		$this->db->join('employee_master u', 'r.employee_id = u.employee_id', 'inner');
+		$this->db->where('r.resig_id', $id);
+		$query = $this->db->get();
 
-    return $query->row(); // return a single row, not an array
-}
+		return $query->row(); // return a single row, not an array
+	}
 
 	function delete_resignation_application($id)
 	{
@@ -699,8 +1034,8 @@ class Hr_model extends CI_Model
 		return $query->result();
 	}
 	function get_passport_release_list_by_id($id)
-{
-    $query = $this->db->query("
+	{
+		$query = $this->db->query("
         SELECT e.*, u.*, e.remark as rem 
         FROM employee_document_details AS e 
         JOIN employee_master AS u ON e.emp_id = u.employee_id 
@@ -709,9 +1044,9 @@ class Hr_model extends CI_Model
         ORDER BY e.emp_docId DESC 
         LIMIT 1
     ");
-    
-    return $query->row(); // <-- return single object
-}
+
+		return $query->row(); // <-- return single object
+	}
 
 
 
@@ -729,7 +1064,7 @@ class Hr_model extends CI_Model
 		$this->db->where('emp_docId', $id);
 		$this->db->delete('employee_document_details');
 	}
-	
+
 	///////////////////////////////////////////start overtime form model /////////////////////////////////
 
 	function add_emp_overtime_data()
@@ -773,7 +1108,7 @@ class Hr_model extends CI_Model
 	function update_emp_overtime($id)
 	{
 		$data = array(
-			'employee_id' => $this->input->post('employee_id'),		
+			'employee_id' => $this->input->post('employee_id'),
 			'date_ot' => date('Y-m-d', strtotime($this->input->post('date_ot'))),
 			'overtime' => $this->input->post('overtime'),
 			// 'ot_type' => $this->input->post('ot_type'),     
@@ -812,10 +1147,10 @@ class Hr_model extends CI_Model
 								   WHERE emp_oid = '$id'
 								   ORDER BY o.date_ot DESC");
 
-		 return $query->row();
+		return $query->row();
 	}
 
-	
+
 
 	function delete_emp_overtime($id)
 	{
@@ -873,7 +1208,7 @@ class Hr_model extends CI_Model
 
 		$data = array(
 			'employee_id' => $this->input->post('employee_id_hidden'),
-			'Attendance_date' =>$this->input->post('attendance_date'),
+			'Attendance_date' => $this->input->post('attendance_date'),
 			'attendence' => $attendance,
 			'remark' => $this->input->post('remark')
 		);
@@ -886,7 +1221,7 @@ class Hr_model extends CI_Model
 
 		$this->db->where('emp_aId', $id);
 		$res = $this->db->update('employee_attendance', $data);
-		
+
 
 
 		if ($res) {
@@ -931,7 +1266,7 @@ class Hr_model extends CI_Model
 								   WHERE emp_aId = '$id'
 								   ORDER BY a.Attendance_date DESC");
 
-		  return $query->row(); // <-- return single object
+		return $query->row(); // <-- return single object
 
 	}
 
@@ -1132,12 +1467,11 @@ class Hr_model extends CI_Model
 									'error',
 									'Failed to upload - Please check file size and file format'
 								);
-
 							} else {
 
 								$file_tmp = $_FILES["documents"]["tmp_name"][$i];
 
-								$other_file = time() . "_" . rand(1000,9999) . "_" . $_FILES['documents']['name'][$i];
+								$other_file = time() . "_" . rand(1000, 9999) . "_" . $_FILES['documents']['name'][$i];
 
 								move_uploaded_file($file_tmp, $upload_path . $other_file);
 
@@ -1205,12 +1539,11 @@ class Hr_model extends CI_Model
 									'error',
 									'Failed to upload - Please check file size and file format'
 								);
-
 							} else {
 
 								$file_tmp = $_FILES["documents"]["tmp_name"][$i];
 
-								$other_file = time() . "_" . rand(1000,9999) . "_" . $_FILES['documents']['name'][$i];
+								$other_file = time() . "_" . rand(1000, 9999) . "_" . $_FILES['documents']['name'][$i];
 
 								move_uploaded_file($file_tmp, $upload_path . $other_file);
 
@@ -1267,12 +1600,10 @@ class Hr_model extends CI_Model
 			'cop_id' => $id
 		));
 
-		foreach ($query->result() as $row)
-		{
+		foreach ($query->result() as $row) {
 			$file = FCPATH . 'public/uploaded_documents/' . $row->document_path;
 
-			if (!empty($row->document_path) && file_exists($file))
-			{
+			if (!empty($row->document_path) && file_exists($file)) {
 				unlink($file);
 			}
 		}
@@ -1289,7 +1620,7 @@ class Hr_model extends CI_Model
 	}
 
 	//////////////////////salary structure start///////////////////////////////////////////////////////
-	
+
 	function add_salary_structure()
 	{
 		$salary_structure_data = array(
@@ -1316,10 +1647,9 @@ class Hr_model extends CI_Model
 					);
 					$this->db->insert('salary_structure_details', $allowance_data);
 
-					echo $this->db->last_query()."<br>";
+					echo $this->db->last_query() . "<br>";
 
-					if($this->db->error()['code'] != 0)
-					{
+					if ($this->db->error()['code'] != 0) {
 						print_r($this->db->error());
 					}
 				}
@@ -1335,10 +1665,9 @@ class Hr_model extends CI_Model
 					);
 					$this->db->insert('salary_structure_details', $deduction_data);
 
-					echo $this->db->last_query()."<br>";
+					echo $this->db->last_query() . "<br>";
 
-					if($this->db->error()['code'] != 0)
-					{
+					if ($this->db->error()['code'] != 0) {
 						print_r($this->db->error());
 					}
 				}
@@ -1382,7 +1711,7 @@ class Hr_model extends CI_Model
 				$this->db->where('sid', $id)->delete('salary_structure_details');
 				// Allowance details insertion
 				if (isset($_POST['allowance_type'])) {
-    				foreach ($_POST['allowance_type'] as $index => $allowance_type) {
+					foreach ($_POST['allowance_type'] as $index => $allowance_type) {
 						if (!empty($allowance_type) && !empty($_POST['a_amount'][$index])) {
 							$allowance_data = array(
 								'sid' => $id,
@@ -1516,15 +1845,15 @@ class Hr_model extends CI_Model
 	}
 
 	function get_salary_structure_by_id($id)
-{
-    return $this->db->query("
+	{
+		return $this->db->query("
         SELECT j.*, u.employee_name AS name, j.remark AS rem
         FROM salary_structure j
         JOIN employee_master u ON j.emp_id = u.employee_id
         WHERE j.sid = $id
         ORDER BY j.effective_date DESC
     ")->row();   // ✅ row(), not result()
-}
+	}
 
 
 
@@ -1587,14 +1916,14 @@ class Hr_model extends CI_Model
 
 
 	function get_salary_structure_data()
-{
-    $effective_date = $this->input->post('effective_date');
-    $selected_month_year = date('Y-m', strtotime($effective_date));
-    $emp_id = $this->input->post('user_id');
+	{
+		$effective_date = $this->input->post('effective_date');
+		$selected_month_year = date('Y-m', strtotime($effective_date));
+		$emp_id = $this->input->post('user_id');
 
-    $end_date = date('Y-m-t', strtotime($selected_month_year));
+		$end_date = date('Y-m-t', strtotime($selected_month_year));
 
-    $query = $this->db->query("
+		$query = $this->db->query("
         SELECT * 
         FROM salary_structure 
         WHERE emp_id = '$emp_id'
@@ -1603,22 +1932,22 @@ class Hr_model extends CI_Model
         LIMIT 1
     ");
 
-    return $query->result();
-}
+		return $query->result();
+	}
 
-public function get_salary_structure_data_new($emp_id)
-{
-    $effective_date = $this->input->post('effective_date', true);
+	public function get_salary_structure_data_new($emp_id)
+	{
+		$effective_date = $this->input->post('effective_date', true);
 
-    // ✅ SAFE fallback (IMPORTANT)
-    if (empty($effective_date)) {
-        $effective_date = date('Y-m');
-    }
+		// ✅ SAFE fallback (IMPORTANT)
+		if (empty($effective_date)) {
+			$effective_date = date('Y-m');
+		}
 
-    $selected_month = date('Y-m', strtotime($effective_date));
-    $end_date = date('Y-m-t', strtotime($selected_month));
+		$selected_month = date('Y-m', strtotime($effective_date));
+		$end_date = date('Y-m-t', strtotime($selected_month));
 
-    $query = $this->db->query("
+		$query = $this->db->query("
         SELECT * 
         FROM salary_structure 
         WHERE emp_id = '$emp_id'
@@ -1627,8 +1956,8 @@ public function get_salary_structure_data_new($emp_id)
         LIMIT 1
     ");
 
-    return $query->row();
-}
+		return $query->row();
+	}
 	function get_salary_structure_details($id)
 	{
 		$query = $this->db->query("select * from salary_structure_details s, allowance_master am where s.allowance_id=am.sno and  s.sid='$id' ");
@@ -1636,8 +1965,8 @@ public function get_salary_structure_data_new($emp_id)
 	}
 
 	function get_attendance_details($employee_id, $start_date, $end_date)
-{
-    $query = $this->db->query("
+	{
+		$query = $this->db->query("
         SELECT 
             COALESCE(SUM(CASE WHEN attendence = 'present' THEN 1 ELSE 0 END),0) AS present_count,
             COALESCE(SUM(CASE WHEN attendence = 'half_day' THEN 1 ELSE 0 END),0) AS half_count,
@@ -1647,8 +1976,8 @@ public function get_salary_structure_data_new($emp_id)
         AND Attendance_date BETWEEN ? AND ?
     ", [$employee_id, $start_date, $end_date]);
 
-    return $query->row();
-}
+		return $query->row();
+	}
 	function add_basic_enquiry()
 	{
 		$basic_enq_data = array(
@@ -1721,13 +2050,13 @@ public function get_salary_structure_data_new($emp_id)
 	function add_emp_monthly_salary()
 	{
 
-	$overtime_hours = $this->input->post('t_overtime');
+		$overtime_hours = $this->input->post('t_overtime');
 
-// convert hours → HH:MM:SS
-$hours = floor($overtime_hours);
-$minutes = ($overtime_hours - $hours) * 60;
+		// convert hours → HH:MM:SS
+		$hours = floor($overtime_hours);
+		$minutes = ($overtime_hours - $hours) * 60;
 
-$overtime_time = sprintf('%02d:%02d:00', $hours, $minutes);
+		$overtime_time = sprintf('%02d:%02d:00', $hours, $minutes);
 
 		$data = array(
 			'emp_id' => $this->input->post('empid'),
@@ -1737,7 +2066,7 @@ $overtime_time = sprintf('%02d:%02d:00', $hours, $minutes);
 			'present_days' => $this->input->post('present_days'),
 			'paid_leave' => $this->input->post('paid_leave'),
 			'payment_days' => $this->input->post('payment_days'),
-'overtime' => $overtime_time,
+			'overtime' => $overtime_time,
 			'overtime_amt' => $this->input->post('amt_overtime'),
 			'basic_salary' => $this->input->post('basic_salary'),
 			'daily_basic' => $this->input->post('daily_basic'),
@@ -1778,17 +2107,17 @@ $overtime_time = sprintf('%02d:%02d:00', $hours, $minutes);
 	// 	$query = $this->db->query("select * from employee_monthly_salary s, users u where s.emp_id=u.user_id order by salary_month  desc");
 	// 	return $query->result();
 	// }
-function get_emp_monthly_salary_list($from)
-{
-    if (empty($from)) {
-        return [];
-    }
+	function get_emp_monthly_salary_list($from)
+	{
+		if (empty($from)) {
+			return [];
+		}
 
-    // Convert input to Y-m-01 format (first day of month)
-    $month_start = date('Y-m-01', strtotime($from));
-    $month_end   = date('Y-m-t', strtotime($from)); // last day of month
+		// Convert input to Y-m-01 format (first day of month)
+		$month_start = date('Y-m-01', strtotime($from));
+		$month_end   = date('Y-m-t', strtotime($from)); // last day of month
 
-    $sql = "
+		$sql = "
         SELECT s.*, u.employee_name, u.user_code, d.designation_name, dep.dept_name
         FROM employee_monthly_salary s
         JOIN employee_master u ON s.emp_id = u.employee_id
@@ -1798,9 +2127,9 @@ function get_emp_monthly_salary_list($from)
         ORDER BY s.salary_month DESC
     ";
 
-    $query = $this->db->query($sql, [$month_start, $month_end]);
-    return $query->result();
-}
+		$query = $this->db->query($sql, [$month_start, $month_end]);
+		return $query->result();
+	}
 
 
 	// function get_emp_monthly_salary_list($from)
@@ -1812,11 +2141,11 @@ function get_emp_monthly_salary_list($from)
 	// 	$data['to'] = $to_date;
 
 	// 	$query = $this->db->query("
-    //     SELECT * 
-    //     FROM employee_monthly_salary s, users u 
-    //     WHERE s.emp_id = u.user_id 
-    //     AND s.salary_month BETWEEN '{$data['from']}' AND '{$data['to']}' 
-    //     ORDER BY s.salary_month DESC");
+	//     SELECT * 
+	//     FROM employee_monthly_salary s, users u 
+	//     WHERE s.emp_id = u.user_id 
+	//     AND s.salary_month BETWEEN '{$data['from']}' AND '{$data['to']}' 
+	//     ORDER BY s.salary_month DESC");
 
 	// 	return $query->result();
 	// }
@@ -1951,8 +2280,8 @@ function get_emp_monthly_salary_list($from)
 		$this->db->delete('advance_salary');
 	}
 	public function get_upcoming_leaves()
-    {
-        $query = $this->db->query("
+	{
+		$query = $this->db->query("
             SELECT 
                 l.leave_id,
                 u.user_name AS employee_name,
@@ -1973,8 +2302,8 @@ function get_emp_monthly_salary_list($from)
             LIMIT 10
         ");
 
-        return $query->result();
-    }
+		return $query->result();
+	}
 	public function check_salary_exist($user_id, $effective_date)
 	{
 		return $this->db
@@ -1983,34 +2312,34 @@ function get_emp_monthly_salary_list($from)
 			->get('employee_monthly_salary')
 			->num_rows();
 	}
-	 function get_overtime_by_id($user_id,$ot_date)
-{
-    $query = $this->db
-                  ->select('overtime')
-                  ->from('employee_overtime')
-                  ->where('employee_id', $user_id)
-				  ->where('DATE_FORMAT(date_ot, "%Y-%m") =', $ot_date)
-                  ->get();
+	function get_overtime_by_id($user_id, $ot_date)
+	{
+		$query = $this->db
+			->select('overtime')
+			->from('employee_overtime')
+			->where('employee_id', $user_id)
+			->where('DATE_FORMAT(date_ot, "%Y-%m") =', $ot_date)
+			->get();
 
-    return $query->row()->overtime ?? 0;
-}
+		return $query->row()->overtime ?? 0;
+	}
 
-//overtime type
-// function get_overtime_type_by_id($user_id,$ot_date)
-// {
-//     $query = $this->db
-//                   ->select('ot_type')
-//                   ->from('employee_overtime')
-//                   ->where('employee_id', $user_id)
-// 				  ->where('DATE_FORMAT(date_ot, "%Y-%m") =', $ot_date)
-//                   ->get();
+	//overtime type
+	// function get_overtime_type_by_id($user_id,$ot_date)
+	// {
+	//     $query = $this->db
+	//                   ->select('ot_type')
+	//                   ->from('employee_overtime')
+	//                   ->where('employee_id', $user_id)
+	// 				  ->where('DATE_FORMAT(date_ot, "%Y-%m") =', $ot_date)
+	//                   ->get();
 
-//     return $query->row()->ot_type ?? 'NORMAL';
-// }
-// basic salary view by user id
-function get_salary_structure_datas($user_id, $end_date)
-{
-    $query = $this->db->query("
+	//     return $query->row()->ot_type ?? 'NORMAL';
+	// }
+	// basic salary view by user id
+	function get_salary_structure_datas($user_id, $end_date)
+	{
+		$query = $this->db->query("
         SELECT * 
         FROM salary_structure 
         WHERE emp_id = ? 
@@ -2019,57 +2348,57 @@ function get_salary_structure_datas($user_id, $end_date)
         LIMIT 1
     ", [$user_id, $end_date]);
 
-    return $query->result();
-}
-function get_employee_list()
+		return $query->result();
+	}
+	function get_employee_list()
 	{
 		$query = $this->db->query("select e.*  from employee_master e  order by employee_id");
 		return $query->result();
 	}
 
 	public function get_employee_passport_info($employee_id)
-{
-    return $this->db
-        ->select('
+	{
+		return $this->db
+			->select('
             employee_id,
             user_code,
             passport_number,
             passport_issue_date,
             passport_expiry_date
         ')
-        ->from('employee_master')
-        ->where('employee_id', $employee_id)
-        ->get()
-        ->row();
-}
+			->from('employee_master')
+			->where('employee_id', $employee_id)
+			->get()
+			->row();
+	}
 
-// Hr_model.php
-public function get_employee_by_id($employee_id)
-{
-    return $this->db->where('employee_id', $employee_id)
-                    ->get('employee_master')
-                    ->row(); // returns object
-}
-public function get_leave_latest_status($leave_id)
-{
-    $this->db->select('leave_status');
-    $this->db->from('leave_approval');
-    $this->db->where('approval_leave_id', $leave_id);
-    $this->db->order_by('app_id', 'DESC');
-    $this->db->limit(1);
+	// Hr_model.php
+	public function get_employee_by_id($employee_id)
+	{
+		return $this->db->where('employee_id', $employee_id)
+			->get('employee_master')
+			->row(); // returns object
+	}
+	public function get_leave_latest_status($leave_id)
+	{
+		$this->db->select('leave_status');
+		$this->db->from('leave_approval');
+		$this->db->where('approval_leave_id', $leave_id);
+		$this->db->order_by('app_id', 'DESC');
+		$this->db->limit(1);
 
-    return $this->db->get()->row();
-}
+		return $this->db->get()->row();
+	}
 
-public function get_salary_structure_by_employee($employee_id)
-{
-    $this->db->select('*');
-    $this->db->from('salary_structure');
-    $this->db->where('emp_id', $employee_id);
-    return $this->db->get()->row();
-}
+	public function get_salary_structure_by_employee($employee_id)
+	{
+		$this->db->select('*');
+		$this->db->from('salary_structure');
+		$this->db->where('emp_id', $employee_id);
+		return $this->db->get()->row();
+	}
 
-///////////////////////////////////////////COMMISSION SETUP START//////////////////////////////////////////
+	///////////////////////////////////////////COMMISSION SETUP START//////////////////////////////////////////
 
 	public function get_sales_rep_list()
 	{
@@ -2121,7 +2450,7 @@ public function get_salary_structure_by_employee($employee_id)
 			'left'
 		);
 
-		$this->db->order_by('ct.transaction_id','DESC');
+		$this->db->order_by('ct.transaction_id', 'DESC');
 
 		return $this->db->get()->result();
 	}
@@ -2129,9 +2458,9 @@ public function get_salary_structure_by_employee($employee_id)
 	public function get_commission_transaction($id)
 	{
 		return $this->db
-				->where('transaction_id',$id)
-				->get('commission_transactions')
-				->row();
+			->where('transaction_id', $id)
+			->get('commission_transactions')
+			->row();
 	}
 
 	public function get_invoice_details($invoice_id)
@@ -2143,7 +2472,7 @@ public function get_salary_structure_by_employee($employee_id)
 			invoice_date
 		");
 
-		$this->db->where('invoice_id',$invoice_id);
+		$this->db->where('invoice_id', $invoice_id);
 
 		return $this->db->get('invoice_master')->row();
 	}
@@ -2156,7 +2485,7 @@ public function get_salary_structure_by_employee($employee_id)
 			commission_percent
 		");
 
-		$this->db->where('sales_rep_id',$sales_rep_id);
+		$this->db->where('sales_rep_id', $sales_rep_id);
 
 		return $this->db->get('sales_rep_master')->row();
 	}
@@ -2164,43 +2493,41 @@ public function get_salary_structure_by_employee($employee_id)
 	public function delete_commission_transaction($id)
 	{
 		$this->db
-			->where('transaction_id',$id)
+			->where('transaction_id', $id)
 			->delete('commission_transactions');
 	}
 
 	public function save_commission_transaction()
 	{
-		$data=array(
-			'invoice_id'=>$this->input->post('invoice_id'),
-			'sales_rep_id'=>$this->input->post('sales_rep_id'),
-			'invoice_amount'=>$this->input->post('invoice_amount'),
-			'commission_percent'=>$this->input->post('commission_percent'),
-			'commission_amount'=>$this->input->post('commission_amount'),
-			'eligible_date'=>date(
+		$data = array(
+			'invoice_id' => $this->input->post('invoice_id'),
+			'sales_rep_id' => $this->input->post('sales_rep_id'),
+			'invoice_amount' => $this->input->post('invoice_amount'),
+			'commission_percent' => $this->input->post('commission_percent'),
+			'commission_amount' => $this->input->post('commission_amount'),
+			'eligible_date' => date(
 				'Y-m-d',
 				strtotime($this->input->post('eligible_date'))
 			),
 
-			'status'=>$this->input->post('status'),
-			'remarks'=>$this->input->post('remarks'),
-			'created_by'=>$this->session->userdata('user_id'),
+			'status' => $this->input->post('status'),
+			'remarks' => $this->input->post('remarks'),
+			'created_by' => $this->session->userdata('user_id'),
 		);
 
 		// Prevent duplicate invoice commission
-		$this->db->where('invoice_id',$data['invoice_id']);
-		if($this->db->get('commission_transactions')->num_rows()>0)
-		{
+		$this->db->where('invoice_id', $data['invoice_id']);
+		if ($this->db->get('commission_transactions')->num_rows() > 0) {
 			return false;
 		}
 
-		$this->db->insert('commission_transactions',$data);
-		$insert_id=$this->db->insert_id();
+		$this->db->insert('commission_transactions', $data);
+		$insert_id = $this->db->insert_id();
 
-		if($insert_id)
-		{
-			$user=$this->session->userdata('user_id');
-			$page_name=explode('index.php/',$_SERVER['PHP_SELF']);
-			$ci=get_instance();
+		if ($insert_id) {
+			$user = $this->session->userdata('user_id');
+			$page_name = explode('index.php/', $_SERVER['PHP_SELF']);
+			$ci = get_instance();
 			$ci->load->helper('log');
 			add_log_entry(
 				$user,
@@ -2216,13 +2543,13 @@ public function get_salary_structure_by_employee($employee_id)
 
 	public function update_commission_transaction($id)
 	{
-		$data=array(
+		$data = array(
 			'invoice_id'         => $this->input->post('invoice_id'),
 			'sales_rep_id'       => $this->input->post('sales_rep_id'),
 			'invoice_amount'     => $this->input->post('invoice_amount'),
 			'commission_percent' => $this->input->post('commission_percent'),
 			'commission_amount'  => $this->input->post('commission_amount'),
-			'eligible_date'=>date(
+			'eligible_date' => date(
 				'Y-m-d',
 				strtotime($this->input->post('eligible_date'))
 			),
@@ -2237,8 +2564,7 @@ public function get_salary_structure_by_employee($employee_id)
 
 		$exists = $this->db->get('commission_transactions')->num_rows();
 
-		if($exists > 0)
-		{
+		if ($exists > 0) {
 			return false;
 		}
 
@@ -2250,11 +2576,10 @@ public function get_salary_structure_by_employee($employee_id)
 			return false;
 		}
 
-		if($id)
-		{
-			$user=$this->session->userdata('user_id');
-			$page_name=explode('index.php/',$_SERVER['PHP_SELF']);
-			$ci=get_instance();
+		if ($id) {
+			$user = $this->session->userdata('user_id');
+			$page_name = explode('index.php/', $_SERVER['PHP_SELF']);
+			$ci = get_instance();
 			$ci->load->helper('log');
 			add_log_entry(
 				$user,
@@ -2300,10 +2625,10 @@ public function get_salary_structure_by_employee($employee_id)
 
 		$this->db->where_in(
 			'ct.status',
-			array('Pending','Eligible')
+			array('Pending', 'Eligible')
 		);
 
-		$this->db->order_by('ct.transaction_id','DESC');
+		$this->db->order_by('ct.transaction_id', 'DESC');
 
 		return $this->db->get()->result();
 	}
@@ -2313,8 +2638,7 @@ public function get_salary_structure_by_employee($employee_id)
 	public function approve_commission_transaction($id)
 	{
 		$user = $this->session->userdata('user_id');
-		if(!has_access($user,'Hr/view_commission_approval_list','E'))
-		{
+		if (!has_access($user, 'Hr/view_commission_approval_list', 'E')) {
 			show_error('Access Denied');
 		}
 
@@ -2325,12 +2649,11 @@ public function get_salary_structure_by_employee($employee_id)
 		);
 
 		$this->db->where('transaction_id', $id);
-		$this->db->where_in('status', array('Pending','Eligible'));
+		$this->db->where_in('status', array('Pending', 'Eligible'));
 
 		$flag = $this->db->update('commission_transactions', $data);
 
-		if($flag)
-		{
+		if ($flag) {
 			$page_name = explode('index.php/', $_SERVER['PHP_SELF']);
 			$ci = get_instance();
 			$ci->load->helper('log');
@@ -2349,8 +2672,7 @@ public function get_salary_structure_by_employee($employee_id)
 	public function reject_commission_transaction($id)
 	{
 		$user = $this->session->userdata('user_id');
-		if(!has_access($user,'Hr/view_commission_approval_list','E'))
-		{
+		if (!has_access($user, 'Hr/view_commission_approval_list', 'E')) {
 			show_error('Access Denied');
 		}
 
@@ -2361,11 +2683,10 @@ public function get_salary_structure_by_employee($employee_id)
 		);
 
 		$this->db->where('transaction_id', $id);
-		$this->db->where_in('status', array('Pending','Eligible'));
+		$this->db->where_in('status', array('Pending', 'Eligible'));
 
 		$flag = $this->db->update('commission_transactions', $data);
-		if($flag)
-		{
+		if ($flag) {
 			$page_name = explode('index.php/', $_SERVER['PHP_SELF']);
 			$ci = get_instance();
 			$ci->load->helper('log');
@@ -2415,9 +2736,9 @@ public function get_salary_structure_by_employee($employee_id)
 			'left'
 		);
 
-		$this->db->where('ct.status','Approved');
+		$this->db->where('ct.status', 'Approved');
 
-		$this->db->order_by('ct.transaction_id','DESC');
+		$this->db->order_by('ct.transaction_id', 'DESC');
 
 		return $this->db->get()->result();
 	}
@@ -2452,7 +2773,7 @@ public function get_salary_structure_by_employee($employee_id)
 			'left'
 		);
 
-		$this->db->where('ct.transaction_id',$id);
+		$this->db->where('ct.transaction_id', $id);
 
 		return $this->db->get()->row();
 	}
@@ -2461,27 +2782,25 @@ public function get_salary_structure_by_employee($employee_id)
 	{
 		$id = $this->input->post('transaction_id');
 		$user = $this->session->userdata('user_id');
-		if(!has_access($user,'Hr/view_commission_payment_list','E'))
-		{
+		if (!has_access($user, 'Hr/view_commission_payment_list', 'E')) {
 			show_error('Access Denied');
 		}
 
-		$data=array(
-			'status'=>'Paid',
-			'payment_date'=>$this->input->post('payment_date'),
-			'payment_mode'=>$this->input->post('payment_mode'),
-			'payment_reference'=>$this->input->post('payment_reference'),
-			'paid_by'=>$this->session->userdata('user_id'),
-			'remarks'=>$this->input->post('remarks'),
-			'updated_by'=>$this->session->userdata('user_id'),
-			'updated_date'=>date('Y-m-d H:i:s')
+		$data = array(
+			'status' => 'Paid',
+			'payment_date' => $this->input->post('payment_date'),
+			'payment_mode' => $this->input->post('payment_mode'),
+			'payment_reference' => $this->input->post('payment_reference'),
+			'paid_by' => $this->session->userdata('user_id'),
+			'remarks' => $this->input->post('remarks'),
+			'updated_by' => $this->session->userdata('user_id'),
+			'updated_date' => date('Y-m-d H:i:s')
 		);
 
-		$this->db->where('transaction_id',$id);
-		$this->db->where('status','Approved');
-		$flag = $this->db->update('commission_transactions',$data);
-		if($flag)
-		{
+		$this->db->where('transaction_id', $id);
+		$this->db->where('status', 'Approved');
+		$flag = $this->db->update('commission_transactions', $data);
+		if ($flag) {
 			$page_name = explode('index.php/', $_SERVER['PHP_SELF']);
 			$ci = get_instance();
 			$ci->load->helper('log');
@@ -2501,7 +2820,7 @@ public function get_salary_structure_by_employee($employee_id)
 
 	////// Commission Reports Starts /////////
 
-	public function commission_report($filter=array())
+	public function commission_report($filter = array())
 	{
 		$this->db->select("
 			ct.*,
@@ -2532,8 +2851,7 @@ public function get_salary_structure_by_employee($employee_id)
 		);
 
 		// From Date
-		if(!empty($filter['from_date']))
-		{
+		if (!empty($filter['from_date'])) {
 			$this->db->where(
 				'ct.eligible_date >=',
 				$filter['from_date']
@@ -2541,8 +2859,7 @@ public function get_salary_structure_by_employee($employee_id)
 		}
 
 		// To Date
-		if(!empty($filter['to_date']))
-		{
+		if (!empty($filter['to_date'])) {
 			$this->db->where(
 				'ct.eligible_date <=',
 				$filter['to_date']
@@ -2550,8 +2867,7 @@ public function get_salary_structure_by_employee($employee_id)
 		}
 
 		// Sales Representative
-		if(!empty($filter['sales_rep_id']))
-		{
+		if (!empty($filter['sales_rep_id'])) {
 			$this->db->where(
 				'ct.sales_rep_id',
 				$filter['sales_rep_id']
@@ -2559,8 +2875,7 @@ public function get_salary_structure_by_employee($employee_id)
 		}
 
 		// Status
-		if(!empty($filter['status']))
-		{
+		if (!empty($filter['status'])) {
 			$this->db->where(
 				'ct.status',
 				$filter['status']
@@ -2577,6 +2892,6 @@ public function get_salary_structure_by_employee($employee_id)
 
 	////// Commission Reports Ends /////////
 
-///////////////////////////////////////////COMMISSION SETUP ENDS//////////////////////////////////////////
+	///////////////////////////////////////////COMMISSION SETUP ENDS//////////////////////////////////////////
 
 }

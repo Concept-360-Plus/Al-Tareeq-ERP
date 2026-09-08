@@ -1,132 +1,552 @@
-<?php  $this->load->helper('menu_helper.php');
-
-foreach ($comapny_records as $row) {
-    $company_name = $row->company_name;
-    $company_address = $row->company_address;
-    $company_city = $row->company_city;
-
-    $company_pincode = $row->company_pincode ?? '';
-    $company_country = $row->company_country;
-    $company_email_id = $row->company_email_id;
-    $company_telephone = $row->company_telephone;
-    $company_website = $row->company_website;
-    $company_TRN = $row->company_TRN ?? '';
-}
-?>
-<style>		
-    html {
-    height: 100%;
-    }
-    body {
-        font-family: Arial, sans-serif;
-        margin: 0;
-        padding: 0;
-        height: 100%;
-    }
-
-	table.content-table {
-      width: 100%;
-      font-size: 12px;
-      border-collapse: collapse;
-      border: 1px solid black;
-      table-layout: fixed;
-    }
-    table.content-table td,
-    table.content-table th {
-      border: 1px solid black;
-      padding: 10px;
-    }
-
-    #printable-content {
-        margin-top: 0px;
-        margin-bottom: 0px;
-    }
-
-    img {
-    max-width: 100%;
-    height: auto;
-}
-
-</style>
-
+<!DOCTYPE html>
 <html>
-	<head>
-		<title>
-			Supplier Payment
-		</title>
-		<style>
-			@page{
-				margin-top:140px;
-			}
-			body {
-				font-family: Arial, sans-serif;
-				padding: 0;
-			}
-			table {
-				width: 100%;
-				border:0;
-				border-collapse: collapse;
-				page-break-inside: auto;
-				font-size: 12px;
-				padding : 5;
-			}
-			thead {
-				display: table-header-group;
-			}
-			tfoot {
-				display: table-footer-group;
-			}
-			tr {
-				page-break-inside: avoid;
-				page-break-after: auto;
-			}
-			td.content, th.content {
-				padding: 5px;
-				border: 1px solid #000;
-				word-wrap: break-word;
-				white-space: normal;
-			}
-			</style>
-	</head>
-	<body style="font-family:Arial;font-size: 12px;">
-		
-	<div id='printable-content'>
-	<div style='width:100%;height:35px;text-align:center;background-color:#94C973;font-size:30px;color:#ffffff'><?= $title?></div>
 
-  <table width="100%" border=1 cellspacing="0" colspacing="0">
-    <tr>
-      <td>Date : <?php echo date('d-M-Y');?></td>
-	  
-		<td>Warehouse: <?= isset($selected_store)&& !empty($selected_store)?$selected_store[0]->warehouse_name:""?></td>
-	  ?>
-    </tr>
-  </table>
- 	<table width='100%' border=1 cellspacing="0" colspacing="0">
-        <thead>
-			<tr>
-				<th>Srn</th>
-				<th>Name</th>
-				<th>Stock Qty</th>
-			</tr>
-		</thead>
+<head>
+
+	<title>Stock Inventory Report</title>
+
+	<style>
+		body {
+			font-family: Arial, Helvetica, sans-serif;
+			font-size: 12px;
+			margin: 10px;
+			color: #000;
+		}
+
+		/* =========================
+           HEADER
+        ========================== */
+
+		.header {
+			width: 100%;
+			border-bottom: 2px solid #444;
+			margin-bottom: 15px;
+			padding-bottom: 10px;
+		}
+
+		.header img {
+			width: 100%;
+			max-height: 220px;
+			object-fit: contain;
+		}
+
+		.report-title {
+			text-align: center;
+			font-size: 22px;
+			font-weight: bold;
+			color: #070707;
+			margin-top: 10px;
+		}
+
+		.report-subtitle {
+			text-align: center;
+			font-size: 13px;
+			margin: 8px 0 15px;
+		}
+
+
+		/* =========================
+           INFORMATION
+        ========================== */
+
+		.info-table {
+			width: 100%;
+			margin-bottom: 15px;
+		}
+
+		.info-table td {
+			padding: 4px;
+			border: none;
+		}
+
+
+		/* =========================
+           REPORT TABLE
+        ========================== */
+
+		table.report-table {
+			width: 100%;
+			border-collapse: collapse;
+			margin-top: 10px;
+		}
+
+		table.report-table th,
+		table.report-table td {
+			border: 1px solid #000;
+			padding: 8px;
+		}
+
+		table.report-table th {
+			background: #efefef;
+			text-align: center;
+		}
+
+
+		/* =========================
+           ALIGNMENT
+        ========================== */
+
+		.center {
+			text-align: center;
+		}
+
+		.right {
+			text-align: right;
+		}
+
+
+		/* =========================
+           TOTAL
+        ========================== */
+
+		.total-row {
+			font-weight: bold;
+		}
+
+
+		/* =========================
+           FOOTER
+        ========================== */
+
+		.footer {
+			position: fixed;
+			bottom: 0;
+			left: 0;
+			right: 0;
+
+			border-top: 1px solid #555;
+
+			padding: 8px 15px;
+
+			font-size: 11px;
+		}
+
+		.footer-left {
+			float: left;
+		}
+
+		.footer-right {
+			float: right;
+		}
+
+
+		@media print {
+
+			.footer {
+				position: fixed;
+				bottom: 0;
+			}
+
+		}
+	</style>
+
+</head>
+
+
+<body>
+
+
+	<!-- =========================
+         HEADER
+    ========================== -->
+
+	<div class="header">
+
+		<img
+			src="<?= base_url('public/assets/images/altariq_logo.jpeg'); ?>"
+			class="company-logo"
+			alt="Company Logo">
+
+
+		<div class="report-title">
+
+			STOCK INVENTORY REPORT
+
+		</div>
+
+
+		<div class="report-subtitle">
+
+			Warehouse :
+
+			<strong>
+				<?= !empty($warehouse_name)
+					? htmlspecialchars($warehouse_name)
+					: 'All Warehouses'; ?>
+			</strong>
+
+			&nbsp;&nbsp;
+
+			Store :
+
+			<strong>
+				<?= !empty($store_name)
+					? htmlspecialchars($store_name)
+					: 'All Stores'; ?>
+			</strong>
+
+			&nbsp;&nbsp;
+
+			Product :
+
+			<strong>
+				<?= !empty($product_name)
+					? htmlspecialchars($product_name)
+					: 'All Products'; ?>
+			</strong>
+
+		</div>
+
+	</div>
+
+
+	<!-- =========================
+         SEPARATOR
+    ========================== -->
+
+	<table width="100%" style="border:0;">
 
 		<tbody>
-		<?php $i=1; $tot1=0; $st=0;
-		foreach($records as $row) :?>
-			<tr>
-			<td><?php echo $i;$i++;?></td>		
-				<td><?php echo $row->product_name;?></td>
-				<td style="text-align: right;"><?php echo $row->stock; $st=$st+$row->stock;?></td>
-				
-			</tr>
-		<?php endforeach; ?>
-		<tr class="bg-soft-primary">
-			<th></th>
-			<th>Total</th>			
-			<th style="text-align: right;"><?php echo $st;?></th>
-		</tr>
-		</tbody>
-    </table>
-</body>
-</html>
 
+			<tr
+				height="5px"
+				style="background-color:#525453;">
+
+				<td style="border:0;"></td>
+
+			</tr>
+
+		</tbody>
+
+	</table>
+
+
+	<!-- =========================
+         REPORT INFORMATION
+    ========================== -->
+
+	<table class="info-table">
+
+		<tr>
+
+			<td width="50%">
+
+				<strong>
+					Prepared By :
+				</strong>
+
+				<?= !empty($prepared_by)
+					? htmlspecialchars($prepared_by)
+					: 'Admin'; ?>
+
+			</td>
+
+
+			<td align="right">
+
+				<strong>
+					Printed On :
+				</strong>
+
+				<?= date('d-M-Y h:i A'); ?>
+
+			</td>
+
+		</tr>
+
+	</table>
+
+
+	<!-- =========================
+         REPORT TABLE
+    ========================== -->
+
+	<table class="report-table">
+
+		<thead>
+
+			<tr>
+
+				<th width="6%">
+					Sl No
+				</th>
+
+				<th width="18%">
+					Stock Code
+				</th>
+
+				<th width="28%">
+					Product Name
+				</th>
+
+				<th width="13%">
+					Stock Qty
+				</th>
+
+				<th width="13%">
+					Unit Price
+				</th>
+
+				<th width="14%">
+					Total
+				</th>
+
+				<th width="12%">
+					Allocated Qty
+				</th>
+
+			</tr>
+
+		</thead>
+
+
+		<tbody>
+
+			<?php
+
+			$sl = 1;
+
+			$total_stock = 0;
+			$total_value = 0;
+			$total_allocation = 0;
+
+			?>
+
+
+			<?php if (!empty($records)) { ?>
+
+
+				<?php foreach ($records as $row) { ?>
+
+
+					<?php
+
+					$stock =
+						isset($row->stock)
+						? (float)$row->stock
+						: 0;
+
+					$price =
+						isset($row->price)
+						? (float)$row->price
+						: 0;
+
+					$allocation =
+						isset($row->allocation)
+						? (float)$row->allocation
+						: 0;
+
+					$total =
+						$stock * $price;
+
+
+					$total_stock += $stock;
+
+					$total_value += $total;
+
+					$total_allocation += $allocation;
+
+					?>
+
+
+					<tr>
+
+
+						<!-- Sl No -->
+
+						<td class="center">
+
+							<?= $sl++; ?>
+
+						</td>
+
+
+						<!-- Stock Code -->
+
+						<td>
+
+							<?= !empty($row->product_code)
+								? htmlspecialchars(
+									$row->product_code
+								)
+								: '-'; ?>
+
+						</td>
+
+
+						<!-- Product Name -->
+
+						<td>
+
+							<?= !empty($row->product_name)
+								? htmlspecialchars(
+									$row->product_name
+								)
+								: '-'; ?>
+
+						</td>
+
+
+						<!-- Stock Qty -->
+
+						<td class="right">
+
+							<?= number_format(
+								$stock,
+								2
+							); ?>
+
+						</td>
+
+
+						<!-- Unit Price -->
+
+						<td class="right">
+
+							<?= number_format(
+								$price,
+								2
+							); ?>
+
+						</td>
+
+
+						<!-- Total -->
+
+						<td class="right">
+
+							<?= number_format(
+								$total,
+								2
+							); ?>
+
+						</td>
+
+
+						<!-- Allocated Qty -->
+
+						<td class="right">
+
+							<?= number_format(
+								$allocation,
+								2
+							); ?>
+
+						</td>
+
+
+					</tr>
+
+
+				<?php } ?>
+
+
+				<!-- =========================
+                     TOTAL
+                ========================== -->
+
+				<tr class="total-row">
+
+
+					<td
+						colspan="3"
+						class="right">
+
+						Total
+
+					</td>
+
+
+					<td class="right">
+
+						<?= number_format(
+							$total_stock,
+							2
+						); ?>
+
+					</td>
+
+
+					<td></td>
+
+
+					<td class="right">
+
+						<?= number_format(
+							$total_value,
+							2
+						); ?>
+
+					</td>
+
+
+					<td class="right">
+
+						<?= number_format(
+							$total_allocation,
+							2
+						); ?>
+
+					</td>
+
+
+				</tr>
+
+
+			<?php } else { ?>
+
+
+				<tr>
+
+					<td
+						colspan="7"
+						class="center">
+
+						No Stock Inventory
+						found for the selected
+						criteria.
+
+					</td>
+
+				</tr>
+
+
+			<?php } ?>
+
+
+		</tbody>
+
+	</table>
+
+
+	<br>
+
+
+	<!-- =========================
+         FOOTER
+    ========================== -->
+
+	<div class="footer">
+
+		<div class="footer-left">
+
+			&copy; <?= date('Y'); ?>
+
+			Al Tareeq Kitchen Equipment Industry LLC
+
+		</div>
+
+
+		<div class="footer-right">
+
+			Designed & Developed by
+			Concepts 360 Plus
+
+		</div>
+
+	</div>
+
+
+</body>
+
+</html>

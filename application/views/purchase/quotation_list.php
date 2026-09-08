@@ -52,26 +52,27 @@
                          <?php echo $i++; ?>
                        </td>
 
-
-                       <td>
-                         <?php echo $row->quotation_code; ?>
-
+                       <td><a href="<?php echo base_url() . 'index.php/Purchase/edit_quotation/' . $row->quotation_id . '/0'; ?>" title="View Supplier Quotation" target='blank'>
+                           <?php echo $row->quotation_code; ?>
                        </td>
+
                        <td><?php echo date('d-M-Y', strtotime($row->quotation_date)); ?></td>
+
                        <td>
                          <a title="View customer details" target='blank' href="<?php echo base_url() . 'index.php/Users/edit_supplier/' . $row->supplier_id; ?>">
                            <?php echo $row->supplier_name; ?>
                          </a>
                        </td>
+
                        <td align="center"><?php echo $row->grand_total; ?></td>
+
                        <td>
-                        <!-- <a href="" class="badge badge-success" style="margin-right:10px;">Approve</a> -->
+                         <!-- <a href="" class="badge badge-success" style="margin-right:10px;">Approve</a> -->
+                         <a href="<?php echo base_url() . 'index.php/Purchase/edit_quotation/' . $row->quotation_id . '/0'; ?>" title="Edit" style="margin-right:10px;">
+                           <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
+                         </a>
 
-                        <a href="<?php echo base_url() . 'index.php/Purchase/edit_quotation/' . $row->quotation_id . '/0'; ?>" title="Edit" style="margin-right:10px;">
-                          <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
-                        </a>
-
-                        <!-- <a target="_blank" href="<?php echo base_url() . 'index.php/Purchase/print_quote/' . $row->quotation_id . '/1'; ?>" style="margin-right:10px;">
+                         <!-- <a target="_blank" href="<?php echo base_url() . 'index.php/Purchase/print_quote/' . $row->quotation_id . '/1'; ?>" style="margin-right:10px;">
                             <i class="fa fa-print"></i>
                         </a> -->
 
@@ -79,9 +80,9 @@
                            <i class="fa fa-print" style="font-size:18px;"></i>
                          </a>
 
-                        <a href="#" title="Delete" class="delete" data-id="<?php echo $row->quotation_id; ?>" onclick="openPasswordModal(<?php echo $row->quotation_id; ?>); return false;">
+                         <a href="#" title="Delete" class="delete" data-id="<?php echo $row->quotation_id; ?>" onclick="openPasswordModal(<?php echo $row->quotation_id; ?>); return false;">
                            <i class="glyphicon glyphicon-trash"></i>&nbsp;&nbsp;
-                        </a>
+                         </a>
 
                        </td>
                      </tr>
@@ -98,6 +99,7 @@
 
      <!-- /page content -->
    </form>
+
    <div class="modal fade" id="passwordModal" tabindex="-1" role="dialog">
      <div class="modal-dialog">
        <form id="deleteForm">
@@ -117,6 +119,7 @@
        </form>
      </div>
    </div>
+
    <script>
      function openPasswordModal(quotationId) {
        $('#quotationId').val(quotationId);

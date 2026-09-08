@@ -3,6 +3,530 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class Inventory_model extends CI_Model
 {
+    ///////////////////// Inventory Dashboard Code Start ///////////////////////////
+    public function get_product_count()
+    {
+        return $this->db->count_all('item_master');
+    }
+
+    public function get_material_issue_count()
+    {
+        return $this->db->count_all('material_issue');
+    }
+
+    public function get_stock_ledger_count()
+    {
+        return $this->db->count_all('stock_details');
+    }
+
+    public function get_minimum_stock_count()
+    {
+        $this->db->where('reorder_level >', 0);
+        return $this->db->count_all_results('item_master');
+    }
+
+    public function get_total_stock_in()
+    {
+        $this->db->select('COALESCE(SUM(quantity),0) total');
+        $this->db->where('stock_type', 'IN');
+
+        $row = $this->db->get('stock_details')->row();
+
+        return $row->total;
+    }
+
+    public function get_total_stock_out()
+    {
+        $this->db->select('COALESCE(SUM(quantity),0) total');
+        $this->db->where('stock_type', 'OUT');
+
+        $row = $this->db->get('stock_details')->row();
+
+        return $row->total;
+    }
+
+    public function get_reserved_stock_total()
+    {
+        $this->db->select('COALESCE(SUM(allocation),0) total');
+
+        $row = $this->db->get('stock_details')->row();
+
+        return $row->total;
+    }
+
+    public function get_available_stock()
+    {
+        $sql = "
+            SELECT
+            SUM(stock)
+            total_stock
+            FROM
+                (
+                    SELECT
+                    product_id,
+                    SUM(CASE WHEN stock_type='IN' THEN quantity ELSE -quantity END)
+                    stock
+                    FROM stock_details
+                    GROUP BY product_id
+                ) x
+
+            ";
+
+        $row = $this->db->query($sql)->row();
+
+        return $row->total_stock;
+    }
+
+    public function today_material_issue()
+    {
+        $today = date('Y-m-d');
+
+        $this->db->where('DATE(issue_date)', $today);
+
+        return $this->db->count_all_results('material_issue');
+    }
+
+    public function today_stock_in()
+    {
+        $today = date('Y-m-d');
+
+        $this->db->where('stock_type', 'IN');
+        $this->db->where('DATE(created_date)', $today);
+
+        return $this->db->count_all_results('stock_details');
+    }
+
+    public function today_stock_out()
+    {
+        $today = date('Y-m-d');
+
+        $this->db->where('stock_type', 'OUT');
+        $this->db->where('DATE(created_date)', $today);
+
+        return $this->db->count_all_results('stock_details');
+    }
+
+    public function today_stock_adjustment()
+    {
+        $today = date('Y-m-d');
+
+        $this->db->where('DATE(created_date)', $today);
+
+        return $this->db->count_all_results('stock_adjustment');
+    }
+
+    public function recent_material_issue()
+    {
+        $this->db->select('
+            mi.mi_code,
+            mi.issue_date,
+            mi.customer_name,
+            w.warehouse_name,
+            mi.status
+        ');
+
+        $this->db->from('material_issue mi');
+
+        $this->db->join(
+            'warehouse_master w',
+            'w.warehouse_id = mi.warehouse_id',
+            'left'
+        );
+
+        $this->db->order_by('mi.mi_id', 'DESC');
+
+        $this->db->limit(10);
+
+        return $this->db->get()->result();
+    }
+
+    public function recent_stock_ledger()
+    {
+        $this->db->select('
+            s.created_date,
+            i.product_code,
+            i.product_name,
+            s.stock_type,
+            s.quantity,
+            w.warehouse_name
+        ');
+
+        $this->db->from('stock_details s');
+
+        $this->db->join(
+            'item_master i',
+            'i.product_id=s.product_id',
+            'left'
+        );
+
+        $this->db->join(
+            'warehouse_master w',
+            'w.warehouse_id=s.warehouse_id',
+            'left'
+        );
+
+        $this->db->order_by('s.stock_id', 'DESC');
+
+        $this->db->limit(10);
+
+        return $this->db->get()->result();
+    }
+
+    public function low_stock_items()
+    {
+        $sql = "
+            SELECT
+                i.product_code,
+                i.product_name,
+                i.reorder_level,
+                COALESCE(
+                    SUM(s.balance_qty),
+                    0
+                ) AS available_qty
+            FROM item_master i
+            LEFT JOIN stock_details s
+                ON s.product_id = i.product_id
+            GROUP BY
+                i.product_id,
+                i.product_code,
+                i.product_name,
+                i.reorder_level
+            HAVING
+                available_qty <= reorder_level
+                AND reorder_level > 0
+            ORDER BY
+                available_qty ASC
+            LIMIT 10
+        ";
+
+        return $this->db->query($sql)->result();
+    }
+
+    public function warehouse_summary()
+    {
+        $sql = "
+            SELECT
+                w.warehouse_name,
+                COUNT(
+                    DISTINCT
+                    CASE
+                        WHEN s.balance_qty > 0
+                        THEN s.product_id
+                    END
+                ) AS total_items,
+                COALESCE(
+                    SUM(
+                        CASE
+                            WHEN s.balance_qty > 0
+                            THEN s.balance_qty
+                            ELSE 0
+                        END
+                    ),
+                    0
+                ) AS available_stock,
+                COALESCE(
+                    SUM(
+                        s.reserved_quantity
+                    ),
+                    0
+                ) AS reserved_stock
+            FROM warehouse_master w
+            LEFT JOIN stock_details s
+                ON s.warehouse_id = w.warehouse_id
+            GROUP BY
+                w.warehouse_id,
+                w.warehouse_name
+            ORDER BY
+                w.warehouse_name
+        ";
+
+        return $this->db->query($sql)->result();
+    }
+
+    public function get_inventory_stock_summary()
+    {
+        $sql = "
+            SELECT
+                COALESCE(SUM(balance_qty), 0) AS available_stock,
+                COALESCE(SUM(reserved_quantity), 0) AS reserved_stock,
+                COALESCE(SUM(pending_quantity), 0) AS pending_stock
+            FROM stock_details
+        ";
+        return $this->db->query($sql)->row();
+    }
+
+    public function get_inventory_value()
+    {
+        $sql = "
+            SELECT
+                COALESCE(
+                    SUM(balance_qty * price),
+                    0
+                ) AS inventory_value
+            FROM stock_details
+            WHERE balance_qty > 0
+        ";
+
+        $row = $this->db->query($sql)->row();
+        return $row->inventory_value ?? 0;
+    }
+
+    public function get_low_stock_count()
+    {
+        $sql = "
+            SELECT COUNT(*) AS total
+            FROM
+            (
+                SELECT
+                    i.product_id,
+                    i.reorder_level,
+                    COALESCE(
+                        SUM(s.balance_qty),
+                        0
+                    ) AS available_qty
+                FROM item_master i
+                LEFT JOIN stock_details s
+                    ON s.product_id = i.product_id
+                GROUP BY
+                    i.product_id,
+                    i.reorder_level
+
+            ) x
+            WHERE x.reorder_level > 0
+            AND x.available_qty <= x.reorder_level
+        ";
+
+        $row = $this->db->query($sql)->row();
+        return $row->total ?? 0;
+    }
+
+    public function get_out_of_stock_count()
+    {
+        $sql = "
+            SELECT COUNT(*) AS total
+            FROM
+            (
+                SELECT
+                    i.product_id,
+                    COALESCE(
+                        SUM(s.balance_qty),
+                        0
+                    ) AS available_qty
+                FROM item_master i
+                LEFT JOIN stock_details s
+                    ON s.product_id = i.product_id
+                GROUP BY i.product_id
+
+            ) x
+            WHERE x.available_qty <= 0
+        ";
+
+        $row = $this->db->query($sql)->row();
+        return $row->total ?? 0;
+    }
+
+    public function get_overstock_count()
+    {
+        $sql = "
+            SELECT COUNT(*) AS total
+            FROM
+            (
+                SELECT
+                    i.product_id,
+                    i.max_level,
+                    COALESCE(
+                        SUM(
+                            CASE
+                                WHEN s.stock_type = 'IN'
+                                THEN s.balance_qty
+                                ELSE 0
+                            END
+                        ), 0
+                    ) AS available_qty
+                FROM item_master i
+                LEFT JOIN stock_details s
+                    ON s.product_id = i.product_id
+                WHERE i.max_level > 0
+                GROUP BY
+                    i.product_id,
+                    i.max_level
+            ) x
+            WHERE x.available_qty > x.max_level
+        ";
+
+        $row = $this->db->query($sql)->row();
+
+        return $row->total ?? 0;
+    }
+
+    public function get_today_stock_movement()
+    {
+        $today = date('Y-m-d');
+
+        $sql = "
+            SELECT
+                COALESCE(SUM(CASE
+                    WHEN stock_type = 'IN'
+                    THEN quantity
+                    ELSE 0
+                END), 0) AS stock_in,
+                COALESCE(SUM(CASE
+                    WHEN stock_type = 'OUT'
+                    THEN quantity
+                    ELSE 0
+                END), 0) AS stock_out
+            FROM stock_details
+            WHERE DATE(created_date) = ?
+        ";
+
+        return $this->db->query($sql, [$today])->row();
+    }
+
+    public function get_monthly_stock_movement()
+    {
+        $sql = "
+            SELECT
+                MONTH(created_date) AS month,
+                SUM(
+                    CASE
+                        WHEN stock_type = 'IN'
+                        THEN quantity
+                        ELSE 0
+                    END
+                ) AS stock_in,
+                SUM(
+                    CASE
+                        WHEN stock_type = 'OUT'
+                        THEN quantity
+                        ELSE 0
+                    END
+                ) AS stock_out
+            FROM stock_details
+            WHERE YEAR(created_date) = ?
+            GROUP BY MONTH(created_date)
+            ORDER BY MONTH(created_date)
+        ";
+
+        return $this->db
+            ->query($sql, [date('Y')])
+            ->result();
+    }
+
+    public function get_inventory_value_trend()
+    {
+        $sql = "
+            SELECT
+                DATE_FORMAT(created_date, '%Y-%m') AS month,
+                COALESCE(
+                    SUM(
+                        CASE
+                            WHEN stock_type = 'IN'
+                            THEN quantity * price
+                            ELSE 0
+                        END
+                    ), 0
+                ) AS stock_in_value,
+                COALESCE(
+                    SUM(
+                        CASE
+                            WHEN stock_type = 'OUT'
+                            THEN quantity * price
+                            ELSE 0
+                        END
+                    ), 0
+                ) AS stock_out_value
+            FROM stock_details
+            WHERE YEAR(created_date) = ?
+            GROUP BY DATE_FORMAT(created_date, '%Y-%m')
+            ORDER BY month
+        ";
+
+        return $this->db
+            ->query($sql, [date('Y')])
+            ->result();
+    }
+
+    public function get_stock_status_summary()
+    {
+        $sql = "
+            SELECT
+                COALESCE(
+                    SUM(balance_qty),
+                    0
+                ) AS available,
+                COALESCE(
+                    SUM(reserved_quantity),
+                    0
+                ) AS reserved,
+                COALESCE(
+                    SUM(pending_quantity),
+                    0
+                ) AS pending
+            FROM stock_details
+        ";
+
+        return $this->db->query($sql)->row();
+    }
+
+    public function get_fast_moving_items($limit = 5)
+    {
+        $sql = "
+            SELECT
+                i.product_code,
+                i.product_name,
+                COALESCE(SUM(s.quantity), 0) AS issued_qty
+            FROM stock_details s
+            INNER JOIN item_master i
+                ON i.product_id = s.product_id
+            WHERE s.stock_type = 'OUT'
+            AND s.created_date >= DATE_SUB(CURDATE(), INTERVAL 90 DAY)
+            GROUP BY
+                s.product_id,
+                i.product_code,
+                i.product_name
+            ORDER BY issued_qty DESC
+            LIMIT ?
+        ";
+
+        return $this->db->query($sql, [$limit])->result();
+    }
+
+    public function get_dead_stock_items($limit = 5)
+    {
+        $sql = "
+            SELECT
+                i.product_code,
+                i.product_name,
+                COALESCE(SUM(
+                    CASE
+                        WHEN s.stock_type = 'IN'
+                        THEN s.balance_qty
+                        ELSE 0
+                    END
+                ), 0) AS available_qty
+            FROM item_master i
+            LEFT JOIN stock_details s
+                ON s.product_id = i.product_id
+            GROUP BY
+                i.product_id,
+                i.product_code,
+                i.product_name
+            HAVING available_qty > 0
+            AND NOT EXISTS
+            (
+                SELECT 1
+                FROM stock_details so
+                WHERE so.product_id = i.product_id
+                AND so.stock_type = 'OUT'
+                AND so.created_date >= DATE_SUB(CURDATE(), INTERVAL 90 DAY)
+            )
+            ORDER BY available_qty DESC
+            LIMIT ?
+        ";
+
+        return $this->db->query($sql, [$limit])->result();
+    }
+    ///////////////////// Inventory Dashboard Code End ///////////////////////////
 
     public function get_reserved_stock($product_id, $mr_id)
     {
@@ -18,14 +542,14 @@ class Inventory_model extends CI_Model
 
     public function insert_mi($data)
     {
-        $this->db->insert('material_issues', $data);
+        $this->db->insert('material_issue', $data);
         return $this->db->insert_id();
     }
 
 
     public function update_mi($mi_id, $data)
     {
-        $this->db->where('mi_id', $mi_id)->update('material_issues', $data);
+        $this->db->where('mi_id', $mi_id)->update('material_issue', $data);
     }
 
 
@@ -122,25 +646,27 @@ class Inventory_model extends CI_Model
 
             // Create NEW OUT transaction
             $this->db->insert('stock_details', [
-                'warehouse_id'   => $stock->warehouse_id,
-                'store_id'       => $stock->store_id,
-                'stock_type'     => 'OUT',
-                'trans_id'       => $mi_id,
-                'stock_date'     => date('Y-m-d'),
-                'year'           => date('Y'),
-                'product_id'     => $stock->product_id,
-                'unit_id'        => $stock->unit_id,
-                'quantity'       => $deduct,
-                'balance_qty'    => 0,
-                'price'          => $stock->price,
-                'stock_value'    => $deduct * $stock->price,
-                'remark'         => 'Material Issue',
-                'item_remark'    => 'MI',
-                'created_by'     => $user_id,
-                'created_date'   => date('Y-m-d H:i:s'),
-                'status'         => 1,
-                'allocation_for' => 'MI',
-                'allocation_id'  => $mi_id
+                'parent_stock_id' => $stock->stock_id,
+                'grn_id'          => $stock->grn_id,
+                'warehouse_id'    => $stock->warehouse_id,
+                'store_id'        => $stock->store_id,
+                'stock_type'      => 'OUT',
+                'trans_id'        => $mi_id,
+                'stock_date'      => date('Y-m-d'),
+                'year'            => date('Y'),
+                'product_id'      => $stock->product_id,
+                'unit_id'         => $stock->unit_id,
+                'quantity'        => $deduct,
+                'balance_qty'     => 0,
+                'price'           => $stock->price,
+                'stock_value'     => $deduct * $stock->price,
+                'remark'          => 'Material Issue',
+                'item_remark'     => 'MI',
+                'created_by'      => $user_id,
+                'created_date'    => date('Y-m-d H:i:s'),
+                'status'          => 1,
+                'allocation_for'  => 'MI',
+                'allocation_id'   => $mi_id
             ]);
 
             $remaining -= $deduct;
@@ -190,42 +716,55 @@ class Inventory_model extends CI_Model
         return $issues;
     }
 
-
-
     public function get_itemwise_stock_summary()
     {
         return $this->db
             ->select("
-                im.product_id,
-                im.product_code,
-                im.product_name,
+            im.product_id,
+            im.product_code,
+            im.product_name,
 
+            COALESCE(
                 SUM(
                     CASE
-                        WHEN sd.stock_type='IN' AND sd.status=1
-                        THEN sd.quantity
+                        WHEN sd.stock_type = 'IN'
+                        THEN sd.balance_qty
                         ELSE 0
                     END
-                ) AS total_stock,
+                ),
+                0
+            ) AS total_stock,
 
+            COALESCE(
                 SUM(
                     CASE
-                        WHEN sd.stock_type='RESERVE' AND sd.status=1
+                        WHEN sd.stock_type = 'RESERVE'
+                        AND sd.status = 1
                         THEN sd.reserved_quantity
                         ELSE 0
                     END
-                ) AS total_reserved,
+                ),
+                0
+            ) AS total_reserved,
 
+            COALESCE(
                 SUM(
                     CASE
-                        WHEN sd.stock_type='RESERVE' AND sd.status=1
+                        WHEN sd.stock_type = 'RESERVE'
+                        AND sd.status = 1
                         THEN sd.pending_quantity
                         ELSE 0
                     END
-                ) AS total_pending
-            ")
+                ),
+                0
+            ) AS total_pending
+        ")
             ->from('item_master im')
-            ->join('stock_details sd', 'sd.product_id=im.product_id', 'left')
+            ->join(
+                'stock_details sd',
+                'sd.product_id = im.product_id',
+                'left'
+            )
             ->where('im.is_inactive', 0)
             ->where('im.is_marked_delete', 0)
             ->group_by('im.product_id')
@@ -308,6 +847,40 @@ class Inventory_model extends CI_Model
         return $this->db->get_where('material_issue_items', ['mi_id' => $mi_id])->result_array();
     }
 
+    public function delete_material_issue($mi_id)
+    {
+        $this->db->trans_begin();
+
+        $stocks = $this->db
+            ->where('trans_id', $mi_id)
+            ->where('stock_type', 'OUT')
+            ->get('stock_details')
+            ->result();
+
+        foreach ($stocks as $out) {
+            if ($out->parent_stock_id != NULL) {
+                $this->db
+                    ->set('balance_qty', 'balance_qty + ' . $out->quantity, FALSE)
+                    ->where('stock_id', $out->parent_stock_id)
+                    ->update('stock_details');
+            }
+
+            $this->db->where('stock_id', $out->stock_id)->delete('stock_details');
+        }
+
+        $this->db->where('mi_id', $mi_id)->delete('material_issue_items');
+        $this->db->where('mi_id', $mi_id)->delete('material_issue');
+
+        if ($this->db->trans_status() == FALSE) {
+            $this->db->trans_rollback();
+            return false;
+        }
+
+        $this->db->trans_commit();
+        return true;
+    }
+
+    ///// Stock Ledger /////
     public function get_stock_ledger()
     {
         $this->db->select("
@@ -315,21 +888,444 @@ class Inventory_model extends CI_Model
             im.product_code,
             im.product_name,
             wm.warehouse_name,
+            sm.store_name,
+            um.unit_name,
             u.user_name
         ");
 
         $this->db->from('stock_details sd');
 
-        $this->db->join('item_master im', 'im.product_id = sd.product_id');
+        $this->db->join(
+            'item_master im',
+            'im.product_id=sd.product_id',
+            'left'
+        );
 
-        $this->db->join('warehouse_master wm', 'wm.warehouse_id = sd.warehouse_id', 'left');
+        $this->db->join(
+            'warehouse_master wm',
+            'wm.warehouse_id=sd.warehouse_id',
+            'left'
+        );
 
-        $this->db->join('users u', 'u.user_id = sd.created_by', 'left');
+        $this->db->join(
+            'store_master sm',
+            'sm.store_id=sd.store_id',
+            'left'
+        );
 
-        $this->db->order_by('sd.stock_date', 'DESC');
+        $this->db->join(
+            'unit_master um',
+            'um.unit_id=sd.unit_id',
+            'left'
+        );
 
-        $this->db->order_by('sd.stock_id', 'DESC');
+        $this->db->join(
+            'users u',
+            'u.user_id=sd.created_by',
+            'left'
+        );
+
+        $this->db->order_by('sd.created_date', 'DESC');
 
         return $this->db->get()->result();
+    }
+
+    ///// Stock Transfer /////
+    public function get_stock_transfer_list()
+    {
+        $this->db->select("
+            stm.*,
+
+            fw.warehouse_name AS from_warehouse,
+            tw.warehouse_name AS to_warehouse,
+
+            fs.store_name AS from_store,
+            ts.store_name AS to_store,
+
+            fb.branch_name AS from_branch,
+            tb.branch_name AS to_branch,
+
+            u.user_name
+        ");
+
+        $this->db->from('stock_transfer_master stm');
+
+        // From Warehouse
+        $this->db->join(
+            'warehouse_master fw',
+            'fw.warehouse_id = stm.from_warehouse_id',
+            'left'
+        );
+
+        // To Warehouse
+        $this->db->join(
+            'warehouse_master tw',
+            'tw.warehouse_id = stm.to_warehouse_id',
+            'left'
+        );
+
+        // From Store
+        $this->db->join(
+            'store_master fs',
+            'fs.store_id = stm.from_store_id',
+            'left'
+        );
+
+        // To Store
+        $this->db->join(
+            'store_master ts',
+            'ts.store_id = stm.to_store_id',
+            'left'
+        );
+
+        // From Branch
+        $this->db->join(
+            'branch_master fb',
+            'fb.branch_id = stm.from_branch_id',
+            'left'
+        );
+
+        // To Branch
+        $this->db->join(
+            'branch_master tb',
+            'tb.branch_id = stm.to_branch_id',
+            'left'
+        );
+
+        // User
+        $this->db->join(
+            'users u',
+            'u.user_id = stm.created_by',
+            'left'
+        );
+
+        $this->db->order_by('stm.transfer_id', 'DESC');
+
+        return $this->db->get()->result();
+    }
+
+    public function insert_stock_transfer_master($data)
+    {
+        $this->db->insert('stock_transfer_master', $data);
+
+        return $this->db->insert_id();
+    }
+
+    public function insert_stock_transfer_item($data)
+    {
+        return $this->db->insert(
+            'stock_transfer_items',
+            $data
+        );
+    }
+
+    public function transfer_stock(
+        $transfer_id,
+        $product_id,
+        $unit_id,
+        $transfer_qty,
+        $from_warehouse_id,
+        $from_store_id,
+        $to_warehouse_id,
+        $to_store_id
+    ) {
+        if ($transfer_qty <= 0) {
+            return false;
+        }
+
+        $user_id = $this->session->userdata('user_id');
+
+        $stocks = $this->db
+            ->where('warehouse_id', $from_warehouse_id)
+            ->where('store_id', $from_store_id)
+            ->where('product_id', $product_id)
+            ->where('stock_type', 'IN')
+            ->where('balance_qty >', 0)
+            ->order_by('stock_id', 'ASC')
+            ->get('stock_details')
+            ->result();
+
+        $remaining = $transfer_qty;
+
+        foreach ($stocks as $stock) {
+
+            if ($remaining <= 0) {
+                break;
+            }
+
+            $available = (float)$stock->balance_qty;
+
+            if ($available <= 0) {
+                continue;
+            }
+
+            $deduct = min($available, $remaining);
+
+            $this->db
+                ->where('stock_id', $stock->stock_id)
+                ->update('stock_details', [
+                    'balance_qty' => $available - $deduct
+                ]);
+
+            $this->db->insert('stock_details', [
+                'parent_stock_id' => $stock->stock_id,
+                'grn_id'          => $stock->grn_id,
+                'warehouse_id'    => $from_warehouse_id,
+                'store_id'        => $from_store_id,
+                'stock_type'      => 'OUT',
+                'trans_id'        => $transfer_id,
+                'stock_date'      => date('Y-m-d'),
+                'year'            => date('Y'),
+                'product_id'      => $product_id,
+                'unit_id'         => $unit_id,
+                'quantity'        => $deduct,
+                'balance_qty'     => 0,
+                'price'           => $stock->price,
+                'stock_value'     => $deduct * $stock->price,
+                'remark'          => 'Stock Transfer OUT',
+                'item_remark'     => 'Transfer',
+                'created_by'      => $user_id,
+                'created_date'    => date('Y-m-d H:i:s'),
+                'status'          => 1,
+                'allocation_for'  => 'TRANSFER',
+                'allocation_id'   => $transfer_id
+            ]);
+
+            $this->db->insert('stock_details', [
+                'parent_stock_id' => $stock->stock_id,
+                'grn_id'          => $stock->grn_id,
+                'warehouse_id'    => $to_warehouse_id,
+                'store_id'        => $to_store_id,
+                'stock_type'      => 'IN',
+                'trans_id'        => $transfer_id,
+                'stock_date'      => date('Y-m-d'),
+                'year'            => date('Y'),
+                'product_id'      => $product_id,
+                'unit_id'         => $unit_id,
+                'quantity'        => $deduct,
+                'balance_qty'     => $deduct,
+                'price'           => $stock->price,
+                'stock_value'     => $deduct * $stock->price,
+                'remark'          => 'Stock Transfer IN',
+                'item_remark'     => 'Transfer',
+                'created_by'      => $user_id,
+                'created_date'    => date('Y-m-d H:i:s'),
+                'status'          => 1,
+                'allocation_for'  => 'TRANSFER',
+                'allocation_id'   => $transfer_id
+
+            ]);
+            $remaining -= $deduct;
+        }
+
+        if ($remaining > 0) {
+            log_message(
+                'error',
+                'Stock Transfer failed. Product : '
+                    . $product_id .
+                    ' Required : '
+                    . $transfer_qty .
+                    ' Available : '
+                    . ($transfer_qty - $remaining)
+            );
+            return false;
+        }
+        return true;
+    }
+
+    public function get_available_stock_by_location($product_id, $warehouse_id, $store_id)
+    {
+        $row = $this->db
+            ->select_sum('balance_qty')
+            ->where('warehouse_id', $warehouse_id)
+            ->where('store_id', $store_id)
+            ->where('product_id', $product_id)
+            ->where('stock_type', 'IN')
+            ->get('stock_details')
+            ->row();
+
+        return (float)($row->balance_qty ?? 0);
+    }
+
+    public function get_stock_transfer_master($transfer_id)
+    {
+        $this->db->select("
+            stm.*,
+            fb.branch_name AS from_branch,
+            tb.branch_name AS to_branch,
+            fw.warehouse_name AS from_warehouse,
+            tw.warehouse_name AS to_warehouse,
+            fs.store_name AS from_store,
+            ts.store_name AS to_store,
+            u.user_name
+        ");
+
+        $this->db->from('stock_transfer_master stm');
+        $this->db->join('branch_master fb', 'fb.branch_id=stm.from_branch_id', 'left');
+        $this->db->join('branch_master tb', 'tb.branch_id=stm.to_branch_id', 'left');
+        $this->db->join('warehouse_master fw', 'fw.warehouse_id=stm.from_warehouse_id', 'left');
+        $this->db->join('warehouse_master tw', 'tw.warehouse_id=stm.to_warehouse_id', 'left');
+        $this->db->join('store_master fs', 'fs.store_id=stm.from_store_id', 'left');
+        $this->db->join('store_master ts', 'ts.store_id=stm.to_store_id', 'left');
+        $this->db->join('users u', 'u.user_id=stm.created_by', 'left');
+        $this->db->where('stm.transfer_id', $transfer_id);
+
+        return $this->db->get()->row();
+    }
+
+    public function get_stock_transfer_items($transfer_id)
+    {
+        $this->db->select("
+            sti.*,
+            im.product_code,
+            im.product_name,
+            um.unit_name
+        ");
+
+        $this->db->from('stock_transfer_items sti');
+
+        $this->db->join(
+            'item_master im',
+            'im.product_id=sti.product_id',
+            'left'
+        );
+
+        $this->db->join(
+            'unit_master um',
+            'um.unit_id=sti.unit_id',
+            'left'
+        );
+
+        $this->db->where(
+            'sti.transfer_id',
+            $transfer_id
+        );
+
+        return $this->db->get()->result();
+    }
+    public function cancel_stock_transfer($transfer_id)
+    {
+        $this->db->trans_begin();
+
+        $transfer = $this->db
+            ->where('transfer_id', $transfer_id)
+            ->get('stock_transfer_master')
+            ->row();
+
+        if (!$transfer) {
+            $this->db->trans_rollback();
+
+            return [
+                'status'  => false,
+                'message' => 'Stock Transfer not found.'
+            ];
+        }
+
+        if ($transfer->status == 'Cancelled') {
+            $this->db->trans_rollback();
+            return [
+                'status'  => false,
+                'message' => 'This Stock Transfer is already cancelled.'
+            ];
+        }
+
+
+        $in_movements = $this->db
+            ->where('trans_id', $transfer_id)
+            ->where('stock_type', 'IN')
+            ->where('allocation_for', 'TRANSFER')
+            ->where('allocation_id', $transfer_id)
+            ->get('stock_details')
+            ->result();
+
+        if (empty($in_movements)) {
+            $this->db->trans_rollback();
+            return [
+                'status'  => false,
+                'message' => 'No stock movement found for this transfer.'
+            ];
+        }
+
+        foreach ($in_movements as $movement) {
+
+            if ((float)$movement->balance_qty < (float)$movement->quantity) {
+                $this->db->trans_rollback();
+                return [
+                    'status'  => false,
+                    'message' =>
+                    'Stock Transfer cannot be cancelled because ' .
+                        'some of the transferred stock has already been used.'
+                ];
+            }
+
+            $child = $this->db
+                ->where('parent_stock_id', $movement->stock_id)
+                ->where('status', 1)
+                ->count_all_results('stock_details');
+
+            if ($child > 0) {
+                $this->db->trans_rollback();
+                return [
+                    'status'  => false,
+                    'message' =>
+                    'Stock Transfer cannot be cancelled because ' .
+                        'the transferred stock has already been used.'
+                ];
+            }
+        }
+
+        $out_movements = $this->db
+            ->where('trans_id', $transfer_id)
+            ->where('stock_type', 'OUT')
+            ->where('allocation_for', 'TRANSFER')
+            ->where('allocation_id', $transfer_id)
+            ->get('stock_details')
+            ->result();
+
+        foreach ($out_movements as $movement) {
+            if (!empty($movement->parent_stock_id)) {
+                $this->db
+                    ->set(
+                        'balance_qty',
+                        'balance_qty + ' . (float)$movement->quantity,
+                        false
+                    )
+                    ->where(
+                        'stock_id',
+                        $movement->parent_stock_id
+                    )
+                    ->update('stock_details');
+            }
+        }
+
+        $this->db
+            ->where('trans_id', $transfer_id)
+            ->where('allocation_for', 'TRANSFER')
+            ->where('allocation_id', $transfer_id)
+            ->update('stock_details', [
+                'status'      => 0,
+                'balance_qty' => 0
+            ]);
+
+        $this->db
+            ->where('transfer_id', $transfer_id)
+            ->update('stock_transfer_master', [
+                'status' => 'Cancelled'
+            ]);
+
+        if ($this->db->trans_status() === FALSE) {
+            $this->db->trans_rollback();
+            return [
+                'status'  => false,
+                'message' => 'Unable to cancel Stock Transfer.'
+            ];
+        }
+
+        $this->db->trans_commit();
+
+        return [
+            'status'  => true,
+            'message' => 'Stock Transfer cancelled successfully.'
+        ];
     }
 }

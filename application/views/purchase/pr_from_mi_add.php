@@ -7,6 +7,19 @@
         <div class="x_content">
             <div class="well" style="overflow: auto">
 
+                <!-- Branch -->
+                <div class="col-md-6">
+                    <label class="control-label col-md-3">Select Branch</label>
+                    <div class="col-md-9">
+                        <select name="branch_id" id="branch_id" class="form-control select2" required>
+                            <option value="">Please select branch</option>
+                            <?php foreach ($branch_records as $b) { ?>
+                                <option value="<?php echo $b->branch_id; ?>"><?php echo $b->branch_name; ?></option>
+                            <?php } ?>
+                        </select>
+                    </div>
+                </div>
+
                 <!-- PR Code -->
                 <div class="col-md-6">
                     <label class="control-label col-md-3">PR Code</label>
@@ -15,6 +28,8 @@
                     </div>
                 </div>
 
+                <br><br><br>
+
                 <!-- PR Date -->
                 <div class="col-md-6">
                     <label class="control-label col-md-3">PR Date</label>
@@ -22,8 +37,6 @@
                         <input type="date" class="form-control" name="pr_date" id="pr_date" value="<?php echo date('Y-m-d'); ?>" required>
                     </div>
                 </div>
-                <br><br><br>
-
 
 
                 <!-- Material Issue -->
@@ -51,20 +64,8 @@
                         </select>
                     </div>
                 </div>
-                <br><br><br>
-                <!-- Branch -->
-                <div class="col-md-6">
-                    <label class="control-label col-md-3">Select Branch</label>
-                    <div class="col-md-9">
-                        <select name="branch_id" id="branch_id" class="form-control select2" required>
-                            <option value="">Please select branch</option>
-                            <?php foreach ($branch_records as $b) { ?>
-                                <option value="<?php echo $b->branch_id; ?>"><?php echo $b->branch_name; ?></option>
-                            <?php } ?>
-                        </select>
-                    </div>
-                </div>
 
+                <br><br><br>
 
                 <!-- Subject -->
                 <div class="col-md-6">
@@ -133,8 +134,6 @@
     </div>
 </form>
 
-<!-- jQuery -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <script>
     $(document).ready(function() {
@@ -175,8 +174,14 @@
                                     value="${item.pending_qty}" min="0" required>
                             </td>
                             <td>
-                                <button class="deleteRow btn btn-danger">
-                                    <i class="fa fa-trash"></i>
+                                <button type="button"
+                                        class="btn btn-success addRow">
+                                    <i class="fa fa-plus"></i>
+                                </button>
+
+                                <button type="button"
+                                        class="btn btn-danger deleteRow">
+                                    <i class="fa fa-minus"></i>
                                 </button>
                             </td>
                         </tr>`;
@@ -227,6 +232,90 @@
         $(document).on('click', '.deleteRow', function(e) {
             e.preventDefault();
             $(this).closest('tr').remove();
+        });
+
+        let rowIndex = 1000;
+
+        $(document).on('click', '.addRow', function(e) {
+
+            e.preventDefault();
+
+            let newRow = `
+                <tr>
+                    <!-- Product -->
+                    <td>
+                        <select class="form-control select2 product-select"
+                                name="product_id[]"
+                                id="product_${rowIndex}"
+                                required>
+
+                            <option value="">Select Product</option>
+                            <?php foreach ($active_items as $item) { ?>
+                                <option value="<?= $item->product_id ?>">
+                                    <?= htmlspecialchars($item->product_name, ENT_QUOTES, 'UTF-8') ?>
+                                </option>
+                            <?php } ?>
+                        </select>
+                    </td>
+
+                    <!-- Description -->
+                    <td>
+                        <input type="text"
+                            class="form-control"
+                            name="description[]"
+                            placeholder="Description">
+                    </td>
+
+                    <!-- Unit -->
+                    <td>
+                        <select class="form-control"
+                                name="unit[]"
+                                required>
+                            <option value="">Select Unit</option>
+                            <?php foreach ($active_units as $unit) { ?>
+                                <option value="<?= $unit->unit_id ?>">
+                                    <?= htmlspecialchars($unit->unit_name, ENT_QUOTES, 'UTF-8') ?>
+                                </option>
+                            <?php } ?>
+                        </select>
+                    </td>
+
+                    <!-- Quantity -->
+                    <td>
+                        <input type="number"
+                            class="form-control"
+                            name="quantity[]"
+                            value="1"
+                            min="0"
+                            step="0.01"
+                            required>
+                    </td>
+
+                    <!-- Actions -->
+                    <td>
+                        <button type="button"
+                                class="btn btn-success addRow">
+                            <i class="fa fa-plus"></i>
+                        </button>
+
+                        <button type="button"
+                                class="btn btn-danger deleteRow">
+                            <i class="fa fa-minus"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+
+            $('#mi_items_body').append(newRow);
+
+            // Initialize Select2 for the new product
+            $('#product_' + rowIndex).select2({
+                width: '100%',
+                placeholder: 'Select Product',
+                allowClear: true
+            });
+
+            rowIndex++;
         });
 
         /* =============================

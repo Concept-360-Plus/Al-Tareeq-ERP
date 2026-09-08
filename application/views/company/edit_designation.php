@@ -7,7 +7,7 @@
 				<div class="clearfix"></div>
 			</div>
 			<div class="x_content">
-				<form action="<?= base_url('index.php/Company/update_designation/'.$designation->id) ?>" method="post" autocomplete="off">
+				<form action="<?= base_url('index.php/Hr/update_designation/'.$designation->id) ?>" method="post" autocomplete="off">
                     <input type="hidden" name="designation_id" value="<?=$designation_id?>">
 					<div class="form-row">
 						<div class="col-md-6 form-group">
@@ -103,7 +103,7 @@
 					<div class="form-group mt-3">
 						<div class="col-md-6 offset-md-3">
 							<button type="submit" class="btn btn-success">Update</button>
-							<a href="<?= base_url('index.php/Company/list_designation') ?>" class="btn btn-secondary">Cancel</a>
+							<a href="<?= base_url('index.php/Hr/list_designation') ?>" class="btn btn-secondary">Cancel</a>
 						</div>
 					</div>
 

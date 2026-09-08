@@ -1,5 +1,5 @@
 <div class="card-body">
-  <form id="main" method="post" action="<?php echo base_url() . 'index.php/'; ?>Company/update_department" id="addform" autocomplete="off">
+  <form id="main" method="post" action="<?php echo base_url() . 'index.php/'; ?>Hr/update_department" id="addform" autocomplete="off">
     <?php foreach ($records as $row) : ?>
       <div class="form-group row">
         <label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">Department Name <span style="color: red;"> * </span></label>

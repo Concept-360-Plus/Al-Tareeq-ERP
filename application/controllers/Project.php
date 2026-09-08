@@ -160,6 +160,7 @@ public function save_project()
         'bit_quo'          => $this->input->post('bit_quo'),
         'created_by'       => $user_id
         
+        'bit_quo'          => $this->input->post('bit_quo')
     ];
 
     $this->db->trans_start();
@@ -564,11 +565,288 @@ if ($project_id && !empty($submittedIds)) {
                     $data
                 );
             }
+
+    // =========================================================
+    // TASK CATEGORY / TASK ITEMS
+    // =========================================================
+
+    $task_category = $this->input->post('task_category');
+    $task_name     = $this->input->post('task_name');
+
+    if (!empty($task_name)) {
+
+        for ($i = 0; $i < count($task_name); $i++) {
+
+            $this->db->insert(
+                'project_task_items',
+                array(
+
+                    'project_id' => $project_id,
+
+                    //'task_category_id' =>
+                    //    $task_category[$i] ?? null,
+
+                    'task_name' =>
+                        $task_name[$i] ?? null,
+
+                    //'milestone_id' =>
+                   //     $this->input->post('milestone')[$i] ?? null,
+
+                    'designation_id' =>
+                        $this->input->post('designation_id')[$i] ?? null,
+
+                    'employee_id' =>
+                        $this->input->post('employee_id')[$i] ?? null,
+
+                    'priority' =>
+                        $this->input->post('priority')[$i] ?? null,
+
+                    'start_date' =>
+                        $this->input->post('start_date')[$i] ?? null,
+
+                    'end_date' =>
+                        $this->input->post('end_date')[$i] ?? null,
+
+                    'status' =>
+                        $this->input->post('status')[$i] ?? null,
+
+                    //'task_description' =>
+                     //   $this->input->post('task_description')[$i] ?? null
+                )
+            );
         }
     }
 
 
     // =========================================================
+<<<<<<< HEAD
+=======
+    // PROJECT CODE
+    // =========================================================
+
+    $project_code =
+        'PRJ-' . str_pad($project_id, 6, '0', STR_PAD_LEFT);
+
+    $this->Project_model->update_project(
+        $project_id,
+        array(
+            'project_code' => $project_code
+        )
+    );
+
+
+    // =========================================================
+    // QUOTATION / MANUAL ITEM SOURCE
+    // =========================================================
+
+    $qid     = $this->input->post('quotation_id');
+    $bit_quo = $this->input->post('bit_quo');
+
+
+    // =========================================================
+    // OPTION 1 : QUOTATION SELECTED
+    // =========================================================
+
+    if (!empty($qid) && $bit_quo == 1) {
+
+        // -----------------------------------------------------
+        // Save project quotation
+        // -----------------------------------------------------
+
+        $dataq = array(
+            'pid' => $project_id,
+            'qid' => $qid
+        );
+
+        $this->db->insert(
+            'project_quotation',
+            $dataq
+        );
+
+
+        // -----------------------------------------------------
+        // Get quotation main headings
+        // -----------------------------------------------------
+
+        $query = $this->db->query(
+            "SELECT *
+             FROM quotation_main_heading
+             WHERE qtn_id = ?",
+            array($qid)
+        );
+
+        $res1 = $query->result();
+
+
+        foreach ($res1 as $r1) {
+
+            // -------------------------------------------------
+            // project_transaction1
+            // -------------------------------------------------
+
+            $data = array(
+                'pid'          => $project_id,
+                'qid'          => $qid,
+                'product_desc' => $r1->main_heading,
+                'item_remark'  => $r1->description
+            );
+
+            $this->db->insert(
+                'project_transaction1',
+                $data
+            );
+
+            $insert_id1 = $this->db->insert_id();
+
+
+            // -------------------------------------------------
+            // Get quotation products
+            // -------------------------------------------------
+
+            $query = $this->db->query(
+                "SELECT *
+                 FROM quotation_products
+                 WHERE qtn_id = ?",
+                array($qid)
+            );
+
+            $res2 = $query->result();
+
+
+            foreach ($res2 as $r2) {
+
+                // ---------------------------------------------
+                // project_transaction2
+                // ---------------------------------------------
+
+                $data = array(
+                    'trans_id1'        => $insert_id1,
+                    'pid'              => $project_id,
+                    'sub_details'      => $r2->prd_id,
+                    'qty'              => $r2->qty,
+                    'unit'             => $r2->unit_id,
+                    'price'            => $r2->unit_price,
+                    'discount_percent' => $r2->discount_percent,
+                    'discount_amount'  => $r2->discount_amount,
+                    'taxable_amount'   => $r2->taxable_amount
+                );
+
+                $this->db->insert(
+                    'project_transaction2',
+                    $data
+                );
+            }
+        }
+
+
+    } else {
+
+        // =====================================================
+        // OPTION 2 : NO QUOTATION
+        // ITEMS SELECTED FROM ITEM MASTER
+        // =====================================================
+
+        $products   = $this->input->post('product_id');
+        $quantities = $this->input->post('quantity');
+
+
+        if (!empty($products)) {
+
+            // -------------------------------------------------
+            // Create one transaction header
+            // -------------------------------------------------
+
+            $data = array(
+                'pid'          => $project_id,
+                'qid'          => 0,
+                'product_desc' => 'Project Items',
+                'item_remark'  => 'Items added from Item Master'
+            );
+
+            $this->db->insert(
+                'project_transaction1',
+                $data
+            );
+
+            $insert_id1 = $this->db->insert_id();
+
+
+            // -------------------------------------------------
+            // Insert selected Item Master products
+            // -------------------------------------------------
+
+            foreach ($products as $i => $pid) {
+
+                if (empty($pid)) {
+                    continue;
+                }
+
+                $qty = $quantities[$i] ?? 0;
+
+                if ($qty <= 0) {
+                    continue;
+                }
+
+
+                // ---------------------------------------------
+                // Get item details
+                // ---------------------------------------------
+
+                $item = $this->db
+                    ->select('
+                        i.product_id,
+                        i.product_name,
+                        i.unit_id
+                    ')
+                    ->from('item_master i')
+                    ->where(
+                        'i.product_id',
+                        $pid
+                    )
+                    ->where(
+                        'i.is_inactive',
+                        0
+                    )
+                    ->where(
+                        'i.is_marked_delete',
+                        0
+                    )
+                    ->get()
+                    ->row();
+
+
+                if (!$item) {
+                    continue;
+                }
+
+
+                // ---------------------------------------------
+                // project_transaction2
+                // ---------------------------------------------
+
+                $data = array(
+                    'trans_id1'        => $insert_id1,
+                    'pid'              => $project_id,
+                    'sub_details'      => $item->product_id,
+                    'qty'              => $qty,
+                    'unit'             => $item->unit_id,
+                    'price'            => 0,
+                    'discount_percent' => 0,
+                    'discount_amount'  => 0,
+                    'taxable_amount'   => 0
+                );
+
+                $this->db->insert(
+                    'project_transaction2',
+                    $data
+                );
+            }
+        }
+    }
+
+
+    // =========================================================
+>>>>>>> master
     // SUCCESS MESSAGE
     // =========================================================
 
@@ -865,6 +1143,18 @@ public function get_project_list()
         $this->load->view('includes/template', $data);
    // }
     
+}
+//filter
+public function get_project_list_ajax()
+{
+    $status = $this->input->post('status');
+    $from_date = $this->input->post('from_date');
+    $to_date = $this->input->post('to_date');
+
+    $data['title'] = 'Project List';
+    $data['projects'] = $this->Project_model->get_all_projects();
+    $data['main_content'] = 'project/project_list';
+    $this->load->view('includes/template', $data);
 }
 //filter
 public function get_project_list_ajax()

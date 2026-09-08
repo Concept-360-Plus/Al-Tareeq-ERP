@@ -2981,6 +2981,10 @@ if(isset($_POST['wo_plan']) && !empty($_POST['wo_plan'])) {
                
 
                 cm.customer_name as ustomer_name1,
+                pm.status,
+               
+
+                cm.customer_name,
 
                 u.user_name AS manager_name
             ')

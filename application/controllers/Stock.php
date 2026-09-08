@@ -14,6 +14,7 @@ class Stock extends CI_Controller
         $this->load->model('Item_model');
         $this->load->model('Stock_model');
     }
+
     /////////////////////Stock Adjustment  ////////////////////////
     function stock_adjustment()
     {
@@ -26,14 +27,26 @@ class Stock extends CI_Controller
         $data['main_content'] = 'stock/stock_adjustment_add.php';
         $this->load->view('includes/template.php', $data);
     }
+
     function stock_adjustment_details()
     {
         $data['title'] = 'Stock Adjustment';
-        $this->Stock_model->stock_adjustment_details();
-        $this->session->set_flashdata('success', 'Data Saved Successfully..');
+        $result = $this->Stock_model->stock_adjustment_details();
+
+        if ($result) {
+            $this->session->set_flashdata(
+                'success',
+                'Stock Adjustment request submitted successfully. Waiting for approval.'
+            );
+        } else {
+            $this->session->set_flashdata(
+                'error',
+                'Unable to save Stock Adjustment request.'
+            );
+        }
+
         redirect('Stock/list_stock_adjustment');
     }
-
 
     function list_stock_adjustment()
     {
@@ -45,32 +58,101 @@ class Stock extends CI_Controller
 
     function edit_stock_adjustment()
     {
-
-        // if(!has_access($user,'Purchase/list_rfq','E')){
-        //     $data['title'] = 'Access Denied';
-        //     $data['main_content']='errors/access_control.php';
-        // }
-        // else{
         $data['title'] = 'Stock Adjustment Edit';
-        $doc_id = $this->uri->segment(3);
+        $doc_id = (int)$this->uri->segment(3);
+        if (empty($doc_id)) {
+            $this->session->set_flashdata(
+                'error',
+                'Invalid Stock Adjustment.'
+            );
+            redirect('Stock/list_stock_adjustment');
+            return;
+        }
+
+        $adjustment = $this->Stock_model->get_stock_adjustment_by_id($doc_id);
+        if (empty($adjustment)) {
+            $this->session->set_flashdata(
+                'error',
+                'Stock Adjustment not found.'
+            );
+            redirect('Stock/list_stock_adjustment');
+            return;
+        }
+
+        if ((int)$adjustment[0]->status !== 0) {
+            $this->session->set_flashdata(
+                'error',
+                'Approved Stock Adjustments cannot be edited.'
+            );
+            redirect('Stock/list_stock_adjustment');
+            return;
+        }
+
         $data['products'] = $this->Setup_model->get_active_item_list();
         $data['active_units'] = $this->Setup_model->get_active_unit_list();
         $data['store_records'] = $this->Setup_model->get_warehouse_list();
-        $data['records1'] = $this->Stock_model->get_stock_adjustment_by_id($doc_id);
+        $data['store_list'] = $this->db->where('warehouse_id', $adjustment[0]->warehouse_id)->get('store_master')->result();
+        $data['records1'] = $adjustment;
         $data['records2'] = $this->Stock_model->get_stock_adjustment_tr($doc_id);
+
         $data['main_content'] = 'stock/stock_adjustment_edit.php';
-        // }
         $this->load->view('includes/template.php', $data);
+    }
+
+    function approve_stock_adjustment()
+    {
+        $adjustment_id = $this->uri->segment(3);
+        if (empty($adjustment_id)) {
+            $this->session->set_flashdata(
+                'error',
+                'Invalid Stock Adjustment.'
+            );
+            redirect('Stock/list_stock_adjustment');
+            return;
+        }
+
+        $result = $this->Stock_model->approve_stock_adjustment($adjustment_id);
+        if ($result['success']) {
+            $this->session->set_flashdata(
+                'success',
+                $result['message']
+            );
+        } else {
+            $this->session->set_flashdata(
+                'error',
+                $result['message']
+            );
+        }
+
+        redirect('Stock/list_stock_adjustment');
     }
 
     function update_stock_adjustment_records()
     {
-        $this->Stock_model->update_stock_adjustment_records();
-        $this->session->set_flashdata('success', 'Data Saved Successfully..');
+        $result = $this->Stock_model->update_stock_adjustment_records();
+        if ($result) {
+            $this->session->set_flashdata(
+                'success',
+                'Stock Adjustment updated successfully.'
+            );
+        } else {
+            $this->session->set_flashdata(
+                'error',
+                'Unable to update Stock Adjustment. It may already be approved.'
+            );
+        }
         redirect('Stock/list_stock_adjustment');
     }
 
     /////////////////////Minimum Stock////////////////////////
+    function list_min_stock()
+    {
+        $data['title'] = 'Minimum Stock';
+        $data['records'] = $this->Stock_model->get_min_stock_list();
+        $data['main_content'] = 'stock/min_stock_list.php';
+        $this->load->view('includes/template.php', $data);
+    }
+
     function min_stock()
     {
         $data['title'] = 'Minimum Stock';
@@ -81,40 +163,33 @@ class Stock extends CI_Controller
         $data['main_content'] = 'stock/min_stock_add.php';
         $this->load->view('includes/template.php', $data);
     }
+
     function add_min_stock_records()
     {
         $data['title'] = 'Minimum Stock';
-        $this->Stock_model->min_stock_add_records();
-        $this->session->set_flashdata('success', 'Data Saved Successfully..');
+        $result = $this->Stock_model->min_stock_add_records();
+        if ($result) {
+            $this->session->set_flashdata(
+                'success',
+                'Minimum stock added successfully.'
+            );
+        } else {
+            $this->session->set_flashdata(
+                'error',
+                'Minimum stock is already configured for this product.'
+            );
+        }
+
         redirect('Stock/list_min_stock');
     }
 
-
-    function list_min_stock()
-    {
-        $data['title'] = 'Minimum Stock';
-        $data['records'] = $this->Stock_model->get_min_stock_list();
-        $data['main_content'] = 'stock/min_stock_list.php';
-        $this->load->view('includes/template.php', $data);
-    }
-
-
     function edit_min_stock()
     {
-
-        // if(!has_access($user,'Purchase/list_rfq','E')){
-        //     $data['title'] = 'Access Denied';
-        //     $data['main_content']='errors/access_control.php';
-        // }
-        // else{
-        $data['title'] = 'Minimum Stock';
+        $data['title'] = 'Edit Minimum Stock';
         $doc_id = $this->uri->segment(3);
-        $data['active_items'] = $this->Item_model->get_active_item_list();
-        $data['active_units'] = $this->Item_model->get_active_unit_list();
-        $data['records1'] = $this->Stock_model->get_stock_adjustment_by_id($doc_id);
-        $data['records2'] = $this->Stock_model->get_stock_adjustment_tr($doc_id);
-        $data['main_content'] = 'Stock/min_stock_edit.php';
-        // }
+        $data['active_items'] = $this->Setup_model->get_active_item_list();
+        $data['record'] = $this->Stock_model->get_min_stock_by_id($doc_id);
+        $data['main_content'] = 'stock/min_stock_edit.php';
         $this->load->view('includes/template.php', $data);
     }
 
@@ -127,12 +202,26 @@ class Stock extends CI_Controller
         $this->session->set_flashdata('success', 'Record deleted successfully.');
         redirect('Stock/list_min_stock');
     }
+
     function update_min_stock_records()
     {
-        $this->Stock_model->update_stock_adjustment_records();
-        $this->session->set_flashdata('success', 'Data Saved Successfully..');
+        $result = $this->Stock_model->update_min_stock_records();
+
+        if ($result) {
+            $this->session->set_flashdata(
+                'success',
+                'Minimum stock updated successfully.'
+            );
+        } else {
+            $this->session->set_flashdata(
+                'error',
+                'Unable to update minimum stock.'
+            );
+        }
+
         redirect('Stock/list_min_stock');
     }
+
     function reorder_list()
     {
         $data['title'] = 'Reorder Stock Details';

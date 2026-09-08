@@ -9,6 +9,7 @@ class Purchase extends CI_Controller
         $this->output->set_header("Cache-Control: post-check=0, pre-check=0", false);
         $this->output->set_header("Pragma: no-cache");
         $this->load->model('Setup_model');
+        $this->load->model('Project_model');
         $this->load->helper('menu_helper');
         $this->load->model('Purchase_Model');
         $this->load->model('Item_model');
@@ -40,6 +41,7 @@ class Purchase extends CI_Controller
         $data['Code']               = $prifix . date('y') . '/' . $digit;
         $data['branch_records']     = $this->Company_model->get_all_branches();
         $data['supplier_records']   = $this->Setup_model->get_active_supplier_list();
+        $data['project_records']    = $this->Project_model->get_approved_projects();
 
         $data['active_items']       = $this->Setup_model->get_active_item_list();
         $data['active_units']       = $this->Setup_model->get_active_unit_list();
@@ -127,6 +129,7 @@ class Purchase extends CI_Controller
         $data['active_items']       = $this->Setup_model->get_active_item_list();
         $data['active_units']       = $this->Setup_model->get_active_unit_list();
         $data['supplier_records']   = $this->Setup_model->get_all_supplier_list();
+        $data['project_records']    = $this->Project_model->get_approved_projects();
         $data['records1']           = $this->Purchase_Model->get_purchase_rfq_by_id($rfq_id);
         $data['records2']           = $this->Purchase_Model->get_purchase_rfq_tr($rfq_id);
         $data['main_content']       = 'purchase/rfq_direct_edit.php';
@@ -154,6 +157,7 @@ class Purchase extends CI_Controller
         }
         $this->load->model('Setup_model');
         $this->load->model('Purchase_Model');
+        $this->load->model('Project_model');
 
         $data['title']              = 'Quote From Supplier';
         $prifix                     = 'AVE/SQT/';
@@ -163,6 +167,11 @@ class Purchase extends CI_Controller
         $data['records']            = $this->Purchase_Model->get_RFQ_list('direct');
         $data['purchase_requests'] = $this->Purchase_Model->get_PR_list(); // <--- added
         $data['supplier_records']   = $this->Setup_model->get_active_supplier_list();
+        $data['project_records'] = $this->Project_model->get_approved_projects();
+
+        $data['payment_terms_list'] = $this->Setup_model->get_active_terms_conditions_by_type('PAYMENT');
+        $data['delivery_terms_list'] = $this->Setup_model->get_active_terms_conditions_by_type('DELIVERY');
+        $data['general_terms_list'] = $this->Setup_model->get_active_terms_conditions_by_type('GENERAL');
 
         // pass selected rfq id to the view
         $data['selected_rfq_id']    = $rfq_id;
@@ -222,10 +231,14 @@ class Purchase extends CI_Controller
             $this->load->view('includes/template', $data);
             return;
         }
+
         $this->load->model('Setup_model');
         $this->load->model('Company_model');
-        $quotation_id           = $this->uri->segment('3');
-        $data['view_only']      = $this->uri->segment('4');
+        $this->load->model('Project_model');
+        $this->load->model('Purchase_Model');
+
+        $quotation_id = $this->uri->segment('3');
+        $data['view_only'] = $this->uri->segment('4');
 
         if ($data['view_only'] == 0) {
             $data['title'] = 'Edit Quotation';
@@ -233,17 +246,52 @@ class Purchase extends CI_Controller
             $data['title'] = 'View Quotation';
         }
 
-        //master
-        $data['records1']           = $this->Purchase_Model->get_pur_qtn_master_by_id($quotation_id);
-        $data['branch_records']     = $this->Company_model->get_all_branches();
-        // $data['supplier_records']     = $this->Company_model->get_supplier_by_branch($data['records1'][0]->branch_id);	
+        // Get quotation master
+        $data['records1'] = $this->Purchase_Model->get_pur_qtn_master_by_id($quotation_id);
 
+        if (empty($data['records1'])) {
+            show_404();
+            return;
+        }
 
-        $data['records2']           = $this->Purchase_Model->get_pur_qtn_tr_by_id($quotation_id);
+        // Get RFQs - include current RFQ even if its status is no longer 0
+        $current_rfq_id = $data['records1'][0]->rfq_master_id;
 
-        $data['quote_doc']          = $this->Purchase_Model->get_quote_doc($quotation_id, "Quote File");
-        $data['main_content']       = 'purchase/quotation_edit.php';
-        // }
+        $data['rfq_records'] = $this->Purchase_Model->get_RFQ_list_for_quotation($current_rfq_id);
+
+        // Branches
+        $data['branch_records'] = $this->Company_model->get_all_branches();
+
+        // Suppliers
+        $data['supplier_records'] = $this->Setup_model->get_active_supplier_list();
+
+        // Projects
+        $data['project_records'] = $this->Project_model->get_approved_projects();
+
+        // Units
+        $data['unit_records'] = $this->Setup_model->get_active_unit_list();
+
+        // Transaction
+        $data['records2'] = $this->Purchase_Model->get_pur_qtn_tr_by_id($quotation_id);
+
+        // Document
+        $data['quote_doc'] = $this->Purchase_Model->get_quote_doc(
+            $quotation_id,
+            "Quote File"
+        );
+
+        // Terms
+        $data['payment_terms_list'] =
+            $this->Setup_model->get_active_terms_conditions_by_type('PAYMENT');
+
+        $data['delivery_terms_list'] =
+            $this->Setup_model->get_active_terms_conditions_by_type('DELIVERY');
+
+        $data['general_terms_list'] =
+            $this->Setup_model->get_active_terms_conditions_by_type('GENERAL');
+
+        $data['main_content'] = 'purchase/quotation_edit.php';
+
         $this->load->view('includes/template.php', $data);
     }
 
@@ -281,21 +329,31 @@ class Purchase extends CI_Controller
 
     function print_quote()
     {
-        $this->load->model('Company_model');
-        $user             = $this->session->userdata('user_id');
+        $this->load->model('Setup_model');
 
-        $quotation_id     = $this->uri->segment(3);
+        $quotation_id = $this->uri->segment(3);
+
+        // Purchase quotation master
+        $data['quote'] = $this->Purchase_Model->get_pur_qtn_master_by_id($quotation_id);
+
+        if (empty($data['quote'])) {
+            show_404();
+            return;
+        }
+
+        // Purchase quotation details
         $data['quote_tr'] = $this->Purchase_Model->get_pur_qtn_tr_by_id($quotation_id);
-        $data['quote']    = $this->Purchase_Model->get_pur_qtn_master_by_id($quotation_id);
 
-        $branch_id        = $data['quote'][0]->branch_id;
-        $branch_data      = $this->Company_model->get_branch_by_id($branch_id);
-        $data['branch_header'] = $branch_data->branch_header;
-        $data['branch_footer'] = $branch_data->branch_footer;
+        // Company details - same approach as Sales quotation
+        $data['company'] = $this->Setup_model->get_company_details();
 
-        $this->load->view('purchase/print/quotation_print.php', $data);
-        // }
+        // Load print view
+        $this->load->view(
+            'purchase/print/quotation_print.php',
+            $data
+        );
     }
+
     function delete_quote($quote_id)
     {
         $user = $this->session->userdata('user_id');
@@ -349,14 +407,25 @@ class Purchase extends CI_Controller
             return;
         }
         $data['title'] = 'Purchase Order';
-        $prifix = 'ALA/POD/';
+        $prifix = 'AVE/POD/';
         $this->load->model('Setup_model');
+        $this->load->model('Company_model');
         $num = $this->Setup_model->get_next_code($prifix, 'po_code', 'purchase_order_master', 12) + 1;
         $digit = sprintf("%1$04d", $num);
         $data['Code'] = $prifix . date("y") . '/' . $digit;
 
+        $data['payment_terms_list'] = $this->Setup_model->get_active_terms_conditions_by_type('PAYMENT');
+        $data['delivery_terms_list'] = $this->Setup_model->get_active_terms_conditions_by_type('DELIVERY');
+        $data['general_terms_list'] = $this->Setup_model->get_active_terms_conditions_by_type('GENERAL');
+
+        $data['supplier_records']   = $this->Setup_model->get_active_supplier_list();
+        $data['branch_records']     = $this->Company_model->get_all_branches();
+
         $this->load->model('Purchase_Model');
         $data['records'] = $this->Purchase_Model->get_quotation_list();
+
+        $this->load->model('Project_model');
+        $data['project_records'] = $this->Project_model->get_approved_projects();
 
         // pass selected quotation id to view
         $data['selected_quotation_id'] = $selected_quotation_id;
@@ -450,6 +519,9 @@ class Purchase extends CI_Controller
     {
         $user = $this->session->userdata('user_id');
 
+        // -----------------------------------------
+        // Access Check
+        // -----------------------------------------
         if (!has_view_access($user, 'Purchase/purchase_order_list')) {
             $data['title'] = 'Access Denied';
             $data['main_content'] = 'errors/access_control.php';
@@ -457,98 +529,209 @@ class Purchase extends CI_Controller
             return;
         }
 
-        $this->load->model('Company_model');
-        $user = $this->session->userdata('user_id');
+        // -----------------------------------------
+        // Validate PO Type
+        // -----------------------------------------
+        if (!in_array((int)$po_type, [1, 2], true)) {
+            show_error('Invalid Purchase Order Type');
+            return;
+        }
 
-        // 1. Get PO Master + Products based on type
-        if ($po_type == 1) { // PO via quotation
+        // -----------------------------------------
+        // Models
+        // -----------------------------------------
+        $this->load->model('Company_model');
+
+        // -----------------------------------------
+        // Get PO Master
+        // -----------------------------------------
+        if ((int)$po_type === 1) {
+            // PO created from Purchase Quotation
             $po_master = $this->Purchase_Model->get_po_master_by_id($po_id);
-        } elseif ($po_type == 2) { // Direct PO
+        } else {
+            // Direct PO
             $po_master = $this->Purchase_Model->get_po_direct_master_by_id($po_id);
         }
-        // echo "<pre>";print_r($po_master);exit;
+
+        // Validate PO
+        if (empty($po_master)) {
+            show_404();
+            return;
+        }
+
+        $po = $po_master[0];
+
+        // -----------------------------------------
+        // Get PO Transaction Details
+        // -----------------------------------------
         $po_tr = $this->Purchase_Model->get_po_tr_by_id($po_id);
-        $this->load->model('Company_model');
-        $prepared_by_id = $po_master[0]->prepared_by ?? null;
-        $checked_by_id = $po_master[0]->checked_by ?? null;
-        $approved_by_id = $po_master[0]->approved_by ?? null;
+
+        // -----------------------------------------
+        // Employee / Approval Details
+        // -----------------------------------------
+        $prepared_by_id = $po->prepared_by ?? null;
+        $checked_by_id  = $po->checked_by ?? null;
+        $approved_by_id = $po->approved_by ?? null;
 
         $prepared_by_name = '';
-        $checked_by_name = '';
+        $checked_by_name  = '';
         $approved_by_name = '';
+
         $prepared_signature = '';
-        $checked_signature = '';
+        $checked_signature  = '';
         $approved_signature = '';
 
+        // Prepared By
         if (!empty($prepared_by_id)) {
-            $prepared_emp = $this->Company_model->get_employee_by_id($prepared_by_id);
-            $prepared_by_name = $prepared_emp->employee_name ?? '';
-            $prepared_signature = $prepared_emp->signature_file ?? '';
-        }
-        if (!empty($checked_by_id)) {
-            $checked_emp = $this->Company_model->get_employee_by_id($checked_by_id);
-            $checked_by_name = $checked_emp->employee_name ?? '';
-            $checked_signature = $checked_emp->signature_file ?? '';
-        }
-        if (!empty($approved_by_id)) {
-            $approved_emp = $this->Company_model->get_employee_by_id($approved_by_id);
-            $approved_by_name = $approved_emp->employee_name ?? '';
-            $approved_signature = $approved_emp->signature_file ?? '';
-        }
-        // 2. Get Branch Details (join branch_master in model if needed)
-        $branch_id = $po_master[0]->branch_id;
-        $branch = $this->Setup_model->get_branch_by_id($branch_id); // create this model function if not exists
 
-        // 3. Prepare data for view
-        $data['po'] = $po_master[0];
+            $prepared_emp = $this->Company_model->get_employee_by_id($prepared_by_id);
+
+            if ($prepared_emp) {
+                $prepared_by_name = $prepared_emp->employee_name ?? '';
+                $prepared_signature = $prepared_emp->signature_file ?? '';
+            }
+        }
+
+        // Checked By
+        if (!empty($checked_by_id)) {
+
+            $checked_emp = $this->Company_model->get_employee_by_id($checked_by_id);
+
+            if ($checked_emp) {
+                $checked_by_name = $checked_emp->employee_name ?? '';
+                $checked_signature = $checked_emp->signature_file ?? '';
+            }
+        }
+
+        // Approved By
+        if (!empty($approved_by_id)) {
+
+            $approved_emp = $this->Company_model->get_employee_by_id($approved_by_id);
+
+            if ($approved_emp) {
+                $approved_by_name = $approved_emp->employee_name ?? '';
+                $approved_signature = $approved_emp->signature_file ?? '';
+            }
+        }
+
+        // -----------------------------------------
+        // Branch Details
+        // IMPORTANT:
+        // Use Company_model here
+        // -----------------------------------------
+        $branch_id = $po->branch_id ?? null;
+
+        if (empty($branch_id)) {
+            show_error('Branch is not assigned to this Purchase Order.');
+            return;
+        }
+
+        $branch = $this->Setup_model->get_branch_by_id($branch_id);
+
+        if (empty($branch)) {
+            show_error('Branch details not found for this Purchase Order.');
+            return;
+        }
+
+        // -----------------------------------------
+        // Prepare View Data
+        // -----------------------------------------
+        $data['po']    = $po;
         $data['po_tr'] = $po_tr;
 
-        $data['branch_id']       = $branch->branch_id;
-        $data['branch_name']     = $branch->branch_name;
-        $data['branch_header']   = $branch->branch_header;
-        $data['branch_footer']   = $branch->branch_footer;
-        $data['branch_logo']     = $branch->branch_logo;
-        $data['branch_address']  = $branch->branch_address;
-        $data['branch_location'] = $branch->branch_location;
-        $data['branch_trn']      = $branch->branch_trn;
-        $data['branch_web']      = $branch->branch_web;
-        $data['branch_email']    = $branch->branch_email;
-        $data['branch_contact']  = $branch->branch_contact;
-        $data['branch_manager']  = $branch->branch_manager;
-        $data['branch_stamp']  = $branch->branch_stamp;
+        // Branch
+        $data['branch_id']       = $branch->branch_id ?? '';
+        $data['branch_name']     = $branch->branch_name ?? '';
+        $data['branch_header']   = $branch->branch_header ?? '';
+        $data['branch_footer']   = $branch->branch_footer ?? '';
+        $data['branch_logo']     = $branch->branch_logo ?? '';
+        $data['branch_address']  = $branch->branch_address ?? '';
+        $data['branch_location'] = $branch->branch_location ?? '';
+        $data['branch_trn']      = $branch->branch_trn ?? '';
+        $data['branch_web']      = $branch->branch_web ?? '';
+        $data['branch_email']    = $branch->branch_email ?? '';
+        $data['branch_contact']  = $branch->branch_contact ?? '';
+        $data['branch_manager']  = $branch->branch_manager ?? '';
+        $data['branch_stamp']    = $branch->branch_stamp ?? '';
+        $this->load->model('Setup_model');
 
-        $data['prepared_by_name'] = $prepared_by_name;
-        $data['checked_by_name'] = $checked_by_name;
-        $data['approved_by_name'] = $approved_by_name;
-        $data['prepared_signature'] = $prepared_signature ?? '';
-        $data['checked_signature'] = $checked_signature ?? '';
-        $data['approved_signature'] = $approved_signature ?? '';
+        $data['company'] = $this->Setup_model->get_company_details();
 
-        // echo "<pre>";print_r($data);exit;
+        // Employee approvals
+        $data['prepared_by_name']  = $prepared_by_name;
+        $data['checked_by_name']   = $checked_by_name;
+        $data['approved_by_name']  = $approved_by_name;
 
-        // 4. Dompdf Config
-        $options = new \Dompdf\Options();
-        $options->set('isHtml5ParserEnabled', true);
-        $options->set('isRemoteEnabled', true);
-        $options->set('chroot', realpath('C:/xampp/htdocs/aladel_erp/public/'));
-        $dompdf = new \Dompdf\Dompdf($options);
+        $data['prepared_signature'] = $prepared_signature;
+        $data['checked_signature']  = $checked_signature;
+        $data['approved_signature'] = $approved_signature;
 
-        $data['headerPath'] = base_url(ltrim($data['branch_header'], '/'));
-        $data['footerPath'] = base_url(ltrim($data['branch_footer'], '/'));
-        // echo "<pre>";
-        // print_r($data);exit;
-        if ($po_type == 1) {
-            $html = $this->load->view('purchase/print/po_print.php', $data, true);
-        } elseif ($po_type == 2) {
-            $html = $this->load->view('purchase/print/po_direct_print.php', $data, true);
+        // -----------------------------------------
+        // Header / Footer Paths
+        // -----------------------------------------
+        $data['headerPath'] = '';
+
+        if (!empty($data['branch_header'])) {
+            $data['headerPath'] = base_url(
+                ltrim(str_replace('./', '', $data['branch_header']), '/')
+            );
         }
 
+        $data['footerPath'] = '';
 
-        // 6. Generate PDF
+        if (!empty($data['branch_footer'])) {
+            $data['footerPath'] = base_url(
+                ltrim(str_replace('./', '', $data['branch_footer']), '/')
+            );
+        }
+
+        // -----------------------------------------
+        // Dompdf
+        // -----------------------------------------
+        $options = new \Dompdf\Options();
+
+        $options->set('isHtml5ParserEnabled', true);
+        $options->set('isRemoteEnabled', true);
+
+        // IMPORTANT:
+        // Do NOT use the old Windows path:
+        // C:/xampp/htdocs/aladel_erp/public/
+        //
+        // This application is running on Linux server.
+        $options->set('chroot', FCPATH);
+
+        $dompdf = new \Dompdf\Dompdf($options);
+
+        // -----------------------------------------
+        // Load Correct PO Print View
+        // -----------------------------------------
+        if ((int)$po_type === 1) {
+
+            $html = $this->load->view(
+                'purchase/print/po_print.php',
+                $data,
+                true
+            );
+        } else {
+
+            $html = $this->load->view(
+                'purchase/print/po_direct_print.php',
+                $data,
+                true
+            );
+        }
+
+        // -----------------------------------------
+        // Generate PDF
+        // -----------------------------------------
         $dompdf->loadHtml($html);
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();
-        $dompdf->stream("purchase_order_$po_id.pdf", array("Attachment" => 0));
+
+        $dompdf->stream(
+            "purchase_order_$po_id.pdf",
+            array("Attachment" => 0)
+        );
     }
 
     function approve_po()
@@ -580,6 +763,7 @@ class Purchase extends CI_Controller
 
         $this->load->model('Setup_model');
         $this->load->model('Company_model');
+        $this->load->model('Project_model');
 
         $po_id = $this->uri->segment('3');
         $po_type = $this->uri->segment('5');
@@ -604,6 +788,11 @@ class Purchase extends CI_Controller
 
         $data['po_doc']             = $this->Purchase_Model->get_quote_doc($po_id, "PO File");
         $data['supplier_records']   = $this->Setup_model->get_active_supplier_list();
+        $data['project_records']    = $this->Project_model->get_approved_projects();
+
+        $data['payment_terms_list'] = $this->Setup_model->get_active_terms_conditions_by_type('PAYMENT');
+        $data['delivery_terms_list'] = $this->Setup_model->get_active_terms_conditions_by_type('DELIVERY');
+        $data['general_terms_list'] = $this->Setup_model->get_active_terms_conditions_by_type('GENERAL');
 
         $this->load->model('Hr_model');
         $data['employees'] = $this->Hr_model->get_employee_list();
@@ -645,19 +834,35 @@ class Purchase extends CI_Controller
         $this->load->model('Purchase_Model');
         $this->load->model('Company_model');
         $this->load->model('Setup_model');
-        error_reporting(0);
-        $data['title']              = 'Purchase Order-Stock';
-        $prifix                     = 'ALA/POD/';
-        $num                        = $this->Setup_model->get_next_code($prifix, 'po_code', 'purchase_order_master', 12) + 1;
-        $digit                      = sprintf("%1$04d", $num);
-        $data['Code']               = $prifix . date("y") . '/' . $digit;
-        $data['branch_records']     = $this->Company_model->get_all_branches();
-        $data['records']            = $this->Purchase_Model->get_RFQ_list('direct');
-        $data['active_items']       = $this->Setup_model->get_active_item_list();
-        $data['active_units']       = $this->Setup_model->get_active_unit_list();
+        $this->load->model('Project_model');
+        $data['title']              = 'Purchase Order-Direct';
 
+        $selected_tr = $this->input->post('selected_tr');
+        $selected_ids = array();
+        if (!empty($selected_tr)) {
+            $selected_ids = array_filter(
+                array_map('intval', explode(',', $selected_tr))
+            );
+        }
+
+        $data['reorder_list'] = array();
+        if (!empty($selected_ids)) {
+            $data['reorder_list'] = $this->Stock_model->get_reorder_stock_for_PO($selected_ids);
+        }
+
+        $prifix                      = 'AVE/POD/';
+        $num                         = $this->Setup_model->get_next_code($prifix, 'po_code', 'purchase_order_master', 12) + 1;
+        $digit                       = sprintf("%1$04d", $num);
+        $data['Code']                = $prifix . date("y") . '/' . $digit;
+        $data['branch_records']      = $this->Company_model->get_all_branches();
+        $data['records']             = $this->Purchase_Model->get_RFQ_list('direct');
+        $data['active_items']        = $this->Setup_model->get_active_item_list();
+        $data['active_units']        = $this->Setup_model->get_active_unit_list();
+        $data['payment_terms_list']  = $this->Setup_model->get_active_terms_conditions_by_type('PAYMENT');
+        $data['delivery_terms_list'] = $this->Setup_model->get_active_terms_conditions_by_type('DELIVERY');
+        $data['general_terms_list']  = $this->Setup_model->get_active_terms_conditions_by_type('GENERAL');
+        $data['project_records']     = $this->Project_model->get_approved_projects();
         $data['supplier_records']   = $this->Setup_model->get_active_supplier_list();
-        $data['reorder_list']       = $this->Stock_model->get_reorder_stock_for_PO();
         $data['prepared_by'] = $this->session->userdata('user_name');
         $this->load->model('Hr_model');
         $data['employees'] = $this->Hr_model->get_employee_list();
@@ -735,20 +940,14 @@ class Purchase extends CI_Controller
     function print_grn()
     {
         $user = $this->session->userdata('user_id');
-        // if(!has_view_access($user,'Purchase/purchase_grn_list')){
-        //     $data['title'] = 'Access Denied';
-        //     $data['main_content']='errors/access_control.php';
-        //     $this->load->view('includes/template',$data);
-        // }
-        // else{
         $grn_id = $this->uri->segment('3');
         $data['grn_tr'] = $this->Purchase_Model->get_grn_tr_by_id($grn_id);
         $data['grn'] = $this->Purchase_Model->get_grn_master_by_id($grn_id);
-        // echo '<pre>';print_r($data);exit;
+
+        // Company details for print header/footer
+        $this->load->model('Setup_model');
+        $data['company'] = $this->Setup_model->get_company_details();
         $this->load->view('purchase/print/grn_print.php', $data);
-
-
-        // }
     }
 
     function print_grn_barcode()
@@ -770,12 +969,61 @@ class Purchase extends CI_Controller
         // }
     }
 
-    function delete_grn()
+    public function delete_grn()
     {
         $grn_id = $this->input->post('grn_id');
         $this->load->model('Purchase_Model');
-        $this->Purchase_Model->delete_grn($grn_id);
-        redirect('Purchase/purchase_grn_list');
+        $result = $this->Purchase_Model->delete_grn($grn_id);
+        echo json_encode($result);
+    }
+
+    //////////// PURCHASE RETURN CODE START /////////////////
+    public function purchase_return_list()
+    {
+        $user = $this->session->userdata('user_id');
+
+        if (!has_view_access($user, 'Purchase/purchase_quotation_list')) {
+            $data['title'] = 'Access Denied';
+            $data['main_content'] = 'errors/access_control';
+            $this->load->view('includes/template', $data);
+            return;
+        }
+
+        $data['title'] = "Purchase Return List";
+        $data['purchase_returns'] = $this->Purchase_Model->get_purchase_return_list();
+        $data['main_content'] = "purchase/purchase_return_list";
+
+        $this->load->view('includes/template', $data);
+    }
+
+    public function add_purchase_return($grn_id = 0)
+    {
+        $user = $this->session->userdata('user_id');
+
+        if (!has_access($user, 'Purchase/purchase_return_list', 'A')) {
+            $data['title'] = 'Access Denied';
+            $data['main_content'] = 'errors/access_control';
+            $this->load->view('includes/template', $data);
+            return;
+        }
+
+        $prefix = 'AVE/PRTN/';
+
+        $num = $this->Setup_model
+            ->get_next_code(
+                $prefix,
+                'return_code',
+                'purchase_return_master',
+                13
+            ) + 1;
+
+        $digit = sprintf("%05d", $num);
+        $data['return_code'] = $prefix . date('y') . '/' . $digit;
+        $data['title'] = "Purchase Return";
+        $data['grn_list'] = $this->Purchase_Model->get_grn_list();
+        $data['main_content'] = "purchase/add_purchase_return";
+
+        $this->load->view('includes/template', $data);
     }
 
     public function return_grn_items()
@@ -796,15 +1044,53 @@ class Purchase extends CI_Controller
 
     public function save_purchase_return()
     {
-        $this->Purchase_model->save_purchase_return();
+        $return_id = $this->Purchase_Model->save_purchase_return();
 
-        $this->session->set_flashdata(
-            'success',
-            'Purchase Return Saved Successfully'
-        );
+        if ($return_id) {
+            $this->session->set_flashdata(
+                'success',
+                'Purchase Return Created Successfully.'
+            );
+        } else {
+            $this->session->set_flashdata(
+                'error',
+                'Unable to save Purchase Return.'
+            );
+        }
 
         redirect('Purchase/purchase_return_list');
     }
+
+    public function print_purchase_return($return_id)
+    {
+        $this->load->model('Purchase_Model');
+        $this->load->model('Setup_model');
+
+        $data['master'] = $this->Purchase_Model->get_purchase_return_master($return_id);
+
+        if (empty($data['master'])) {
+            show_404();
+        }
+
+        $data['items'] = $this->Purchase_Model->get_purchase_return_items($return_id);
+
+        // Company Details
+        $data['company'] = $this->Setup_model->get_company_details();
+
+        $this->load->view('purchase/print/purchase_return_print', $data);
+    }
+
+    public function delete_purchase_return()
+    {
+        $return_id = $this->input->post('return_id');
+
+        $this->load->model('Purchase_Model');
+
+        $result = $this->Purchase_Model->delete_purchase_return($return_id);
+
+        echo json_encode($result);
+    }
+    //////////// PURCHASE RETURN CODE END /////////////////
 
     function direct_po()
     {
@@ -876,12 +1162,22 @@ class Purchase extends CI_Controller
     //     $this->load->view('includes/template.php', $data);
     // }
 
+    public function pr_from_mi_list()
+    {
+        $this->load->model('Purchase_model');
+
+        $data['title'] = 'PR From Material Issue List';
+        $data['pr_list'] = $this->Purchase_model->get_pr_from_mi_list();
+
+        $data['main_content'] = 'purchase/pr_from_mi_list.php';
+        $this->load->view('includes/template.php', $data);
+    }
     public function add_pr_from_mi()
     {
         $this->load->model('Item_model');
         $this->load->model('Company_model');
         $this->load->model('Project_model');
-        $data['title'] = 'Purchase Request from Material Issue';
+        $data['title'] = 'PR from Material Issue';
 
         $prifix = 'ALA/PR/';
         $num = $this->Setup_model->get_next_code($prifix, 'pr_code', 'purchase_requests', 12) + 1;
@@ -891,6 +1187,7 @@ class Purchase extends CI_Controller
         $data['branch_records']   = $this->Company_model->get_all_branches();
         $data['supplier_records'] = $this->Setup_model->get_active_supplier_list();
 
+        $data['active_items'] = $this->Setup_model->get_active_item_list();
         $data['active_units'] = $this->Setup_model->get_active_unit_list();
 
         // $data['material_issues'] = $this->db->select('mi_id, mi_code')
@@ -904,29 +1201,69 @@ class Purchase extends CI_Controller
         $data['main_content'] = 'purchase/pr_from_mi_add.php';
         $this->load->view('includes/template.php', $data);
     }
-    public function pr_from_mi_list()
-    {
-        $this->load->model('Purchase_model');
 
-        $data['title'] = 'PR From Material Issue List';
-        $data['pr_list'] = $this->Purchase_model->get_pr_from_mi_list();
-
-        $data['main_content'] = 'purchase/pr_from_mi_list.php';
-        $this->load->view('includes/template.php', $data);
-    }
-    public function delete_pr($pr_id)
+    public function save_pr_from_mi()
     {
-        $this->db->where('pr_id', $pr_id)->delete('purchase_requests');
-        $this->session->set_flashdata('success', 'Purchase Request deleted successfully.');
+        $this->load->database();
+        $this->load->library('session');
+
+        $pr_data = [
+            'pr_code'     => $this->input->post('pr_code'),
+            'pr_date'     => $this->input->post('pr_date'),
+            'branch_id'   => $this->input->post('branch_id'),
+            'supplier_id' => $this->input->post('supplier_id'),
+            'mi_id'       => $this->input->post('mi_id') ?: NULL,
+            'subject'     => $this->input->post('subject'),
+            'project'     => $this->input->post('project'),
+            'ref'         => $this->input->post('ref'),
+            'remarks'     => $this->input->post('remarks'),
+            'created_by'  => $this->session->userdata('user_id'),
+            'updated_by'  => $this->session->userdata('user_id'),
+            'updated_at'  => date('Y-m-d H:i:s')
+        ];
+
+        $this->db->trans_start();
+
+        $this->db->insert('purchase_requests', $pr_data);
+        $pr_id = $this->db->insert_id();
+
+        $product_ids = $this->input->post('product_id');
+        $units       = $this->input->post('unit');
+        $quantities  = $this->input->post('quantity');
+
+        if ($product_ids && count($product_ids) > 0) {
+            foreach ($product_ids as $key => $product_id) {
+
+                if (isset($quantities[$key]) && $quantities[$key] > 0) {
+                    $item_data = [
+                        'pr_id'      => $pr_id,
+                        'product_id' => $product_id,
+                        'unit_id'    => $units[$key],
+                        'quantity'   => $quantities[$key]
+                    ];
+                    $this->db->insert('purchase_request_items', $item_data);
+                }
+            }
+        }
+
+        $this->db->trans_complete();
+
+        if ($this->db->trans_status() === FALSE) {
+            $this->session->set_flashdata('error', 'Failed to save Purchase Request.');
+        } else {
+            $this->session->set_flashdata('success', 'Purchase Request saved successfully.');
+        }
+
         redirect('Purchase/pr_from_mi_list');
     }
+
     public function edit_pr_from_mi($pr_id)
     {
         $this->load->model('Item_model');
         $this->load->model('Company_model');
         $this->load->model('Project_model');
 
-        $data['title'] = 'Edit Purchase Request';
+        $data['title'] = 'Edit PR From Material Issue';
 
         $data['pr'] = $this->Purchase_Model->get_pr_by_id($pr_id);
 
@@ -939,13 +1276,13 @@ class Purchase extends CI_Controller
 
         $data['branch_records']   = $this->Company_model->get_all_branches();
         $data['supplier_records'] = $this->Setup_model->get_active_supplier_list();
+        $data['active_items']     = $this->Setup_model->get_active_item_list();
         $data['active_units']     = $this->Setup_model->get_active_unit_list();
         $data['material_issues']  = $this->Purchase_Model->get_issued_mi_with_pending_qty();
 
         $data['main_content'] = 'purchase/pr_from_mi_edit.php';
         $this->load->view('includes/template.php', $data);
     }
-
 
     public function update_pr_from_mi($pr_id)
     {
@@ -1022,62 +1359,13 @@ class Purchase extends CI_Controller
         redirect('Purchase/pr_from_mi_list');
     }
 
-
-
-    public function save_pr_from_mi()
+    public function delete_pr($pr_id)
     {
-        $this->load->database();
-        $this->load->library('session');
-
-        $pr_data = [
-            'pr_code'     => $this->input->post('pr_code'),
-            'pr_date'     => $this->input->post('pr_date'),
-            'branch_id'   => $this->input->post('branch_id'),
-            'supplier_id' => $this->input->post('supplier_id'),
-            'mi_id'       => $this->input->post('mi_id') ?: NULL,
-            'subject'     => $this->input->post('subject'),
-            'project'     => $this->input->post('project'),
-            'ref'         => $this->input->post('ref'),
-            'remarks'     => $this->input->post('remarks'),
-            'created_by'  => $this->session->userdata('user_id'),
-            'updated_by'  => $this->session->userdata('user_id'),
-            'updated_at'  => date('Y-m-d H:i:s')
-        ];
-
-        $this->db->trans_start();
-
-        $this->db->insert('purchase_requests', $pr_data);
-        $pr_id = $this->db->insert_id();
-
-        $product_ids = $this->input->post('product_id');
-        $units       = $this->input->post('unit');
-        $quantities  = $this->input->post('quantity');
-
-        if ($product_ids && count($product_ids) > 0) {
-            foreach ($product_ids as $key => $product_id) {
-
-                if (isset($quantities[$key]) && $quantities[$key] > 0) {
-                    $item_data = [
-                        'pr_id'      => $pr_id,
-                        'product_id' => $product_id,
-                        'unit_id'    => $units[$key],
-                        'quantity'   => $quantities[$key]
-                    ];
-                    $this->db->insert('purchase_request_items', $item_data);
-                }
-            }
-        }
-
-        $this->db->trans_complete();
-
-        if ($this->db->trans_status() === FALSE) {
-            $this->session->set_flashdata('error', 'Failed to save Purchase Request.');
-        } else {
-            $this->session->set_flashdata('success', 'Purchase Request saved successfully.');
-        }
-
+        $this->db->where('pr_id', $pr_id)->delete('purchase_requests');
+        $this->session->set_flashdata('success', 'Purchase Request deleted successfully.');
         redirect('Purchase/pr_from_mi_list');
     }
+
     // File: application/controllers/Purchase.php
 
     public function delete_po($po_id)

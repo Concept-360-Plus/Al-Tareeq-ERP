@@ -28,7 +28,7 @@
             text-align: center;
             font-size: 22px;
             font-weight: bold;
-            color: #c89d17;
+            color: #070707;
             margin-top: 10px;
         }
 

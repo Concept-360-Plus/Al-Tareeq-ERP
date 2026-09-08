@@ -239,6 +239,8 @@ class Ajax extends CI_Controller
                 'supplier_name'        => $row->supplier_name,
                 'branch_id'            => $row->branch_id,
                 'branch_name'          => $row->branch_name,
+                'created_by'           => $row->created_by,
+                'created_by_name'      => $row->rfq_created_by,
                 'sales_person_name'    => $row->sales_person_name,
                 'subject'              => $row->subject,
                 'project'              => $row->project,
@@ -373,6 +375,38 @@ class Ajax extends CI_Controller
         $data['records2']               = $this->Purchase_Model->get_po_tr_by_id($po_id);
         $this->load->view('ajax/purchase_po_items_for_grn', $data);
     }
+
+    public function ajax_get_grn_info()
+    {
+        $grn_id = $this->input->post('grn_id');
+        $this->load->model('Purchase_Model');
+        $records = $this->Purchase_Model->get_grn_master_by_id($grn_id);
+        foreach ($records as $row) {
+            $value = array(
+                'supplier_id' => $row->supplier_id,
+                'supplier_name' => $row->supplier_name,
+                'warehouse_id' => $row->warehouse_id,
+                'warehouse_name' => $row->warehouse_name,
+                'store_id' => $row->store_id,
+                'store_name' => $row->store_name,
+                'grn_date' => $row->grn_date,
+                'grn_code' => $row->grn_code
+            );
+        }
+        echo json_encode($value);
+    }
+
+    public function get_grn_items_for_return()
+    {
+        $grn_id = $this->input->post('grn_id');
+        $this->load->model('Purchase_Model');
+        $data['items'] = $this->Purchase_Model->get_grn_items_by_id($grn_id);
+        $this->load->view(
+            'ajax/grn_items_for_purchase_return',
+            $data
+        );
+    }
+
     function add_new_customer()
     {
         $this->load->model('Company_model');
@@ -697,6 +731,137 @@ class Ajax extends CI_Controller
         echo json_encode($data);
     }
 
+    public function get_mr_details_ajax()
+    {
+        $mr_id = $this->input->post('mr_id');
+        $this->load->model('Project_model');
+        $mr = $this->Project_model->get_mr_by_id($mr_id);
+        $items = $this->Project_model->get_mr_items($mr_id);
+
+        $result_items = [];
+
+        foreach ($items as $item) {
+
+            // project_material_items column
+            $product_id = $item['fk_item_id'];
+
+            // Get unit from item_master
+            $unit = $this->db
+                ->select('um.unit_name')
+                ->from('item_master im')
+                ->join('unit_master um', 'um.unit_id = im.unit_id', 'left')
+                ->where('im.product_id', $product_id)
+                ->get()
+                ->row();
+
+            $item_unit = $unit ? $unit->unit_name : '';
+
+            // Available Stock
+            $row = $this->db
+                ->select_sum('balance_qty')
+                ->where('product_id', $product_id)
+                ->where('stock_type', 'IN')
+                ->get('stock_details')
+                ->row();
+
+            $available_qty = (float)($row->balance_qty ?? 0);
+
+            // Reserved Stock
+            $reserved_qty = (float)($this->db
+                ->select_sum('reserved_quantity')
+                ->where('product_id', $product_id)
+                ->where('allocation_id', $mr_id)
+                ->where('stock_type', 'RESERVE')
+                ->get('stock_details')
+                ->row()->reserved_quantity ?? 0);
+
+            $requested_qty = (float)$item['item_qty'];
+
+            $total_issued = $this->Project_model->get_total_issued_qty($mr_id, $product_id);
+
+            $result_items[] = [
+                'product_id'       => $product_id,
+                'product_name'     => $item['product_name'],
+                'item_unit'        => $item_unit,
+                'requested_qty'    => $requested_qty,
+                'available_qty'    => $available_qty,
+                'reserved_qty'     => $reserved_qty,
+                'issue_qty'        => $reserved_qty,
+                'pending_qty'      => max(0, $requested_qty - $reserved_qty),
+                'issued_qty_total' => $total_issued,
+            ];
+        }
+
+        echo json_encode([
+            'mr'    => $mr,
+            'items' => $result_items
+        ]);
+    }
+
+    public function get_available_stock_ajax()
+    {
+        $warehouse_id = $this->input->post('warehouse_id');
+        $store_id     = $this->input->post('store_id');
+        $product_ids  = $this->input->post('product_ids');
+
+        $result = [];
+
+        foreach ($product_ids as $product_id) {
+            $available = $this->db
+                ->select_sum('balance_qty')
+                ->where('warehouse_id', $warehouse_id)
+                ->where('store_id', $store_id)
+                ->where('product_id', $product_id)
+                ->where('stock_type', 'IN')
+                ->get('stock_details')
+                ->row();
+
+            $result[$product_id] = (float)($available->balance_qty ?? 0);
+        }
+
+        echo json_encode($result);
+    }
+
+    public function get_direct_issue_product_details()
+    {
+        $warehouse_id = $this->input->post('warehouse_id');
+        $store_id     = $this->input->post('store_id');
+        $product_id   = $this->input->post('product_id');
+
+        // Available Stock
+        $available = $this->db
+            ->select_sum('balance_qty')
+            ->where('warehouse_id', $warehouse_id)
+            ->where('store_id', $store_id)
+            ->where('product_id', $product_id)
+            ->where('stock_type', 'IN')
+            ->get('stock_details')
+            ->row();
+
+        // Product Details
+        $product = $this->db
+            ->select('unit_id')
+            ->where('product_id', $product_id)
+            ->get('item_master')
+            ->row();
+
+        // Previous Issued Stock
+        $previous = $this->db
+            ->select_sum('issued_qty')
+            ->from('material_issue_items mii')
+            ->join('material_issue mi', 'mi.mi_id = mii.mi_id')
+            ->where('mi.project_id', $this->input->post('project_id'))
+            ->where('mii.product_id', $product_id)
+            ->get()
+            ->row();
+
+        echo json_encode([
+            'unit_id'           => $product->unit_id ?? '',
+            'available_stock'   => (float)($available->balance_qty ?? 0),
+            'previously_issued' => (float)($previous->issued_qty ?? 0)
+        ]);
+    }
+
     public function get_mi_items_ajax()
     {
         $mi_id = $this->input->post('mi_id');
@@ -910,5 +1075,98 @@ class Ajax extends CI_Controller
         echo json_encode($stores);
     }
     ///////////STORE CODE END   ////////
+
+    /////////////////////////////// TERMS & CONDITIONS AJAX START //////////////////////////////
+
+    public function add_new_term()
+    {
+        $term_type = strtoupper(
+            trim($this->input->post('term_type', true))
+        );
+
+        if (!in_array($term_type, array(
+            'PAYMENT',
+            'DELIVERY',
+            'GENERAL'
+        ))) {
+            echo json_encode(array(
+                'success' => false,
+                'message' => 'Invalid term type.'
+            ));
+            return;
+        }
+
+        $this->load->model('Setup_model');
+
+        $data['term_type'] = $term_type;
+
+        $this->load->view(
+            'ajax/add_terms_conditions_modal',
+            $data
+        );
+    }
+
+
+    public function save_term_ajax()
+    {
+        $term_type = strtoupper(trim($this->input->post('term_type', true)));
+        $terms_name = trim($this->input->post('terms_name', true));
+        $terms_description = trim($this->input->post('terms_description', true));
+
+        // Validate term type
+        if (!in_array($term_type, array(
+            'PAYMENT',
+            'DELIVERY',
+            'GENERAL'
+        ))) {
+            echo json_encode(array(
+                'success' => false,
+                'message' => 'Invalid term type.'
+            ));
+            return;
+        }
+
+        // Validate name
+        if ($terms_name == '') {
+            echo json_encode(array(
+                'success' => false,
+                'message' => 'Terms & Conditions Name is required.'
+            ));
+            return;
+        }
+
+        $this->load->model('Setup_model');
+
+        // Check duplicate
+        $exists = $this->Setup_model->check_terms_conditions_duplicate($term_type, $terms_name);
+        if ($exists > 0) {
+            echo json_encode(array(
+                'success' => false,
+                'message' =>
+                'This term already exists for the selected type.'
+            ));
+            return;
+        }
+
+        // Insert
+        $terms_id = $this->Setup_model->add_terms_conditions_ajax($term_type, $terms_name, $terms_description);
+
+        if ($terms_id) {
+            echo json_encode(array(
+                'success'           => true,
+                'terms_id'          => $terms_id,
+                'term_type'         => $term_type,
+                'terms_name'        => $terms_name,
+                'terms_description' => $terms_description
+            ));
+        } else {
+            echo json_encode(array(
+                'success' => false,
+                'message' => 'Failed to save Terms & Conditions.'
+            ));
+        }
+    }
+
+    /////////////////////////////// TERMS & CONDITIONS AJAX END //////////////////////////////
 
 }

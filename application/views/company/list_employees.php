@@ -1,5 +1,5 @@
 <?php
-    $page_name = 'Company/list_employee';
+    $page_name = 'Hr/list_employee';
     $user = $this->session->userdata('user_id');
 ?>
 <style>
@@ -21,7 +21,7 @@
 <div class="x_panel">
     <div class="x_title">
         <div class="clearfix">
-            <form action="<?= base_url() ?>index.php/Company/list_employee" method="post">
+            <form action="<?= base_url() ?>index.php/Hr/list_employee" method="post">
                 <div class="col-md-4">
                     <input type="text" id="smart_filter" name="filter" class="form-control" placeholder="Type filter..." style="width: 400px;">
                     <ul id="filter_list" style="border: 1px solid #ccc; list-style: none; margin: 0; padding: 5px; position: absolute; display: none; background: #fff; width: 400px; z-index: 10;">
@@ -80,7 +80,7 @@
                         <td><?= date('d-M-Y', strtotime($emp->joining_date)) ?></td>
                         <td class="action-icons">
                             <!-- <?php if (has_access($user, $page_name, 'E')): ?> -->
-                            <a href="<?= base_url('index.php/Company/edit_employee/' . $emp->employee_id); ?>" title="Edit">
+                            <a href="<?= base_url('index.php/Hr/edit_employee/' . $emp->employee_id); ?>" title="Edit">
                                 <i class="fa fa-edit"></i>
                             </a>
                             <!-- <?php endif; ?> -->
@@ -103,7 +103,7 @@
         if (event) event.preventDefault();
         if (confirm("Are you sure you want to delete this branch?")) {
             $.ajax({
-                url: "<?= base_url('index.php/Company/delete_employee') ?>",
+                url: "<?= base_url('index.php/Hr/delete_employee') ?>",
                 type: "POST",
                 data: {
                     id: tid

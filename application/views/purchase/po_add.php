@@ -10,9 +10,10 @@
 
       <!-- Row 1: Quotation, PO Code, PO Date -->
       <div class="row mb-3">
+
         <div class="col-md-3">
           <label class="control-label">Select Quotation</label>
-          <select class="form-control" name="quotation_id" id="quotation_id" required onchange="get_quotation_info()">
+          <select class="form-control select2" name="quotation_id" id="quotation_id" required onchange="get_quotation_info()">
             <option value="">--Select--</option>
             <?php foreach ($records as $s) { ?>
               <option value="<?php echo $s->quotation_id; ?>"
@@ -22,37 +23,74 @@
             <?php } ?>
           </select>
         </div>
+
         <div class="col-md-4">
           <label class="control-label">PO Code</label>
           <input type="text" class="form-control" name="po_code" id="po_code" readonly value="<?php echo $Code; ?>">
         </div>
+
         <div class="col-md-3">
           <label class="control-label">PO Date</label>
           <input type="date" class="form-control" name="po_date" id="po_date" value="<?php echo date('Y-m-d'); ?>">
         </div>
+
       </div>
 
       <!-- Row 2: Branch, Supplier, Reference -->
       <div class="row mb-3">
+
         <div class="col-md-3">
           <label class="control-label">Branch</label>
-          <input type="text" class="form-control" name="Branch_name" id="Branch_name" readonly>
-          <input type="hidden" name="Branch_id" id="Branch_id">
+          <select class="form-control select2" name="Branch_id" id="Branch_id" required>
+            <option value="">Select Branch</option>
+            <?php foreach ($branch_records as $b) { ?>
+              <option value="<?php echo $b->branch_id; ?>">
+                <?php echo htmlspecialchars($b->branch_name, ENT_QUOTES, 'UTF-8'); ?>
+              </option>
+            <?php } ?>
           </select>
         </div>
 
         <div class="col-md-4">
           <label class="control-label">Supplier</label>
-          <input type="text" class="form-control" name="supplier_name" id="supplier_name" readonly>
-          <input type="hidden" name="supplier_id" id="supplier_id">
+          <select class="form-control select2"
+            name="supplier_id"
+            id="supplier_id"
+            required>
+            <option value="">Select Supplier</option>
+            <?php foreach ($supplier_records as $s) { ?>
+              <option value="<?php echo $s->supplier_id; ?>">
+                <?php echo htmlspecialchars(
+                  $s->supplier_code . ' - ' . $s->supplier_name,
+                  ENT_QUOTES,
+                  'UTF-8'
+                ); ?>
+              </option>
+            <?php } ?>
+          </select>
         </div>
 
         <div class="col-md-3">
-          <label class="control-label">Reference</label>
-          <input type="text" class="form-control" name="ref_no" id="ref_no">
-        </div>
-      </div>
+          <label>Purchase Type <span class="text-danger">*</span></label>
+          <select name="purchase_type"
+            id="purchase_type"
+            class="form-control"
+            required>
 
+            <option value="Local"
+              <?php echo (isset($records1[0]->purchase_type) && $records1[0]->purchase_type == 'Local') ? 'selected' : ''; ?>>
+              Local
+            </option>
+
+            <option value="International"
+              <?php echo (isset($records1[0]->purchase_type) && $records1[0]->purchase_type == 'International') ? 'selected' : ''; ?>>
+              International
+            </option>
+
+          </select>
+        </div>
+
+      </div>
 
       <!-- Row 3: Subject, Freight Mode -->
       <div class="row mb-3">
@@ -72,13 +110,45 @@
         </div>
 
         <div class="col-md-3">
-          <label class="control-label">Project Name</label>
-          <input type="text" class="form-control" name="project" id="project" readonly>
+          <label for="ref_no" class="form-label">Select Project</label>
+
+          <select
+            class="form-control select2"
+            name="project"
+            id="project">
+
+            <option value="">Select Project</option>
+
+            <?php if (!empty($project_records)) { ?>
+
+              <?php foreach ($project_records as $project) { ?>
+
+                <option value="<?= htmlspecialchars($project['project_name'], ENT_QUOTES, 'UTF-8') ?>">
+
+                  <?= htmlspecialchars($project['project_name'], ENT_QUOTES, 'UTF-8') ?>
+
+                  <?php if (!empty($project['project_code'])) { ?>
+                    (<?= htmlspecialchars($project['project_code'], ENT_QUOTES, 'UTF-8') ?>)
+                  <?php } ?>
+
+                </option>
+
+              <?php } ?>
+
+            <?php } ?>
+
+          </select>
         </div>
+
       </div>
 
       <!-- Row 4: Upload, Project -->
       <div class="row mb-3">
+
+        <div class="col-md-3">
+          <label class="control-label">Reference</label>
+          <input type="text" class="form-control" name="ref_no" id="ref_no">
+        </div>
 
         <div class="col-md-3">
           <label class="control-label">Upload Document</label>
@@ -161,28 +231,164 @@
         </div>
       </div>
 
-      <!-- Terms -->
+      <!-- Validity + Payment Terms -->
       <div class="row mb-3">
+
         <div class="col-md-6">
           <label>Validity</label>
           <input type="text" class="form-control" name="validity" id="validity">
         </div>
+
         <div class="col-md-6">
-          <label>Payment Terms</label>
-          <input type="text" class="form-control" name="payment_terms" id="payment_terms">
+
+          <label for="payment_terms_select" class="form-label">
+            Payment Terms
+          </label>
+
+          <select
+            class="form-control term-select select2"
+            id="payment_terms_select"
+            name="payment_term_id">
+
+            <option value="">
+              Please select payment terms
+            </option>
+
+            <?php if (!empty($payment_terms_list)) { ?>
+
+              <?php foreach ($payment_terms_list as $term) { ?>
+
+                <option
+                  value="<?php echo $term->terms_id; ?>"
+                  data-description="<?php
+                                    echo htmlspecialchars(
+                                      $term->terms_description,
+                                      ENT_QUOTES,
+                                      'UTF-8'
+                                    );
+                                    ?>">
+                  <?php echo htmlspecialchars(
+                    $term->terms_name,
+                    ENT_QUOTES,
+                    'UTF-8'
+                  ); ?>
+                </option>
+
+              <?php } ?>
+
+            <?php } ?>
+
+          </select>
+
+          <small>
+            <a href="#"
+              class="add-term-link"
+              data-term-type="PAYMENT">
+              + Add New Payment Term
+            </a>
+          </small>
+
+          <input
+            type="hidden"
+            name="payment_terms"
+            id="payment_terms">
+
         </div>
 
       </div>
+
+      <!-- Delivery Terms + General Terms -->
       <div class="row mb-3">
+
         <div class="col-md-6">
-          <label>Delivery Terms</label>
-          <textarea class="form-control" name="delivery_terms" id="delivery_terms" rows="3"></textarea>
+
+          <label for="delivery_terms_select" class="form-label">
+            Delivery Terms
+          </label>
+
+          <select
+            class="form-control term-select select2"
+            id="delivery_terms_select"
+            name="delivery_term_id">
+
+            <option value="">
+              Please select delivery terms
+            </option>
+
+            <?php if (!empty($delivery_terms_list)) { ?>
+
+              <?php foreach ($delivery_terms_list as $term) { ?>
+
+                <option
+                  value="<?php echo $term->terms_id; ?>"
+                  data-description="<?php
+                                    echo htmlspecialchars(
+                                      $term->terms_description,
+                                      ENT_QUOTES,
+                                      'UTF-8'
+                                    );
+                                    ?>">
+                  <?php echo htmlspecialchars(
+                    $term->terms_name,
+                    ENT_QUOTES,
+                    'UTF-8'
+                  ); ?>
+                </option>
+
+              <?php } ?>
+
+            <?php } ?>
+
+          </select>
+
+          <small>
+            <a href="#"
+              class="add-term-link"
+              data-term-type="DELIVERY">
+              + Add New Delivery Term
+            </a>
+          </small>
+
+          <input
+            type="hidden"
+            name="delivery_terms"
+            id="delivery_terms">
+
         </div>
+
         <div class="col-md-6">
-          <label>General Terms</label>
-          <textarea class="form-control" name="general_terms" id="general_terms" rows="3"></textarea>
+          <label for="general_terms_select" class="form-label">
+            General Terms
+          </label>
+
+          <select class="form-control term-select select2" id="general_terms_select" name="general_term_id">
+            <option value="">
+              Please select general terms
+            </option>
+            <?php if (!empty($general_terms_list)) { ?>
+              <?php foreach ($general_terms_list as $term) { ?>
+                <option value="<?php echo $term->terms_id; ?>" data-description="<?php echo htmlspecialchars($term->terms_description, ENT_QUOTES, 'UTF-8'); ?>">
+                  <?php echo htmlspecialchars(
+                    $term->terms_name,
+                    ENT_QUOTES,
+                    'UTF-8'
+                  ); ?>
+                </option>
+              <?php } ?>
+            <?php } ?>
+          </select>
+          <small>
+            <a href="#"
+              class="add-term-link"
+              data-term-type="GENERAL">
+              + Add New General Term
+            </a>
+          </small>
+          <input type="hidden" name="general_terms" id="general_terms">
         </div>
+
       </div>
+
       <!-- Prepared / Approved -->
       <!-- <div class="row mb-3">
         <div class="col-md-3">
@@ -250,71 +456,356 @@
   </div><!-- /.x_content -->
 </form>
 
-
 <!-- /page content -->
 </form>
-<!-- CKEditor Script -->
-<script src="https://cdn.ckeditor.com/4.21.0/standard/ckeditor.js"></script>
+
+<div
+  class="modal fade"
+  id="addTermModal"
+  tabindex="-1"
+  role="dialog"
+  aria-hidden="true">
+
+  <div id="addTermModalContent"></div>
+
+</div>
+
+<script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
 <script>
-  CKEDITOR.replace('delivery_terms', {
-    height: 120,
-    removePlugins: 'elementspath',
-    resize_enabled: false
-  });
-  CKEDITOR.replace('general_terms', {
-    height: 120,
-    removePlugins: 'elementspath',
-    resize_enabled: false
+  $(document).ready(function() {
+
+
+    ////////////////////////////////////////////////////////////
+    // INITIALIZE SELECT2
+    ////////////////////////////////////////////////////////////
+
+    $('.select2').select2({
+      width: '100%',
+      placeholder: 'Select',
+      allowClear: true
+    });
+
+
+    //////////////////////////////// PAYMENT TERM CHANGE//////////////////////////
+    $('#payment_terms_select').on('change', function() {
+      var description = $(this)
+        .find(':selected')
+        .attr('data-description') || '';
+      $('#payment_terms').val(description);
+
+    });
+
+    ///////////////////// DELIVERY TERM CHANGE//////////////////////
+    $('#delivery_terms_select').on('change', function() {
+      var description = $(this)
+        .find(':selected')
+        .attr('data-description') || '';
+      $('#delivery_terms').val(description);
+
+    });
+
+    //////////////////////////////////////GENERAL TERM CHANGE/////////////////////////
+    $('#general_terms_select').on('change', function() {
+      var description = $(this)
+        .find(':selected')
+        .attr('data-description') || '';
+      $('#general_terms').val(description);
+    });
+
+
+    /////////////////ADD NEW TERM//////////////////////////////
+
+    $(document).on(
+      'click',
+      '.add-term-link',
+      function(e) {
+        e.preventDefault();
+        var termType = $(this).data('term-type');
+        $.ajax({
+          url: "<?php echo base_url('index.php/Ajax/add_new_term'); ?>",
+          type: "POST",
+          data: {
+            term_type: termType
+          },
+
+
+          success: function(response) {
+            $('#addTermModalContent')
+              .html(response);
+            $('#addTermModal').modal('show');
+
+            // Initialize CKEditor
+            if (typeof CKEDITOR !== 'undefined') {
+
+              if (CKEDITOR.instances['new_terms_description']) {
+                CKEDITOR.instances['new_terms_description'].destroy(true);
+              }
+
+              CKEDITOR.replace('new_terms_description');
+            }
+          },
+
+          error: function() {
+            alert(
+              'Unable to open Add Term form.'
+            );
+          }
+        });
+      }
+    );
+
+
+    //////////////////////SAVE NEW TERM////////////////////////////////
+
+    $(document).on(
+      'click',
+      '#saveNewTermBtn',
+      function() {
+
+        var $button = $(this);
+
+        var termType =
+          $('#new_term_type').val();
+
+        var termName =
+          $.trim(
+            $('#new_terms_name').val()
+          );
+
+        var description =
+          $.trim(
+            $('#new_terms_description').val()
+          );
+
+
+        if (termName == '') {
+
+          alert(
+            'Terms & Conditions Name is required.'
+          );
+
+          $('#new_terms_name').focus();
+
+          return;
+
+        }
+
+
+        $button
+          .prop('disabled', true)
+          .html(
+            '<i class="fa fa-spinner fa-spin"></i> Saving...'
+          );
+
+
+        $.ajax({
+          url: "<?php echo base_url('index.php/Ajax/save_term_ajax'); ?>",
+          type: "POST",
+          dataType: "json",
+          data: {
+            term_type: termType,
+            terms_name: termName,
+            terms_description: description
+          },
+
+          success: function(response) {
+            if (response.success) {
+              var selectId = '';
+              if (response.term_type == 'PAYMENT') {
+                selectId = '#payment_terms_select';
+              } else if (
+                response.term_type == 'DELIVERY'
+              ) {
+                selectId = '#delivery_terms_select';
+              } else if (
+                response.term_type == 'GENERAL'
+              ) {
+                selectId = '#general_terms_select';
+              }
+
+              var $select = $(selectId);
+
+              // Add new option
+              var newOption =
+                new Option(
+                  response.terms_name,
+                  response.terms_id,
+                  true,
+                  true
+                );
+
+
+              $(newOption)
+                .attr(
+                  'data-description',
+                  response.terms_description
+                );
+
+
+              $select
+                .append(newOption)
+                .trigger('change');
+
+
+              // Update hidden description
+              if (
+                response.term_type ==
+                'PAYMENT'
+              ) {
+
+                $('#payment_terms')
+                  .val(
+                    response.terms_description
+                  );
+
+              } else if (
+                response.term_type ==
+                'DELIVERY'
+              ) {
+                $('#delivery_terms')
+                  .val(
+                    response.terms_description
+                  );
+
+              } else if (
+                response.term_type ==
+                'GENERAL'
+              ) {
+                $('#general_terms')
+                  .val(
+                    response.terms_description
+                  );
+              }
+
+              // Close modal
+              $('#addTermModal').modal('hide');
+
+              // Reset modal
+              $('#addTermModalContent').html('');
+
+            } else {
+              alert(
+                response.message ||
+                'Failed to save term.'
+              );
+
+              $button
+                .prop('disabled', false)
+                .html(
+                  '<i class="fa fa-save"></i> Save'
+                );
+            }
+          },
+
+          error: function() {
+            alert(
+              'Something went wrong while saving.'
+            );
+
+            $button
+              .prop('disabled', false)
+              .html(
+                '<i class="fa fa-save"></i> Save'
+              );
+          }
+        });
+      }
+    );
   });
 
   function get_quotation_info() {
-    var quotation_id = document.getElementById("quotation_id").value;
+
+    var quotation_id = $('#quotation_id').val();
 
     if (quotation_id != '') {
+
       $.ajax({
-        async: "false",
         type: "POST",
-        url: "<?php echo base_url() ?>index.php/Ajax/ajax_get_quote_info",
+        url: "<?php echo base_url(); ?>index.php/Ajax/ajax_get_quote_info",
         data: {
           quotation_id: quotation_id
         },
         dataType: "json",
+
         success: function(msg) {
-          document.getElementById("Branch_id").value = msg.branch_id;
-          document.getElementById("Branch_name").value = msg.branch_name;
 
-          document.getElementById("supplier_id").value = msg.supplier_id;
-          document.getElementById("supplier_name").value = msg.supplier_name + '=> ' + msg.contact_number;
+          console.log("Quotation Info:", msg);
 
-          document.getElementById("ref_no").value = msg.reference;
-          document.getElementById("project").value = msg.project;
+          // =========================
+          // Branch
+          // =========================
+          $('#Branch_id')
+            .val(msg.branch_id)
+            .trigger('change');
+
+
+          // =========================
+          // Supplier
+          // =========================
+          $('#supplier_id')
+            .val(msg.supplier_id)
+            .trigger('change');
+
+
+          // =========================
+          // Reference
+          // =========================
+          $('#ref_no').val(msg.reference);
+
+
+          // =========================
+          // Project
+          // =========================
+          $('#project')
+            .val(msg.project)
+            .trigger('change');
+
+
+          // =========================
+          // Load quotation items
+          // =========================
           get_quote_items_list(quotation_id);
-          document.getElementById("sub_total").value = msg.subtotal;
-          document.getElementById("discount_per").value = msg.discount_percent;
-          document.getElementById("discount_amt").value = msg.discount;
-          document.getElementById("vat_per").value = msg.vat_percent;
-          document.getElementById("vat_amount").value = msg.vat_amt;
 
-          document.getElementById("grand_total").value = msg.grand_total;
-          document.getElementById("currency").value = msg.currency;
 
-          document.getElementById("validity").value = msg.validity;
-          document.getElementById("payment_terms").value = msg.payment_term;
+          // =========================
+          // Totals
+          // =========================
+          $('#sub_total').val(msg.subtotal);
+          $('#discount_per').val(msg.discount_percent);
+          $('#discount_amt').val(msg.discount);
 
-          if (CKEDITOR.instances['delivery_terms']) {
-            CKEDITOR.instances['delivery_terms'].setData(msg.delivery_term);
-          }
-          if (CKEDITOR.instances['general_terms']) {
-            CKEDITOR.instances['general_terms'].setData(msg.general_term);
-          }
+          $('#vat_per').val(msg.vat_percent);
+          $('#vat_amount').val(msg.vat_amt);
 
+          $('#grand_total').val(msg.grand_total);
+          $('#currency').val(msg.currency);
+
+          $('#validity').val(msg.validity);
+
+          $('#payment_terms').val(msg.payment_term);
+
+        },
+
+        error: function(xhr, status, error) {
+
+          console.error("Quotation AJAX Error:", error);
+          console.error(xhr.responseText);
+
+          alert("Unable to load quotation details.");
         }
       });
+
     } else {
 
-      document.getElementById('quote_items_list').innerHTML = '';
+      $('#quote_items_list').html('');
+
+      $('#Branch_id').val('').trigger('change');
+      $('#supplier_id').val('').trigger('change');
+      $('#project').val('').trigger('change');
+
     }
   }
+
   $(document).ready(function() {
     // pick up selected id passed from controller
     var selected = <?php echo json_encode(isset($selected_quotation_id) ? $selected_quotation_id : ''); ?>;
@@ -497,14 +988,6 @@
       if ($('#project').val().trim() === '') {
         valid = false;
         errorMsg += 'Project Name is required.\n';
-      }
-      if (CKEDITOR.instances['delivery_terms'].getData().trim() === '') {
-        valid = false;
-        errorMsg += 'Delivery Terms are required.\n';
-      }
-      if (CKEDITOR.instances['general_terms'].getData().trim() === '') {
-        valid = false;
-        errorMsg += 'General Terms are required.\n';
       }
 
       // --- Quotation Items Validation ---

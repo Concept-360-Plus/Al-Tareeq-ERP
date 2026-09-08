@@ -58,7 +58,7 @@
                          </td>
                          <td><?php echo date('d-M-Y', strtotime($row->rfq_date)); ?></td>
                          <td>
-                           <a title="View customer details" target='blank' href="<?php echo base_url() . 'index.php/Users/edit_supplier/' . $row->supplier_id; ?>">
+                           <a title="View Supplier details" target='blank' href="<?php echo base_url() . 'index.php/Company/edit_supplier/' . $row->supplier_id; ?>">
                              <?php echo $row->supplier_name; ?>
                            </a>
                          </td>

@@ -27,6 +27,7 @@
                 <th>Sl. No</th>
                 <th>MI Code</th>
                 <th>Project</th>
+                <th>Issue Type</th>
                 <th>Customer</th>
                 <th>Branch</th>
                 <th>Warehouse</th>
@@ -45,6 +46,7 @@
                         <td><?= $i + 1; ?></td>
                         <td><?= $mi['mi_code']; ?></td>
                         <td><?= $mi['project_name']; ?></td>
+                        <td><?= $mi['issue_type']; ?></td>
                         <td><?= $mi['customer_name']; ?></td>
                         <td><?= $mi['branch_name']; ?></td>
                         <td>
@@ -63,15 +65,14 @@
                         </td> -->
                         <td><?= $mi['status']; ?></td>
                         <td>
-                            <a href="<?= base_url('index.php/Inventory/view_material_issue/' . $mi['mi_id']); ?>"
-                                class="btn btn-sm btn-primary">
-                                View
+                            <a href="<?= base_url('index.php/Inventory/view_material_issue/' . $mi['mi_id']); ?>" style="margin-right: 10px;" title="View">
+                                <i class="fa fa-eye"></i>
+
                             </a>
                             <!-- Delete Button -->
                             <a href="<?= base_url('index.php/Inventory/delete_material_issue/' . $mi['mi_id']); ?>"
-                                class="btn btn-sm btn-danger"
-                                onclick="return confirm('Are you sure you want to delete this Material Issue?');">
-                                Delete
+                                onclick="return confirm('Are you sure you want to delete this Material Issue?');" title="Delete">
+                                <i class="glyphicon glyphicon-trash"></i>
                             </a>
                         </td>
                     </tr>

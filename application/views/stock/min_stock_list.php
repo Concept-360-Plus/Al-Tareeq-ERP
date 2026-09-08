@@ -52,10 +52,16 @@
                        <td><?php echo $row->description; ?></td>
                        <td><?php echo $row->min_stock_qty; ?></td>
                        <td>
-                         <!--  <a href="<?php // echo base_url().'index.php/Stock/edit_min_stock/'.$row->product_id;?>" title="Edit" style="margin-right:10px;">
-                          <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
-                        </a> -->
-                         <a href='<?php echo base_url() . 'index.php/Stock/delete_min_stock/' . $row->item_id; ?>' title="Delete" class="delete" id="delete">
+                         <a href="<?php echo base_url() . 'index.php/Stock/edit_min_stock/' . $row->item_id; ?>"
+                           title="Edit"
+                           style="margin-right:10px;">
+                           <span class="glyphicon glyphicon-pencil"
+                             aria-hidden="true"></span>
+                         </a>
+
+                         <a href="<?php echo base_url() . 'index.php/Stock/delete_min_stock/' . $row->item_id; ?>"
+                           title="Delete"
+                           class="delete">
                            <i class="glyphicon glyphicon-trash"></i>
                          </a>
                        </td>

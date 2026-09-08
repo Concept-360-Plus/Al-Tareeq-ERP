@@ -29,7 +29,7 @@
             <option value='<?php echo $unit->unit_id ?>'><?php echo $unit->unit_name; ?></option>
         <?php } ?>
         </select>
-       Packing:<select class="form-control" name="item_packing[]" readonly><option>CTN</option></select>
+       <!-- Packing:<select class="form-control" name="item_packing[]" readonly><option>CTN</option></select> -->
        </td>
         <td>
             Ordered:<input type="number" class="form-control qty" name="item_quantity[]" id="item_quantity<?php echo $i; ?>" value="<?php echo $r->quantity; ?>" readonly/>

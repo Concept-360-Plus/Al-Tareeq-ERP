@@ -20,14 +20,61 @@ $user = $this->session->userdata('user_id');
 
           <!-- Row 1: Select RFQ, Code, Revision -->
           <div class="row mb-3">
-            <div class="col-md-4">
+
+            <!-- <div class="col-md-4">
               <label for="rfq_id" class="form-label">Select RFQ</label>
               <select class="form-control" id="rfq_id" name="rfq_id" readonly>
                 <option value="<?php echo $records1[0]->reference; ?>">
                   <?php echo $records1[0]->reference; ?>
                 </option>
               </select>
+            </div> -->
+
+            <div class="col-md-4">
+              <label for="rfq_id" class="form-label">Select RFQ</label>
+
+              <select
+                class="form-control select2"
+                id="rfq_id"
+                name="rfq_id"
+                required>
+
+                <option value="">Select RFQ</option>
+
+                <?php if (!empty($rfq_records)) { ?>
+
+                  <?php foreach ($rfq_records as $rfq) { ?>
+
+                    <option
+                      value="<?php echo $rfq->rfq_id; ?>"
+                      <?php echo (
+                        isset($records1[0]->rfq_master_id) &&
+                        $records1[0]->rfq_master_id == $rfq->rfq_id
+                      ) ? 'selected' : ''; ?>>
+
+                      <?php echo htmlspecialchars(
+                        $rfq->rfq_code,
+                        ENT_QUOTES,
+                        'UTF-8'
+                      ); ?>
+
+                      <?php if (!empty($rfq->supplier_name)) { ?>
+                        - <?php echo htmlspecialchars(
+                            $rfq->supplier_name,
+                            ENT_QUOTES,
+                            'UTF-8'
+                          ); ?>
+                      <?php } ?>
+
+                    </option>
+
+                  <?php } ?>
+
+                <?php } ?>
+
+              </select>
             </div>
+
             <div class="col-md-4">
               <label for="quotation_code" class="form-label">Code</label>
               <input type="text" class="form-control" name="quotation_code" id="quotation_code"
@@ -35,6 +82,7 @@ $user = $this->session->userdata('user_id');
               <input type="hidden" name="quotation_id" id="quotation_id"
                 value="<?php echo $records1[0]->quotation_id; ?>">
             </div>
+
             <div class="col-md-4">
               <label for="revision" class="form-label">Revision</label>
               <input type="text" class="form-control" name="revision" id="revision"
@@ -44,21 +92,47 @@ $user = $this->session->userdata('user_id');
 
           <!-- Row 2: Branch and Date -->
           <div class="row mb-3">
+
             <div class="col-md-6">
               <label for="quotation_date" class="form-label">Date</label>
               <input type="date" class="form-control" name="quotation_date" id="quotation_date"
                 value="<?php echo $records1[0]->quotation_date; ?>">
             </div>
+
             <div class="col-md-6">
               <label for="branch_id" class="form-label">Branch</label>
-              <select name="branch_id" id="branch_id" class="form-control select2" required tabindex="1" readonly>
-                <option value="">Please select branch</option>
-                <?php foreach ($branch_records as $b) { ?>
-                  <option value="<?php echo $b->branch_id; ?>"
-                    <?= ($records1[0]->branch_id == $b->branch_id) ? "selected" : "" ?>>
-                    <?php echo $b->branch_name; ?>
-                  </option>
+
+              <select
+                name="branch_id"
+                id="branch_id"
+                class="form-control select2"
+                required>
+
+                <option value="">Select Branch</option>
+
+                <?php if (!empty($branch_records)) { ?>
+
+                  <?php foreach ($branch_records as $b) { ?>
+
+                    <option
+                      value="<?php echo $b->branch_id; ?>"
+                      <?php echo (
+                        isset($records1[0]->branch_id) &&
+                        $records1[0]->branch_id == $b->branch_id
+                      ) ? 'selected' : ''; ?>>
+
+                      <?php echo htmlspecialchars(
+                        $b->branch_name,
+                        ENT_QUOTES,
+                        'UTF-8'
+                      ); ?>
+
+                    </option>
+
+                  <?php } ?>
+
                 <?php } ?>
+
               </select>
             </div>
 
@@ -66,222 +140,496 @@ $user = $this->session->userdata('user_id');
 
           <!-- Row 3: Supplier and Reference -->
           <div class="row mb-3">
+
             <div class="col-md-6">
-              <label for="supplier_name" class="form-label">Supplier</label>
-              <input type="text" readonly name="supplier_name" id="supplier_name" class="form-control"
-                value="<?php echo $records1[0]->supplier_name; ?>">
-              <input type="hidden" readonly name="supplier_id" id="supplier_id"
-                value="<?php echo $records1[0]->supplier_id; ?>">
+              <label for="supplier_id" class="form-label">Supplier</label>
+
+              <select
+                name="supplier_id"
+                id="supplier_id"
+                class="form-control select2"
+                required>
+
+                <option value="">Select Supplier</option>
+
+                <?php if (!empty($supplier_records)) { ?>
+
+                  <?php foreach ($supplier_records as $supplier) { ?>
+
+                    <option
+                      value="<?php echo $supplier->supplier_id; ?>"
+                      <?php echo (
+                        isset($records1[0]->supplier_id) &&
+                        $records1[0]->supplier_id == $supplier->supplier_id
+                      ) ? 'selected' : ''; ?>>
+
+                      <?php
+                      echo htmlspecialchars(
+                        $supplier->supplier_code . ' - ' . $supplier->supplier_name,
+                        ENT_QUOTES,
+                        'UTF-8'
+                      );
+                      ?>
+
+                    </option>
+
+                  <?php } ?>
+
+                <?php } ?>
+
+              </select>
             </div>
+
             <div class="col-md-6">
               <label for="ref_no" class="form-label">Reference</label>
               <input type="text" class="form-control" name="ref_no" id="ref_no"
                 value="<?php echo $records1[0]->reference; ?>">
             </div>
+
           </div>
 
           <!-- Row 4: Project Name and Doc Upload -->
           <div class="row mb-3">
+
             <div class="col-md-6">
               <label for="project" class="form-label">Project Name</label>
-              <input type="text" class="form-control" name="project" id="project"
-                value="<?php echo $records1[0]->project; ?>">
+              <select
+                class="form-control select2"
+                name="project"
+                id="project">
+                <option value="">Select Project</option>
+                <?php if (!empty($project_records)) { ?>
+                  <?php foreach ($project_records as $project) { ?>
+                    <option
+                      value="<?php echo htmlspecialchars($project['project_name'], ENT_QUOTES, 'UTF-8'); ?>"
+                      <?php echo (
+                        isset($records1[0]->project) &&
+                        $records1[0]->project == $project['project_name']
+                      ) ? 'selected' : ''; ?>>
+                      <?php echo htmlspecialchars(
+                        $project['project_name'],
+                        ENT_QUOTES,
+                        'UTF-8'
+                      ); ?>
+                      <?php if (!empty($project['project_code'])) { ?>
+                        (<?php echo htmlspecialchars(
+                            $project['project_code'],
+                            ENT_QUOTES,
+                            'UTF-8'
+                          ); ?>)
+                      <?php } ?>
+                    </option>
+                  <?php } ?>
+                <?php } ?>
+              </select>
             </div>
+
             <div class="col-md-6">
+
               <label for="quote_doc" class="form-label">Doc Upload</label>
               <input type="file" class="form-control" name="quote_doc" id="quote_doc">
-
               <?php if (!empty($records1[0]->quote_doc)) { ?>
-
                 <?php
                 $file = $records1[0]->quote_doc;
                 $url = base_url('public/uploaded_documents/' . $file);
                 ?>
-
                 <div style="margin-top:8px;">
                   <a href="<?= $url ?>" target="_blank">
                     View File
                   </a>
                 </div>
-
               <?php } ?>
+
             </div>
 
             <input type="hidden" name="existing_quote_doc"
               value="<?php echo $records1[0]->quote_doc; ?>">
-            <!-- Row 5: RFQ By -->
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <label for="rfq_by" class="form-label">RFQ By</label>
-                <input type="text" class="form-control" name="rfq_by" id="rfq_by"
-                  value="<?php echo $records1[0]->rfq_created_by_name; ?>">
-              </div>
+          </div>
+          <!-- Row 5: RFQ By -->
+          <div class="row mb-3">
+
+            <div class="col-md-6">
+              <label for="rfq_by" class="form-label">RFQ By</label>
+              <input type="text" class="form-control" name="rfq_by" id="rfq_by"
+                value="<?php echo $records1[0]->rfq_created_by_name; ?>">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Prepared By</label>
+              <input type="text" class="form-control" name="sales_person" id="sales_person"
+                value="<?php echo $records1[0]->sales_person; ?>">
             </div>
 
           </div>
-        </div>
-      </div>
-
-
-
-      <div class="row col-md-12 col-sm-12" style="overflow: scroll;">
-        <div class="x_content" id="rfq_items_list">
-          <table class="table-striped table-bordered dt-responsive nowrap" cellspacing="0" width="100%">
-            <thead>
-              <tr>
-                <th>Product Code</th>
-                <!-- <th>Brand</th> -->
-                <th>Description</th>
-                <th style="width:70px;">Qty</th>
-
-                <!-- UNIT SMALL -->
-                <th style="width:60px;">Unit</th>
-
-                <th style="width:70px;">Packing</th>
-
-                <th style="width:90px;">Price</th>
-                <th style="width:80px;">Dis 1%</th>
-                <th style="width:80px;">Dis</th>
-                <th style="width:90px;">Unit Price</th>
-                <th style="width:90px;">Total</th>
-
-              </tr>
-            </thead>
-            <tbody>
-              <?php
-              $i = 5000;
-              $up = 0;
-              $itot = 0;
-              $subtot = 0;
-              $ivat = 0;
-              foreach ($records2 as $r) { ?>
-                <tr>
-                  <td>
-                    <input type="text" class="form-control" name="item_model[]" value="<?php echo $r->product_name; ?>" />
-                    <input type="hidden" class="form-control" name="item_id[]" value="<?php echo $r->product_id; ?>" />
-                  </td>
-                  <!-- <td><input type="text" class="form-control" name="item_brand[]" value="<?php echo $r->brand_name; ?>" /></td> -->
-                  <td><input type="text" class="form-control" name="item_description[]" value="<?php echo $r->description; ?>" /></td>
-                  <td><input type="number" class="form-control qty" name="item_quantity[]" id="item_quantity<?php echo $i; ?>" value="<?php echo $r->quantity; ?>" /></td>
-                  <td><select class="form-control" name="item_unit[]" value="<?php echo $r->unit_name; ?>" /></td>
-                  <td><select class="form-control" name="item_packing[]">
-                      <option>CTN</option>
-                    </select></td>
-
-                  <td><input type="number" class="form-control unit_price" name="unit_price[]" step='any' id="unit_price<?php echo $i; ?>" value="<?php echo $r->price; ?>" /></td>
-                  <td><input type="number" class="form-control dis_per" id="discount_per<?php echo $i; ?>" step='any' name="dis_per[]" value="<?php echo $r->dis_per; ?>" /></td>
-                  <td><input type="number" class="form-control dis_amt" id="discount_amt<?php echo $i; ?>" step='any' name="dis_amt[]" value="<?php echo $r->dis_amt; ?>" /></td>
-                  <!-- <td><input type="number" class="form-control dis_per2" id="discount_per2<?php echo $i; ?>" step='any' name="dis_per2[]" value="<?php echo $r->dis_per2; ?>"/></td> -->
-                  <!-- <td><input type="number" class="form-control dis_amt2" id="discount_amt2<?php echo $i; ?>" step='any' name="dis_amt2[]" value="<?php echo $r->dis_amt2; ?>"/></td> -->
-                  <td><input type="number" class="form-control final_unit_price" name="final_unit_price[]" step='any' id="final_unit_price<?php echo $i; ?>" value="<?php echo $r->unit_price; ?>" /></td>
-
-                  <td><input type="number" class="form-control total_price" id="total_price<?php echo $i; ?>" step='any' name="total_price[]" value="<?php echo $r->total; ?>" /></td>
-
-                </tr>
-              <?php $i++;
-              } ?>
-            </tbody>
-          </table>
-
 
         </div>
       </div>
-
-      <div class="x_content">
-        <!-- Row 1: Amounts -->
-        <div class="row mb-3">
-          <div class="col-md-3">
-            <label class="form-label">Taxable Amount</label>
-            <input type="text" class="form-control" name="sub_total" id="sub_total"
-              value="<?php echo $records1[0]->subtotal; ?>" readonly>
-          </div>
-          <div class="col-md-2">
-            <label class="form-label">VAT(%)</label>
-            <input type="text" class="form-control" name="vat_per" id="vat_per"
-              value="<?php echo $records1[0]->vat_percent; ?>">
-          </div>
-          <div class="col-md-3">
-            <label class="form-label">Tax Amount</label>
-            <input type="text" class="form-control" name="vat_amount" id="vat_amount"
-              value="<?php echo $records1[0]->vat_amt; ?>">
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">Grand Total</label>
-            <input type="text" class="form-control" name="grand_total" id="grand_total"
-              value="<?php echo $records1[0]->grand_total; ?>">
-          </div>
-        </div>
-
-        <!-- Row 2: Prepared/Approved -->
-        <div class="row mb-3">
-          <div class="col-md-6">
-            <label class="form-label">Prepared By</label>
-            <input type="text" class="form-control" name="sales_person" id="sales_person"
-              value="<?php echo $records1[0]->sales_person; ?>">
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Approved By</label>
-            <input type="text" class="form-control" name="approved_by" id="approved_by">
-          </div>
-        </div>
-
-
-
-        <!-- Row 3: Validity & Payment -->
-        <div class="row mb-3">
-          <div class="col-md-6">
-            <label class="form-label">Validity</label>
-            <input type="text" class="form-control" name="validity" id="validity"
-              value="<?php echo $records1[0]->validity; ?>">
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Payment Terms</label>
-            <input type="text" class="form-control" name="payment_terms" id="payment_terms"
-              value="<?php echo $records1[0]->payment_term; ?>">
-          </div>
-        </div>
-
-        <!-- Row 4: Delivery & General -->
-        <div class="row mb-3">
-          <div class="col-md-6">
-            <label class="form-label">Delivery Terms</label>
-            <textarea class="form-control" name="delivery_terms" id="delivery_terms">
-                          <?php echo $records1[0]->delivery_term; ?>
-                      </textarea>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">General Terms</label>
-            <textarea class="form-control" name="general_terms" id="general_terms"><?php echo $records1[0]->general_term; ?></textarea>
-          </div>
-        </div>
-        <!-- Checkbox and Submit Button in same row -->
-        <div class="row mb-3 align-items-center">
-          <div class="col-md-6">
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" value="1" id="createRevision" name="create_revision">
-              <label class="form-check-label" for="createRevision">Create New Revision</label>
-            </div>
-          </div>
-          <div class="col-md-6 text-end">
-            <button type="submit" class="btn btn-success">Update</button>
-          </div>
-        </div>
-      </div>
-
     </div>
 
+
+
+    <div class="row col-md-12 col-sm-12" style="overflow: scroll;">
+      <div class="x_content" id="rfq_items_list">
+        <table class="table-striped table-bordered dt-responsive nowrap" cellspacing="0" width="100%">
+          <thead>
+            <tr>
+              <th>Product Code</th>
+              <!-- <th>Brand</th> -->
+              <th>Description</th>
+              <th style="width:70px;">Qty</th>
+
+              <!-- UNIT SMALL -->
+              <th style="width:60px;">Unit</th>
+
+              <!-- <th style="width:70px;">Packing</th> -->
+
+              <th style="width:90px;">Price</th>
+              <th style="width:80px;">Dis 1%</th>
+              <th style="width:80px;">Dis</th>
+              <th style="width:90px;">Unit Price</th>
+              <th style="width:90px;">Total</th>
+
+            </tr>
+          </thead>
+          <tbody>
+            <?php
+            $i = 5000;
+            $up = 0;
+            $itot = 0;
+            $subtot = 0;
+            $ivat = 0;
+            foreach ($records2 as $r) { ?>
+              <tr>
+                <td>
+                  <input type="text" class="form-control" name="item_model[]" value="<?php echo $r->product_name; ?>" />
+                  <input type="hidden" class="form-control" name="item_id[]" value="<?php echo $r->product_id; ?>" />
+                </td>
+                <!-- <td><input type="text" class="form-control" name="item_brand[]" value="<?php echo $r->brand_name; ?>" /></td> -->
+                <td><input type="text" class="form-control" name="item_description[]" value="<?php echo $r->description; ?>" /></td>
+                <td><input type="number" class="form-control qty" name="item_quantity[]" id="item_quantity<?php echo $i; ?>" value="<?php echo $r->quantity; ?>" /></td>
+                <td>
+                  <select class="form-control" name="item_unit[]" id="unit<?php echo $i; ?>">
+                    <option value="">Select</option>
+                    <?php foreach ($active_units as $unit) { ?>
+                      <option
+                        value="<?php echo $unit->unit_id; ?>"
+                        <?php echo ($r->unit_id == $unit->unit_id) ? 'selected' : ''; ?>>
+                        <?php echo $unit->unit_name; ?>
+                      </option>
+                    <?php } ?>
+                  </select>
+                </td>
+
+                <!-- <td><select class="form-control" name="item_packing[]">
+                      <option>CTN</option>
+                    </select></td> -->
+
+                <td><input type="number" class="form-control unit_price" name="unit_price[]" step='any' id="unit_price<?php echo $i; ?>" value="<?php echo $r->price; ?>" /></td>
+                <td><input type="number" class="form-control dis_per" id="discount_per<?php echo $i; ?>" step='any' name="dis_per[]" value="<?php echo $r->dis_per; ?>" /></td>
+                <td><input type="number" class="form-control dis_amt" id="discount_amt<?php echo $i; ?>" step='any' name="dis_amt[]" value="<?php echo $r->dis_amt; ?>" /></td>
+                <!-- <td><input type="number" class="form-control dis_per2" id="discount_per2<?php echo $i; ?>" step='any' name="dis_per2[]" value="<?php echo $r->dis_per2; ?>"/></td> -->
+                <!-- <td><input type="number" class="form-control dis_amt2" id="discount_amt2<?php echo $i; ?>" step='any' name="dis_amt2[]" value="<?php echo $r->dis_amt2; ?>"/></td> -->
+                <td><input type="number" class="form-control final_unit_price" name="final_unit_price[]" step='any' id="final_unit_price<?php echo $i; ?>" value="<?php echo $r->unit_price; ?>" /></td>
+
+                <td><input type="number" class="form-control total_price" id="total_price<?php echo $i; ?>" step='any' name="total_price[]" value="<?php echo $r->total; ?>" /></td>
+
+              </tr>
+            <?php $i++;
+            } ?>
+          </tbody>
+        </table>
+
+
+      </div>
+    </div>
+
+    <div class="x_content">
+      <!-- Row 1: Amounts -->
+      <div class="row mb-3">
+        <div class="col-md-3">
+          <label class="form-label">Taxable Amount</label>
+          <input type="text" class="form-control" name="sub_total" id="sub_total"
+            value="<?php echo $records1[0]->subtotal; ?>" readonly>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">VAT(%)</label>
+          <input type="text" class="form-control" name="vat_per" id="vat_per"
+            value="<?php echo $records1[0]->vat_percent; ?>">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Tax Amount</label>
+          <input type="text" class="form-control" name="vat_amount" id="vat_amount"
+            value="<?php echo $records1[0]->vat_amt; ?>">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Grand Total</label>
+          <input type="text" class="form-control" name="grand_total" id="grand_total"
+            value="<?php echo $records1[0]->grand_total; ?>">
+        </div>
+      </div>
+
+      <!-- Row 2: Prepared/Approved -->
+      <div class="row mb-3">
+
+        <!-- <div class="col-md-6">
+            <label class="form-label">Approved By</label>
+            <input type="text" class="form-control" name="approved_by" id="approved_by">
+          </div> -->
+      </div>
+
+
+
+      <!-- Row 3: Validity & Payment -->
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <label class="form-label">Validity</label>
+          <input type="text" class="form-control" name="validity" id="validity"
+            value="<?php echo $records1[0]->validity; ?>">
+        </div>
+        <!-- Payment Terms -->
+        <div class="col-md-6">
+
+          <label for="payment_terms_select" class="form-label">
+            Payment Terms
+          </label>
+
+          <select
+            class="form-control term-select"
+            id="payment_terms_select"
+            name="payment_term_id">
+
+            <option value="">
+              Please select payment terms
+            </option>
+
+            <?php if (!empty($payment_terms_list)) { ?>
+
+              <?php foreach ($payment_terms_list as $term) { ?>
+
+                <option
+                  value="<?php echo $term->terms_id; ?>"
+                  data-description="<?php echo htmlspecialchars(
+                                      $term->terms_description ?? '',
+                                      ENT_QUOTES,
+                                      'UTF-8'
+                                    ); ?>"
+                  <?php
+                  echo (
+                    isset($records1[0]->payment_term) &&
+                    $records1[0]->payment_term == $term->terms_description
+                  ) ? 'selected' : '';
+                  ?>>
+                  <?php echo htmlspecialchars(
+                    $term->terms_name,
+                    ENT_QUOTES,
+                    'UTF-8'
+                  ); ?>
+                </option>
+
+              <?php } ?>
+
+            <?php } ?>
+
+          </select>
+
+
+          <small>
+            <a href="#"
+              class="add-term-link"
+              data-term-type="PAYMENT">
+              + Add New Payment Term
+            </a>
+          </small>
+
+
+          <!-- Existing field retained for controller -->
+          <input
+            type="hidden"
+            name="payment_terms"
+            id="payment_terms"
+            value="<?php echo htmlspecialchars(
+                      $records1[0]->payment_term ?? '',
+                      ENT_QUOTES,
+                      'UTF-8'
+                    ); ?>">
+
+        </div>
+      </div>
+
+      <!-- Row 4: Delivery + General -->
+      <div class="row mb-3">
+
+        <!-- Delivery Terms -->
+        <div class="col-md-6">
+
+          <label for="delivery_terms_select" class="form-label">
+            Delivery Terms
+          </label>
+
+          <select
+            class="form-control term-select"
+            id="delivery_terms_select"
+            name="delivery_term_id">
+
+            <option value="">
+              Please select delivery terms
+            </option>
+
+            <?php if (!empty($delivery_terms_list)) { ?>
+
+              <?php foreach ($delivery_terms_list as $term) { ?>
+
+                <option
+                  value="<?php echo $term->terms_id; ?>"
+                  data-description="<?php echo htmlspecialchars(
+                                      $term->terms_description ?? '',
+                                      ENT_QUOTES,
+                                      'UTF-8'
+                                    ); ?>"
+                  <?php
+                  echo (
+                    isset($records1[0]->delivery_term) &&
+                    $records1[0]->delivery_term == $term->terms_description
+                  ) ? 'selected' : '';
+                  ?>>
+                  <?php echo htmlspecialchars(
+                    $term->terms_name,
+                    ENT_QUOTES,
+                    'UTF-8'
+                  ); ?>
+                </option>
+
+              <?php } ?>
+
+            <?php } ?>
+
+          </select>
+
+
+          <small>
+            <a href="#"
+              class="add-term-link"
+              data-term-type="DELIVERY">
+              + Add New Delivery Term
+            </a>
+          </small>
+
+
+          <!-- Existing field retained for controller -->
+          <input
+            type="hidden"
+            name="delivery_terms"
+            id="delivery_terms"
+            value="<?php echo htmlspecialchars(
+                      $records1[0]->delivery_term ?? '',
+                      ENT_QUOTES,
+                      'UTF-8'
+                    ); ?>">
+
+        </div>
+
+
+        <!-- General Terms -->
+        <div class="col-md-6">
+
+          <label for="general_terms_select" class="form-label">
+            General Terms
+          </label>
+
+          <select
+            class="form-control term-select"
+            id="general_terms_select"
+            name="general_term_id">
+
+            <option value="">
+              Please select general terms
+            </option>
+
+            <?php if (!empty($general_terms_list)) { ?>
+
+              <?php foreach ($general_terms_list as $term) { ?>
+
+                <option
+                  value="<?php echo $term->terms_id; ?>"
+                  data-description="<?php echo htmlspecialchars(
+                                      $term->terms_description ?? '',
+                                      ENT_QUOTES,
+                                      'UTF-8'
+                                    ); ?>"
+                  <?php
+                  echo (
+                    isset($records1[0]->general_term) &&
+                    $records1[0]->general_term == $term->terms_description
+                  ) ? 'selected' : '';
+                  ?>>
+                  <?php echo htmlspecialchars(
+                    $term->terms_name,
+                    ENT_QUOTES,
+                    'UTF-8'
+                  ); ?>
+                </option>
+
+              <?php } ?>
+
+            <?php } ?>
+
+          </select>
+
+
+          <small>
+            <a href="#"
+              class="add-term-link"
+              data-term-type="GENERAL">
+              + Add New General Term
+            </a>
+          </small>
+
+
+          <!-- Existing field retained for controller -->
+          <input
+            type="hidden"
+            name="general_terms"
+            id="general_terms"
+            value="<?php echo htmlspecialchars(
+                      $records1[0]->general_term ?? '',
+                      ENT_QUOTES,
+                      'UTF-8'
+                    ); ?>">
+
+        </div>
+
+      </div>
+
+      <!-- Checkbox and Submit Button in same row -->
+      <div class="row mb-3 align-items-center">
+        <div class="col-md-6">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" value="1" id="createRevision" name="create_revision">
+            <label class="form-check-label" for="createRevision">Create New Revision</label>
+          </div>
+        </div>
+        <div class="col-md-6 text-end">
+          <button type="submit" class="btn btn-success">Update</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
 </form>
+<div
+  class="modal fade"
+  id="addTermModal"
+  tabindex="-1"
+  role="dialog"
+  aria-hidden="true">
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.ckeditor.com/4.21.0/standard/ckeditor.js"></script>
+  <div id="addTermModalContent"></div>
+
+</div>
+
+<script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
 <script>
-  ['delivery_terms', 'general_terms'].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el && el.tagName.toLowerCase() === 'textarea') {
-      CKEDITOR.replace(id);
-    }
-  });
-
   function get_enquiry_info() {
     var rfq_id = document.getElementById("rfq_id").value;
 
@@ -397,11 +745,256 @@ $user = $this->session->userdata('user_id');
       $('#grand_total').val(grandTotalWithVAT.toFixed(2));
     }
   });
-</script>
+
+  $(document).ready(function() {
 
 
+    ////////////////////////////////////////////////////////////
+    // INITIALIZE SELECT2
+    ////////////////////////////////////////////////////////////
+
+    $('#rfq_id').select2({
+      width: '100%',
+      placeholder: 'Select RFQ/PR',
+      allowClear: true
+    });
+
+    $('#project').select2({
+      width: '100%',
+      placeholder: 'Select Project',
+      allowClear: true
+    });
+
+    $('.term-select').select2({
+      width: '100%',
+      placeholder: 'Please select',
+      allowClear: true
+    });
 
 
+    //////////////////////////////// PAYMENT TERM CHANGE//////////////////////////
+    $('#payment_terms_select').on('change', function() {
+      var description = $(this)
+        .find(':selected')
+        .attr('data-description') || '';
+      $('#payment_terms').val(description);
+
+    });
+
+    ///////////////////// DELIVERY TERM CHANGE//////////////////////
+    $('#delivery_terms_select').on('change', function() {
+      var description = $(this)
+        .find(':selected')
+        .attr('data-description') || '';
+      $('#delivery_terms').val(description);
+
+    });
+
+    //////////////////////////////////////GENERAL TERM CHANGE/////////////////////////
+    $('#general_terms_select').on('change', function() {
+      var description = $(this)
+        .find(':selected')
+        .attr('data-description') || '';
+      $('#general_terms').val(description);
+    });
 
 
+    /////////////////ADD NEW TERM//////////////////////////////
+
+    $(document).on(
+      'click',
+      '.add-term-link',
+      function(e) {
+        e.preventDefault();
+        var termType = $(this).data('term-type');
+        $.ajax({
+          url: "<?php echo base_url('index.php/Ajax/add_new_term'); ?>",
+          type: "POST",
+          data: {
+            term_type: termType
+          },
+
+          success: function(response) {
+            $('#addTermModalContent')
+              .html(response);
+            $('#addTermModal').modal('show');
+
+            // Initialize CKEditor
+            if (typeof CKEDITOR !== 'undefined') {
+
+              if (CKEDITOR.instances['new_terms_description']) {
+                CKEDITOR.instances['new_terms_description'].destroy(true);
+              }
+
+              CKEDITOR.replace('new_terms_description');
+            }
+          },
+
+          error: function() {
+            alert(
+              'Unable to open Add Term form.'
+            );
+          }
+        });
+      }
+    );
+
+
+    //////////////////////SAVE NEW TERM////////////////////////////////
+
+    $(document).on(
+      'click',
+      '#saveNewTermBtn',
+      function() {
+
+        var $button = $(this);
+
+        var termType =
+          $('#new_term_type').val();
+
+        var termName =
+          $.trim(
+            $('#new_terms_name').val()
+          );
+
+        var description =
+          $.trim(
+            $('#new_terms_description').val()
+          );
+
+
+        if (termName == '') {
+
+          alert(
+            'Terms & Conditions Name is required.'
+          );
+
+          $('#new_terms_name').focus();
+
+          return;
+
+        }
+
+
+        $button
+          .prop('disabled', true)
+          .html(
+            '<i class="fa fa-spinner fa-spin"></i> Saving...'
+          );
+
+
+        $.ajax({
+          url: "<?php echo base_url('index.php/Ajax/save_term_ajax'); ?>",
+          type: "POST",
+          dataType: "json",
+          data: {
+            term_type: termType,
+            terms_name: termName,
+            terms_description: description
+          },
+
+          success: function(response) {
+            if (response.success) {
+              var selectId = '';
+              if (response.term_type == 'PAYMENT') {
+                selectId = '#payment_terms_select';
+              } else if (
+                response.term_type == 'DELIVERY'
+              ) {
+                selectId = '#delivery_terms_select';
+              } else if (
+                response.term_type == 'GENERAL'
+              ) {
+                selectId = '#general_terms_select';
+              }
+
+              var $select = $(selectId);
+
+              // Add new option
+              var newOption =
+                new Option(
+                  response.terms_name,
+                  response.terms_id,
+                  true,
+                  true
+                );
+
+
+              $(newOption)
+                .attr(
+                  'data-description',
+                  response.terms_description
+                );
+
+
+              $select
+                .append(newOption)
+                .trigger('change');
+
+
+              // Update hidden description
+              if (
+                response.term_type ==
+                'PAYMENT'
+              ) {
+
+                $('#payment_terms')
+                  .val(
+                    response.terms_description
+                  );
+
+              } else if (
+                response.term_type ==
+                'DELIVERY'
+              ) {
+                $('#delivery_terms')
+                  .val(
+                    response.terms_description
+                  );
+
+              } else if (
+                response.term_type ==
+                'GENERAL'
+              ) {
+                $('#general_terms')
+                  .val(
+                    response.terms_description
+                  );
+              }
+
+              // Close modal
+              $('#addTermModal').modal('hide');
+
+              // Reset modal
+              $('#addTermModalContent').html('');
+
+            } else {
+              alert(
+                response.message ||
+                'Failed to save term.'
+              );
+
+              $button
+                .prop('disabled', false)
+                .html(
+                  '<i class="fa fa-save"></i> Save'
+                );
+            }
+          },
+
+          error: function() {
+            alert(
+              'Something went wrong while saving.'
+            );
+
+            $button
+              .prop('disabled', false)
+              .html(
+                '<i class="fa fa-save"></i> Save'
+              );
+          }
+        });
+      }
+    );
+  });
 </script>

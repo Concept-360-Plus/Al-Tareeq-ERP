@@ -11,6 +11,21 @@
 
           <!-- Row 1: RFQ Code & RFQ Date -->
           <div class="row mb-3">
+
+            <div class="col-md-6">
+              <label class="control-label col-md-3 col-sm-3 col-xs-3">Select Branch</label>
+              <div class="col-md-9 col-sm-9 col-xs-9">
+                <select name="branch_id" id="branch_id" class="form-control rfq-select2" required tabindex="1">
+                  <option value="">Please select branch</option>
+                  <?php foreach ($branch_records as $b) { ?>
+                    <option value="<?php echo $b->branch_id; ?>" <?php if ($b->branch_id == $records1[0]->branch_id) echo 'selected'; ?>>
+                      <?php echo $b->branch_name; ?>
+                    </option>
+                  <?php } ?>
+                </select>
+              </div>
+            </div>
+
             <div class="col-md-6">
               <label class="control-label col-md-3 col-sm-3 col-xs-3">RFQ Code</label>
               <div class="col-md-9 col-sm-9 col-xs-9">
@@ -21,6 +36,11 @@
               </div>
             </div>
 
+          </div>
+
+          <!-- Row 2: Branch -->
+          <div class="row mb-3">
+
             <div class="col-md-6">
               <label class="control-label col-md-3 col-sm-3 col-xs-3">RFQ Date</label>
               <div class="col-md-9 col-sm-9 col-xs-9">
@@ -28,40 +48,25 @@
                   value="<?php echo $records1[0]->rfq_date; ?>">
               </div>
             </div>
-          </div>
 
-          <!-- Row 2: Branch -->
-          <div class="row mb-3">
             <div class="col-md-6">
-              <label class="control-label col-md-3 col-sm-3 col-xs-3">Branch</label>
+              <label class="control-label col-md-3 col-sm-3 col-xs-3">Select Supplier</label>
               <div class="col-md-9 col-sm-9 col-xs-9">
-                <select name="branch_id" id="branch_id" class="form-control" required tabindex="1">
-                  <option value="">Please select branch</option>
-                  <?php foreach ($branch_records as $b) { ?>
-                    <option value="<?php echo $b->branch_id; ?>" <?php if ($b->branch_id == $records1[0]->branch_id) echo 'selected'; ?>>
-                      <?php echo $b->branch_name; ?>
+                <select name="supplier_id" id="supplier_id" class="form-control rfq-select2" required>
+                  <?php foreach ($supplier_records as $g) { ?>
+                    <option <?php if ($g->supplier_id == $records1[0]->supplier_id) echo 'selected'; ?>
+                      value="<?php echo $g->supplier_id; ?>">
+                      <?php echo $g->supplier_name . ' (' . $g->supplier_code . ')' ?>
                     </option>
                   <?php } ?>
                 </select>
               </div>
             </div>
+
           </div>
 
           <!-- Row 3: Supplier & Subject -->
           <div class="row mb-3">
-            <div class="col-md-6">
-              <label class="control-label col-md-3 col-sm-3 col-xs-3">Supplier</label>
-              <div class="col-md-9 col-sm-9 col-xs-9">
-                <select name="supplier_id" id="supplier_id" class="form-control" required>
-                  <?php foreach ($supplier_records as $g) { ?>
-                    <option <?php if ($g->supplier_id == $records1[0]->supplier_id) echo 'selected'; ?>
-                      value="<?php echo $g->supplier_id; ?>">
-                      <?php echo $g->supplier_code . ' ' . $g->supplier_name; ?>
-                    </option>
-                  <?php } ?>
-                </select>
-              </div>
-            </div>
 
             <div class="col-md-6">
               <label class="control-label col-md-3 col-sm-3 col-xs-3">Subject</label>
@@ -70,18 +75,45 @@
                   value="<?php echo $records1[0]->subject; ?>">
               </div>
             </div>
+
+            <div class="col-md-6">
+              <label class="control-label col-md-3 col-sm-3 col-xs-3">
+                Select Project
+              </label>
+              <div class="col-md-9 col-sm-9 col-xs-9">
+                <select
+                  class="form-control rfq-select2"
+                  name="project"
+                  id="project">
+                  <option value="">Select Project</option>
+                  <?php if (!empty($project_records)) { ?>
+                    <?php foreach ($project_records as $project) { ?>
+                      <option
+                        value="<?php echo htmlspecialchars($project['project_name'], ENT_QUOTES, 'UTF-8'); ?>"
+                        <?php
+                        if (
+                          isset($records1[0]->project) &&
+                          $records1[0]->project == $project['project_name']
+                        ) {
+                          echo 'selected';
+                        }
+                        ?>>
+                        <?php echo htmlspecialchars($project['project_name'], ENT_QUOTES, 'UTF-8'); ?>
+                        <?php if (!empty($project['project_code'])) { ?>
+                          (<?php echo htmlspecialchars($project['project_code'], ENT_QUOTES, 'UTF-8'); ?>)
+                        <?php } ?>
+                      </option>
+                    <?php } ?>
+                  <?php } ?>
+                </select>
+              </div>
+
+            </div>
+
           </div>
 
           <!-- Row 4: Project Name & Reference -->
           <div class="row mb-3">
-            <div class="col-md-6">
-              <label class="control-label col-md-3 col-sm-3 col-xs-3">Project Name</label>
-              <div class="col-md-9 col-sm-9 col-xs-9">
-                <input type="text" class="form-control" name="project" id="project"
-                  value="<?php echo $records1[0]->project; ?>">
-              </div>
-            </div>
-
             <div class="col-md-6">
               <label class="control-label col-md-3 col-sm-3 col-xs-3">Reference</label>
               <div class="col-md-9 col-sm-9 col-xs-9">
@@ -108,7 +140,7 @@
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody id="rfq_items_body">
               <?php
               $i = 5000;
               foreach ($records2 as $r) { ?>
@@ -185,57 +217,223 @@
 
 
 <script>
-  function initializeSelect2(selectElement) {
-    selectElement.select2({
+  $(document).ready(function() {
 
+    let rfqTable;
+
+    if ($.fn.DataTable.isDataTable('#datatable-responsive')) {
+      rfqTable = $('#datatable-responsive').DataTable();
+      rfqTable.order([]);
+
+    } else {
+
+      // Otherwise initialize it here.
+      rfqTable = $('#datatable-responsive').DataTable({
+        responsive: true,
+        pageLength: 10,
+        lengthMenu: [
+          [10, 25, 50, 100, -1],
+          [10, 25, 50, 100, "All"]
+        ],
+        searching: true,
+        ordering: false,
+        paging: true,
+        info: true,
+        autoWidth: false
+      });
+
+    }
+
+
+    // =====================================================
+    // SELECT2 - EXISTING BRANCH & SUPPLIER
+    // =====================================================
+
+    $('.rfq-select2').select2({
+      width: '100%',
+      placeholder: 'Select an option',
+      allowClear: true
     });
-  }
 
-  $(document).ready(function() {
-    initializeSelect2($('.select2'));
-  });
 
-  $(document).ready(function() {
-    let rowIndex = 1; // Start from 1 since 0 is already present
+    // =====================================================
+    // ROW INDEX FOR NEW ROWS
+    // =====================================================
 
-    // Add row
+    let rowIndex = 10000;
+
+
+    // =====================================================
+    // ADD NEW PRODUCT ROW
+    // =====================================================
+
     $(document).on('click', '.addRow', function(e) {
+
       e.preventDefault();
+
       const newRow = `
             <tr>
+
+                <!-- Product -->
                 <td>
-                    <select class="form-control select2" name="item[]" id="item${rowIndex}" onchange="get_item_by_id(${rowIndex})">
+
+                    <select
+                        class="form-control rfq-product-select"
+                        name="item[]"
+                        id="item${rowIndex}"
+                        onchange="get_item_by_id(${rowIndex})"
+                        required>
+
                         <option value="">Select</option>
+
                         <?php foreach ($active_items as $item) { ?>
-                            <option value="<?php echo $item->product_id ?>"><?php echo $item->product_name; ?></option>
+
+                            <option value="<?php echo $item->product_id; ?>">
+                                <?php echo htmlspecialchars($item->product_name, ENT_QUOTES, 'UTF-8'); ?>
+                            </option>
+
                         <?php } ?>
+
                     </select>
+
                 </td>
 
-                <td><input class="form-control" type="text" name="description[]" id="description${rowIndex}"></td>
-                <td>
-                 <select class="form-control select2" name="unit[]" id='unit${rowIndex}'>
-                        <option value=''>Select</option><?php foreach ($active_units as $unit) { ?><option value='<?php echo $unit->unit_id ?>'><?php echo $unit->unit_name; ?></option><?php } ?>
-                        </select>
-                </td>
-                <td><input class="form-control" type="number" name="quantity[]" id="quantity${rowIndex}"></td>
-                <td>
-                    <button class="btn btn-success addRow"><i class="fa fa-plus"></i></button>
-                    <button class="btn btn-danger deleteRow"><i class="fa fa-minus"></i></button>                        
-                </td>
-            </tr>`;
 
-      $('#datatable-responsive tbody').append(newRow);
-      $(`#item${rowIndex}`).select2(); // Reinitialize select2 for the new element
+                <!-- Description -->
+                <td>
+
+                    <input
+                        class="form-control"
+                        type="text"
+                        name="description[]"
+                        id="description${rowIndex}"
+                        value="">
+
+                </td>
+
+
+                <!-- Unit -->
+                <td>
+
+                    <select
+                        class="form-control"
+                        name="unit[]"
+                        id="unit${rowIndex}"
+                        required>
+
+                        <option value="">Select</option>
+
+                        <?php foreach ($active_units as $unit) { ?>
+
+                            <option value="<?php echo $unit->unit_id; ?>">
+                                <?php echo htmlspecialchars($unit->unit_name, ENT_QUOTES, 'UTF-8'); ?>
+                            </option>
+
+                        <?php } ?>
+
+                    </select>
+
+                </td>
+
+
+                <!-- Quantity -->
+                <td>
+
+                    <input
+                        class="form-control"
+                        type="number"
+                        name="quantity[]"
+                        id="quantity${rowIndex}"
+                        value=""
+                        min="0"
+                        step="0.01"
+                        required>
+
+                </td>
+
+
+                <!-- Actions -->
+                <td>
+
+                    <button
+                        type="button"
+                        class="btn btn-success addRow">
+                        <i class="fa fa-plus"></i>
+                    </button>
+
+                    <button
+                        type="button"
+                        class="btn btn-danger deleteRow">
+                        <i class="fa fa-minus"></i>
+                    </button>
+
+                </td>
+
+            </tr>
+        `;
+
+
+      // =================================================
+      // IMPORTANT:
+      // ADD ROW THROUGH DATATABLES
+      // =================================================
+
+      let rowNode = rfqTable
+        .row
+        .add($(newRow))
+        .draw(false)
+        .node();
+
+
+      // =================================================
+      // INITIALIZE SELECT2 FOR NEW PRODUCT
+      // =================================================
+
+      $(rowNode)
+        .find('.rfq-product-select')
+        .select2({
+          width: '100%',
+          placeholder: 'Select',
+          allowClear: true
+        });
+
+
       rowIndex++;
+
     });
 
-    // Delete row
+
+    // =====================================================
+    // DELETE ROW
+    // =====================================================
+
     $(document).on('click', '.deleteRow', function(e) {
+
       e.preventDefault();
-      $(this).closest('tr').remove();
+
+      rfqTable
+        .row($(this).closest('tr'))
+        .remove()
+        .draw(false);
+
     });
+
+
+    // =====================================================
+    // FORM SUBMIT
+    // MAKE ALL DATATABLE ROWS AVAILABLE TO FORM
+    // =====================================================
+
+    $('#main').on('submit', function() {
+      rfqTable
+        .page
+        .len(-1)
+        .draw(false);
+
+    });
+
   });
+
 
 
   function get_item_by_id(row_no) {
@@ -289,7 +487,7 @@
           $.each(data, function(index, supplier) {
             $('#supplier_id').append(
               '<option value="' + supplier.supplier_id + '" ' +
-              'data-tr="' + supplier.trn_no + '">' +
+              ' data-tr="' + supplier.trn_no + '">' +
               supplier.supplier_name + ' (' + supplier.supplier_code + ') => ' + supplier.contact_number +
               '</option>'
             );

@@ -2,7 +2,7 @@
 $page_name2 = 'Purchase/purchase_order_list';
 $user = $this->session->userdata('user_id');
 ?>
-<form id="main" method="post" action="<?php echo base_url() . 'index.php/'; ?>Purchase/update_purchase_order" autocomplete="off" enctype="multipart/form-data">
+<form id="main" method="post" action="<?php echo base_url() . 'index.php/'; ?>Purchase/update_purchase_order" autocomplete="off" enctype="multipart/form-data" novalidate>
 
   <!-- page content -->
   <div class="form-group" role="main">
@@ -17,7 +17,7 @@ $user = $this->session->userdata('user_id');
           <div class="row mb-3">
             <div class="col-md-4">
               <label class="control-label">Branch</label>
-              <select class="form-control" name="Branch_id" id="branch_id" required>
+              <select class="form-control select2" name="Branch_id" id="branch_id" required>
                 <option value="">Select</option>
                 <?php foreach ($branch_records as $b) { ?>
                   <option value="<?php echo $b->branch_id; ?>"
@@ -30,7 +30,7 @@ $user = $this->session->userdata('user_id');
 
             <div class="col-md-4">
               <label class="control-label">Supplier</label>
-              <select class="form-control" name="supplier_id" id="supplier_id" required onchange="get_supplier_info()">
+              <select class="form-control select2" name="supplier_id" id="supplier_id" required onchange="get_supplier_info()">
                 <option value="">Select</option>
                 <?php foreach ($supplier_records as $s) { ?>
                   <option value="<?php echo $s->supplier_id; ?>"
@@ -65,10 +65,36 @@ $user = $this->session->userdata('user_id');
             </div>
 
             <div class="col-md-4">
-              <label class="control-label">Reference</label>
-              <input type="text" class="form-control" name="ref_no" id="ref_no"
-                value="<?php echo $records1[0]->supplier_ref; ?>">
+              <label>Purchase Type <span class="text-danger">*</span></label>
+
+              <select name="purchase_type"
+                id="purchase_type"
+                class="form-control"
+                required>
+
+                <option value="Local"
+                  <?php
+                  echo (
+                    isset($records1[0]->purchase_type) &&
+                    $records1[0]->purchase_type == 'Local'
+                  ) ? 'selected' : '';
+                  ?>>
+                  Local
+                </option>
+
+                <option value="International"
+                  <?php
+                  echo (
+                    isset($records1[0]->purchase_type) &&
+                    $records1[0]->purchase_type == 'International'
+                  ) ? 'selected' : '';
+                  ?>>
+                  International
+                </option>
+
+              </select>
             </div>
+
           </div>
 
           <!-- Row 3: Freight Mode, Upload Document -->
@@ -85,8 +111,39 @@ $user = $this->session->userdata('user_id');
             </div>
 
             <div class="col-md-4">
-              <label class="control-label">Project Name</label>
-              <input type="text" class="form-control" name="project" id="project" value="<?php echo $records1[0]->project; ?>">
+              <label class="control-label">Select Project</label>
+              <select class="form-control select2" name="project" id="project" required>
+                <option value="">Select Project</option>
+                <?php if (!empty($project_records)) { ?>
+                  <?php foreach ($project_records as $project) { ?>
+                    <option value="<?php echo htmlspecialchars(
+                                      $project['project_name'],
+                                      ENT_QUOTES,
+                                      'UTF-8'
+                                    ); ?>"
+
+                      <?php echo (
+                        isset($records1[0]->project) &&
+                        $records1[0]->project == $project['project_name']
+                      ) ? 'selected' : ''; ?>>
+
+                      <?php echo htmlspecialchars(
+                        $project['project_name'],
+                        ENT_QUOTES,
+                        'UTF-8'
+                      ); ?>
+
+                      <?php if (!empty($project['project_code'])) { ?>
+                        (<?php echo htmlspecialchars(
+                            $project['project_code'],
+                            ENT_QUOTES,
+                            'UTF-8'
+                          ); ?>)
+                      <?php } ?>
+                    </option>
+                  <?php } ?>
+                <?php } ?>
+              </select>
             </div>
 
             <div class="col-md-4">
@@ -104,7 +161,15 @@ $user = $this->session->userdata('user_id');
                 <?php } ?>
               </div>
             </div>
-            
+
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="control-label">Reference</label>
+              <input type="text" class="form-control" name="ref_no" id="ref_no"
+                value="<?php echo $records1[0]->supplier_ref; ?>">
+            </div>
           </div>
 
           <!-- Row 4: Prepared / Approved By -->
@@ -309,24 +374,175 @@ $user = $this->session->userdata('user_id');
             </div>
 
             <div class="col-md-6">
-              <label class="control-label">Payment Terms</label>
-              <input type="text" class="form-control" name="payment_terms" id="payment_terms"
-                value="<?php echo $records1[0]->payment_term; ?>">
+
+              <label for="payment_terms_select" class="form-label">
+                Payment Terms
+              </label>
+
+              <select
+                class="form-control term-select select2"
+                id="payment_terms_select"
+                name="payment_term_id">
+
+                <option value="">
+                  Please select payment terms
+                </option>
+
+                <?php if (!empty($payment_terms_list)) { ?>
+
+                  <?php foreach ($payment_terms_list as $term) { ?>
+
+                    <option
+                      value="<?php echo $term->terms_id; ?>"
+                      data-description="<?php echo htmlspecialchars(
+                                          $term->terms_description,
+                                          ENT_QUOTES,
+                                          'UTF-8'
+                                        ); ?>"
+                      <?php
+                      echo (
+                        isset($records1[0]->payment_term) &&
+                        $records1[0]->payment_term == $term->terms_description
+                      ) ? 'selected' : '';
+                      ?>>
+                      <?php echo htmlspecialchars(
+                        $term->terms_name,
+                        ENT_QUOTES,
+                        'UTF-8'
+                      ); ?>
+                    </option>
+
+                  <?php } ?>
+
+                <?php } ?>
+
+              </select>
+
+              <small>
+                <a href="#"
+                  class="add-term-link"
+                  data-term-type="PAYMENT">
+                  + Add New Payment Term
+                </a>
+              </small>
+
+              <input
+                type="hidden"
+                name="payment_terms"
+                id="payment_terms">
+
             </div>
+
           </div>
 
           <!-- Delivery & General Terms -->
           <div class="row mb-3">
+
             <div class="col-md-6">
-              <label class="control-label">Delivery Terms</label>
-              <textarea class="form-control" name="delivery_terms" id="delivery_terms" rows="4"><?php echo $records1[0]->delivery_term; ?></textarea>
+
+              <label for="delivery_terms_select" class="form-label">
+                Delivery Terms
+              </label>
+
+              <select
+                class="form-control term-select select2"
+                id="delivery_terms_select"
+                name="delivery_term_id">
+
+                <option value="">
+                  Please select delivery terms
+                </option>
+
+                <?php if (!empty($delivery_terms_list)) { ?>
+
+                  <?php foreach ($delivery_terms_list as $term) { ?>
+
+                    <option
+                      value="<?php echo $term->terms_id; ?>"
+                      data-description="<?php echo htmlspecialchars(
+                                          $term->terms_description,
+                                          ENT_QUOTES,
+                                          'UTF-8'
+                                        ); ?>"
+                      <?php
+                      echo (
+                        isset($records1[0]->delivery_term) &&
+                        $records1[0]->delivery_term == $term->terms_description
+                      ) ? 'selected' : '';
+                      ?>>
+                      <?php echo htmlspecialchars(
+                        $term->terms_name,
+                        ENT_QUOTES,
+                        'UTF-8'
+                      ); ?>
+                    </option>
+
+                  <?php } ?>
+
+                <?php } ?>
+
+              </select>
+
+              <small>
+                <a href="#"
+                  class="add-term-link"
+                  data-term-type="DELIVERY">
+                  + Add New Delivery Term
+                </a>
+              </small>
+
+              <input
+                type="hidden"
+                name="delivery_terms"
+                id="delivery_terms">
+
             </div>
 
             <div class="col-md-6">
-              <label class="control-label">General Terms</label>
-              <textarea class="form-control" name="general_terms" id="general_terms" rows="4"><?php echo $records1[0]->general_term; ?></textarea>
+              <label for="general_terms_select" class="form-label">
+                General Terms
+              </label>
+
+              <select class="form-control term-select select2" id="general_terms_select" name="general_term_id">
+                <option value="">
+                  Please select general terms
+                </option>
+                <?php if (!empty($general_terms_list)) { ?>
+                  <?php foreach ($general_terms_list as $term) { ?>
+                    <option
+                      value="<?php echo $term->terms_id; ?>"
+                      data-description="<?php echo htmlspecialchars(
+                                          $term->terms_description,
+                                          ENT_QUOTES,
+                                          'UTF-8'
+                                        ); ?>"
+                      <?php
+                      echo (
+                        isset($records1[0]->general_term) &&
+                        $records1[0]->general_term == $term->terms_description
+                      ) ? 'selected' : '';
+                      ?>>
+                      <?php echo htmlspecialchars(
+                        $term->terms_name,
+                        ENT_QUOTES,
+                        'UTF-8'
+                      ); ?>
+                    </option>
+                  <?php } ?>
+                <?php } ?>
+              </select>
+              <small>
+                <a href="#"
+                  class="add-term-link"
+                  data-term-type="GENERAL">
+                  + Add New General Term
+                </a>
+              </small>
+              <input type="hidden" name="general_terms" id="general_terms">
             </div>
+
           </div>
+
           <div class="row mt-3">
             <div class="col-md-4">
               <!-- Employee Name -->
@@ -394,15 +610,31 @@ $user = $this->session->userdata('user_id');
 
       <!-- /page content -->
 </form>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<div
+  class="modal fade"
+  id="addTermModal"
+  tabindex="-1"
+  role="dialog"
+  aria-hidden="true">
+
+  <div id="addTermModalContent"></div>
+
+</div>
+
+
+
 <script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
-<script>
-  CKEDITOR.replace('delivery_terms');
-  CKEDITOR.replace('general_terms');
-</script>
 
 <script>
   $(document).ready(function() {
+
+    $('.select2').select2({
+      width: '100%',
+      placeholder: 'Select',
+      allowClear: true
+    });
+
     var rowIndex = 1; // start from 1 (row 0 exists in HTML)
     // Add new row
     $(document).on('click', '.addRow', function(e) {
@@ -596,6 +828,265 @@ $user = $this->session->userdata('user_id');
       $('#actual_price' + row_no).prop('required', false);
     }
   }
+
+  $(document).ready(function() {
+
+
+    ////////////////////////////////////////////////////////////
+    // INITIALIZE SELECT2
+    ////////////////////////////////////////////////////////////
+
+    $('.select2').select2({
+      width: '100%',
+      placeholder: 'Select',
+      allowClear: true
+    });
+
+    // =====================================================
+    // INITIALIZE EXISTING TERMS
+    // =====================================================
+
+    $("#payment_terms").val(
+      $("#payment_terms_select option:selected")
+      .attr("data-description") || ""
+    );
+
+    $("#delivery_terms").val(
+      $("#delivery_terms_select option:selected")
+      .attr("data-description") || ""
+    );
+
+    $("#general_terms").val(
+      $("#general_terms_select option:selected")
+      .attr("data-description") || ""
+    );
+    
+    //////////////////////////////// PAYMENT TERM CHANGE//////////////////////////
+    $('#payment_terms_select').on('change', function() {
+      var description = $(this)
+        .find(':selected')
+        .attr('data-description') || '';
+      $('#payment_terms').val(description);
+
+    });
+
+    ///////////////////// DELIVERY TERM CHANGE//////////////////////
+    $('#delivery_terms_select').on('change', function() {
+      var description = $(this)
+        .find(':selected')
+        .attr('data-description') || '';
+      $('#delivery_terms').val(description);
+
+    });
+
+    //////////////////////////////////////GENERAL TERM CHANGE/////////////////////////
+    $('#general_terms_select').on('change', function() {
+      var description = $(this)
+        .find(':selected')
+        .attr('data-description') || '';
+      $('#general_terms').val(description);
+    });
+
+
+    /////////////////ADD NEW TERM//////////////////////////////
+
+    $(document).on(
+      'click',
+      '.add-term-link',
+      function(e) {
+        e.preventDefault();
+        var termType = $(this).data('term-type');
+        $.ajax({
+          url: "<?php echo base_url('index.php/Ajax/add_new_term'); ?>",
+          type: "POST",
+          data: {
+            term_type: termType
+          },
+
+
+          success: function(response) {
+            $('#addTermModalContent')
+              .html(response);
+            $('#addTermModal').modal('show');
+
+            // Initialize CKEditor
+            if (typeof CKEDITOR !== 'undefined') {
+
+              if (CKEDITOR.instances['new_terms_description']) {
+                CKEDITOR.instances['new_terms_description'].destroy(true);
+              }
+
+              CKEDITOR.replace('new_terms_description');
+            }
+          },
+
+          error: function() {
+            alert(
+              'Unable to open Add Term form.'
+            );
+          }
+        });
+      }
+    );
+
+
+    //////////////////////SAVE NEW TERM////////////////////////////////
+
+    $(document).on(
+      'click',
+      '#saveNewTermBtn',
+      function() {
+
+        var $button = $(this);
+
+        var termType =
+          $('#new_term_type').val();
+
+        var termName =
+          $.trim(
+            $('#new_terms_name').val()
+          );
+
+        var description =
+          $.trim(
+            $('#new_terms_description').val()
+          );
+
+
+        if (termName == '') {
+
+          alert(
+            'Terms & Conditions Name is required.'
+          );
+
+          $('#new_terms_name').focus();
+
+          return;
+
+        }
+
+
+        $button
+          .prop('disabled', true)
+          .html(
+            '<i class="fa fa-spinner fa-spin"></i> Saving...'
+          );
+
+
+        $.ajax({
+          url: "<?php echo base_url('index.php/Ajax/save_term_ajax'); ?>",
+          type: "POST",
+          dataType: "json",
+          data: {
+            term_type: termType,
+            terms_name: termName,
+            terms_description: description
+          },
+
+          success: function(response) {
+            if (response.success) {
+              var selectId = '';
+              if (response.term_type == 'PAYMENT') {
+                selectId = '#payment_terms_select';
+              } else if (
+                response.term_type == 'DELIVERY'
+              ) {
+                selectId = '#delivery_terms_select';
+              } else if (
+                response.term_type == 'GENERAL'
+              ) {
+                selectId = '#general_terms_select';
+              }
+
+              var $select = $(selectId);
+
+              // Add new option
+              var newOption =
+                new Option(
+                  response.terms_name,
+                  response.terms_id,
+                  true,
+                  true
+                );
+
+
+              $(newOption)
+                .attr(
+                  'data-description',
+                  response.terms_description
+                );
+
+
+              $select
+                .append(newOption)
+                .trigger('change');
+
+
+              // Update hidden description
+              if (
+                response.term_type ==
+                'PAYMENT'
+              ) {
+
+                $('#payment_terms')
+                  .val(
+                    response.terms_description
+                  );
+
+              } else if (
+                response.term_type ==
+                'DELIVERY'
+              ) {
+                $('#delivery_terms')
+                  .val(
+                    response.terms_description
+                  );
+
+              } else if (
+                response.term_type ==
+                'GENERAL'
+              ) {
+                $('#general_terms')
+                  .val(
+                    response.terms_description
+                  );
+              }
+
+              // Close modal
+              $('#addTermModal').modal('hide');
+
+              // Reset modal
+              $('#addTermModalContent').html('');
+
+            } else {
+              alert(
+                response.message ||
+                'Failed to save term.'
+              );
+
+              $button
+                .prop('disabled', false)
+                .html(
+                  '<i class="fa fa-save"></i> Save'
+                );
+            }
+          },
+
+          error: function() {
+            alert(
+              'Something went wrong while saving.'
+            );
+
+            $button
+              .prop('disabled', false)
+              .html(
+                '<i class="fa fa-save"></i> Save'
+              );
+          }
+        });
+      }
+    );
+  });
 
   function get_quotation_info() {
     var quotation_id = document.getElementById("quotation_id").value;
