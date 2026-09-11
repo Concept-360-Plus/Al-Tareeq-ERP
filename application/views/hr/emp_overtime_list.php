@@ -5,6 +5,7 @@
         vertical-align: middle;
     }
 </style>
+
 <div class="card-body">
     <div class="dt-responsive table-responsive">
 
@@ -19,7 +20,7 @@
                 <?php echo $this->session->flashdata('success'); ?>
             </div>
         <?php endif; ?>
-        
+
         <table id="datatable" class="table table-striped" data-toggle="data-table">
             <thead>
                 <tr>
@@ -32,21 +33,43 @@
             </thead>
             <tbody>
                 <?php $i = 1;
-                foreach ($records as $row) { ?>
+                foreach ($records as $row) {
+
+                    $totalMinutes = (int) ($row->overtime_minutes ?? 0);
+                    $hours = floor($totalMinutes / 60);
+                    $minutes = $totalMinutes % 60;
+                ?>
                     <tr>
                         <td><?php echo $i;
                             $i++; ?></td>
                         <td><?php echo $row->name; ?></td>
-                        <td><?php echo $row->overtime; ?></td>
+                        <!-- Overtime -->
+                        <td>
+                            <?php
+                            if ($totalMinutes > 0) {
+                                echo $hours . ' Hour';
+                                if ($hours != 1) {
+                                    echo 's';
+                                }
+                                if ($minutes > 0) {
+                                    echo ' ' . $minutes . ' Minute';
+                                    if ($minutes != 1) {
+                                        echo 's';
+                                    }
+                                }
+                            } else {
+                                echo '0 Hours';
+                            }
+                            ?>
+                        </td>
                         <td><?php echo date('d-M-Y', strtotime($row->date_ot)); ?></td>
                         <td class="action-icons">
-                            <a href="<?php echo base_url().'index.php/Hr/edit_emp_overtime/'.$row->emp_oid; ?>" title="Edit">
+                            <a href="<?php echo base_url() . 'index.php/Hr/edit_emp_overtime/' . $row->emp_oid; ?>" title="Edit">
                                 <i class="fa fa-edit"></i>
                             </a>
 
-                            <a href="<?php echo base_url().'index.php/Hr/delete_overtime_emp/'.$row->emp_oid; ?>"
-                            title="Delete"
-                            onclick="return confirmcancel(<?php echo $row->emp_oid; ?>);">
+                            <a href="<?php echo base_url() . 'index.php/Hr/delete_overtime_emp/' . $row->emp_oid; ?>"
+                                title="Delete">
                                 <i class="fa fa-trash"></i>
                             </a>
                         </td>
@@ -57,15 +80,8 @@
     </div>
 
 </div>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
 
 <!-- Static Table End -->
-
 
 
 <script>

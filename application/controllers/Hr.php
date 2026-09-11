@@ -929,7 +929,7 @@ class Hr extends CI_Controller
 		$id = $this->input->post('id', TRUE);
 
 		if (empty($id)) {
-			$this->session->set_flashdata('error','Invalid Joining Application ID.');
+			$this->session->set_flashdata('error', 'Invalid Joining Application ID.');
 
 			redirect('Hr/view_joining_application_list');
 			return;
@@ -939,7 +939,7 @@ class Hr extends CI_Controller
 		$res = $this->Hr_model->update_joining_application($id);
 
 		if ($res) {
-			$this->session->set_flashdata('success','Joining Application updated successfully.');
+			$this->session->set_flashdata('success', 'Joining Application updated successfully.');
 		} else {
 			$this->session->set_flashdata('error', 'Unable to update Joining Application.');
 		}
@@ -979,6 +979,80 @@ class Hr extends CI_Controller
 
 		$this->session->set_flashdata('success', 'Delete Record Successfully');
 		redirect('Hr/view_joining_application_list');
+	}
+
+	///////////////////////////////////////OFFER LETTER////////////////////////////////////////////// 
+
+	function add_offer_letter()
+	{
+		$this->load->model('Setup_model');
+		$this->load->model('Hr_model');
+		$this->load->model('Users_model');
+		$data['title'] = "Create Offer Letter";
+		$data['user_records'] = $this->Users_model->get_user_list();
+		$data['desig_list'] = $this->Setup_model->get_designation_list();
+		$data['main_content'] = 'hr/offer_letter_add.php';
+		$this->load->view('includes/template', $data);
+	}
+
+	function add_offer_letter_data()
+	{
+		$this->load->model('Hr_model');
+		$flag = $this->Hr_model->add_offer_letter_data();
+		if ($flag) {
+			$this->session->set_flashdata('success', 'Record Successfully Saved');
+			redirect('Hr/list_offer_letter');
+		}
+	}
+
+	function list_offer_letter()
+	{
+		$this->load->model('Hr_model');
+		$data['title'] = "List Offer Letter Details";
+		$data['records'] = $this->Hr_model->get_all_offer_letter_details();
+
+		$data['main_content'] = 'hr/offer_letter_list.php';
+		$this->load->view('includes/template', $data);
+	}
+
+	function edit_offer_letter()
+	{
+		$id = $this->uri->segment('3');
+		$this->load->model('Users_model');
+		$this->load->model('Hr_model');
+		$this->load->model('Setup_model');
+
+		$data['title'] = "Edit Offer Letter";
+
+		$data['user_records'] = $this->Users_model->get_user_list();
+		$data['records'] = $this->Hr_model->get_offer_letter_by_id($id);
+		$data['salary'] = $this->Hr_model->get_offer_salary_by_id($id);
+		$data['incentive'] = $this->Hr_model->get_offer_incentive_by_id($id);
+		$data['desig_list'] = $this->Setup_model->get_designation_list();
+
+		$data['main_content'] = 'hr/offer_letter_edit.php';
+		$this->load->view('includes/template', $data);
+	}
+
+	function update_offer_letter_data()
+	{
+		$this->load->model('Hr_model');
+
+		$flag = $this->Hr_model->update_offer_letter_data();
+		if ($flag) {
+			$this->session->set_flashdata('success', 'Record Successfully Updated');
+			redirect('Hr/list_offer_letter');
+		}
+	}
+
+	function print_offer_letter($id)
+	{
+		$this->load->model('Hr_model');
+		$data['records'] = $this->Hr_model->get_offer_letter_by_id($id);
+		$data['salary'] = $this->Hr_model->get_offer_salary_by_id($id);
+		$data['incentive'] = $this->Hr_model->get_offer_incentive_by_id($id);
+		$data['main_content'] = 'hr/print/print_job_offer.php';
+		$this->load->view('hr/print/print_job_offer.php', $data);
 	}
 
 	///////////////////////////////////////salary_structure////////////////////////////////////////////// 
