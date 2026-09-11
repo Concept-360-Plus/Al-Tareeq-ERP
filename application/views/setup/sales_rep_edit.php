@@ -41,7 +41,8 @@
 
                 <label class="col-md-2">Commission Group</label>
                 <div class="col-md-3">
-                    <select name="commission_group_id" class="form-control">
+                    <select name="commission_group_id" id="commission_group_id" class="form-control"
+                            onchange="fetchCommissionGroupDetails(this.value)">
                         <?php foreach ($commission_group as $cg) { ?>
                             <option value="<?= $cg->commission_group_id ?>"
                                 <?= ($rep->commission_group_id == $cg->commission_group_id) ? 'selected' : '' ?>>
@@ -57,14 +58,14 @@
 
                 <label class="col-md-2">Target</label>
                 <div class="col-md-3">
-                    <input type="number" name="target_amount"
+                    <input type="number" name="target_amount" id="target_amount"
                            class="form-control"
                            value="<?= $rep->target_amount ?>">
                 </div>
 
                 <label class="col-md-2">Commission %</label>
                 <div class="col-md-3">
-                    <input type="number" name="commission_percent"
+                    <input type="number" name="commission_percent" id="commission_percent"
                            class="form-control"
                            value="<?= $rep->commission_percent ?>">
                 </div>
@@ -75,15 +76,9 @@
 
                 <label class="col-md-2">Discount %</label>
                 <div class="col-md-3">
-                    <input type="number" name="sales_discount_percent"
+                    <input type="number" name="sales_discount_percent" id="sales_discount_percent"
                            class="form-control"
                            value="<?= $rep->sales_discount_percent ?>">
-                </div>
-
-                <label class="col-md-2">Blocked</label>
-                <div class="col-md-3">
-                    <input type="checkbox" name="is_blocked" value="1"
-                        <?= ($rep->is_blocked == 1) ? 'checked' : '' ?>>
                 </div>
 
             </div>
@@ -99,3 +94,25 @@
 
     </div>
 </div>
+
+<script>
+function fetchCommissionGroupDetails(id) {
+    if (!id) {
+        document.getElementById('target_amount').value = '';
+        document.getElementById('commission_percent').value = '';
+        document.getElementById('sales_discount_percent').value = '';
+        return;
+    }
+
+    $.ajax({
+        url: "<?= base_url('index.php/Ajax/fetch_commission_group_details/') ?>" + id,
+        type: "GET",
+        dataType: "json",
+        success: function(response) {
+            document.getElementById('target_amount').value = response.target_amount;
+            document.getElementById('commission_percent').value = response.commission_percent;
+            document.getElementById('sales_discount_percent').value = response.sales_discount_percent;
+        }
+    });
+}
+</script>

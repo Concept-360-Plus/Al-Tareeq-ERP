@@ -4,7 +4,7 @@
         <div class="x_panel">
             <div class="x_content">
                 <br />
-            <form action="<?= base_url('index.php/Setup/update_customer') ?>" method="post" enctype="multipart/form-data" autocomplete="off" enctype="multipart/form-data">
+           <form action="<?= base_url('index.php/Setup/update_customer/'.$customer->customer_id) ?>" method="post" enctype="multipart/form-data" autocomplete="off">
 <input type="hidden"
        name="customer_id"
        value="<?= $customer->customer_id ?>">
@@ -182,154 +182,180 @@
             <label>Sales Area</label>
            <select name="sales_area_id" class="form-control">
 
-<?php foreach($sales_area_list as $s){ ?>
+                <?php foreach($sales_area_list as $s){ ?>
 
-<option value="<?= $s->sales_area_id ?>"
-<?= ($customer->sales_area_id==$s->sales_area_id)?'selected':'' ?>>
+                <option value="<?= $s->sales_area_id ?>"
+                <?= ($customer->sales_area_id==$s->sales_area_id)?'selected':'' ?>>
 
-<?= $s->sales_area_name ?>
+                <?= $s->sales_area_name ?>
 
-</option>
+                </option>
 
-<?php } ?>
+                <?php } ?>
 
-</select>
-        </div>
-    </div>
+                </select>
+                        </div>
+                    </div>
 
-    <div class="col-md-4">
-        <div class="form-group">
-            <label>Continent</label>
-           <select name="continent" class="form-control">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>Continent</label>
+                        <select name="continent" class="form-control">
 
-<option value="Africa"
-<?= ($customer->continent=='Africa')?'selected':'' ?>>
-Africa
-</option>
+                <option value="Africa"
+                <?= ($customer->continent=='Africa')?'selected':'' ?>>
+                Africa
+                </option>
 
-<option value="Asia"
-<?= ($customer->continent=='Asia')?'selected':'' ?>>
-Asia
-</option>
+                <option value="Asia"
+                <?= ($customer->continent=='Asia')?'selected':'' ?>>
+                Asia
+                </option>
 
-<option value="Europe"
-<?= ($customer->continent=='Europe')?'selected':'' ?>>
-Europe
-</option>
+                <option value="Europe"
+                <?= ($customer->continent=='Europe')?'selected':'' ?>>
+                Europe
+                </option>
 
-<option value="North America"
-<?= ($customer->continent=='North America')?'selected':'' ?>>
-North America
-</option>
+                <option value="North America"
+                <?= ($customer->continent=='North America')?'selected':'' ?>>
+                North America
+                </option>
 
-<option value="South America"
-<?= ($customer->continent=='South America')?'selected':'' ?>>
-South America
-</option>
+                <option value="South America"
+                <?= ($customer->continent=='South America')?'selected':'' ?>>
+                South America
+                </option>
 
-<option value="Australia"
-<?= ($customer->continent=='Australia')?'selected':'' ?>>
-Australia
-</option>
+                <option value="Australia"
+                <?= ($customer->continent=='Australia')?'selected':'' ?>>
+                Australia
+                </option>
 
-</select>
-        </div>
-    </div>
+                </select>
+                        </div>
+                    </div>
 
 
-</div>
-<div class="row">
+                </div>
+                <div class="row">
 
-   <div class="col-md-6">
-    <div class="form-group">
-        <label>Payment Terms</label>
-        <textarea name="payment_terms" class="form-control" rows="3"></textarea>
-    </div>
-</div>
-</div>
-<div class="row">
-    <div class="col-md-4">
-        <div class="form-group">
-            <label>Credit Limit</label>
-<input type="number"
-       name="credit_limit"
-       value="<?= $customer->credit_limit ?>"
-       class="form-control">        </div>
-    </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>Payment Terms</label>
+                        <textarea name="payment_terms" class="form-control" rows="3"></textarea>
+                    </div>
+                </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>Credit Limit</label>
+                <input type="number"
+                    name="credit_limit"
+                    value="<?= $customer->credit_limit ?>"
+                    class="form-control">        </div>
+                    </div>
 
-    <div class="col-md-4">
-        <div class="form-group">
-            <label>Credit Days</label>
-<input type="number"
-       name="credit_days"
-       value="<?= $customer->credit_days ?>"
-       class="form-control">        </div>
-    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>Credit Days</label>
+                <input type="number"
+                    name="credit_days"
+                    value="<?= $customer->credit_days ?>"
+                    class="form-control">        </div>
+                    </div>
 
-    <div class="col-md-4">
-        <div class="form-group">
-            <label>Max Discount %</label>
-<input type="number"
-       name="max_discount_percent"
-       value="<?= $customer->max_discount_percent ?>"
-       class="form-control">        </div>
-    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>Max Discount %</label>
+                <input type="number"
+                    name="max_discount_percent"
+                    value="<?= $customer->max_discount_percent ?>"
+                    class="form-control">        </div>
+                    </div>
 
-</div>
+                </div>
 
-<div class="row">
-    <div class="col-md-12">
-        <h4><b>Tax Information</b></h4>
-        <hr>
-    </div>
-</div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <h4><b>Tax Information</b></h4>
+                        <hr>
+                    </div>
+                </div>
 
-<div class="row">
+                <div class="row">
 
-    <div class="col-md-3">
-        <div class="form-group">
-            <label>Tax Registration No</label>
-<input type="text"
-       name="tax_registration_no"
-       value="<?= $customer->tax_registration_no ?>"
-       class="form-control">        </div>
-    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Tax Registration No</label>
+                <input type="text"
+                    name="tax_registration_no"
+                    value="<?= $customer->tax_registration_no ?>"
+                    class="form-control">        </div>
+                    </div>
 
-    <div class="col-md-3">
-        <div class="form-group">
-            <label>Country</label>
-<input type="text"
-       name="tax_country"
-       value="<?= $customer->tax_country ?>"
-       class="form-control">        </div>
-    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Country</label>
+                <input type="text"
+                    name="tax_country"
+                    value="<?= $customer->tax_country ?>"
+                    class="form-control">        </div>
+                    </div>
 
-    <div class="col-md-3">
-        <div class="form-group">
-            <label>Emirate <small>(Applicable for UAE)</small></label>
-            <select name="tax_emirate" class="form-control">
-                <option value="">Select Emirate</option>
-                <option value="Abu Dhabi">Abu Dhabi</option>
-                <option value="Dubai">Dubai</option>
-                <option value="Sharjah">Sharjah</option>
-                <option value="Ajman">Ajman</option>
-                <option value="Umm Al Quwain">Umm Al Quwain</option>
-                <option value="Ras Al Khaimah">Ras Al Khaimah</option>
-                <option value="Fujairah">Fujairah</option>
-            </select>
-        </div>
-    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Emirate <small>(Applicable for UAE)</small></label>
+                            <select name="tax_emirate" class="form-control">
+                                <option value="">Select Emirate</option>
+                                <option value="Abu Dhabi">Abu Dhabi</option>
+                                <option value="Dubai">Dubai</option>
+                                <option value="Sharjah">Sharjah</option>
+                                <option value="Ajman">Ajman</option>
+                                <option value="Umm Al Quwain">Umm Al Quwain</option>
+                                <option value="Ras Al Khaimah">Ras Al Khaimah</option>
+                                <option value="Fujairah">Fujairah</option>
+                            </select>
+                        </div>
+                    </div>
 
-    <div class="col-md-3">
-        <div class="form-group">
-            <label>Tax Code</label>
-<input type="text"
-       name="tax_code"
-       value="<?= $customer->tax_code ?>"
-       class="form-control">        </div>
-    </div>
+                        <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Tax Code</label>
+                <input type="text"
+                    name="tax_code"
+                    value="<?= $customer->tax_code ?>"
+                    class="form-control">        </div>
+                    </div>
 
-</div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4><b>Sales</b></h4>
+                        <hr>
+                        <div class="form-group">
+                            <label style="margin-right:15px;">
+                                <input type="checkbox" name="sales_vat_applicable" value="1"
+                                    <?= (isset($customer->sales_vat_applicable) && $customer->sales_vat_applicable == 1) ? 'checked' : '' ?>>
+                                VAT Applicable
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <h4><b>Purchase</b></h4>
+                        <hr>
+                        <div class="form-group">
+                            <label style="margin-right:15px;">
+                                <input type="checkbox" name="purchase_vat_applicable" value="1"
+                                    <?= (isset($customer->purchase_vat_applicable) && $customer->purchase_vat_applicable == 1) ? 'checked' : '' ?>>
+                                VAT Applicable
+                            </label>
+                        </div>
+                    </div>
+                </div>
 				
 				
 
@@ -411,7 +437,8 @@ document.querySelector('form').addEventListener('submit', function (e) {
     form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
 
     function checkRequired(input, name) {
-        if (!input || input.value.trim() === '') {
+        if (!input) return;
+        if (input.value.trim() === '') {
             errors.push(`${name} is required.`);
             input.classList.add('is-invalid');
             valid = false;
@@ -419,13 +446,8 @@ document.querySelector('form').addEventListener('submit', function (e) {
     }
 
     // Required fields
-    checkRequired(form.branch, 'Branch');
     checkRequired(form.customer_name, 'Customer Name');
-    // checkRequired(form.trn_no, 'TRN No');
-    // checkRequired(form.trade_license_no, 'Trade License No');
-    // checkRequired(form.license_issue_date, 'License Issue Date');
-    // checkRequired(form.license_expiry_date, 'License Expiry Date');
-    checkRequired(form.emirate, 'Emirate');
+    checkRequired(form.location, 'Location');
 
     // Optional but format-specific fields
     const emailInput = form.customer_email;

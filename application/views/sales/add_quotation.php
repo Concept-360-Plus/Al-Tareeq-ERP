@@ -16,7 +16,7 @@
             </div>
             <div class="x_content">
 
-                <form action="<?= base_url() ?>index.php/Sales/add_quotation_data" method="post">
+                <form action="<?= base_url() ?>index.php/Sales/add_quotation_data" method="post" id="quotationForm">
                     <input type="hidden" name="estimation_id" id="estimation_id" value="">
 
                    
@@ -24,7 +24,7 @@
                     <div class="form-group row">
                         <label class="col-sm-3 col-form-label">Select Enquiry:</label>
                         <div class="col-sm-4">
-                          <select name="enquiry_id" id="enquiry_id" class="form-control">
+                          <select name="enquiry_id" id="enquiry_id" class="form-control ">
     <option value="">Select Enquiry</option>
 
     <?php foreach($enquiry_list as $row){ ?>
@@ -125,8 +125,48 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="row">
+                        <!-- Sales Person -->
+                        <div class="col-md-6">
+                            <div class="form-group row align-items-center">
+                                <label class="col-sm-4 col-form-label">Sales Person:</label>
+                                <div class="col-sm-8">
+                                    <select name="sales_person" id="sales_person" class="form-control select2">
+                                        <option value="">-- Select --</option>
+                                        <?php if(!empty($sales_rep_list)) { foreach($sales_rep_list as $rep) { ?>
+                                        <option value="<?= $rep->sales_rep_id ?>"
+                                            data-discount="<?= $rep->sales_discount_percent ?>"
+                                            <?= (isset($enquiry_data['sales_person']) && $enquiry_data['sales_person'] == $rep->sales_rep_id) ? 'selected' : '' ?>>
+                                            <?= $rep->sales_rep_name ?>
+                                        </option>
+                                        <?php } } ?>
+                                    </select>
+                                    <small class="text-muted">Pre-filled from the selected enquiry — you can change it.</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Currency -->
+                        <div class="col-md-6">
+                            <div class="form-group row align-items-center">
+                                <label class="col-sm-4 col-form-label">Currency:</label>
+                                <div class="col-sm-8">
+                                    <select name="currency_id" id="currency_id" class="form-control select2">
+                                        <option value="">-- Select --</option>
+                                        <?php if(!empty($currency_list)) { foreach($currency_list as $cur) { ?>
+                                        <option value="<?= $cur->currency_id ?>">
+                                            <?= $cur->currency_name ?>
+                                        </option>
+                                        <?php } } ?>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                    <input type="hidden" 
-       name="quotation_customer" 
+       name="quotation_customer"
        id="quotation_customer"
        value="<?= isset($enquiry_data['enquiry_customer']) ? $enquiry_data['enquiry_customer'] : ''; ?>">
 
@@ -141,7 +181,9 @@
 <table class="table table-bordered">
     <thead>
         <tr>
+            <th width="100">Code</th>
             <th>Item</th>
+            <th>Description</th>
             <th width="100">Qty</th>
             <th width="150">Price</th>
             <th width="150">Amount</th>
@@ -149,6 +191,12 @@
     <button type="button" 
             class="btn btn-success btn-xs"
             id="addNewItem">
+        <i class="fa fa-plus"></i>
+    </button>
+
+    <button type="button"
+            class="btn btn-primary btn-xs openQuickAddItemBtn"
+            title="Create New Item">
         <i class="fa fa-plus"></i>
     </button>
 </th>
@@ -163,12 +211,20 @@
 
         <tr>
 
+            <td><?= isset($item->product_code) ? $item->product_code : '' ?></td>
+
             <td>
                 <?= $item->product_name ?>
 
                 <input type="hidden"
                        name="item_id[]"
                        value="<?= $item->product_id ?>">
+            </td>
+
+            <td>
+                <textarea class="form-control form-control-sm"
+                          name="description[]"
+                          rows="1"><?= isset($item->description) ? $item->description : '' ?></textarea>
             </td>
 
             <td>
@@ -202,6 +258,12 @@
             </td>
 
             <td>
+
+                <button type="button"
+                        class="btn btn-primary btn-sm editItemTypeBtn"
+                        data-product-id="<?= $item->product_id ?>">
+                    <i class="fa fa-edit"></i>
+                </button>
 
                 <button type="button"
                         class="btn btn-danger btn-sm removeCartItem">
@@ -279,8 +341,9 @@
                         <input type="number" 
                                name="qtn_vat_percentage" 
                                id="qtn_vat_percentage" 
-                               value="5"
+                               value="<?= isset($vat_percentage) ? $vat_percentage : 5 ?>"
                                class="form-control mt-2"
+                               readonly
                                style="width:100px;">
                     </div>
                 </div>
@@ -326,7 +389,7 @@
                             <div class="form-group row">
                                 <div class="col-sm-6">
                                     <label class="col-form-label">Payment Term</label>
-                                    <textarea name="payment_term" id="payment_term"
+                                    <textarea name="payment_term" id="payment_term" rows="4"
     class="form-control estimation_edit"><?= isset($master['payment_term']) ? $master['payment_term'] : "" ?></textarea>
                                 </div>
                                 <div class="col-sm-6">
@@ -355,13 +418,13 @@
                             <div class="form-group row">
                                 <div class="col-sm-6">
                                     <label class="col-form-label">Delivery Term</label>
-                                    <textarea name="delivery_term" id="delivery_term"
+                                    <textarea name="delivery_term" id="delivery_term" rows="4"
                                         class="form-control estimation_edit"></textarea>
                                 </div>
 
                                 <div class="col-sm-6">
                                     <label class="col-form-label">Terms & Conditions</label>
-                                    <textarea name="terms_condition" id="terms_condition"
+                                    <textarea name="terms_condition" id="terms_condition" rows="5"
                                         class="form-control estimation_edit"></textarea>
                                 </div>
                             </div>
@@ -458,6 +521,7 @@
                     <thead>
                         <tr>
                             <th>Item</th>
+                            <th>Description</th>
                             <th>Price</th>
                             <th width="120">Qty</th>
                             <th>Select</th>
@@ -495,18 +559,9 @@
         </div>
     </div>
 </div>
-<script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
 <script>
-    
-    CKEDITOR.replace('delivery_term');
-  var termsEditor = CKEDITOR.replace('terms_condition');
-  CKEDITOR.replace('payment_term', {
-    height: 120
-});
 
-CKEDITOR.replace('notes', {
-    height: 120
-});
+    var baseUrl = "<?php echo base_url(); ?>";
 
 
        
@@ -536,6 +591,12 @@ $(document).ready(function () {
     calculateTotals();
 });
 
+$('#quotationForm').on('submit', function (e) {
+    if (!validateDiscountAgainstSalesPerson()) {
+        e.preventDefault();
+    }
+});
+
    
      $(document).on('keyup change', '.cart_qty, .cart_price', function () {
 
@@ -550,6 +611,7 @@ $(document).ready(function () {
     row.find('.amount_input').val(amount.toFixed(2));
 
     calculateQuotationTotal();
+    calculateTotals();
 });
 
 function calculateQuotationTotal()
@@ -567,12 +629,10 @@ function calculateQuotationTotal()
 
     $('#qtn_add_discount_amount').val(discountAmount.toFixed(2));
 
-    $('#qtn_total').val((subtotal - discountAmount).toFixed(2));
+    // Always recalc VAT + Net whenever subtotal changes (fixes stale/incorrect Net)
+    calculateTotals();
 }
 
-$('#qtn_add_discount_percentage').on('keyup change', function () {
-    calculateQuotationTotal();
-});
 // Discount % -> Discount Amount
 $('#qtn_add_discount_percentage').on('keyup change', function () {
 
@@ -584,6 +644,8 @@ $('#qtn_add_discount_percentage').on('keyup change', function () {
     $('#qtn_add_discount_amount').val(amount.toFixed(2));
 
     calculateTotals();
+
+    validateDiscountAgainstSalesPerson();
 });
 
 // Discount Amount -> Discount %
@@ -600,14 +662,60 @@ $('#qtn_add_discount_amount').on('keyup change', function () {
     $('#qtn_add_discount_percentage').val(per.toFixed(2));
 
     calculateTotals();
+
+    validateDiscountAgainstSalesPerson();
 });
+
+// Sales Person -> re-validate discount against their allowed max
+$('#sales_person').on('change', function () {
+    validateDiscountAgainstSalesPerson();
+});
+
+function validateDiscountAgainstSalesPerson() {
+
+    var selectedOption = $('#sales_person option:selected');
+
+    if (!$('#sales_person').val()) {
+        return true;
+    }
+
+    var maxDiscount = parseFloat(selectedOption.data('discount'));
+
+    if (isNaN(maxDiscount)) {
+        return true;
+    }
+
+    var currentPercent = parseFloat($('#qtn_add_discount_percentage').val()) || 0;
+
+    if (currentPercent > maxDiscount) {
+
+        alert('Discount of ' + currentPercent.toFixed(2) + '% exceeds the maximum allowed (' + maxDiscount.toFixed(2) + '%) for the selected Sales Person. It has been reset to the maximum allowed.');
+
+        $('#qtn_add_discount_percentage').val(maxDiscount.toFixed(2));
+
+        var gross = parseFloat($('#qtn_sub_total').val()) || 0;
+        var amount = (gross * maxDiscount) / 100;
+
+        $('#qtn_add_discount_amount').val(amount.toFixed(2));
+
+        calculateTotals();
+
+        return false;
+    }
+
+    return true;
+}
 function calculateTotals() {
 
     var subtotal = parseFloat($('#qtn_sub_total').val()) || 0;
     var discount = parseFloat($('#qtn_add_discount_amount').val()) || 0;
 
-    // Before VAT calculation
+    // Taxable amount = Subtotal - Discount. VAT is calculated on THIS (exclusive VAT),
+    // never extracted back out of the total.
     var taxable_amount = subtotal - discount;
+    if (taxable_amount < 0) {
+        taxable_amount = 0;
+    }
 
     var vat_amount = 0;
 
@@ -625,7 +733,7 @@ function calculateTotals() {
 
     }
 
-    // Net Amount = Sub Total - Discount + VAT
+
     var net_amount = taxable_amount + vat_amount;
 
     $('#qtn_grand_total').val(net_amount.toFixed(2));
@@ -733,13 +841,13 @@ $('#new_item_search').keyup(function(){
             $.each(data,function(i,item){
 
 
-                html += `
+            html += `
 
                 <tr>
 
                 <td>
 
-                ${item.product_name}
+                ${item.product_name} (${item.product_code})
 
                 <input type="hidden"
                        class="new_item_id"
@@ -751,7 +859,20 @@ $('#new_item_search').keyup(function(){
                        value="${item.product_name}">
 
 
+                <input type="hidden"
+                       class="new_item_code"
+                       value="${item.product_code}">
+
+
+                <input type="hidden"
+                       class="new_item_description"
+                       value="${item.description ? item.description : ''}">
+
+
                 </td>
+
+
+                <td>${item.description ? item.description : ''}</td>
 
 
                 <td>
@@ -806,10 +927,12 @@ $('#addSelectedNewItem').click(function(){
         if($(this).find('.new_item_check').is(':checked'))
         {
 
-            let id = $(this).find('.new_item_id').val();
-            let name = $(this).find('.new_item_name').val();
-            let price = parseFloat($(this).find('.new_item_price').val()) || 0;
-            let qty = parseFloat($(this).find('.new_item_qty').val()) || 0;
+            let id          = $(this).find('.new_item_id').val();
+            let name        = $(this).find('.new_item_name').val();
+            let code        = $(this).find('.new_item_code').val();
+            let description = $(this).find('.new_item_description').val();
+            let price       = parseFloat($(this).find('.new_item_price').val()) || 0;
+            let qty         = parseFloat($(this).find('.new_item_qty').val()) || 0;
 
 
             // Check item already exists
@@ -846,10 +969,11 @@ $('#addSelectedNewItem').click(function(){
 
                 let amount = qty * price;
 
-
                 $('#selectedCartItems').append(`
 
                 <tr>
+
+                    <td>${code}</td>
 
                     <td>
                         ${name}
@@ -859,6 +983,11 @@ $('#addSelectedNewItem').click(function(){
                                value="${id}">
                     </td>
 
+                    <td>
+                        <textarea class="form-control form-control-sm"
+                                  name="description[]"
+                                  rows="1">${description}</textarea>
+                    </td>
 
                     <td>
                         <input type="number"
@@ -892,6 +1021,12 @@ $('#addSelectedNewItem').click(function(){
 
 
                     <td>
+                        <button type="button"
+                                class="btn btn-primary btn-sm editItemTypeBtn"
+                                data-product-id="${id}">
+                            <i class="fa fa-edit"></i>
+                        </button>
+
                         <button type="button"
                                 class="btn btn-danger btn-sm removeCartItem">
                             <i class="fa fa-trash"></i>
@@ -957,7 +1092,7 @@ $('#enquiry_id').change(function(){
 
         dataType:"json",
 
-       success:function(data){
+              success:function(data){
 
     $('#enquiry_code').val(data.enquiry_code);
     $('#branch_name').val(data.branch_name);
@@ -966,6 +1101,10 @@ $('#enquiry_id').change(function(){
 
     $('#quotation_branch_id').val(data.branch_id);
     $('#quotation_customer').val(data.enquiry_customer);
+
+    // Sales person is pre-filled from the enquiry, but stays editable
+    $('#sales_person').val(data.sales_person ? data.sales_person : '').trigger('change');
+    validateDiscountAgainstSalesPerson();
 
 
     // Load enquiry items
@@ -981,6 +1120,8 @@ $('#enquiry_id').change(function(){
 
         <tr>
 
+            <td>${item.product_code ? item.product_code : ''}</td>
+
             <td>
                 ${item.product_name}
 
@@ -989,6 +1130,11 @@ $('#enquiry_id').change(function(){
                        value="${item.product_id}">
             </td>
 
+            <td>
+                <textarea class="form-control form-control-sm"
+                          name="description[]"
+                          rows="1">${item.description ? item.description : ''}</textarea>
+            </td>
 
             <td>
                 <input type="number"
@@ -1023,7 +1169,13 @@ $('#enquiry_id').change(function(){
             </td>
 
 
-            <td>
+                        <td>
+
+                <button type="button"
+                        class="btn btn-primary btn-sm editItemTypeBtn"
+                        data-product-id="${item.product_id}">
+                    <i class="fa fa-edit"></i>
+                </button>
 
                 <button type="button"
                         class="btn btn-danger btn-sm removeCartItem">
@@ -1048,4 +1200,99 @@ $('#enquiry_id').change(function(){
     });
 
 });
+
+$(document).on('itemQuickAdded', function(e, item){
+
+    let existingRow = $('#selectedCartItems')
+        .find('input[name="item_id[]"][value="'+item.product_id+'"]')
+        .closest('tr');
+
+    if(existingRow.length > 0)
+    {
+        return;
+    }
+
+    let price = parseFloat(item.retail_price) || 0;
+    let qty = 1;
+    let amount = qty * price;
+
+    $('#selectedCartItems').append(`
+
+    <tr>
+
+        <td>${item.product_code ? item.product_code : ''}</td>
+
+        <td>
+            ${item.product_name}
+
+            <input type="hidden"
+                   name="item_id[]"
+                   value="${item.product_id}">
+        </td>
+
+        <td>
+            <textarea class="form-control form-control-sm"
+                      name="description[]"
+                      rows="1">${item.description ? item.description : ''}</textarea>
+        </td>
+
+        <td>
+            <input type="number"
+                   class="form-control cart_qty"
+                   name="qty[]"
+                   value="${qty}"
+                   style="width:70px">
+        </td>
+
+
+        <td>
+            <input type="number"
+                   class="form-control cart_price"
+                   name="price[]"
+                   value="${price}"
+                   step="0.01"
+                   style="width:100px">
+        </td>
+
+
+        <td>
+
+            <span class="amount_display">
+                ${amount.toFixed(2)}
+            </span>
+
+            <input type="hidden"
+                   class="amount_input"
+                   name="amount[]"
+                   value="${amount.toFixed(2)}">
+
+        </td>
+
+
+        <td>
+
+            <button type="button"
+                    class="btn btn-primary btn-sm editItemTypeBtn"
+                    data-product-id="${item.product_id}">
+                <i class="fa fa-edit"></i>
+            </button>
+
+            <button type="button"
+                    class="btn btn-danger btn-sm removeCartItem">
+                <i class="fa fa-trash"></i>
+            </button>
+
+        </td>
+
+
+    </tr>
+
+    `);
+
+    calculateQuotationTotal();
+    calculateTotals();
+
+});
 </script>
+
+<?php $this->load->view('includes/items/item_popups'); ?>

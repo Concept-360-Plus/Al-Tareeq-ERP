@@ -58,10 +58,6 @@ $user = $this->session->userdata('user_id');
                 <th>Order Code</th>
                 <th>Quotation Code</th>
                 <th>Enquiry Code</th>
-                <th>Status</th>
-                <th>Sub total</th>
-                <th>Discount Amount</th>
-                <th>Vat Amount</th>
                 <th>Grand Total</th>
                 <th>Action</th>
               </tr>
@@ -83,29 +79,9 @@ $user = $this->session->userdata('user_id');
                     </a>
                   </td>
                   <td>
-                    <a href="<?= base_url('index.php/CRM/view_enquiry/' . $sales_order['enquiry_id']); ?>" title="view">
+                    <a href="<?= base_url('index.php/Sales/view_enquiry/' . $sales_order['enquiry_id']); ?>" title="view">
                       <?= $sales_order['enquiry_code'] ?></a>
 
-                  </td>
-                  <td>
-                    <?= $sales_order['active'] >= 0 ? 'Active' : 'Cancelled'; ?>
-                  </td>
-
-                  <!-- Sub Total -->
-                  <td>
-                    <?= number_format((float)$sales_order['sub_total'], 2) ?>
-                  </td>
-
-                  <!-- Discount -->
-                  <td>
-                    (<?= $sales_order['discount_percentage'] ?>)%<br>
-                    <?= number_format((float)$sales_order['discount_amount'], 2) ?>
-                  </td>
-
-                  <!-- VAT -->
-                  <td>
-                    (<?= $sales_order['vat_percentage'] ?>)%<br>
-                    <?= number_format((float)$sales_order['vat_amount'], 2) ?>
                   </td>
 
                   <!-- Grand Total -->
@@ -114,14 +90,10 @@ $user = $this->session->userdata('user_id');
                   </td>
                   <td>
                     <?php if (has_access($user, $page_name, 'E')) { ?>
-                       <a href="<?php echo base_url() . 'index.php/Sales/edit_sales_order/' . $sales_order['so_id']; ?>"
-                        class="btn btn-primary btn-xs"
-                        data-toggle="tooltip" title="Edit">
-                        <i class="fa fa-edit"></i>
-                      </a>
+            
                       <?php } ?>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                       <?php if (has_view_access($user, $page_name)) { ?>
-                        <!-- <a target='_blank' href='<?php echo base_url() . 'index.php/Document_controller/print_sales_order/' . $sales_order['so_id'] . '/' . $sales_order['enquiry_id']; ?>' title='print'><span class="glyphicon glyphicon-print" aria-hidden="true"></span></span></a> -->
+                        <!-- <a target='_blank' href='<?php echo base_url() . 'index.php/Sales/print_sales_order/' . $sales_order['so_id'] . '/' . $sales_order['enquiry_id']; ?>' title='print'><span class="glyphicon glyphicon-print" aria-hidden="true"></span></span></a> -->
                       <?php } ?>
                       <div class="btn-group">
                         <button type="button" class="btn btn-success">Print</button>
@@ -130,7 +102,7 @@ $user = $this->session->userdata('user_id');
                           <span class="sr-only">Toggle Dropdown</span>
                         </button>
                         <div class="dropdown-menu">
-                          <a class="dropdown-item" href="<?php echo base_url() . 'index.php/Document_controller/print_sales_order/' . $sales_order['so_id'] . '/' . $sales_order['enquiry_id']; ?>" data-action="sales_return" data-invoice-id="#">sales order</a>
+                          <a class="dropdown-item" href="<?php echo base_url() . 'index.php/Sales/print_sales_order/' . $sales_order['so_id'] . '/' . $sales_order['enquiry_id']; ?>" data-action="sales_return" data-invoice-id="#">sales order</a>
                           <a class="dropdown-item" href="<?php echo base_url() . 'index.php/Document_controller/print_proforma_invoice/' . $sales_order['so_id'] . '/' . $sales_order['enquiry_id']; ?>" data-action="cancel" data-invoice-id="#">Proforma invoice</a>
                         </div>
                       </div>
@@ -148,25 +120,3 @@ $user = $this->session->userdata('user_id');
     </div>
   </div>
 </div>
-<script>
-  function delete_estimation(estimation_id, enquiry_id) {
-    $.ajax({
-      url: '<?= base_url("index.php/Sales/delete_estimation_by_id") ?>',
-      type: 'POST',
-      data: {
-        estimation_id: estimation_id,
-        enquiry_id: enquiry_id
-      },
-      success: function(response) {
-        console.log(response);
-
-        if (response) {
-          alert("Record deleted!");
-          window.location.href = window.location.pathname;
-        } else
-          alert("Something went wrong!");
-
-      }
-    });
-  }
-</script>
