@@ -14,11 +14,12 @@
                 <div class="clearfix"></div>
             </div>
             <div class="x_content">
-                <!-- Sales Order Form -->
-                <form action="<?= base_url() ?>index.php/Sales/save_sales_order" method="post">
+
+                    <form action="<?= base_url() ?>index.php/Sales/save_sales_order" method="post" id="soForm">
                     <!-- <input type="hidden" name="quotation_id" id="quotation_id" value=""> -->
                     <input type="hidden" name="enquiry_id" id="enquiry_id" value="">
                     <input type="hidden" name="estimation_id" id="estimation_id" value="">
+                    <input type="hidden" id="so_sales_rep_max_discount" value="">
 
                     <table class="table table-bordered" style="width:100%; border-collapse:collapse; font-size:13px; margin-bottom:20px;">
                         <tr>
@@ -59,6 +60,15 @@
                     <hr>
 
                     <!-- Product List -->
+                    <div class="row mb-2">
+                        <div class="col-12 text-right">
+                            <!-- <button type="button"
+                                    class="btn btn-primary btn-xs openQuickAddItemBtn"
+                                    title="Create New Item">
+                                <i class="fa fa-plus"></i> New Item
+                            </button> -->
+                        </div>
+                    </div>
                     <div class="row">
                         <div class="col-12 table-responsive_sales_order  quotation_product_table"></div>
                     </div>
@@ -74,8 +84,8 @@
                                 <tr>
                                     <th>Discount (%)</th>
                                     <td>
-                                        <input type="hidden" name="so_add_discount_percentage" id="so_add_discount_percentage" value="">
-                                        <input type="text" name="so_add_discount_amount" id="so_add_discount_amount" value="" class="form-control so_discount_amount" readonly>
+                                        <input type="text" name="so_add_discount_percentage" id="so_add_discount_percentage" value="" class="form-control" style="width:100px; display:inline-block;">
+                                        <input type="text" name="so_add_discount_amount" id="so_add_discount_amount" value="" class="form-control so_discount_amount mt-2" readonly>
                                     </td>
                                 </tr>
                                 <tr>
@@ -85,8 +95,8 @@
                                 <tr>
                                     <th>VAT (%)</th>
                                     <td>
-                                        <input type="hidden" name="so_vat_percentage" id="so_vat_percentage" value="" class="so_vat_percentage">
-                                        <input type="text" name="so_vat_amount" id="so_vat_amount" value="" class="form-control so_vat_amount" readonly>
+                                        <input type="text" name="so_vat_percentage" id="so_vat_percentage" value="" class="form-control so_vat_percentage" readonly style="width:100px; display:inline-block;">
+                                        <input type="text" name="so_vat_amount" id="so_vat_amount" value="" class="form-control so_vat_amount mt-2" readonly>
                                     </td>
                                 </tr>
                                 <tr>
@@ -107,7 +117,6 @@
                                         </label>
                                     </div>
                                 </th>
-                            </tr>
                             </tr>
                             <tr>
                                 <th style="width:50%;">Billing Address</th>
@@ -174,20 +183,24 @@
 
                         </div>
                     </div>
-                </form>
+                    </form>
             </div>
         </div>
     </div>
 </div>
 
+<?php $this->load->view('includes/items/item_popups'); ?>
+
 <!-- Action Buttons -->
 <script>
+    var baseUrl = "<?php echo base_url(); ?>";
+
     function recalculateTotals() {
         let subtotal = 0;
         let totalDiscount = 0;
         let totalTaxable = 0;
 
-        $("table.table tbody tr").each(function() {
+        $(".quotation_product_table table tbody tr").each(function() {
             let qty = parseFloat($(this).find(".so_qty").val()) || 0;
             let unitp = parseFloat($(this).find(".so_unitp").val()) || 0;
             let discount = parseFloat($(this).find(".so_discount").val()) || 0;
@@ -220,13 +233,108 @@
         let vatPercentage = parseFloat($(".so_vat_percentage").val()) || 0;
         if (vatPercentage > 0) {
             vatAmount = (totalbforevat) * (vatPercentage / 100);
-            $(".so_vat_amount").val(vatAmount.toFixed(2));
         }
+        $(".so_vat_amount").val(vatAmount.toFixed(2));
 
         // Grand total
         let grandTotal = subtotal - discountAmount + vatAmount;
         $(".so_grand_total").val(grandTotal.toFixed(2));
     }
+
+        // Discount % edited directly on the sales order — recalc, then enforce the linked quotation's sales rep max discount
+    $(document).on("input change", "#so_add_discount_percentage", function() {
+        recalculateTotals();
+        validateDiscountAgainstSalesPerson();
+    });
+
+    function validateDiscountAgainstSalesPerson() {
+
+        var maxDiscount = parseFloat($('#so_sales_rep_max_discount').val());
+
+        if (isNaN(maxDiscount)) {
+            return true;
+        }
+
+        var currentPercent = parseFloat($('#so_add_discount_percentage').val()) || 0;
+
+        if (currentPercent > maxDiscount) {
+
+            alert('Discount of ' + currentPercent.toFixed(2) + '% exceeds the maximum allowed (' + maxDiscount.toFixed(2) + '%) for this quotation\'s Sales Person. It has been reset to the maximum allowed.');
+
+            $('#so_add_discount_percentage').val(maxDiscount.toFixed(2));
+
+            recalculateTotals();
+
+            return false;
+        }
+
+        return true;
+    }
+
+        // Newly created item from the quick-add popup — append it as a sales order line
+    $(document).on('itemQuickAdded', function(e, item) {
+
+        let existingRow = $('.quotation_product_table')
+            .find('input[name="product_id[]"][value="' + item.product_id + '"]')
+            .closest('tr');
+
+        if (existingRow.length > 0) {
+            return;
+        }
+
+        let price = parseFloat(item.retail_price) || 0;
+        let qty = 1;
+        let amount = qty * price;
+        let rowCount = $('.quotation_product_table tbody tr').length + 1;
+
+        $('.quotation_product_table tbody').append(`
+
+        <tr>
+            <td>${rowCount}</td>
+            <td>
+                ${item.product_name}<br>
+                ${item.description ? item.description : ''}
+                <input type="hidden" name="product_id[]" value="${item.product_id}">
+                <input type="hidden" name="product_desc[]" value="${item.description ? item.description : ''}">
+                <input type="hidden" name="qtn_qty[]" value="0">
+                <input type="hidden" name="qtn_discount[]" value="0">
+            </td>
+            <td>
+                ${item.unit_name ? item.unit_name : ''}
+                <input type="hidden" name="unit_id[]" value="${item.unit_id ? item.unit_id : ''}">
+            </td>
+            <td>
+                <input type="text" name="so_qty[]" value="${qty}" data-maxqty="${item.available_qty ? item.available_qty : qty}" class="form-control so_qty">
+            </td>
+            <td>
+                <input type="text" name="so_unitp[]" value="${price.toFixed(2)}" class="form-control so_unitp" readonly>
+            </td>
+            <td>
+                <input type="text" name="so_amount[]" value="${amount.toFixed(2)}" class="form-control so_amount" readonly>
+            </td>
+            <td>
+                <input type="text" name="so_discount[]" value="0.00" class="form-control so_discount">
+            </td>
+            <td>
+                <input type="text" name="so_taxable[]" value="${amount.toFixed(2)}" class="form-control so_taxable" readonly>
+            </td>
+            <td>
+                <button type="button"
+                        class="btn btn-primary btn-sm editItemTypeBtn"
+                        data-product-id="${item.product_id}">
+                    <i class="fa fa-edit"></i>
+                </button>
+
+                <button type="button" class="btn btn-danger btn-sm" onclick="deleteRow(this)">
+                    <i class="fa fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+
+        `);
+
+        recalculateTotals();
+    });
 
     // Quantity or unit price change
     $(document).on("input", ".so_qty, .so_unitp,.so_discount", function() {
@@ -275,13 +383,19 @@
         }
     });
 
-    $(document).ready(function() {
+        $(document).ready(function() {
         recalculateTotals();
         $('#quotation_id').select2({
     placeholder: "Select Quotation",
     allowClear: true,
     width: '100%'
 });
+    });
+
+    $('#soForm').on('submit', function(e) {
+        if (!validateDiscountAgainstSalesPerson()) {
+            e.preventDefault();
+        }
     });
 
     $(document).ready(function() {
@@ -304,79 +418,15 @@
         });
     });
 
-  $(document).ready(function() {
-    // 1. Auto-select quotation if pre-selected
-    var selectedQuotation = <?php echo json_encode(isset($selected_quotation) ? $selected_quotation : ''); ?>;
 
-    if (selectedQuotation) {
-        $('#quotation_id').val(selectedQuotation).trigger('change'); // triggers your AJAX
-    }
-
-    // 2. Handle quotation change (already present)
-    $('#quotation_id').on('change', function() {
-        var qtn_id = $(this).val();
-        if (!qtn_id) return;
-
-        $.ajax({
-            url: "<?= base_url('index.php/Sales/get_quotation_details') ?>",
-            type: "POST",
-            data: { qtn_id: qtn_id },
-            dataType: "json",
-            beforeSend: function() {
-                $(".quotation_product_table").html('<p>Loading...</p>');
-            },
-            success: function(res) {
-                if (res.status) {
-                    var q = res.quotation;
-
-                    // Populate header fields
-                    $("#enquiry_id").val(q.enquiry_id);
-                    $("#estimation_id").val(q.estimation_id);
-                    $("#branch_name").val(q.branch_name);
-                    $("#prepared_by").val(q.prepared_by);
-                    $("#project_name").val(q.project_name);
-                    $("#customer_name").val(q.customer_name);
-
-                    // Populate totals
-                    $("#so_subtotal").val(q.sub_total);
-                    $("#so_add_discount_percentage").val(q.discount_percentage);
-                    $("#so_add_discount_amount").val(q.discount_amount);
-                    $("#so_totalbefore_vat_amount").val(q.total_before_vat);
-                    $("#so_vat_percentage").val(q.vat_percentage);
-                    $("#so_vat_amount").val(q.vat_amount);
-                    $("#so_grand_total").val(q.grand_total);
-
-                    // Billing info
-                    $("#billing_name").val(q.customer_name);
-                    $("#billing_address").val(q.customer_address);
-                    $("#billing_city").val(q.emirate);
-                    $("#billing_phone").val(q.contact_number);
-                    $("#billing_email").val(q.customer_email);
-
-                    // Terms & Conditions
-                    $("#so_payment_term").val(q.payment_term);
-                    $("#so_validity").val(q.validity);
-                    $("#so_delivery_term").val(q.delivery_term);
-                    $("#so_terms_condition").val(q.terms_condition);
-
-                    // Product table
-                    $(".quotation_product_table").html(res.table_html);
-
-                    // Recalculate totals after table is loaded
-                    // recalculateTotals();
-                } else {
-                    alert(res.message || "No data found.");
-                }
-            },
-            error: function() {
-                alert("Error loading quotation data.");
-            }
-        });
-    });
-});
 
 function loadQuotationDetails(qtn_id) {
-    if (!qtn_id) return;
+    console.log('loadQuotationDetails called with:', qtn_id, typeof qtn_id);
+
+    if (qtn_id === null || qtn_id === undefined || qtn_id === '' || qtn_id === '0' || (Array.isArray(qtn_id) && qtn_id.length === 0)) {
+        $(".quotation_product_table").html('');
+        return;
+    }
 
     $.ajax({
         url: "<?= base_url('index.php/Sales/get_quotation_details') ?>",
@@ -398,7 +448,7 @@ function loadQuotationDetails(qtn_id) {
                 $("#project_name").val(q.project_name);
                 $("#customer_name").val(q.customer_name);
 
-                // Totals
+                // Totals — discount % carried over from the quotation, still editable here
                 $("#so_subtotal").val(q.sub_total);
                 $("#so_add_discount_percentage").val(q.discount_percentage);
                 $("#so_add_discount_amount").val(q.discount_amount);
@@ -406,6 +456,9 @@ function loadQuotationDetails(qtn_id) {
                 $("#so_vat_percentage").val(q.vat_percentage);
                 $("#so_vat_amount").val(q.vat_amount);
                 $("#so_grand_total").val(q.grand_total);
+
+                // Sales rep's max discount %, used to re-validate any edit made here
+                $("#so_sales_rep_max_discount").val(q.sales_rep_max_discount);
 
                 // Billing info
                 $("#billing_name").val(q.customer_name);
@@ -424,7 +477,8 @@ function loadQuotationDetails(qtn_id) {
                 $(".quotation_product_table").html(res.table_html);
 
                 // Recalculate totals after table is loaded
-                // recalculateTotals();
+                recalculateTotals();
+                validateDiscountAgainstSalesPerson();
             } else {
                 alert(res.message || "No data found.");
             }
@@ -439,14 +493,20 @@ $(document).ready(function() {
     var selectedQuotation = <?= json_encode(isset($selected_quotation) ? $selected_quotation : ''); ?>;
 
     if (selectedQuotation) {
-        $('#quotation_id').val(selectedQuotation); // set value
-        loadQuotationDetails(selectedQuotation);   // call function manually
+        $('#quotation_id').val(selectedQuotation).trigger('change.select2'); 
+        loadQuotationDetails(selectedQuotation);   
     }
 
-    // Handle manual dropdown change
+        // Handle manual dropdown change
     $('#quotation_id').on('change', function() {
         var qtn_id = $(this).val();
-        loadQuotationDetails(qtn_id);
+        if (qtn_id) {
+            loadQuotationDetails(qtn_id);
+        } else {
+            $(".quotation_product_table").html('');
+        }
     });
 });
 </script>
+
+<?php $this->load->view('includes/items/item_popups'); ?>

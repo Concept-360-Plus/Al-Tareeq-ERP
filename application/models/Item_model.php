@@ -23,6 +23,8 @@ class Item_model extends CI_Model {
         return $res;
     }
 
+    
+
     function get_active_brand_list()
     {
         $this->db->select('*');
@@ -220,6 +222,24 @@ class Item_model extends CI_Model {
         }
         return $count;
     }
+
+    public function get_all_item_list()
+    {
+        $this->db->select('im.*, um.unit_name');
+        $this->db->from('item_master im');
+        $this->db->join('unit_master um', 'im.unit_id = um.unit_id', 'left');
+
+        $query = $this->db->get()->result();
+
+        return $query;
+    }
+
+    public function get_all_units(){
+		$this->db->select('*');
+        $this->db->from('unit_master');
+        $query = $this->db->get()->result();
+        return $query; 
+	}
 
 
 

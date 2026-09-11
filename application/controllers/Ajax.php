@@ -1169,4 +1169,27 @@ class Ajax extends CI_Controller
 
     /////////////////////////////// TERMS & CONDITIONS AJAX END //////////////////////////////
 
+
+    //fetch commision group details  for sales rep master
+    public function fetch_commission_group_details($id)
+    {
+        $this->load->model('Setup_model');
+        $data = $this->Setup_model->get_commission_group_details($id);
+
+        echo json_encode($data);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }

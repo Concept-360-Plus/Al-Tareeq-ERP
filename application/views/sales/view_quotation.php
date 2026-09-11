@@ -498,13 +498,6 @@
 
                 <div class="text-center">
 
-                    <a href="<?= base_url('index.php/Sales/list_quotations') ?>"
-                       class="btn btn-secondary">
-
-                        Back
-
-                    </a>
-
 
                 </div>
 
