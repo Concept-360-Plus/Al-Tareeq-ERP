@@ -697,33 +697,60 @@ class Hr_model extends CI_Model
 		return $insert_id;
 	}
 
-	function update_joining_application($id)
+	public function update_joining_application($id)
 	{
-		$data = array(
-			'employee_id' => $this->input->post('employee_id_hidden'),
-			'joining_type' => $this->input->post('joining_type'),
-			'joining_date' => date('Y-m-d', strtotime($this->input->post('joining_date'))),
-			'offer_letter' => $this->input->post('offer_letter'),
-			//'created_by'  => $this->session->userdata('user_id'),
-			'created_date' => date('Y-m-d'),
+		if (empty($id)) {
+			return false;
+		}
 
+		$data = array(
+			'employee_id'  => $this->input->post('employee_id_hidden', TRUE),
+			'joining_type' => $this->input->post('joining_type', TRUE),
+			'joining_date' => $this->input->post('joining_date', TRUE),
+			'offer_letter' => $this->input->post('offer_letter', TRUE),
+			'remark'       => $this->input->post('remark', TRUE),
+			'updated_by'   => $this->session->userdata('user_id'),
+			'updated_date' => date('Y-m-d H:i:s')
 		);
+
 		$this->db->where('jid', $id);
-		$this->db->update('employee_joining', $data);
-		if ($id) {
+
+		$result = $this->db->update('employee_joining', $data);
+
+		if ($result) {
+
 			$user_se_id = $this->session->userdata('user_id');
 			$page_name = explode('index.php/', $_SERVER['PHP_SELF']);
+
 			$ci = get_instance();
 			$ci->load->helper('log');
-			$log_msg = add_log_entry($user_se_id, 2, $page_name[1], 'employee_joining', 'jid', $id);
+
+			add_log_entry(
+				$user_se_id,
+				2,
+				$page_name[1],
+				'employee_joining',
+				'jid',
+				$id
+			);
+
+			return true;
 		}
-		return $id;
+
+		log_message(
+			'error',
+			'Joining Application update failed. ID: ' . $id .
+				' DB Error: ' . json_encode($this->db->error())
+		);
+
+		return false;
 	}
+
 	public function get_employee_joining_by_id($id)
 	{
-		$this->db->select('j.*, COALESCE(u.user_name, j.employee_id) as user_name');
+		$this->db->select('j.*,e.employee_name,e.user_code,e.mobile,e.department_id,e.designation_id');
 		$this->db->from('employee_joining j');
-		$this->db->join('users u', 'j.employee_id = u.user_id', 'left');
+		$this->db->join('employee_master e','e.employee_id = j.employee_id','left');
 		$this->db->where('j.jid', $id);
 		return $this->db->get()->row();
 	}
@@ -742,19 +769,27 @@ class Hr_model extends CI_Model
 		$this->db->order_by('j.joining_date', 'desc');
 		return $this->db->get()->result();
 	}
-	function get_joining_new_list()
+
+	public function get_joining_new_list()
 	{
-		$query = $this->db->query("
-        SELECT user_id, user_name
-        FROM users
-        WHERE user_id NOT IN (
-            SELECT employee_id
-            FROM employee_joining
-            WHERE employee_id IS NOT NULL
-        )
-        ORDER BY user_name ASC
-    ");
-		return $query->result();
+		$this->db->select('
+        e.employee_id,
+        e.employee_name,
+        e.user_code
+    ');
+
+		$this->db->from('employee_master e');
+
+		$this->db->join(
+			'employee_joining j',
+			'j.employee_id = e.employee_id',
+			'left'
+		);
+
+		$this->db->where('j.jid IS NULL', null, false);
+		$this->db->order_by('e.employee_name', 'ASC');
+
+		return $this->db->get()->result();
 	}
 
 
