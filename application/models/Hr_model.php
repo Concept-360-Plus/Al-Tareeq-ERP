@@ -709,8 +709,6 @@ class Hr_model extends CI_Model
 			'joining_date' => $this->input->post('joining_date', TRUE),
 			'offer_letter' => $this->input->post('offer_letter', TRUE),
 			'remark'       => $this->input->post('remark', TRUE),
-			'updated_by'   => $this->session->userdata('user_id'),
-			'updated_date' => date('Y-m-d H:i:s')
 		);
 
 		$this->db->where('jid', $id);
@@ -748,9 +746,11 @@ class Hr_model extends CI_Model
 
 	public function get_employee_joining_by_id($id)
 	{
-		$this->db->select('j.*,e.employee_name,e.user_code,e.mobile,e.department_id,e.designation_id');
+		$this->db->select('j.*,e.employee_name,e.user_code,e.mobile,e.department_id,e.designation_id,e.mobile,e.passport_number,d.dept_name AS department_name,des.designation_name');
 		$this->db->from('employee_joining j');
-		$this->db->join('employee_master e','e.employee_id = j.employee_id','left');
+		$this->db->join('employee_master e', 'e.employee_id = j.employee_id', 'left');
+		$this->db->join('department_master d', 'e.department_id = d.dept_id', 'left');
+		$this->db->join('designation_master des', 'e.designation_id = des.id', 'left');
 		$this->db->where('j.jid', $id);
 		return $this->db->get()->row();
 	}
@@ -763,10 +763,12 @@ class Hr_model extends CI_Model
 
 	public function get_employee_joining_list()
 	{
-		$this->db->select('j.*, u.user_name as name');
+		$this->db->select('j.*,e.employee_name AS name,e.user_code,e.department_id,e.designation_id,e.mobile,e.passport_number');
+
 		$this->db->from('employee_joining j');
-		$this->db->join('users u', 'j.employee_id = u.user_id', 'left');
-		$this->db->order_by('j.joining_date', 'desc');
+		$this->db->join('employee_master e', 'j.employee_id = e.employee_id', 'left');
+		$this->db->order_by('j.jid', 'DESC');
+
 		return $this->db->get()->result();
 	}
 
@@ -1104,74 +1106,228 @@ class Hr_model extends CI_Model
 
 	function add_emp_overtime_data()
 	{
+		$employee_id = (int) $this->input->post('employee_id');
+		$date_ot     = trim($this->input->post('date_ot'));
+		$hours       = $this->input->post('ot_hours');
+		$minutes     = $this->input->post('ot_minutes');
+		$remark      = trim($this->input->post('remark'));
+
+		// Convert values to integers
+		$hours   = ($hours !== '' && $hours !== null) ? (int) $hours : 0;
+		$minutes = ($minutes !== '' && $minutes !== null) ? (int) $minutes : 0;
+
+		/*
+		* Basic validation
+		*/
+		if ($employee_id <= 0) {
+			$this->session->set_flashdata('error', 'Please select an employee.');
+			return false;
+		}
+
+		if (empty($date_ot)) {
+			$this->session->set_flashdata('error', 'Please select the overtime date.');
+			return false;
+		}
+
+		if ($hours < 0) {
+			$this->session->set_flashdata('error', 'Overtime hours cannot be negative.');
+			return false;
+		}
+
+		if ($minutes < 0 || $minutes > 59) {
+			$this->session->set_flashdata('error', 'Overtime minutes must be between 0 and 59.');
+			return false;
+		}
+
+		/*
+		* At least some overtime must be entered
+		*/
+		if ($hours == 0 && $minutes == 0) {
+			$this->session->set_flashdata('error', 'Please enter overtime hours or minutes.');
+			return false;
+		}
+
+		/*
+		* Convert Hours + Minutes into total minutes
+		*
+		* Example:
+		* 2 Hours 30 Minutes
+		* = (2 * 60) + 30
+		* = 150 minutes
+		*/
+		$overtime_minutes = ($hours * 60) + $minutes;
+
+		/*
+		* Check duplicate employee + date
+		*/
+		$this->db->where('employee_id', $employee_id);
+		$this->db->where('date_ot', $date_ot);
+
+		$query = $this->db->get('employee_overtime');
+		if ($query->num_rows() > 0) {
+			$this->session->set_flashdata('error', 'Employee overtime record already exists for this date.');
+			return false;
+		}
+
+		/*
+     * Insert new overtime record
+     */
 		$data = array(
-			'employee_id' => $this->input->post('employee_id'),
-			'date_ot' => date('Y-m-d', strtotime($this->input->post('date_ot'))),
-			'overtime' => $this->input->post('ot'),
-			// 'ot_type' => $this->input->post('ot_type'),     
-			'remark' => $this->input->post('remark'),
+			'employee_id'     => $employee_id,
+			'date_ot'         => date('Y-m-d', strtotime($date_ot)),
+
+			// Keep old column temporarily for migration compatibility
+			'overtime'        => NULL,
+
+			// New correct representation
+			'overtime_minutes' => $overtime_minutes,
+
+			'remark'          => $remark,
+			'created_by'      => $this->session->userdata('user_id'),
+			'created_date'    => date('Y-m-d H:i:s')
 		);
 
+		$this->db->insert('employee_overtime', $data);
 
-		// Check if a record with the same employee ID and overtime date already exists
-		$this->db->where('employee_id', $data['employee_id']);
-		$this->db->where('date_ot', $data['date_ot']);
-		$query = $this->db->get('employee_overtime');
+		$insert_id = $this->db->insert_id();
 
-		if ($query->num_rows() > 0) {
-			// Record already exists, display flash message
-			$this->session->set_flashdata('error', 'Employee overtime record already exists.');
-			return false;
-		} else {
-			// Record does not exist, insert into the database
-			$this->db->insert('employee_overtime', $data);
-			$insert_id = $this->db->insert_id();
+		if ($insert_id) {
 
-			if ($insert_id) {
-				$user_se_id = $this->session->userdata('user_id');
-				$page_name = explode('index.php/', $_SERVER['PHP_SELF']);
-				$ci = get_instance();
-				$ci->load->helper('log');
-				$log_msg = add_log_entry($user_se_id, 1, $page_name[1], 'employee_overtime', 'emp_oid', $insert_id);
-			}
+			// Log the insert operation
+			$user_se_id = $this->session->userdata('user_id');
+
+			$page_name = explode('index.php/', $_SERVER['PHP_SELF']);
+
+			$ci = get_instance();
+			$ci->load->helper('log');
+
+			$log_msg = add_log_entry($user_se_id, 1, $page_name[1], 'employee_overtime', 'emp_oid', $insert_id);
+
 			return $insert_id;
 		}
-	}
 
+		$this->session->set_flashdata('error', 'Unable to save employee overtime.');
+
+		return false;
+	}
 
 
 	function update_emp_overtime($id)
 	{
+		$employee_id = (int) $this->input->post('employee_id');
+		$date_ot     = trim($this->input->post('date_ot'));
+		$hours       = $this->input->post('ot_hours');
+		$minutes     = $this->input->post('ot_minutes');
+		$remark      = trim($this->input->post('remark'));
+
+		// Convert to integers
+		$hours   = ($hours !== '' && $hours !== null) ? (int) $hours : 0;
+		$minutes = ($minutes !== '' && $minutes !== null) ? (int) $minutes : 0;
+
+		/*
+		* Validation
+		*/
+
+		if (empty($id)) {
+			return false;
+		}
+
+		if ($employee_id <= 0) {
+			$this->session->set_flashdata('error', 'Please select an employee.');
+			return false;
+		}
+
+		if (empty($date_ot)) {
+			$this->session->set_flashdata('error', 'Please select the overtime date.');
+			return false;
+		}
+
+		if ($hours < 0) {
+			$this->session->set_flashdata('error', 'Overtime hours cannot be negative.');
+			return false;
+		}
+
+		if ($minutes < 0 || $minutes > 59) {
+			$this->session->set_flashdata('error', 'Overtime minutes must be between 0 and 59.');
+			return false;
+		}
+
+		if ($hours == 0 && $minutes == 0) {
+			$this->session->set_flashdata('error', 'Please enter overtime hours or minutes.');
+			return false;
+		}
+
+
+		/*
+		* Convert Hours + Minutes
+		* into total minutes
+		*
+		* Example:
+		* 2 Hours 30 Minutes
+		* = 150 minutes
+		*/
+
+		$overtime_minutes = ($hours * 60) + $minutes;
+
+		/*
+		* Check duplicate employee + date
+		*
+		* Exclude current record being edited.
+		*/
+
+		$this->db->where('employee_id', $employee_id);
+		$this->db->where('date_ot', $date_ot);
+		$this->db->where('emp_oid !=', $id);
+
+		$query = $this->db->get('employee_overtime');
+
+		if ($query->num_rows() > 0) {
+			$this->session->set_flashdata('error', 'Employee overtime record already exists for this date.');
+			return false;
+		}
+
+		/*
+		* Update record
+		*/
 		$data = array(
-			'employee_id' => $this->input->post('employee_id'),
-			'date_ot' => date('Y-m-d', strtotime($this->input->post('date_ot'))),
-			'overtime' => $this->input->post('overtime'),
-			// 'ot_type' => $this->input->post('ot_type'),     
-			'remark' => $this->input->post('remark'),
+			'employee_id'      => $employee_id,
+			'date_ot'          => date('Y-m-d', strtotime($date_ot)),
+			// New storage format
+			'overtime_minutes' => $overtime_minutes,
+			// Old column no longer used
+			'overtime'         => NULL,
+			'remark'           => $remark
 		);
+
 
 		$this->db->where('emp_oid', $id);
 		$res = $this->db->update('employee_overtime', $data);
 
 		if ($res) {
-			// Log the update operation
+			// Log update
 			$user_se_id = $this->session->userdata('user_id');
 			$page_name = explode('index.php/', $_SERVER['PHP_SELF']);
+
 			$ci = get_instance();
 			$ci->load->helper('log');
+
 			$log_msg = add_log_entry($user_se_id, 2, $page_name[1], 'employee_overtime', 'emp_oid', $id);
+
 			return true;
-		} else {
-			// Handle the case where the update operation fails
-			return false;
 		}
+
+		return false;
 	}
+
 
 
 	function get_emp_overtime_list()
 	{
-		$query = $this->db->query("select r.*, u.employee_name as name from employee_overtime r, employee_master u where r.employee_id=u.employee_id order by date_ot desc ");
-		return $query->result();
+		$this->db->select('r.emp_oid,r.employee_id,r.date_ot,r.overtime_minutes,r.remark,u.employee_name AS name,u.user_code');
+		$this->db->from('employee_overtime r');
+		$this->db->join('employee_master u','r.employee_id = u.employee_id','inner');
+		$this->db->order_by('r.date_ot', 'DESC');
+		return $this->db->get()->result();
 	}
 
 	function get_emp_overtime_by_id($id)
@@ -1457,6 +1613,252 @@ class Hr_model extends CI_Model
 	{
 		$this->db->where('v_id', $id);
 		$this->db->delete('vehicle_details');
+	}
+
+	////////////////////Offer Letter Models///////////////////////////////////////////////////
+	function add_offer_letter_data()
+	{
+		$prefix = 'OFR/' . date('y') . '/';
+
+		// Generate Offer Code
+		$this->db->select('offer_code');
+		$this->db->like('offer_code', $prefix, 'after');
+		$this->db->order_by('offer_id', 'DESC');
+		$this->db->limit(1);
+		$query = $this->db->get('employee_offer_letter');
+
+		if ($query->num_rows() > 0) {
+			$last_code = $query->row()->offer_code;
+			$num = (int)substr(strrchr($last_code, '/'), 1) + 1;
+		} else {
+			$num = 1;
+		}
+		$digit = sprintf("%04d", $num);
+		$code = $prefix . $digit;
+
+		// Main Offer Letter Data
+		$data = [
+			'offer_code'       => $code,
+			'user_name'        => $this->input->post('user_name'),
+			'desig_id'         => $this->input->post('desig_id'),
+			'gender'           => $this->input->post('gender'),
+			'offer_date'       => $this->input->post('offer_date'),
+			'manager_id'       => $this->input->post('manager_id'),
+			'employee_address' => $this->input->post('employee_address'),
+			'office_address'   => $this->input->post('office_address'),
+			'created_by'       => $this->session->userdata('user_id'),
+			'created_at'       => date("Y-m-d H:i:s")
+		];
+
+		$this->db->insert('employee_offer_letter', $data);
+		$insert_id = $this->db->insert_id();
+
+		if ($insert_id) {
+
+			// --- Insert Salary Rows ---
+			$desc    = $this->input->post('desc');
+			$monthly = $this->input->post('monthly');
+			$annual  = $this->input->post('annual');
+
+			if (!empty($monthly) && count($monthly) > 0) {
+				for ($i = 0; $i < count($monthly); $i++) {
+					if (empty($desc[$i]) && empty($monthly[$i]) && empty($annual[$i])) {
+						continue; // Skip empty row
+					}
+					$this->db->insert('employee_offer_salary', [
+						'offer_id'    => $insert_id,
+						'description' => $desc[$i],
+						'monthly'     => $monthly[$i],
+						'annual'      => $annual[$i]
+					]);
+				}
+			}
+
+			// --- Insert Incentive Rows ---
+			$case               = $this->input->post('case');
+			$salary             = $this->input->post('salary');
+			$target_1           = $this->input->post('target_1');
+			$incentive_3_percent = $this->input->post('incentive_3_percent');
+			$target_2           = $this->input->post('target_2');
+
+			if (!empty($salary) && count($salary) > 0) {
+				for ($i = 0; $i < count($salary); $i++) {
+					if (empty($case[$i]) && empty($salary[$i]) && empty($target_1[$i]) && empty($incentive_3_percent[$i]) && empty($target_2[$i])) {
+						continue; // Skip empty row
+					}
+					$this->db->insert('employee_offer_incentive', [
+						'offer_id'          => $insert_id,
+						'sal_case'          => $case[$i],
+						'salary'            => $salary[$i],
+						'target_1'          => $target_1[$i],
+						'incentive_3_percent' => $incentive_3_percent[$i],
+						'target_2'          => $target_2[$i]
+					]);
+				}
+			}
+
+			// --- Add log entry ---
+			$user_se_id = $this->session->userdata('user_id');
+			$page_name  = explode('index.php/', $_SERVER['PHP_SELF']);
+			$ci = get_instance();
+			$ci->load->helper('log');
+			add_log_entry($user_se_id, 1, $page_name[1], 'employee_offer_letter', 'offer_id', $insert_id);
+
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	function get_all_offer_letter_details()
+	{
+		$query = $this->db->query("
+		SELECT ol.*,dm.designation_name FROM employee_offer_letter AS ol LEFT JOIN designation_master AS dm ON dm.did = ol.desig_id ORDER BY ol.created_at DESC");
+		return $query->result();
+	}
+
+	function get_offer_letter_by_id($id)
+	{
+		$query = $this->db->query("SELECT ol.*,u.user_name AS manager_name,u.middle_name,u.last_name,u.user_code,u.address,ds.designation_name FROM employee_offer_letter AS ol LEFT JOIN users AS u ON ol.manager_id = u.user_id LEFT JOIN designation_master AS ds ON ds.did = ol.desig_id  WHERE offer_id='$id'");
+		return $query->row();
+	}
+
+	function get_offer_salary_by_id($id)
+	{
+		$query = $this->db->query("SELECT * FROM employee_offer_salary  WHERE offer_id='$id'");
+		return $query->result();
+	}
+
+	function get_offer_incentive_by_id($id)
+	{
+		$query = $this->db->query("SELECT * FROM employee_offer_incentive  WHERE offer_id='$id'");
+		return $query->result();
+	}
+
+	function update_offer_letter_data()
+	{
+
+		$id = $this->input->post('offer_id');
+		$data_1 = array();
+
+		$salary_ids = array();
+		$incent_ids = array();
+		$result1 = $this->get_offer_salary_by_id($id);
+		$result2 = $this->get_offer_incentive_by_id($id); //print_r($result2);
+		foreach ($result1 as $row) {
+			$salary_ids[] = $row->salary_id;
+		}
+		foreach ($result2 as $row2) {
+			$incent_ids[] = $row2->incent_id;
+		}
+
+		$posted_salary_id = $this->input->post('salary_id');
+		$posted_incent_id = $this->input->post('incent_id');
+
+		// Find IDs that are in $entry_ids but not in $posted_ids
+		$salaryids_to_delete = array_diff($salary_ids, $posted_salary_id);
+		$incentids_to_delete = array_diff($incent_ids, $posted_incent_id);
+
+		// Delete those IDs from the database
+		if (!empty($salaryids_to_delete)) {
+			foreach ($salaryids_to_delete as $delete_id) {
+				$this->db->where('salary_id', $delete_id);
+				$this->db->delete('employee_offer_salary'); // Replace with actual table name
+			}
+		}
+		// Delete those IDs from the database
+		if (!empty($incentids_to_delete)) {
+			foreach ($incentids_to_delete as $delete_id) {
+				$this->db->where('incent_id', $delete_id);
+				$this->db->delete('employee_offer_incentive'); // Replace with actual table name
+			}
+		}
+
+		$data_1['user_name'] = $this->input->post('user_name');
+		$data_1['desig_id'] = $this->input->post('desig_id');
+		$data_1['gender'] = $this->input->post('gender');
+		$data_1['offer_date'] = $this->input->post('offer_date');
+		$data_1['manager_id'] = $this->input->post('manager_id');
+		$data_1['employee_address'] = $this->input->post('employee_address');
+		$data_1['office_address'] = $this->input->post('office_address');
+
+		// $data_1['offer_body'] = $this->input->post('offer_body');
+		// $data_1['incentive_stucture'] = $this->input->post('incentive_stucture');
+		// $data_1['other_benefits'] = $this->input->post('other_benefits');
+		// $data_1['annexure_b'] = $this->input->post('annexure_b');
+
+		$this->db->where('offer_id', $id);
+		$res = $this->db->update('employee_offer_letter', $data_1); //echo $this->db->last_query();die;
+
+		$desc = $this->input->post('desc');
+		$monthly = $this->input->post('monthly');
+		$annual = $this->input->post('annual');
+
+		if (!empty($monthly)) {
+			$rowCount = count($monthly); // Assuming all arrays are the same length
+
+			for ($i = 0; $i < $rowCount; $i++) {
+				$data1 = [
+					'offer_id' => $id,
+					'description' => $desc[$i],
+					'monthly' => $monthly[$i],
+					'annual' => $annual[$i]
+				];
+				if (!empty($posted_salary_id[$i])) {
+					$this->db->where('salary_id', $posted_salary_id[$i]);
+					$res = $this->db->update('employee_offer_salary', $data1);
+				} else {
+					$this->db->insert('employee_offer_salary', $data1);
+				}
+			}
+		}
+
+		$case = $this->input->post('case');
+		$salary = $this->input->post('salary');
+		$target_1 = $this->input->post('target_1');
+		$incentive_3_percent = $this->input->post('incentive_3_percent');
+		$target_2 = $this->input->post('target_2');
+		// $incentive_5_percent = $this->input->post('incentive_5_percent');
+
+		if (!empty($salary)) {
+			$rowCount = count($salary); // Assuming all arrays are the same length
+
+			for ($i = 0; $i < $rowCount; $i++) {
+
+				$data2 = [
+					'offer_id' => $id,
+					'sal_case' => $case[$i],
+					'salary' => $salary[$i],
+					'target_1' => $target_1[$i],
+					'incentive_3_percent' => $incentive_3_percent[$i],
+					'target_2' => $target_2[$i],
+					// 'incentive_5_percent' => $incentive_5_percent[$i],
+				];
+
+				if (!empty($posted_incent_id[$i])) {
+					$this->db->where('incent_id', $posted_incent_id[$i]);
+					$res = $this->db->update('employee_offer_incentive', $data2);
+				} else {
+					$this->db->insert('employee_offer_incentive', $data2);
+				}
+			}
+		}
+
+		if ($res) {
+
+
+			// Log the update operation
+			$user_se_id = $this->session->userdata('user_id');
+			$page_name = explode('index.php/', $_SERVER['PHP_SELF']);
+			$ci = get_instance();
+			$ci->load->helper('log');
+			$log_msg = add_log_entry($user_se_id, 2, $page_name[1], 'employee_offer_letter', 'offer_id', $id);
+
+			return true;
+		} else {
+			// Handle the case where the update operation fails
+			return false;
+		}
 	}
 
 	////////////////////start corporate file models///////////////////////////////////////////////////
