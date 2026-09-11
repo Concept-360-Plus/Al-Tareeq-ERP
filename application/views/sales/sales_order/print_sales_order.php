@@ -1,276 +1,294 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Sales Order</title>
-    <style>
-        body {
-            font-family: "Franklin Gothic Book", Arial, sans-serif;
-            font-size: 13px;
-            margin: 0;
-            padding: 0;
-            color: #333;
-        }
 
-        .title {
-            text-align: center;
-            margin: 20px 0 15px 0;
-            font-size: 22px;
-            font-weight: bold;
-            text-transform: uppercase;
-            color: #2C2C2C;
-        }
+<title>Sales Order</title>
 
-        .party-table {
-            width: 100%;
-            margin-bottom: 20px;
-            border-spacing: 0;
-        }
-        .party-table td {
-            vertical-align: top;
-            padding: 10px;
-        }
-        .party-table .section-title {
-            background-color: #2C2C2C;
-            color: #C49A00;
-            padding: 6px;
-            font-weight: bold;
-            text-align: center;
-            text-transform: uppercase;
-            font-size: 13px;
-        }
-        .party-table .info {
-            font-size: 12px;
-            line-height: 1.5;
-            text-transform: uppercase;
-        }
+<style>
 
-        table.products {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12px;
-            margin-bottom: 20px;
-        }
-        table.products th {
-            background-color: #2C2C2C;
-            color: #C49A00;
-            font-weight: bold;
-            padding: 8px;
-            border: 1px solid #555;
-        }
-        table.products td {
-            border: 1px solid #aaa;
-            padding: 6px;
-            text-align: center;
-            font-size: 12px;
-        }
-        table.products tr:nth-child(even) td {
-            background-color: #f9f9f9;
-        }
-
-        table.totals {
-            width: 40%;
-            float: right;
-            border-collapse: collapse;
-            font-size: 12px;
-            margin-bottom: 20px;
-        }
-        table.totals td {
-            border: 1px solid #aaa;
-            padding: 6px;
-            text-align: right;
-        }
-        table.totals td.label {
-            font-weight: bold;
-            background-color: #f2f2f2;
-        }
-        table.totals td.total {
-            background-color: #2C2C2C;
-            color: #C49A00;
-            font-weight: bold;
-            font-size: 13px;
-        }
-
-        .terms-title {
-            background-color: #2C2C2C;
-            color: #C49A00;
-            padding: 6px;
-            font-weight: bold;
-            font-size: 13px;
-            margin-top: 15px;
-            text-transform: uppercase;
-        }
-        .terms-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12px;
-            margin-bottom: 20px;
-        }
-        .terms-table td {
-            padding: 6px;
-            border: 1px solid #ddd;
-        }
-        .terms-table td:first-child {
-            font-weight: bold;
-            width: 25%;
-            background-color: #f9f9f9;
-        }
-
-        .footer {
-            text-align: center;
-            font-size: 12px;
-            position: fixed;
-            bottom: -10px;
-            left: 0;
-            right: 0;
-            width: 100%;
-        }
-        .footer img {
-            max-width: 100%;
-            height: auto;
-            display: block;
-            margin: 0 auto;
-        }
-         @page {
-    margin: 1mm 12mm 12mm 12mm; /* top right bottom left */
+body{
+    font-family: Arial, sans-serif;
+    font-size:13px;
+    color:#000;
 }
-  .header-img {
-    margin-top: -2mm;
+
+table{
+    width:100%;
+    border-collapse:collapse;
 }
-    </style>
+
+table th,
+table td{
+    border:1px solid #000;
+    padding:8px;
+}
+
+
+@media print {
+    .print-btn{
+        display:none;
+    }
+}
+
+</style>
+
 </head>
 <body>
 
-<!-- Header -->
-<!-- Header + Sales Order aligned in one row -->
-<table style="width:100%; border-collapse:collapse; margin-bottom:15px;">
+<!-- HEADER -->
+<table style="width: 100%; border-collapse: collapse; border: none;">
     <tr>
-        <!-- Left: Logo -->
-        <td style="width:60%; padding:30px 20px 20px 20px;">
-            <img src="<?= $headerPath ?>" class="header-img" style="max-height:120px;">
+        <td width="30%" style="vertical-align: top; border: none; padding: 0;">
+            <?php if (!empty($company['company_logo'])) { ?>
+                <img src="<?= base_url($company['company_logo']) ?>"
+                     style="width:300px; height:auto; max-height:150px; object-fit:contain; display:block;">
+            <?php } ?>
         </td>
-
-        <!-- Right: Sales Order Info -->
-        <td style="width:40%; text-align:right; vertical-align:top; padding:30px 20px 20px 20px;">
-            <div style="font-size:24px; font-weight:bold; color:#2C2C2C;">Sales Order</div>
-            <div style="font-size:14px;"><?= $so_master['so_code'] ?> (Rev <?= $so_master['so_revision'] ?>)</div>
-            <div style="font-size:14px;"><?= date('d-m-Y', strtotime($so_master['so_date'])) ?></div>
-        </td>
-    </tr>
-</table>
-<!-- Supplier / Buyer -->
-<table class="party-table">
-    <tr>
-        <td width="50%">
-            <div class="section-title">Supplier</div>
-            <div class="info">
-                <?= $branch_name ?><br>
-                <?= $branch_contact ?><br>
-                <?= $branch_address ?><br>
-                <?= $branch_location ?>
-            </div>
-        </td>
-        <td width="50%">
-            <div class="section-title">Buyer</div>
-            <div class="info">
-                <?= $customer_name ?><br>
-                <?= $contact_number ?><br>
-                <?= $customer_email ?><br>
-                <?= $customer_address ?>
+        <td width="70%" style="text-align: right; vertical-align: top; border: none; padding: 0;">
+            <div style="display: inline-block; text-align: right;">
+                <img src="<?= base_url('uploads/company/barcode.png') ?>"
+                     alt="Barcode"
+                     style="height: 70px; width: 100px; max-width: 350px; display: block; margin-left: auto;">
+                <div style="font-family: Arial, sans-serif; font-size: 12px; color: #333; margin-top: 5px; font-weight: bold; text-align: right;">
+                    TRN: <?= $company['company_trn'] ?>
+                </div>
             </div>
         </td>
     </tr>
 </table>
 
-<!-- Project Info -->
-<table class="party-table">
-    <tr>
-        <td width="50%">Project name : <strong><?= $project_name ?></strong></td>
-        <td width="50%">Location : <strong><?= $project_location ?></strong></td>
-    </tr>
-</table>
-
-<!-- Products -->
-<table class="products">
-    <thead>
+<!-- CUSTOMER / DOCUMENT INFO -->
+<div style="width: 100%; margin-top: 20px; font-family: Arial, sans-serif; font-size: 13px; line-height: 1.6; color: #333;">
+    <table style="width: 100%; border-collapse: collapse; border: none;">
         <tr>
-            <th>#</th>
-            <th>Product</th>
-            <th>Unit</th>
-            <th>Qty</th>
-            <th>Unit Price</th>
-            <th>Amount</th>
-            <th>Discount</th>
-            <th>Taxable</th>
+            <td style="width: 50%; vertical-align: top; border: none; padding: 0;">
+                <table style="width: 100%; border-collapse: collapse; border: none;">
+                    <?php if (!empty($so->customer_code)) { ?>
+                    <tr>
+                        <td style="width: 100px; font-weight: bold; padding: 2px 0; border: none;">Cust. Code</td>
+                        <td style="padding: 2px 0; border: none;">: <?= $so->customer_code ?></td>
+                    </tr>
+                    <?php } ?>
+
+                    <tr>
+                        <td style="font-weight: bold; padding: 2px 0; border: none; width: 100px; vertical-align: top;">M/s</td>
+                        <td style="padding: 2px 0; border: none; vertical-align: top;">: <?= !empty($so->customer_name) ? $so->customer_name : '' ?></td>
+                    </tr>
+
+                    <?php if (!empty($so->customer_address)) { ?>
+                    <tr>
+                        <td style="font-weight: bold; padding: 2px 0; border: none; vertical-align: top;">Address</td>
+                        <td style="padding: 2px 0; border: none; vertical-align: top;">: <?= nl2br($so->customer_address) ?></td>
+                    </tr>
+                    <?php } ?>
+
+                    <?php if (!empty($so->office_telephone)) { ?>
+                    <tr>
+                        <td style="font-weight: bold; padding: 2px 0; border: none;">Tel</td>
+                        <td style="padding: 2px 0; border: none;">: <?= $so->office_telephone ?></td>
+                    </tr>
+                    <?php } ?>
+
+                    <?php if (!empty($so->office_fax)) { ?>
+                    <tr>
+                        <td style="font-weight: bold; padding: 2px 0; border: none;">Fax</td>
+                        <td style="padding: 2px 0; border: none;">: <?= $so->office_fax ?></td>
+                    </tr>
+                    <?php } ?>
+
+                    <?php if (!empty($so->tax_registration_no)) { ?>
+                    <tr>
+                        <td style="font-weight: bold; padding: 2px 0; border: none;">TRN</td>
+                        <td style="padding: 2px 0; border: none;">: <?= $so->tax_registration_no ?></td>
+                    </tr>
+                    <?php } ?>
+
+                    <?php if (!empty($so->customer_email)) { ?>
+                    <tr>
+                        <td style="font-weight: bold; padding: 2px 0; border: none;">Contact</td>
+                        <td style="padding: 2px 0; border: none;">: <?= $so->customer_email ?></td>
+                    </tr>
+                    <?php } ?>
+                </table>
+            </td>
+
+            <td style="width: 50%; vertical-align: top; border: none; padding: 0;">
+                <table style="width: 280px; margin-left: auto; margin-top: -15px; border-collapse: collapse; border: none;">
+                    <tr>
+                        <td colspan="2" style="border: none; padding-bottom: 12px;">
+                            <div style="font-family: Arial, sans-serif; font-size: 22px; font-weight: bold; color: #111; letter-spacing: 2px; text-transform: uppercase; border-bottom: 2px solid #111; padding-bottom: 4px; display: inline-block; width: 100%;">
+                                SALES ORDER
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width: 110px; font-family: Arial, sans-serif; font-size: 13px; font-weight: bold; padding: 2px 0; border: none;">SO No</td>
+                        <td style="font-family: Arial, sans-serif; font-size: 13px; padding: 2px 0; border: none;">: <?= !empty($so->so_code) ? $so->so_code : '' ?></td>
+                    </tr>
+                    <tr>
+                        <td style="font-family: Arial, sans-serif; font-size: 13px; font-weight: bold; padding: 2px 0; border: none;">Date</td>
+                        <td style="font-family: Arial, sans-serif; font-size: 13px; padding: 2px 0; border: none;">: <?= !empty($so->so_date) ? date('d/m/Y', strtotime($so->so_date)) : '' ?></td>
+                    </tr>
+                    <?php if (!empty($so->quotation_code)) { ?>
+                    <tr>
+                        <td style="font-family: Arial, sans-serif; font-size: 13px; font-weight: bold; padding: 2px 0; border: none;">Quotation Ref</td>
+                        <td style="font-family: Arial, sans-serif; font-size: 13px; padding: 2px 0; border: none;">: <?= $so->quotation_code ?></td>
+                    </tr>
+                    <?php } ?>
+                    <tr>
+                        <td style="font-family: Arial, sans-serif; font-size: 13px; font-weight: bold; padding: 2px 0; border: none;">Validity</td>
+                        <td style="font-family: Arial, sans-serif; font-size: 13px; padding: 2px 0; border: none;">: <?= !empty($so->validity) ? $so->validity : '' ?></td>
+                    </tr>
+                    <tr>
+                        <td style="font-family: Arial, sans-serif; font-size: 13px; font-weight: bold; padding: 2px 0; border: none;">Rep.</td>
+                        <td style="font-family: Arial, sans-serif; font-size: 13px; padding: 2px 0; border: none;">: <?= !empty($so->sales_rep_name) ? $so->sales_rep_name : '' ?></td>
+                    </tr>
+                    <?php if (!empty($so->lpo_number)) { ?>
+                    <tr>
+                        <td style="font-family: Arial, sans-serif; font-size: 13px; font-weight: bold; padding: 2px 0; border: none;">L.P.O Number</td>
+                        <td style="font-family: Arial, sans-serif; font-size: 13px; padding: 2px 0; border: none;">: <?= $so->lpo_number ?></td>
+                    </tr>
+                    <?php } ?>
+                    <tr>
+                        <td style="font-family: Arial, sans-serif; font-size: 13px; font-weight: bold; padding: 2px 0; border: none;">Currency</td>
+                        <td style="font-family: Arial, sans-serif; font-size: 13px; padding: 2px 0; border: none;">: AED</td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<!-- ITEMS -->
+<table style="width: 100%; border-collapse: collapse; margin-top: 25px; font-family: Arial, sans-serif; font-size: 13px; color: #333;">
+    <thead>
+        <tr style="background-color: #f7f7f7; border-top: 1px solid #ddd; border-bottom: 2px solid #ddd;">
+            <th width="5%" style="padding: 8px 5px; font-weight: bold; text-align: center;">#</th>
+            <th width="10%" style="padding: 8px 10px; font-weight: bold; text-align: left;">Code</th>
+            <th style="padding: 8px 10px; font-weight: bold; text-align: left;">Item Description</th>
+            <th width="10%" style="padding: 8px 5px; font-weight: bold; text-align: center;">Qty</th>
+            <th width="10%" style="padding: 8px 5px; font-weight: bold; text-align: left;">Unit</th>
+            <th width="15%" style="padding: 8px 10px; font-weight: bold; text-align: right;">Rate</th>
+            <th width="15%" style="padding: 8px 10px; font-weight: bold; text-align: right;">Amount</th>
         </tr>
     </thead>
     <tbody>
-        <?php $i=1; foreach ($so_products as $prd) { ?>
-        <tr>
-            <td><?= $i ?></td>
-            <td style="font-weight:bold;"><?= $prd['product_name'] ?></td>
-            <td><?= $prd['unit_name'] ?></td>
-            <td><?= number_format($prd['quantity'], 2) ?></td>
-            <td><?= number_format($prd['unit_price'], 2) ?></td>
-            <td><?= number_format($prd['amount'], 2) ?></td>
-            <td><?= number_format($prd['discount_amount'], 2) ?></td>
-            <td><?= number_format($prd['taxable_amount'], 2) ?></td>
+        <?php $i = 1; foreach ($so_products as $item) { ?>
+        <tr style="border-bottom: 1px solid #eee;">
+            <td style="padding: 8px 5px; text-align: center; vertical-align: top;"><?= $i++ ?></td>
+            <td style="padding: 8px 10px; text-align: left; vertical-align: top;"><?= !empty($item['product_code']) ? $item['product_code'] : '' ?></td>
+            <td style="padding: 8px 10px; text-align: left; vertical-align: top;">
+                <span style="font-weight: bold; color: #111;"><?= $item['product_name'] ?></span>
+            </td>
+            <td style="padding: 8px 5px; text-align: center; vertical-align: top;"><?= number_format($item['quantity'], 2) ?></td>
+            <td style="padding: 8px 5px; text-align: left; vertical-align: top;"><?= !empty($item['unit_name']) ? $item['unit_name'] : '' ?></td>
+            <td style="padding: 8px 10px; text-align: right; vertical-align: top;"><?= number_format($item['unit_price'], 2) ?></td>
+            <td style="padding: 8px 10px; text-align: right; vertical-align: top;"><?= number_format($item['amount'], 2) ?></td>
         </tr>
-        <?php $i++; } ?>
+        <?php } ?>
     </tbody>
 </table>
 
-<!-- Totals -->
-<table class="totals">
+<br>
+
+<!-- TOTALS -->
+<table style="width: 100%; border-collapse: collapse; margin-top: 15px; font-family: Arial, sans-serif; font-size: 13px; color: #333;">
     <tr>
-        <td class="label">Subtotal:</td>
-        <td><?= number_format($so_master['sub_total'], 2) ?></td>
-    </tr>
-    <tr>
-        <td class="label">Discount:</td>
-        <td><?= number_format($so_master['discount_amount'], 2) ?></td>
-    </tr>
-    <tr>
-        <td class="label">VAT:</td>
-        <td><?= number_format($so_master['vat_amount'], 2) ?></td>
-    </tr>
-    <tr>
-        <td class="label total">Grand Total:</td>
-        <td class="total"><?= number_format($so_master['grand_total'], 2) ?></td>
+        <td style="width: 50%; border: none;"></td>
+        <td style="width: 50%; vertical-align: top; border: none; padding: 0;">
+            <table style="width: 280px; margin-left: auto; border-collapse: collapse;">
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 6px 0; font-weight: bold; text-align: left;">Sub Total</td>
+                    <td style="padding: 6px 0; text-align: right;">: <?= number_format($so->sub_total, 2) ?></td>
+                </tr>
+                <?php if (!empty($so->discount_amount) && $so->discount_amount > 0) { ?>
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 6px 0; font-weight: bold; text-align: left;">Discount (<?= $so->discount_percentage ?>%)</td>
+                    <td style="padding: 6px 0; text-align: right;">: <?= number_format($so->discount_amount, 2) ?></td>
+                </tr>
+                <?php } ?>
+                <?php if ($so->vat_required) { ?>
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 6px 0; font-weight: bold; text-align: left;">VAT (<?= $so->vat_percentage ?>%)</td>
+                    <td style="padding: 6px 0; text-align: right;">: <?= number_format($so->vat_amount, 2) ?></td>
+                </tr>
+                <?php } ?>
+                <tr style="border-bottom: 2px double #111;">
+                    <td style="padding: 8px 0; font-weight: bold; font-size: 15px; color: #000; text-align: left;">Grand Total</td>
+                    <td style="padding: 8px 0; font-weight: bold; font-size: 15px; color: #000; text-align: right;">
+                        AED : <?= number_format($so->grand_total, 2) ?>
+                    </td>
+                </tr>
+            </table>
+        </td>
     </tr>
 </table>
 
-<div style="clear: both;"></div>
+<br>
 
-<!-- Terms -->
-<div class="terms-title">Terms and Conditions</div>
-<table class="terms-table">
+<!-- TERMS & CONDITIONS SECTION -->
+<div style="width: 100%; margin-top: 20px; font-family: Arial, sans-serif; font-size: 13px; line-height: 1.7; color: #000;">
+    <u style="font-weight: bold;">Sales Terms :-</u>
+    <table style="width: 100%; border-collapse: collapse; border: none; margin-top: 4px;">
+        <tr>
+            <td style="width: 160px; border: none; padding: 1px 0; vertical-align: top;">Payment :-</td>
+            <td style="border: none; padding: 1px 0;"><?= !empty($so->payment_term) ? nl2br($so->payment_term) : '---' ?></td>
+        </tr>
+        <tr>
+            <td style="border: none; padding: 1px 0; vertical-align: top;">Validity :-</td>
+            <td style="border: none; padding: 1px 0;"><?= !empty($so->validity) ? nl2br($so->validity) : '---' ?></td>
+        </tr>
+        <tr>
+            <td style="border: none; padding: 1px 0; vertical-align: top;">Delivery :-</td>
+            <td style="border: none; padding: 1px 0;"><?= !empty($so->delivery_term) ? nl2br($so->delivery_term) : '---' ?></td>
+        </tr>
+        <?php if (!empty($so->terms_and_condition)) { ?>
+        <tr>
+            <td style="border: none; padding: 1px 0; vertical-align: top;">Terms & Conditions :-</td>
+            <td style="border: none; padding: 1px 0;"><?= nl2br($so->terms_and_condition) ?></td>
+        </tr>
+        <?php } ?>
+    </table>
+</div>
+
+<?php if (!empty($so->remarks)) { ?>
+<div style="width: 100%; margin-top: 12px; font-family: Arial, sans-serif; font-size: 13px; line-height: 1.6; color: #000;">
+    <u style="font-weight: bold;">Remarks :-</u>
+    <div style="margin-top: 2px;"><?= nl2br($so->remarks) ?></div>
+</div>
+<?php } ?>
+
+<br><br>
+
+<table style="width:100%; border-collapse:collapse;">
     <tr>
-        <td>Validity</td>
-        <td><?= $so_master['validity'] ?></td>
-    </tr>
-    <tr>
-        <td>Payment terms</td>
-        <td><?= $so_master['payment_term'] ?></td>
-    </tr>
-    <tr>
-        <td>Delivery terms</td>
-        <td><?= $so_master['delivery_term'] ?></td>
-    </tr>
-    <tr>
-        <td>Other Conditions</td>
-        <td><?= $so_master['terms_and_condition'] ?></td>
-    </tr>
-    <tr>
-        <td>Remarks</td>
-        <td><?= $so_master['remarks'] ?></td>
+        <td width="50%" style="border:none; padding:4px;">
+            Prepared By:
+            <br><br><br>
+            ____________________<br>
+            <?= !empty($so->prepared_by_name) ? $so->prepared_by_name : '' ?>
+        </td>
+        <td width="50%" align="right" style="border:none; padding:4px;">
+            Authorized Signatory:
+            <br><br><br>
+            ____________________
+        </td>
     </tr>
 </table>
 
-<!-- Footer -->
 <div class="footer">
-    <img src="<?= $footerPath ?>" alt="Logo">
-  
+    <?php if (!empty($company['company_footer'])) { ?>
+        <img src="<?= base_url($company['company_footer']) ?>">
+    <?php } ?>
 </div>
 
 </body>
 </html>
+
+<script type="text/javascript">
+    window.addEventListener('DOMContentLoaded', function () {
+        setTimeout(function () {
+            window.print();
+        }, 500);
+    });
+</script>

@@ -535,7 +535,6 @@ class Setup extends CI_Controller
             'commission_percent'    => $this->input->post('commission_percent'),
             'sales_discount_percent' => $this->input->post('sales_discount_percent'),
             'commission_group_id'   => $this->input->post('commission_group_id'),
-            'is_blocked'            => isset($_POST['is_blocked']) ? 1 : 0,
             'created_at'            => date('Y-m-d H:i:s')
         );
 
@@ -570,7 +569,6 @@ class Setup extends CI_Controller
             'commission_percent'    => $this->input->post('commission_percent'),
             'sales_discount_percent' => $this->input->post('sales_discount_percent'),
             'commission_group_id'   => $this->input->post('commission_group_id'),
-            'is_blocked'            => isset($_POST['is_blocked']) ? 1 : 0,
             'updated_at'            => date('Y-m-d H:i:s')
         );
 
@@ -584,7 +582,6 @@ class Setup extends CI_Controller
     {
         $data['title'] = 'Sales Rep List';
 
-        // 🔴 ALL QUERY IN MODEL
         $data['all_sales_rep'] = $this->Setup_model->get_all_sales_rep_list();
 
         $data['main_content'] = 'setup/sales_rep_list.php';
@@ -637,7 +634,7 @@ class Setup extends CI_Controller
 
         $data['customer'] = $this->Setup_model->get_customer_by_id($customer_id);
 
-        $data['contacts'] = $this->Setup_model->get_customer_contacts($customer_id);
+        $data['contact_data'] = $this->Setup_model->get_customer_contacts($customer_id);
 
         $data['customer_groups'] = $this->Setup_model->get_all_customer_group_list();
 
@@ -651,7 +648,7 @@ class Setup extends CI_Controller
     }
     public function update_customer($customer_id)
     {
-        $result = $this->Company_model->update_customer($customer_id);
+        $result = $this->Setup_model->update_customer($customer_id);
 
         if ($result) {
             $this->session->set_flashdata('success', 'Customer Updated Successfully');
@@ -663,7 +660,7 @@ class Setup extends CI_Controller
     }
     public function delete_customer($customer_id)
     {
-        $result = $this->Company_model->delete_customer($customer_id);
+        $result = $this->Setup_model->delete_customer($customer_id);
 
         if ($result) {
             $this->session->set_flashdata('success', 'Customer Deleted Successfully');
@@ -802,12 +799,14 @@ class Setup extends CI_Controller
         $data['rawmat'] = [];
         $data['active_units'] = $this->Setup_model->get_all_units();
         $data['active_materials'] = $this->Setup_model->get_active_raw_materials();
+        $data['product_types'] = $this->Setup_model->get_all_product_types();
         $data['main_content'] = 'setup/add_item.php';
 
 
         $this->load->view('includes/template', $data);
     }
-    public function add_item_data()
+
+        public function add_item_data()
     {
         $this->load->library(['upload']);
         
@@ -824,37 +823,51 @@ class Setup extends CI_Controller
 
         $product_type = $this->input->post('product_type', true);
 
+        $this->form_validation->set_rules('product_code', 'Product Code', 'required');
+        $this->form_validation->set_rules('product_name', 'Product Name', 'required');
+        $this->form_validation->set_rules('unit_id', 'Unit', 'required');
+        $this->form_validation->set_rules('product_type_id', 'Product Type', 'required');
+
+        if ($this->form_validation->run() == false) {
+            $this->session->set_flashdata('error', validation_errors());
+            redirect('Setup/add_item');
+            return;
+        }
+
+        $product_type_id = $this->input->post('product_type_id', true);
+
         $item_data = [
             'product_name'       => $this->input->post('product_name', true),
             'product_code'       => $this->input->post('product_code', true),
-            'unit_id'       => $this->input->post('unit_id', true),
+            'unit_id'            => $this->input->post('unit_id', true),
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 6c468d3 (sales module changes)
             'category_id'        => $this->input->post('category_id', true) ?: null,
             'sub_category_id'    => $this->input->post('sub_category_id', true) ?: null,
             'child_category_id'  => $this->input->post('child_category_id', true) ?: null,
             'group_code'         => $this->input->post('group_code', true),
 
-            'retail_price'      => $this->input->post('retail_price', true),
+            'retail_price'       => $this->input->post('retail_price', true) ?: 0,
+            'cost_price'         => $this->input->post('cost_price', true) ?: 0,
 
-            'min_level'       => $this->input->post('min_level', true),
-            'max_level'       => $this->input->post('max_level', true),
-            'reorder_level'   => $this->input->post('reorder_level', true),
+            'min_level'          => $this->input->post('min_level', true) ?: 0,
+            'max_level'          => $this->input->post('max_level', true) ?: 0,
+            'reorder_level'      => $this->input->post('reorder_level', true) ?: 0,
 
-            'hs_code'         => $this->input->post('hs_code', true),
-            'description' => $this->input->post('description', true),
-            'total_price'     => $this->input->post('total_amount', true),
+            'hs_code'            => $this->input->post('hs_code', true),
+            'short_description'  => $this->input->post('short_description', true),
+            'long_description'   => $this->input->post('long_description', true),
+            'total_price'        => $this->input->post('total_amount', true),
 
-            // FLAGS
-            'tax_applicable'      => $this->input->post('tax_applicable') ? 1 : 0,
-            'is_finished_product' => $this->input->post('is_finished_product') ? 1 : 0,
-            'is_custom_made'      => $this->input->post('is_custom_made') ? 1 : 0,
-            'is_non_standard'     => $this->input->post('is_non_standard') ? 1 : 0,
-            'is_inactive'         => $this->input->post('is_inactive') ? 1 : 0,
-            'is_marked_delete'    => $this->input->post('is_marked_delete') ? 1 : 0,
+            'product_type_id'    => $product_type_id,
+            'is_inactive'        => $this->input->post('is_inactive') ? 1 : 0,
+            'is_marked_delete'   => $this->input->post('is_marked_delete') ? 1 : 0,
         ];
 
-        /* IMAGE UPLOAD */
+        // image upload
         if (!empty($_FILES['product_image']['name'])) {
 
             $config['upload_path']   = './public/items/';
@@ -869,55 +882,16 @@ class Setup extends CI_Controller
             }
         }
 
-        /* INSERT VIA MODEL */
         $insert_id = $this->Setup_model->insert_item($item_data);
-        if (!empty($_POST['mname'])) {
-
-            foreach ($_POST['mname'] as $key => $material) {
-
-                if (trim($material) == '') {
-                    continue;
-                }
-
-                $qty    = $_POST['qty'][$key];
-                $uprice = $_POST['uprice'][$key];
-                $unit   = $_POST['unit'][$key];
-                $code = $this->generateUniqueCode();
-                $material_data = [
-                    'item_id'       => $insert_id,
-                    'material_name' => $material,
-                    'material_code' => $code,
-                    'quantity_required' =>  $qty,
-                    'cost'          => $uprice,
-                    'unit'          => $unit
-                ];
-                $insert_mat = $this->Setup_model->insert_raw($material_data);
-                $seo_title = $this->seo_title($material);
-                $raw = $this->Setup_model->title_exists($seo_title);
-                $row_data =  [
-                    'seo_title'     => $seo_title,
-                    'material_name' => $material,
-                    'material_code' => $code,
-                    'cost'          => $uprice,
-                    'unit'          => $unit,
-                ];
-                if ($raw) {
-                    $row_data['updated_at'] = date('Y-m-d H:i:s');
-                    $this->Setup_model->update_rawmat($row_data, $raw->material_id);
-                } else {
-                    $row_data['created_at'] = date('Y-m-d H:i:s');
-                    $this->Setup_model->insert_rawmat($row_data);
-                }
-            }
-        }
 
         if ($insert_id) {
+            $this->Setup_model->save_item_raw_materials($insert_id, $product_type_id);
             $this->session->set_flashdata('success', 'Item added successfully');
-            redirect('Setup/list_items');
         } else {
             $this->session->set_flashdata('error', 'Failed to add item');
-            redirect('Setup/item_form');
         }
+
+        redirect('Setup/list_items');
     }
 
     public function add_item_data_purchase()
@@ -986,59 +960,55 @@ class Setup extends CI_Controller
         $data['title'] = 'Edit Item';
         $data['product'] = $this->Setup_model->get_item_by_id($item_id);
         $data['active_units'] = $this->Setup_model->get_all_units();
+        $data['active_materials'] = $this->Setup_model->get_active_raw_materials();
         $data['categories'] = $this->Setup_model->get_all_categories();
+        $data['product_types'] = $this->Setup_model->get_all_product_types();
         $data['rawmat']     = $this->Setup_model->get_rawmaterials($item_id);
 
         $data['main_content'] = 'setup/add_item.php';
         $this->load->view('includes/template', $data);
     }
+
     public function update_item()
     {
         $item_id = $this->uri->segment(3);
 
         $this->load->library('upload');
 
-        /* =========================
-       GET POST DATA (CONSISTENT)
-    ==========================*/
+        $product_type_id = $this->input->post('product_type_id', true);
+
         $data = [
-            'product_name'     => $this->input->post('product_name', true),
-            'product_code'     => $this->input->post('product_code', true),
-            'description'      => $this->input->post('description', true),
+            'product_name'      => $this->input->post('product_name', true),
+            'product_code'      => $this->input->post('product_code', true),
+            'short_description' => $this->input->post('short_description', true),
+            'long_description'  => $this->input->post('long_description', true),
 
-            'unit_id'         => $this->input->post('unit_id', true),
-            'retail_price'    => $this->input->post('retail_price', true),
-            'group_code'      => $this->input->post('group_code', true),
-            'category_id'     => $this->input->post('category_id', true),
+            'unit_id'           => $this->input->post('unit_id', true),
+            'retail_price'      => $this->input->post('retail_price', true),
 
-            'min_level'       => $this->input->post('min_level', true),
-            'max_level'       => $this->input->post('max_level', true),
-            'reorder_level'   => $this->input->post('reorder_level', true),
+            'cost_price'        => $this->input->post('cost_price', true),
+            'group_code'        => $this->input->post('group_code', true),
+            'category_id'       => $this->input->post('category_id', true),
+            'sub_category_id'   => $this->input->post('sub_category_id', true) ?: null,
+            'child_category_id' => $this->input->post('child_category_id', true) ?: null,
 
-            'hs_code'         => $this->input->post('hs_code', true),
-            'total_price'     => $this->input->post('total_amount', true),
+            'min_level'         => $this->input->post('min_level', true),
+            'max_level'         => $this->input->post('max_level', true),
+            'reorder_level'     => $this->input->post('reorder_level', true),
 
-            /* FLAGS */
-            'tax_applicable'      => $this->input->post('tax_applicable') ? 1 : 0,
-            'is_finished_product' => $this->input->post('is_finished_product') ? 1 : 0,
-            'is_custom_made'      => $this->input->post('is_custom_made') ? 1 : 0,
-            'is_non_standard'     => $this->input->post('is_non_standard') ? 1 : 0,
-            'is_inactive'         => $this->input->post('is_inactive') ? 1 : 0,
-            'is_marked_delete'    => $this->input->post('is_marked_delete') ? 1 : 0,
+            'hs_code'           => $this->input->post('hs_code', true),
+            'total_price'       => $this->input->post('total_amount', true),
 
-            'updated_at'         => date('Y-m-d H:i:s')
+            'product_type_id'   => $product_type_id,
+            'is_inactive'       => $this->input->post('is_inactive') ? 1 : 0,
+            'is_marked_delete'  => $this->input->post('is_marked_delete') ? 1 : 0,
+
+            'updated_at'        => date('Y-m-d H:i:s')
         ];
 
-        /* =========================
-       GET EXISTING ITEM
-    ==========================*/
         $existing_item = $this->Setup_model->get_item_by_id($item_id);
 
-        $product_image = $existing_item['product_image'];
-
-        /* =========================
-       IMAGE UPLOAD
-    ==========================*/
+        // image upload
         if (!empty($_FILES['product_image']['name'])) {
 
             $config['upload_path']   = './public/items/';
@@ -1052,7 +1022,6 @@ class Setup extends CI_Controller
                 $upload = $this->upload->data();
                 $data['product_image'] = $upload['file_name'];
 
-                // delete old image
                 if (
                     !empty($existing_item['product_image']) &&
                     file_exists('./public/items/' . $existing_item['product_image'])
@@ -1066,51 +1035,8 @@ class Setup extends CI_Controller
             }
         }
 
-        /* =========================
-       UPDATE DB
-    ==========================*/
         $this->Setup_model->update_item($item_id, $data);
-        //material
-        $this->Setup_model->delete_raw_materials($item_id);
-        // Existing materials
-        if (!empty($_POST['mname_old'])) {
-
-            foreach ($_POST['mname_old'] as $key => $material) {
-
-                if (trim($material) == '') continue;
-
-                $material_data = [
-                    'item_id'             => $item_id,
-                    'material_name'       => $material,
-                    'material_code'       => $this->generateUniqueCode(),
-                    'quantity_required'   => $_POST['qty_old'][$key],
-                    'cost'                => $_POST['uprice_old'][$key],
-                    'unit'                => $_POST['unit_old'][$key]
-                ];
-
-                $this->Setup_model->insert_raw($material_data);
-            }
-        }
-
-        // New materials
-        if (!empty($_POST['mname'])) {
-
-            foreach ($_POST['mname'] as $key => $material) {
-
-                if (trim($material) == '') continue;
-
-                $material_data = [
-                    'item_id'             => $item_id,
-                    'material_name'       => $material,
-                    'material_code'       => $this->generateUniqueCode(),
-                    'quantity_required'   => $_POST['qty'][$key],
-                    'cost'                => $_POST['uprice'][$key],
-                    'unit'                => $_POST['unit'][$key]
-                ];
-
-                $this->Setup_model->insert_raw($material_data);
-            }
-        }
+        $this->Setup_model->update_item_raw_materials($item_id, $product_type_id);
 
         $this->session->set_flashdata('success', 'Item updated successfully');
         redirect('Setup/list_items');
@@ -1252,6 +1178,94 @@ class Setup extends CI_Controller
     }
     /////// RAW MATERIAL MASTER END   /////////////////////
 
+    /////// RAW MATERIAL MASTER START /////////////////////
+
+    public function list_raw_materials()
+    {
+        $data['title'] = 'Raw Material List';
+        $data['all_raw_materials'] = $this->Setup_model->get_all_raw_materials();
+        $data['main_content'] = 'setup/list_raw_materials.php';
+
+        $this->load->view('includes/template', $data);
+    }
+
+    public function add_raw_material()
+    {
+        $data['title'] = 'Add Raw Material';
+        $data['material'] = null;
+        $data['active_units'] = $this->Setup_model->get_all_units();
+        $data['main_content'] = 'setup/add_raw_material.php';
+
+        $this->load->view('includes/template', $data);
+    }
+
+    public function add_raw_material_data()
+    {
+        $material_name = trim($this->input->post('material_name', true));
+
+        $data = [
+            'material_name'    => $material_name,
+            'material_code'    => trim($this->input->post('material_code', true)),
+            'unit'             => $this->input->post('unit', true),
+            'created_at'       => date('Y-m-d H:i:s'),
+        ];
+
+        $inserted = $this->Setup_model->insert_rawmat($data);
+
+        if ($inserted) {
+            $this->session->set_flashdata('success', 'Raw Material added successfully');
+        } else {
+            $this->session->set_flashdata('error', 'Failed to add Raw Material');
+        }
+
+        redirect('Setup/list_raw_materials');
+    }
+
+    public function edit_raw_material($id)
+    {
+        $data['title'] = 'Edit Raw Material';
+        $data['material'] = $this->Setup_model->get_raw_material_by_id($id);
+        $data['active_units'] = $this->Setup_model->get_all_units();
+        $data['main_content'] = 'setup/add_raw_material.php';
+
+        $this->load->view('includes/template', $data);
+    }
+
+    public function update_raw_material_data($id)
+    {
+        $material_name = trim($this->input->post('material_name', true));
+
+        $data = [
+            'material_name'    => $material_name,
+            'material_code'    => trim($this->input->post('material_code', true)),
+            'unit'             => $this->input->post('unit', true),
+            'updated_at'       => date('Y-m-d H:i:s'),
+        ];
+
+        $this->Setup_model->update_rawmat($data, $id);
+
+        $this->session->set_flashdata('success', 'Raw Material updated successfully');
+        redirect('Setup/list_raw_materials');
+    }
+
+    public function delete_raw_material($id)
+    {
+        $this->Setup_model->delete_raw_material($id);
+
+        $this->session->set_flashdata('success', 'Raw Material deleted successfully');
+        redirect('Setup/list_raw_materials');
+    }
+
+    public function check_material_code_duplicate()
+    {
+        echo $this->Setup_model->material_code_exists(
+            $this->input->post('material_code'),
+            $this->input->post('material_id')
+        );
+    }
+
+    /////// RAW MATERIAL MASTER END   /////////////////////
+
     public function add_item_category($id = null)
     {
         $data['title'] = 'Add Item Category';
@@ -1302,16 +1316,16 @@ class Setup extends CI_Controller
         $this->session->set_flashdata('success', 'Category updated successfully');
         redirect('Setup/add_item_category/' . $id);
     }
+
     public function list_item_category()
     {
         $data['title'] = 'Items Category List';
-
         $data['categories'] = $this->Setup_model->get_all_categories();
-
         $data['main_content'] = 'setup/list_item_category.php';
 
         $this->load->view('includes/template', $data);
     }
+
     public function delete_category($id)
     {
         $result = $this->Setup_model->delete_category($id);
@@ -1343,6 +1357,10 @@ class Setup extends CI_Controller
                 'status' => 1,
                 'sub_category_id' => $sub_category_id
             );
+<<<<<<< HEAD
+=======
+
+>>>>>>> 6c468d3 (sales module changes)
         } else {
 
             $data['sub_category_code'] = $this->Setup_model->get_subcategory_code();
@@ -1384,6 +1402,7 @@ class Setup extends CI_Controller
                 'status' => 1,
                 'child_category_id' => $child_category_id
             );
+
         } else {
 
             $data['child_category_code'] = $this->Setup_model->get_childcategory_code();
@@ -1398,6 +1417,8 @@ class Setup extends CI_Controller
 
         echo json_encode($response);
     }
+
+
 
     public function update_category($id)
     {
@@ -2474,6 +2495,8 @@ class Setup extends CI_Controller
         return $title;
     }
     
+
+
     public function ajax_get_units_materials()
     {
         $data = $this->Setup_model->get_units_and_materials_for_popup();
@@ -2557,7 +2580,12 @@ class Setup extends CI_Controller
         // master data fields editable from this modal
         $master_data = array(
             'description'  => trim($this->input->post('description')),
+<<<<<<< HEAD
             'retail_price' => $this->input->post('retail_price') !== '' ? $this->input->post('retail_price') : 0
+=======
+            'retail_price' => $this->input->post('retail_price') !== '' ? $this->input->post('retail_price') : 0,
+            'total_price'  => $this->input->post('retail_price') !== '' ? $this->input->post('retail_price') : 0
+>>>>>>> 6c468d3 (sales module changes)
         );
 
         $this->Setup_model->update_item_type_and_materials($product_id, $product_type, $materials, $master_data);
@@ -2585,4 +2613,8 @@ class Setup extends CI_Controller
         header('Content-Type: application/json');
         echo json_encode($child_categories);
     }
+
+
+
+
 }

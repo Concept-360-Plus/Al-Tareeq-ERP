@@ -33,6 +33,32 @@
 
             <div class="form-group row">
 
+                <label class="col-md-2 col-form-label">Target Amount</label>
+                <div class="col-md-3">
+                    <input type="number" step="0.01" name="target_amount"
+                           class="form-control" value="<?= $group->target_amount ?>">
+                </div>
+
+                <label class="col-md-2 col-form-label">Commission %</label>
+                <div class="col-md-3">
+                    <input type="number" step="0.01" name="commission_percent"
+                           class="form-control" value="<?= $group->commission_percent ?>">
+                </div>
+
+            </div>
+
+            <div class="form-group row">
+
+                <label class="col-md-2 col-form-label">Sales Discount %</label>
+                <div class="col-md-3">
+                    <input type="number" step="0.01" name="sales_discount_percent"
+                           class="form-control" value="<?= $group->sales_discount_percent ?>">
+                </div>
+
+            </div>
+
+            <div class="form-group row">
+
                 <label class="col-md-2 col-form-label">Description</label>
 
                 <div class="col-md-6">
