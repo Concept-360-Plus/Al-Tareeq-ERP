@@ -1,6 +1,6 @@
 <?php
-	$page_name = 'Hr/view_joining_application_list';
-	$user = $this->session->userdata('user_id');
+$page_name = 'Hr/view_joining_application_list';
+$user = $this->session->userdata('user_id');
 ?>
 <style>
 	.action-icons i {
@@ -12,18 +12,18 @@
 
 <div class="card-body">
 	<div class="dt-responsive table-responsive">
-		
-		<?php if ($this->session->flashdata('error')): ?>
-            <div class="alert alert-danger">
-                <?php echo $this->session->flashdata('error'); ?>
-            </div>
-        <?php endif; ?>
 
-        <?php if ($this->session->flashdata('success')): ?>
-            <div class="alert alert-success">
-                <?php echo $this->session->flashdata('success'); ?>
-            </div>
-        <?php endif; ?>
+		<?php if ($this->session->flashdata('error')): ?>
+			<div class="alert alert-danger">
+				<?php echo $this->session->flashdata('error'); ?>
+			</div>
+		<?php endif; ?>
+
+		<?php if ($this->session->flashdata('success')): ?>
+			<div class="alert alert-success">
+				<?php echo $this->session->flashdata('success'); ?>
+			</div>
+		<?php endif; ?>
 
 		<table id="datatable" class="table table-striped" data-toggle="data-table">
 			<thead>
@@ -48,11 +48,11 @@
 						<td><?php echo date('d-M-Y', strtotime($row->joining_date)); ?></td>
 
 						<td class="action-icons">
-							<a href="<?php echo base_url() . 'index.php/Hr/edit_joining_application/' . $row->jid; ?>"title="Edit"><i class="fa fa-edit"></i><?php echo $this->session->userdata('edit_icon'); ?></a>
+							<a href="<?php echo base_url() . 'index.php/Hr/edit_joining_application/' . $row->jid; ?>" title="Edit"><i class="fa fa-edit"></i><?php echo $this->session->userdata('edit_icon'); ?></a>
 
-							<a href="<?php echo base_url() . 'index.php/Hr/print_joining_application/' . $row->jid; ?>"title="Print" target="_blank"><i class="fa fa-print" style="font-size:18px"></i></a>
+							<a href="<?php echo base_url() . 'index.php/Hr/print_joining_application/' . $row->jid; ?>" title="Print" target="_blank"><i class="fa fa-print" style="font-size:18px"></i></a>
 
-							<a href="<?php echo base_url() . 'index.php/Hr/delete_joining_application/' . $row->jid; ?>"title="Delete" onclick="return confirmcancel(<?php echo $row->jid; ?>);">
+							<a href="<?php echo base_url() . 'index.php/Hr/delete_joining_application/' . $row->jid; ?>" title="Delete" onclick="return confirmcancel(<?php echo $row->jid; ?>);">
 								<i class="fa fa-trash"></i>
 							</a>
 

@@ -13,7 +13,7 @@ class Hr extends CI_Controller
 	{
 		$is_logged_in = $this->session->userdata('is_logged_in');
 		if (!isset($is_logged_in) || $is_logged_in != true) {
-			echo 'You don\'t have permission to access this page. <a href="../login">Login</a>';
+			echo 'You don\'t have permission to access this page. <a href="../">Login</a>';
 
 			die();
 			//$this->load->view('login/login_form');
@@ -500,17 +500,40 @@ class Hr extends CI_Controller
 
 	public function save_designation()
 	{
-		// Load form validation library if not auto-loaded
-		// $this->load->library('form_validation');
+		// Load validation library
+		$this->load->library('form_validation');
 
-		// Set validation rules
-		// $this->form_validation->set_rules('designation_code', 'Designation Code', 'required|trim|is_unique[designation_master.designation_code]');
-		// $this->form_validation->set_rules('designation_name', 'Designation Name', 'required|trim');
+		// Validation rules
+		$this->form_validation->set_rules(
+			'designation_code',
+			'Designation Code',
+			'required|trim'
+		);
 
-		// If validation fails, reload form with errors
-		//if ($this->form_validation->run() == FALSE) {
-		// $this->load->view('designation/add_designation'); // adjust to your actual view
-		//} else {
+		$this->form_validation->set_rules(
+			'designation_name',
+			'Designation Name',
+			'required|trim'
+		);
+
+		$this->form_validation->set_rules(
+			'department',
+			'Department',
+			'required|trim'
+		);
+
+		// Check validation
+		if ($this->form_validation->run() == FALSE) {
+
+			$this->session->set_flashdata(
+				'error',
+				validation_errors()
+			);
+
+			redirect('Hr/add_designation');
+			return;
+		}
+
 		// Collect data
 		$data = array(
 			'designation_code'    => $this->input->post('designation_code', TRUE),
@@ -528,14 +551,16 @@ class Hr extends CI_Controller
 			'status'              => $this->input->post('status', TRUE),
 			'created_on'          => date('Y-m-d H:i:s')
 		);
+
 		$insert_status = $this->Company_model->insert_designation($data);
+
 		if ($insert_status) {
 			$this->session->set_flashdata('success', 'Designation saved successfully!');
 		} else {
 			$this->session->set_flashdata('error', 'error occured while saving designation!');
 		}
+
 		redirect('Hr/list_designation');
-		// }
 	}
 
 	public function edit_designation()
@@ -590,7 +615,7 @@ class Hr extends CI_Controller
 		$deleted = $this->Company_model->delete_designation($id);
 		echo $deleted ? '1' : '0';
 	}
-	
+
 	//// DESIGNATION CODE END ////
 
 
@@ -899,16 +924,27 @@ class Hr extends CI_Controller
 		$this->load->view('includes/template', $data);
 	}
 
-	function update_joining_application()
+	public function update_joining_application()
 	{
-		$data['title'] = "Joining Application";
-		$id = $this->input->post('id');
+		$id = $this->input->post('id', TRUE);
+
+		if (empty($id)) {
+			$this->session->set_flashdata('error','Invalid Joining Application ID.');
+
+			redirect('Hr/view_joining_application_list');
+			return;
+		}
+
 		$this->load->model('Hr_model');
 		$res = $this->Hr_model->update_joining_application($id);
+
 		if ($res) {
-			$this->session->set_flashdata('success', 'Record Successfully Updated');
-			redirect('Hr/view_joining_application_list');
+			$this->session->set_flashdata('success','Joining Application updated successfully.');
+		} else {
+			$this->session->set_flashdata('error', 'Unable to update Joining Application.');
 		}
+
+		redirect('Hr/view_joining_application_list');
 	}
 
 	function print_joining_application()

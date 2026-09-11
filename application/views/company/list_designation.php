@@ -33,7 +33,7 @@
             <div class="col-md-4"  >
                 <input type="text" id="smart_filter" name="filter" class="form-control" placeholder="Type filter..." style="width: 400px;">
                 <ul id="filter_list" style="border: 1px solid #ccc; list-style: none; margin: 0; padding: 5px; position: absolute; display: none; background: #fff; width: 400px; z-index: 10;">
-                        <li data-key="designation_code ">Designation Code</li>
+                        <li data-key="designation_code">Designation Code</li>
                         <li data-key="designation_name">Designation Name</li>
                         <li data-key="department">Department</li>
                         <li data-key="reporting_to">Reporting To</li>
