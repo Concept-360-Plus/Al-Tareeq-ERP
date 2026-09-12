@@ -2,302 +2,395 @@
 <html lang="en">
 
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resignaion Application</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+    <title>Resignation Application</title>
+
     <style>
         body {
-            margin: 17px;
+            margin: 20px;
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+        }
+
+        .title {
+            background: #ff0080;
+            border: 1px solid #000;
+            text-align: center;
+            font-size: 24px;
+            padding: 8px;
+            margin-bottom: 10px;
+        }
+
+        .section-title {
+            border: 1px solid #000;
+            background: #f5f5f5;
+            font-weight: bold;
+            padding: 6px;
+            margin-top: 10px;
         }
 
         table {
-            border: 1px solid black;
+            width: 100%;
             border-collapse: collapse;
-            font-size: 11px;
         }
 
         th,
         td {
-            padding: 2px;
+            border: 1px solid #000;
+            padding: 7px;
+            vertical-align: top;
+        }
+
+        th {
+            width: 20%;
+            background: #f8f8f8;
+            text-align: left;
+        }
+
+        .signature {
+            height: 70px;
+        }
+
+        .documents th {
+            width: auto;
+        }
+
+        .no-print {
+            margin-bottom: 15px;
+        }
+
+        a {
+            color: #000;
+            text-decoration: none;
+        }
+
+        @media print {
+
+            .no-print {
+                display: none;
+            }
+
+            body {
+                margin: 10px;
+            }
         }
     </style>
-
 
 </head>
 
 <body onload="window.print();">
 
-    <body>
-      <?php
-$row = $resignation; // single object
-?>
-                <div class="border-all">
-                    <table border="0px" style="font-size: 18px;" width="100%">
-                        <!-- <tr>
-                            <td></td>
-                            <td>
-                                <table style="margin-top: 0%;" width="100%">
-                                    <tr>
-                                        <td colspan="2" align="Left">
-                                            <img style="width: 50%; height: 100px;" src="<?php echo base_url() ?>public/logo/header1.png" />
-                                        </td>
-                                      
-                                    </tr>
-                                </table>
-                            </td>
-                        </tr> -->
-                        <tr>
-                            <td colspan="2">
-                                <div class="border-all">
-                                    <table cellspacing="0px" cellpadding="0px" width="100%" class="text_font" style=" background-color: #ff0080;">
-                                        <tr>
-                                            <td align="center" style="font-size:25px;">Resignation Application</td>
-                                        </tr>
-                                    </table>
-                                </div>
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <td colspan="2">
-                                <div class="border-all">
-                                    <table cellspacing="0px" cellpadding="0px" width="100%" class="text_font">
-                                        <tr>
-                                            <th>General Information</th>
-                                        </tr>
-                                    </table>
-                                </div>
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <td colspan="2">
-                                <!-- Proper nesting of the last table within the structure -->
-                                <div class="border-all">
-                                    <table cellspacing="0px" cellpadding="0px" width="100%" height="80px" class="table-bordered" style="border: 1px solid black;">
-                                        <tbody>
-
-                                            <tr>
-                                                <th>Employee Name:</th>
-                                                <td><?php echo $row->employee_name; ?></td>
-                                                <th>Joining Date:</th>
-<td>
     <?php
-    echo !empty($row->jdate)
-        ? date('d-M-Y', strtotime($row->jdate))
-        : '';
+
+    $row = $resignation;
+
+    function format_date($date)
+    {
+        if (empty($date) || $date == '0000-00-00') {
+            return '';
+        }
+
+        return date(
+            'd-M-Y',
+            strtotime($date)
+        );
+    }
+
     ?>
-</td>
 
-                                            </tr>
-                                            <tr>
-                                                <th>Employee Number:</th>
-                                                <td><?php echo $row->user_code; ?></td>
-                                                <th>Joining Date From Last Leave:</th>
-                                                <td> <?php echo date('d-M-Y', strtotime($row->last_working_date)); ?></td>
-                                            </tr>
-                                            <tr>
-                                                <th>Designation::</th>
-                                                <td></td>
-                                                <th>Department/Project:</th>
-
-                                                <?php foreach ($dept_list as $s) { ?>
-                                                    <?php if ($s->dept_id == $row->dept_id) { ?>
-                                                        <td><?php echo $s->dept_name; ?></td>
-                                                    <?php } ?>
-                                                <?php } ?>
-
-                                            </tr>
-                                            <tr>
-                                                <th>Mobile No:</th>
-                                                <td><?php echo $row->mobile; ?></td>
-                                                <!-- <th>Passport No:</th>
-                                                <td> <?php foreach ($record1 as $d) : ?>
-                                                        <?php echo $d->document_number; ?>
-                                                    <?php endforeach ?></td> -->
-
-                                                      <th>Resignation Date:</th>
-                                                <td><?php echo date('d-M-Y', strtotime($row->resignation_date)); ?></td>
-                                            </tr>
-                                            <!-- <tr>
-                                              
-                                                <th>Accommodation:</th>
-                                                <td><?php echo $row->Accomodation_provided; ?></td>
-
-                                            </tr> -->
-
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <td> </td>
-                            <td> </td>
-                            <td> </td>
-                        </tr>
-                        <tr>
-                            <td colspan="2">
-                                <!-- Proper nesting of the last table within the structure -->
-                                <div class="border-all">
-                                    <table cellspacing="0px" cellpadding="0px" width="100%" height="80px" class="table-bordered" style="border: 1px solid black;">
-                                        <tbody>
-                                            <tr>
-                                                <th>Resignation Reasons</th>
-                                                <th>
-                                                    Resignation Doc Checklist
-                                                </th>
-                                            </tr>
-                                            <tr>
-                                                <td><?php echo $row->reason; ?></td>
-                                                <td><?php echo date('d-M-Y', strtotime($row->resignation_date)); ?></td>
-                                            </tr>
-
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </td>
-                        </tr>
+    <div class="no-print">
+        <button onclick="window.print();">
+            Print
+        </button>
+    </div>
 
 
-                        <!-- <tr>
-                            <td colspan="2">
-                                <div class="border-all">
-                                    <table cellspacing="0px" cellpadding="0px" width="100%" class="text_font">
-                                        <tr>
-                                            <th>Notice Period Details </th>
+    <!-- TITLE -->
+
+    <div class="title">
+        Resignation Application
+    </div>
 
 
-                                        </tr>
-                                    </table>
-                                </div>
-                            </td>
-                        </tr> -->
+    <!-- GENERAL INFORMATION -->
 
-                        <!-- <tr>
-                            <td colspan="2">
-                                                --> <!-- Proper nesting of the last table within the structure --> <!--
-                                <div class="border-all">
-                                    <table cellspacing="0px" cellpadding="0px" width="100%" height="80px" class="table-bordered" style="border: 1px solid black;">
-                                        <tbody>
+    <div class="section-title">
+        General Information
+    </div>
 
-                                            <tr>
-                                                <th>Resuming After Leave</th>
-                                                <td style="text-align: center; font-size: 15px; vertical-align: middle;" <?php if ($row->joining_type == 'Resuming After Leave') echo 'selected'; ?>>
-                                                    <?php echo ($row->joining_type == 'Resuming After Leave') ? '&#10003;' : ''; ?>
-                                                </td>
-                                                <th>Observation Period </th>
-                                                <td style="text-align: center; font-size: 15px; vertical-align: middle;" <?php if ($row->joining_type == 'Observation Period') echo 'selected'; ?>>
-                                                    <?php echo ($row->joining_type == 'Observation Period') ? '&#10003;' : ''; ?>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <th>Newly Join </th>
-                                                <td style="text-align: center; font-size: 15px; vertical-align: middle;" <?php if ($row->joining_type == 'Newly Join') echo 'selected'; ?>>
-                                                    <?php echo ($row->joining_type == 'Newly Join') ? '&#10003;' : ''; ?>
-                                                </td>
-                                                <th>Other</th>
-                                                <td style="text-align: center; font-size: 15px; vertical-align: middle;" <?php if ($row->joining_type == 'Other') echo 'selected'; ?>>
-                                                    <?php echo ($row->joining_type == 'Other') ? '&#10003;' : ''; ?>
-                                                </td>
+    <table>
 
-                                            </tr>
+        <tr>
+
+            <th>Employee Name</th>
+            <td>
+                <?php echo htmlspecialchars(
+                    $row->employee_name ?? ''
+                ); ?>
+            </td>
+
+            <th>Employee Code</th>
+            <td>
+                <?php echo htmlspecialchars(
+                    $row->user_code ?? ''
+                ); ?>
+            </td>
+
+        </tr>
 
 
+        <tr>
+
+            <th>Joining Date</th>
+            <td>
+                <?php echo format_date(
+                    $row->joining_date ?? ''
+                ); ?>
+            </td>
+
+            <th>Mobile No.</th>
+            <td>
+                <?php echo htmlspecialchars(
+                    $row->mobile ?? ''
+                ); ?>
+            </td>
+
+        </tr>
 
 
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </td>
-                        </tr> -->
-                        <tr>
-                            <td>
+        <tr>
 
-                            <th style="font-size: 13px;"><b>Notice Period Details</b></th>
+            <th>Designation</th>
+            <td>
+                <?php echo htmlspecialchars(
+                    $row->designation_name ?? ''
+                ); ?>
+            </td>
 
+            <th>Department / Project</th>
+            <td>
+                <?php echo htmlspecialchars(
+                    $row->department_name ?? ''
+                ); ?>
+            </td>
 
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <td colspan="2">
-                                <!-- Proper nesting of the last table within the structure -->
-                                <div class="border-all">
-                                    <table cellspacing="0px" cellpadding="0px" width="100%" height="80px" class="table-bordered" style="border: 1px solid black;">
-                                        <tbody>
-
-                                            <tr>
-                                                <th>Employee Signature:</th>
-                                                <td></td>
-                                                <th>PM Signature: </th>
-                                                <td></td>
-                                            </tr>
-                                            <tr>
-                                                <th>HR Signature: </th>
-                                                <td></td>
-                                                <th>MD Signature: </th>
-                                                <td></td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <td colspan="2">
-                                <div class="border-all">
-                                    <table cellspacing="0px" cellpadding="0px" width="100%" class="text_font">
-                                        <tr>
-                                            <th>Effective Start Date:</th>
-                                            <td> <?php echo date('d-M-Y', strtotime($row->resignation_date)); ?></td>
-
-                                            <th>Effective Last Working Date:</th>
-                                            <td> <?php echo date('d-M-Y', strtotime($row->last_working_date)); ?></td>
-                                        </tr>
-                                        <tr>
-                                            <th>Total Notice Period Days:</th>
-                                            <td> <?php echo $row->notice_days; ?></td>
-
-                                        </tr>
-                                    </table>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td colspan="2">
-                                <!-- Proper nesting of the last table within the structure -->
-                                <div class="border-all">
-                                    <table cellspacing="0px" cellpadding="0px" width="100%" height="80px" class="table-bordered" style="border: 1px solid black;">
-                                        <tbody>
-
-                                            <tr>
-                                                <th>Employee Signature:</th>
-                                                <td></td>
-                                                <th>PM Signature: </th>
-                                                <td></td>
-                                            </tr>
-                                            <tr>
-                                                <th>HR Signature: </th>
-                                                <td></td>
-                                                <th>MD Signature: </th>
-                                                <td></td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </td>
-                        </tr>
+        </tr>
 
 
-                    </table>
-                   
-                </div>
-       
-    </body>
+        <tr>
+
+            <th>Resignation Code</th>
+            <td>
+                <?php echo htmlspecialchars(
+                    $row->resign_code ?? ''
+                ); ?>
+            </td>
+
+            <th>Resignation Date</th>
+            <td>
+                <?php echo format_date(
+                    $row->resignation_date ?? ''
+                ); ?>
+            </td>
+
+        </tr>
+
+    </table>
+
+
+    <!-- RESIGNATION DETAILS -->
+
+    <div class="section-title">
+        Resignation Details
+    </div>
+
+    <table>
+
+        <tr>
+
+            <th>Resignation Reason</th>
+
+            <td colspan="3">
+                <?php echo nl2br(
+                    htmlspecialchars(
+                        $row->reason ?? ''
+                    )
+                ); ?>
+            </td>
+
+        </tr>
+
+
+        <tr>
+
+            <th>Effective Start Date</th>
+
+            <td>
+                <?php echo format_date(
+                    $row->resignation_date ?? ''
+                ); ?>
+            </td>
+
+            <th>Effective Last Working Date</th>
+
+            <td>
+                <?php echo format_date(
+                    $row->last_working_date ?? ''
+                ); ?>
+            </td>
+
+        </tr>
+
+
+        <tr>
+
+            <th>Total Notice Period Days</th>
+
+            <td colspan="3">
+                <?php echo htmlspecialchars(
+                    $row->notice_days ?? ''
+                ); ?>
+            </td>
+
+        </tr>
+
+    </table>
+
+
+    <!-- DOCUMENT CHECKLIST -->
+
+    <div class="section-title">
+        Resignation Document Checklist
+    </div>
+
+    <table class="documents">
+
+        <thead>
+
+            <tr>
+
+                <th style="width:60px;">
+                    #
+                </th>
+
+                <th>
+                    Document Type
+                </th>
+
+                <th>
+                    File
+                </th>
+
+            </tr>
+
+        </thead>
+
+        <tbody>
+
+            <?php if (!empty($file_records)): ?>
+
+                <?php $i = 1; ?>
+
+                <?php foreach ($file_records as $file): ?>
+
+                    <tr>
+
+                        <td>
+                            <?php echo $i++; ?>
+                        </td>
+
+                        <td>
+                            <?php echo htmlspecialchars(
+                                $file->document_name ?? 'Other'
+                            ); ?>
+                        </td>
+
+                        <td>
+
+                            <?php if (!empty($file->document_path)): ?>
+
+                                <?php
+                                $file_url =
+                                    base_url(
+                                        'public/uploaded_documents/' .
+                                            $file->document_path
+                                    );
+                                ?>
+
+                                <a
+                                    href="<?php echo $file_url; ?>"
+                                    target="_blank">
+
+                                    View Document
+
+                                </a>
+
+                            <?php else: ?>
+
+                                Not Available
+
+                            <?php endif; ?>
+
+                        </td>
+
+                    </tr>
+
+                <?php endforeach; ?>
+
+            <?php else: ?>
+
+                <tr>
+
+                    <td colspan="3">
+                        No resignation documents uploaded.
+                    </td>
+
+                </tr>
+
+            <?php endif; ?>
+
+        </tbody>
+
+    </table>
+
+
+    <!-- APPROVAL / SIGNATURE -->
+
+    <div class="section-title">
+        Approval / Signature
+    </div>
+
+    <table>
+
+        <tr>
+
+            <th>Employee Signature</th>
+            <td class="signature"></td>
+
+            <th>PM Signature</th>
+            <td class="signature"></td>
+
+        </tr>
+
+        <tr>
+
+            <th>HR Signature</th>
+            <td class="signature"></td>
+
+            <th>MD Signature</th>
+            <td class="signature"></td>
+
+        </tr>
+
+    </table>
+
+
+</body>
 
 </html>

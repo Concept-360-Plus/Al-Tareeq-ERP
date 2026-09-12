@@ -24,7 +24,7 @@
         <table id="datatable" class="table table-striped" data-toggle="data-table">
             <thead>
                 <tr>
-                    <th>Sr No</th>
+                    <th>Sl. No</th>
                     <th>Employee Name</th>
                     <th>Overtime(Hr)</th>
                     <th>Date</th>
@@ -69,7 +69,7 @@
                             </a>
 
                             <a href="<?php echo base_url() . 'index.php/Hr/delete_overtime_emp/' . $row->emp_oid; ?>"
-                                title="Delete">
+                                title="Delete" onclick="return confirm('Are you sure you want to delete this overtime record?');">
                                 <i class="fa fa-trash"></i>
                             </a>
                         </td>

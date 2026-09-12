@@ -1206,12 +1206,32 @@ class Hr extends CI_Controller
 	}
 	function delete_attendance_emp()
 	{
+		$user = $this->session->userdata('user_id');
+
+		// Check Delete Permission
+		if (!has_access($user, 'Hr/view_emp_attendance_list', 'D')) {
+			$data['title'] = 'Access Denied';
+			$data['main_content'] = 'errors/access_control.php';
+			$this->load->view('includes/template', $data);
+			return;
+		}
+
 		$id = $this->uri->segment('3');
+		if (empty($id)) {
+			$this->session->set_flashdata('error', 'Invalid attendance record.');
+			redirect('Hr/view_emp_attendance_list');
+			return;
+		}
 
 		$this->load->model('Hr_model');
-		$data['user_records'] = $this->Hr_model->delete_attendance_emp($id);
+		$deleted = $this->Hr_model->delete_attendance_emp($id);
 
-		$this->session->set_flashdata('success', 'Delete Record Successfully');
+		if ($deleted) {
+			$this->session->set_flashdata('success', 'Attendance record deleted successfully.');
+		} else {
+			$this->session->set_flashdata('error', 'Unable to delete attendance record.');
+		}
+
 		redirect('Hr/view_emp_attendance_list');
 	}
 
@@ -1307,19 +1327,34 @@ class Hr extends CI_Controller
 		}
 	}
 
-	function delete_overtime_emp()
+	public function delete_overtime_emp()
 	{
 		$user = $this->session->userdata('user_id');
-		if (!has_access($user, 'Hr/view_allowances_list', 'D')) {
+
+		// Check Delete Permission
+		if (!has_access($user, 'Hr/view_emp_overtime_list', 'D')) {
 			$data['title'] = 'Access Denied';
 			$data['main_content'] = 'errors/access_control.php';
 			$this->load->view('includes/template', $data);
 			return;
 		}
-		$id = $this->uri->segment('3');
+
+		$id = $this->uri->segment(3);
+		if (empty($id)) {
+			$this->session->set_flashdata('error', 'Invalid overtime record.');
+			redirect('Hr/view_emp_overtime_list');
+			return;
+		}
+
 		$this->load->model('Hr_model');
-		$data['user_records'] = $this->Hr_model->delete_emp_overtime($id);
-		$this->session->set_flashdata('success', 'Delete Record Successfully');
+		$deleted = $this->Hr_model->delete_emp_overtime($id);
+
+		if ($deleted) {
+			$this->session->set_flashdata('success', 'Overtime record deleted successfully.');
+		} else {
+			$this->session->set_flashdata('error', 'Unable to delete overtime record.');
+		}
+
 		redirect('Hr/view_emp_overtime_list');
 	}
 
@@ -1415,28 +1450,49 @@ class Hr extends CI_Controller
 		$this->load->view('includes/template', $data);
 	}
 
+
 	function update_emp_resignation()
 	{
-		$data['title'] = "Update Resignation";
-		$id = $this->input->post('id');
 		$this->load->model('Hr_model');
-		$res = $this->Hr_model->update_resigning_application($id);
-		if ($res) {
-			$this->session->set_flashdata('success', 'Record Successfully Updated');
+		$id = $this->input->post('id');
+
+		if (empty($id)) {
+			$this->session->set_flashdata('error', 'Invalid resignation record.');
 			redirect('Hr/view_emp_resignation_list');
+			return;
+		}
+
+		$res = $this->Hr_model->update_resigning_application($id);
+
+		if ($res) {
+			$this->session->set_flashdata('success', 'Resignation updated successfully.');
+			redirect('Hr/view_emp_resignation_list');
+		} else {
+			$this->session->set_flashdata('error', 'Unable to update resignation. Please check the entered data.');
+			redirect('Hr/edit_emp_resignation/' . $id);
 		}
 	}
 
+
 	function print_resignation_application()
 	{
-		$id = $this->uri->segment('3');
+		$id = $this->uri->segment(3);
+
+		if (empty($id)) {
+			show_error('Invalid resignation ID.', 400);
+			return;
+		}
+
 		$this->load->model('Hr_model');
-		$data['records'] = $this->Hr_model->get_employee_list();
 		$data['resignation'] = $this->Hr_model->get_employee_resigning_by_id($id);
-		$this->load->model('Users_model');
-		$data['record1'] = $this->Users_model->get_user_record_by_id_pass($id);
-		$this->load->model('Setup_model');
-		$data['dept_list'] = $this->Setup_model->get_active_department_list();
+
+		if (!$data['resignation']) {
+			show_error('Resignation record not found.', 404);
+			return;
+		}
+
+		$data['file_records'] = $this->Hr_model->get_employee_document_doc_id($id);
+
 		$this->load->view('hr/print/print_resigning_application.php', $data);
 	}
 
@@ -2333,23 +2389,18 @@ class Hr extends CI_Controller
 	{
 		$doc_id = $this->input->post('doc_id');
 
-		$file = $this->db->get_where('employee_resignation_documents', [
-			'doc_id' => $doc_id
-		])->row();
-
-		if ($file) {
-
-			$path = FCPATH . 'public/uploaded_documents/' . $file->document_path;
-
-			if (file_exists($path)) {
-				unlink($path);
-			}
-
-			$this->db->where('doc_id', $doc_id);
-			$this->db->delete('employee_resignation_documents');
+		if (empty($doc_id)) {
+			echo json_encode([
+				'status' => 0,
+				'message' => 'Invalid document ID.'
+			]);
+			return;
 		}
 
-		echo 1;
+		$this->load->model('Hr_model');
+		$result = $this->Hr_model->delete_resignation_document($doc_id);
+
+		echo json_encode($result);
 	}
 
 	public function add_monthly_salary_data()
