@@ -254,5 +254,11 @@ public function get_active_brands()
     $this->db->where('active', 1);
     return $this->db->get('brand_master')->result();
 }
-
+public function get_all_item_list(){
+        $this->db->select('im.*,um.unit_name');
+        $this->db->from('item_master im');
+        $this->db->join('unit_master um','im.item_unit=um.unit_id', 'left');
+        $query = $this->db->get()->result();
+        return $query; 
+}
 }

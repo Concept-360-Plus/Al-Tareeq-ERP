@@ -26,13 +26,28 @@
 	
 	<div class="form-group row">
 
-	
-
-
 		<label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">Select Customer<span style="color: red;"> * </span>:</label><br/>
 		
 		<div class="col-xs-12 col-sm-9 col-md-3 col-lg-2">
-			<select name="customer_id" id="customer_id" class="form-control select2"> </select>
+		
+            	<select name="customer_id" id="customer_id" class="form-control select2">
+
+				<option value="">Select Customer</option>
+
+				<?php foreach ($customer_list as $c): ?>
+
+					<option value="<?= $c->customer_id ?>"
+						<?= (isset($enquiry_data['enquiry_customer']) && $enquiry_data['enquiry_customer'] == $c->customer_id) ? 'selected' : '' ?>>
+
+						<?= $c->customer_name ?>
+						(<?= $c->customer_code ?>)
+
+					</option>
+
+				<?php endforeach; ?>
+
+			</select>
+
 		</div>
 		<label class="col-xs-12 col-sm-1 col-md-2 col-lg-2 col-form-label">Project Name<span style="color: red;"> * </span>:</label>
 		<div class="col-xs-12 col-sm-9 col-md-3 col-lg-2">
@@ -71,20 +86,19 @@
 		<div class="col-xs-12 col-sm-9 col-md-3 col-lg-2" >			                  
 				<input type="text" class="form-control form-control-sm" id="client_ref" name="client_ref" tabindex="6" >
 		</div>
-		<label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">Quotation Print<span style="color: red;"> * </span></label>
+		<!-- <label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">Quotation Print<span style="color: red;"> * </span></label>
 		<div class="col-xs-12 col-sm-9 col-md-3 col-lg-2">
 			<select tabindex="4" class="form-select form-control-sm select2 " id="quot_print_type" name="quot_print_type" tabindex="9" required>
 				<option value="1">Non-comprehensive</option>
 				<option value="2">Comprehensive</option>
 				</select>
-		</div>
+		</div> -->
 	</div>
 	<div class="form-group row">
 		<!-- <label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">Upload Document <br/>(PDF/PNG/JPEG)</label>
 		<div class="col-xs-12 col-sm-9 col-md-3 col-lg-3">
 				<input type='file' class="form-control form-control-sm" id="qo_file" name="qo_file" tabindex="7" placeholder="" />	
-		</div> -->
-		
+		</div> -->	
 
     <label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">
        Location
@@ -105,36 +119,45 @@
                   rows="4"></textarea>
     </div>
 
-	<label class="col-xs-12 col-sm-1 col-md-2 col-lg-2 col-form-label">AMC Type <span style="color: red;"> * </span></label>
+	<!-- <label class="col-xs-12 col-sm-1 col-md-2 col-lg-2 col-form-label">AMC Type <span style="color: red;"> * </span></label>
 		<div class="col-xs-12 col-sm-9 col-md-3 col-lg-2">
 			<select tabindex="4" class="form-select form-control-sm select2 " id="enquiry_type" name="enquiry_type" tabindex="8" required>
 				<option value="2">New products </option>
 				<option value="1">Company Products </option>
 				<option value="3">Partial Company/Partial New</option>
 				</select>
-		</div>
-
-
-
-
-
+		</div> -->
 		
 	</div>
+
+     <div class="form-group row">
+		<label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">AMC Start Date<span style="color: red;"> * </span></label>
+			<div class="col-xs-12 col-sm-9 col-md-3 col-lg-2" >
+						                  
+		    			<input type="date" class="form-control form-control-sm " id="amc_start_date" name="amc_start_date"  required tabindex='3'>
+					
+    	    </div>
+			<label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">AMC End Date<span style="color: red;"> * </span></label>
+			<div class="col-xs-12 col-sm-9 col-md-3 col-lg-2" >
+						                  
+		    			<input type="date" class="form-control form-control-sm " id="amc_end_date" name="amc_end_date"  required tabindex='4'>
+					
+    	    </div>
+		</div>
 	<div class="form-group row align-items-center">
 
-    <label class="col-sm-2 col-form-label">Contract Type</label>
+    <label class="col-sm-2 col-form-label">Contract Type <span style="color: red;"> * </span></label>
 
     <div class="col-sm-2">
         <select class="form-control form-control-sm"
                 name="contract_type"
                 id="contract_type"
-                onchange="toggleContractCount()">
+                onchange="toggleContractCount()" required>
             <option value="">Select</option>
             <option value="Yearly">Yearly</option>
             <option value="Quarterly">Quarterly</option>
         </select>
     </div>
-
 
     <div class="col-sm-3" id="year_block" style="display:none;">
         <div class="d-flex align-items-center">
@@ -152,29 +175,14 @@
         </div>
     </div>
 
-
 </div>
-
-	<div class="form-group row">
-		<label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">AMC Start Date<span style="color: red;"> * </span></label>
-			<div class="col-xs-12 col-sm-9 col-md-3 col-lg-2" >
-						                  
-		    			<input type="date" class="form-control form-control-sm " id="amc_start_date" name="amc_start_date"  required tabindex='3'>
-					
-    	    </div>
-			<label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">AMC End Date<span style="color: red;"> * </span></label>
-			<div class="col-xs-12 col-sm-9 col-md-3 col-lg-2" >
-						                  
-		    			<input type="date" class="form-control form-control-sm " id="amc_end_date" name="amc_end_date"  required tabindex='4'>
-					
-    	    </div>
-		</div>
 	<h4>Details</h4>
 	<div class="form-group row" >
 	   <table class="table table-bordered table-hover" id="tab_logic">
     <thead id="quotation_header">
         <tr>
-            <th>System</th>
+            <th>Description</th>
+            <th>Brand</th>
             <th>Price (AED + VAT)</th>
             <th>Qty</th>
             <th>Final Total Rates</th>
@@ -190,8 +198,7 @@
     <button type="button" class="btn btn-success btn-sm" onclick="addNewRow()">
         <i class="fa fa-plus"></i> Add Row
     </button>
-</div>
-		
+</div>		
 		
 	<div class="form-group row">
 		    <label class="col-xs-12 col-sm-3 col-md-1 col-lg-1 col-form-label">SubTot</label>
@@ -204,7 +211,8 @@
 		      </div>
 			<label class="col-xs-12 col-sm-1 col-md-1 col-lg-1 col-form-label">Dis.%:</label>
 	    	    <div class="col-xs-12 col-sm-9 col-md-2 col-lg-1">
-			      <input type="number" name="discount" id="discount" class="form-control form-control-sm"  onkeyup="calculate_grand_total()" value=0 tabindex=7>
+			      <!-- <input type="number" name="discount" id="discount" class="form-control form-control-sm"  onkeyup="calculate_grand_total()" value=0 tabindex=7> -->
+                  <input type="number" name="discount" id="discount" class="form-control form-control-sm"  onkeyup="calc_discount_from_percent()" value=0 tabindex=7>
 		      </div>
 	    	    <div class="col-xs-12 col-sm-9 col-md-2 col-lg-1">
 			      <input type="number" step="0.01" name="discount_amt" id="discount_amt" class="form-control form-control-sm"  onkeyup="calculate_grand_total()" value='0' tabindex=8>
@@ -249,38 +257,29 @@
 		</div> -->
 		<div class="form-group row">
     <label class="col-xs-12 col-sm-3 col-md-2 col-lg-2 col-form-label">
-        Scope of Work:
+        Scope of Services:
     </label>
 
     <div class="col-xs-12 col-sm-9 col-md-8 col-lg-8">
         <textarea class="form-control"
                   id="scope_work"
                   name="scope_work"
-                  rows="6">1. Carrying out systematic inspection of the equipment, lubricating, motor tuning, and adjustment, testing for normal working and general servicing for good working and submitting the service report duly signed by the concerned authority.
+                  rows="8">
 
-2. Electricals, Mechanical & Civil necessity requirements to engineer while attending Preventive Maintenances should be provided by Customer.
 
-3. In case of non-availability of the spare component for replacement quotation shall be provided. After the approval the work will be done and invoice shall be submitted. Payment after invoice submission as per usual process.</textarea>
+</textarea>
     </div>
 </div>
        <div class="form-group row">   
     <label class="col-xs-12 col-sm-3 col-md-2 col-lg-2 col-form-label">
-        Payment Terms:
+        Terms of Payment:
     </label>
 
     <div class="col-xs-12 col-sm-9 col-md-8 col-lg-8">
         <textarea class="form-control"
                   id="term1"
                   name="term1"
-                  rows="6">Quarterly after each PPM CDC payment.
-
-This price will be varied according to the changes in quantity, design size specification etc.
-
-We hope the above meets your requirements and waiting to execute your order with highest priority.
-
-Please do not hesitate to contact the undersigned for any further enquiry.
-
-We assure you our best services all the time.</textarea>
+                  rows="4">Payment shall be made in 2 installments through bank transfer, plus VAT.</textarea>
     </div>
 </div>
 		<div class="form-group row">   
@@ -310,6 +309,72 @@ We assure you our best services all the time.</textarea>
 			</div>
 		
 		</div>
+        <div class="form-group row">
+		    <label class="col-xs-12 col-sm-3 col-md-2 col-lg-2 col-form-label">Contract Period:</label>
+			<div class="col-xs-12 col-sm-9 col-md-8 col-lg-8">
+				<input type="text" class="form-control form-control-sm" list="contract_period"  name="contract_period" value="6 months from the date of signing the agreement"/>
+			
+			</div>
+		
+		</div>
+         <div class="form-group row">
+		    <label class="col-xs-12 col-sm-3 col-md-2 col-lg-2 col-form-label">Contract value (Dhs):</label>
+			<div class="col-xs-12 col-sm-9 col-md-8 col-lg-8">
+				<input type="text" class="form-control form-control-sm" list="contract_value"  name="contract_value" value="6000 only (value in words) + 5% vat"/>
+			
+			</div>
+		
+		</div>
+          <div class="form-group row">   
+    <label class="col-xs-12 col-sm-3 col-md-2 col-lg-2 col-form-label">
+       Terms and Conditions:
+    </label>
+
+    <div class="col-xs-12 col-sm-9 col-md-8 col-lg-8">
+        <textarea class="form-control"
+                  id="termcond"
+                  name="termcond"
+                  rows="4">This contract shall be valid for a period of six (6) months from the date of signing.
+                                  
+Al Tareeq Kitchen Equipment shall provide preventive and corrective maintenance services in accordance with the agreed scope of work.
+
+Preventive maintenance shall be carried out on a monthly basis, as mutually agreed.
+
+Breakdown services shall be provided based on the following response times:
+•Emergency: within 3-4 hours
+•Urgent: within 6-12 hours
+• Normal: within 24 hours
+
+All service requests must be communicated through official channels such as phone or email.
+
+Services shall be carried out during normal working hours unless otherwise mutually agreed in writing.
+
+Spare parts are not included in this Annual Maintenance Contract unless specifically stated. Replacement of spare parts shall be carried out only after obtaining approval from the Client.
+                
+                
+                
+                
+                </textarea>
+    </div>    
+</div>
+          <div class="form-group row">   
+    <label class="col-xs-12 col-sm-3 col-md-2 col-lg-2 col-form-label">
+       Exclusions:
+    </label>
+
+    <div class="col-xs-12 col-sm-9 col-md-8 col-lg-8">
+        <textarea class="form-control"
+                  id="exclusions"
+                  name="exclusions"
+                  rows="6">
+                
+                
+                
+                
+                </textarea>
+    </div>
+</div>
+
 		<!-- <div class="form-group row">
 			<label class="col-xs-12 col-sm-3 col-md-2 col-lg-2 col-form-label">Select Company</label>
 			<div class="col-xs-12 col-sm-9 col-md-2 col-lg-2">
@@ -321,7 +386,7 @@ We assure you our best services all the time.</textarea>
 		</div> -->
         <hr>
 
-<div class="form-group row">
+<!-- <div class="form-group row">
     <label class="col-sm-3 col-form-label">
         System SLA for Corrective Maintenance
     </label>
@@ -372,21 +437,62 @@ We assure you our best services all the time.</textarea>
 <div id="annexure_section" style="display:none; margin-top:15px;">
     <h6>ANNEXURE DETAILS</h6>
 
-    <button type="button" class="btn btn-primary btn-sm mb-2"
-            onclick="addAnnexureRow()">
-        + Add Row
-    </button>
+    <div class="form-group row">
+    <label class="col-lg-2 col-form-label">
+        Annexure Main Heading
+    </label>
+
+    <div class="col-lg-4">
+        <input type="text" 
+               name="annexure_title"
+               class="form-control"
+               value="ANNEXURE - 1">
+    </div>
+</div>
+
+    <div class="form-group row">
+    <label class="col-sm-3 col-form-label">
+        Annexure Subtitle
+    </label>
+
+    <div class="col-sm-6">
+        <input type="text" 
+               id="section_title" 
+                name="section_title"
+               class="form-control"
+               placeholder="Eg: Sliding Doors">
+    </div>
+</div>
+
 
     <table class="table table-bordered">
         <thead>
-            <tr>
-                <th>Sl No</th>
-                <th>Type</th>
-                <th>Location</th>
-                <th>Quantity</th>
-                <th></th>
-            </tr>
-        </thead>
+        <tr>
+            <th>
+                <input type="text" name="heading_slno" 
+                       class="form-control" value="Sl No">
+            </th>
+
+            <th>
+                <input type="text" name="heading_type" 
+                       class="form-control" value="Type">
+            </th>
+
+            <th>
+                <input type="text" name="heading_location" 
+                       class="form-control" value="Location">
+            </th>
+
+            <th>
+                <input type="text" name="heading_quantity" 
+                       class="form-control" value="Quantity">
+            </th>
+
+            <th>
+                Action
+            </th>
+        </tr>
+    </thead>
 
         <tbody id="annexure_body"></tbody>
 
@@ -400,7 +506,7 @@ We assure you our best services all the time.</textarea>
             </tr>
         </tfoot>
     </table>
-</div>
+</div> -->
 
 		<h6>Contact Person Details</h6>
 		<br/>
@@ -426,8 +532,22 @@ We assure you our best services all the time.</textarea>
                class="form-control form-control-sm">
     </div>
 </div>
+		<div class="form-group row">
 
+<label class="col-md-1 control-label">Prepared By:</label>
+    <div class="col-md-3">
+ <select class="form-control select2" 
+                id="employee_prepared" name="employee_prepared" required>
+                <option value="">Select</option>
+                <?php foreach ($employees as $s) { ?>
+                <option value="<?php echo $s->employee_id  ?>"><?php echo $s->user_code . ' ' . $s->employee_name; ?></option>
+                <?php } ?>
+              </select>
 
+ </div>
+        </div>
+
+ 
 		<div class="col-sm-10">
 		<button type="submit"  tabindex="22"  id="add" class="btn btn-primary m-b-0">Create Quotation</button>
 		</div>
@@ -441,8 +561,18 @@ We assure you our best services all the time.</textarea>
 </div>
 
 </div>
-
 <script>
+var productOptions = '<option value="">Select Product</option>' +
+<?php
+$opts = '';
+foreach ($active_items as $item) {
+    $opts .= "'<option value=\"" . $item->product_id . "\">" . addslashes(htmlspecialchars($item->product_name, ENT_QUOTES)) . "</option>' + ";
+}
+echo rtrim($opts, "+ ");
+?>;
+</script>
+<script>
+    
 $(document).ready(function() {
 
 
@@ -456,49 +586,49 @@ $(document).ready(function() {
  /* ==========================================================
            2. AJAX: LOAD NEW CUSTOMER MODAL
         ========================================================== */
-        $('.view-employees').on('click', function(e) {
-            e.preventDefault();
-            $('#modal-body-content').html("Loading...");
-            $('#myModal').modal('show');
-            $.ajax({
-                url: "<?= base_url('index.php/Ajax/add_new_customer') ?>",
-                type: "POST",
-                success: function(response) {
-                    $('#modal-body-content').html(response);
-                },
-                error: function(xhr, status, error) {
-                    console.error("AJAX Error:", xhr.responseText);
-                    alert("AJAX error: " + error);
-                }
-            });
-        });
+        // $('.view-employees').on('click', function(e) {
+        //     e.preventDefault();
+        //     $('#modal-body-content').html("Loading...");
+        //     $('#myModal').modal('show');
+        //     $.ajax({
+        //         url: "<?= base_url('index.php/Ajax/add_new_customer') ?>",
+        //         type: "POST",
+        //         success: function(response) {
+        //             $('#modal-body-content').html(response);
+        //         },
+        //         error: function(xhr, status, error) {
+        //             console.error("AJAX Error:", xhr.responseText);
+        //             alert("AJAX error: " + error);
+        //         }
+        //     });
+        // });
 
  /* ==========================================================
            3. BRANCH → CUSTOMER FILTER
         ========================================================== */
-        $('#branch').on('change', function() {
-            const branch_id = $(this).val();
-            const $customer = $('#customer_id');
-            $customer.empty().append('<option value="">-- Select Customer --</option>');
-            if (branch_id) {
-                $.ajax({
-                    url: '<?= base_url("index.php/Company/get_customers_by_branch") ?>',
-                    type: 'POST',
-                    data: {
-                        branch_id
-                    },
-                    dataType: 'json',
-                    success: function(data) {
-                        $.each(data, function(_, customer) {
-                            $customer.append(`<option value="${customer.customer_id}">
-                            ${customer.customer_name} (${customer.customer_code}) → ${customer.contact_number}
-                        </option>`);
-                        });
-                        $customer.trigger('change');
-                    }
-                });
-            }
-        });
+        // $('#branch').on('change', function() {
+        //     const branch_id = $(this).val();
+        //     const $customer = $('#customer_id');
+        //     $customer.empty().append('<option value="">-- Select Customer --</option>');
+        //     if (branch_id) {
+        //         $.ajax({
+        //             url: '<?= base_url("index.php/Company/get_customers_by_branch") ?>',
+        //             type: 'POST',
+        //             data: {
+        //                 branch_id
+        //             },
+        //             dataType: 'json',
+        //             success: function(data) {
+        //                 $.each(data, function(_, customer) {
+        //                     $customer.append(`<option value="${customer.customer_id}">
+        //                     ${customer.customer_name} (${customer.customer_code}) → ${customer.contact_number}
+        //                 </option>`);
+        //                 });
+        //                 $customer.trigger('change');
+        //             }
+        //         });
+        //     }
+        // });
 
     var i = 1; 
 
@@ -523,10 +653,12 @@ $(document).ready(function() {
 });
 
 
+   
     $(document).on("click", ".remove_row", function() {
-        var rowId = $(this).closest("tr").attr("id");
-        $("#" + rowId).remove();
-    });
+    var rowId = $(this).closest("tr").attr("id");
+    $("#" + rowId).remove();
+    calculate_grand_total();
+});
 });
 
    function get_customer_info() 
@@ -663,7 +795,23 @@ function populateProductOptions() {
 	document.getElementById("total"+append_id).value=parseFloat(total).toFixed(2);
 	calculate_grand_total();
 }
+function calc_discount_from_percent()
+{
+	var i_total = parseFloat(document.getElementById("sub_total").value) || 0;
+	var discount_percent = parseFloat(document.getElementById("discount").value) || 0;
 
+	if(discount_percent > 0)
+	{
+		var discount_val = i_total * (discount_percent/100);
+		document.getElementById("discount_amt").value = parseFloat(discount_val).toFixed(2);
+	}
+	else
+	{
+		document.getElementById("discount_amt").value = 0;
+	}
+
+	calculate_grand_total();
+}
 
 function calculate_grand_total()
 {
@@ -679,24 +827,29 @@ function calculate_grand_total()
 	if(isNaN(i_total)) var s_total = 0;
 
 	document.getElementById("sub_total").value= parseFloat(i_total).toFixed(2);
-	if (document.getElementById("amc_discount").value>0){
-		var amc_discount = parseFloat(document.getElementById("amc_discount").value).toFixed(2)
-	}
-	else{
-		var amc_discount =0;
-	}
+	// if (document.getElementById("amc_discount").value>0){
+	// 	var amc_discount = parseFloat(document.getElementById("amc_discount").value).toFixed(2)
+	// }
+	// else{
+	// 	var amc_discount =0;
+	// }
 		
-	if(document.getElementById("discount").value==0)
-	 	var discount=0;
-	 else
-	 {
-	 	var discount_per = parseFloat(document.getElementById("discount").value/100);
-	 	var discount= i_total*discount_per;
-	 	document.getElementById("discount_amt").value= parseFloat(discount).toFixed(2);
-	 }
-	 var discount= document.getElementById("discount_amt").value;
-	 var total_before_vat = i_total-amc_discount-discount;
-	
+	// if(document.getElementById("discount").value==0)
+	//  	var discount=0;
+	//  else
+	//  {
+	//  	var discount_per = parseFloat(document.getElementById("discount").value/100);
+	//  	var discount= i_total*discount_per;
+	//  	document.getElementById("discount_amt").value= parseFloat(discount).toFixed(2);
+	//  }
+	//  var discount= document.getElementById("discount_amt").value;
+	//  var total_before_vat = i_total-amc_discount-discount;
+
+
+    var amc_discount = parseFloat(document.getElementById("amc_discount").value) || 0;
+	var discount = parseFloat(document.getElementById("discount_amt").value) || 0;
+
+	var total_before_vat = i_total-amc_discount-discount;
 	document.getElementById("total_before_vat").value= parseFloat(total_before_vat).toFixed(2);
 
 
@@ -790,10 +943,60 @@ function get_trading_product_info(append_id)
 }
 var i = 1;
 
+// function addNewRow()
+// {
+//     let rowId = i++;
+
+//     let type = $('#contract_type').val();
+//     let count = 0;
+
+//     if(type == 'Yearly') count = parseInt($('#no_of_years').val()) || 0;
+//     else if(type == 'Quarterly') count = parseInt($('#no_of_quarters').val()) || 0;
+
+//     let row = `<tr id="addr${rowId}">`;
+
+//    row += `
+//    <td>
+// <select name="prod_id[]" id="prod_id${rowId}" class="form-control select2 product-select">
+// ${productOptions}
+// </select>
+// </td>
+
+// <td>
+//   <input type="number" name="price[]" id="price${rowId}" class="form-control"
+//          onkeyup="calculateDynamicRow(${rowId})">
+// </td>
+
+// <td>
+//   <input type="number" name="qty[]" id="qty${rowId}" class="form-control"
+//          onkeyup="calculateDynamicRow(${rowId})">
+// </td>
+//     `;
+
+//     for(let y=1;y<=count;y++)
+//     {
+//         row += `
+//             <td>
+//                 <input type="text" id="period_${y}_${rowId}" class="form-control" readonly>
+//             </td>
+//         `;
+//     }
+
+//     row += `
+//         <td><input type="text" id="final_total_${rowId}" class="form-control subItemAmt" readonly></td>
+//         <td><button type="button" class="btn btn-danger btn-sm remove_row">X</button></td>
+//     </tr>`;
+
+//     $('#mytbbody').append(row);
+
+//     calculateDynamicRow(rowId); // 🔥 IMPORTANT
+// }
+
+
+
 function addNewRow()
 {
     let rowId = i++;
-
     let type = $('#contract_type').val();
     let count = 0;
 
@@ -804,7 +1007,13 @@ function addNewRow()
 
     row += `
        <td>
-  <input type="text" name="prod_id[]" class="form-control">
+<select name="prod_id[]" id="prod_id${rowId}" class="form-control select2 product-select">
+${productOptions}
+</select>
+</td>
+<td>
+  <input type="text" name="brand[]" id="brand${rowId}" class="form-control"
+         onkeyup="calculateDynamicRow(${rowId})">
 </td>
 
 <td>
@@ -826,39 +1035,46 @@ function addNewRow()
             </td>
         `;
     }
+  
 
     row += `
-        <td><input type="text" id="final_total_${rowId}" class="form-control subItemAmt" readonly></td>
-        <td><button type="button" class="btn btn-danger btn-sm remove_row">X</button></td>
+    <td><input type="text" id="final_total_${rowId}" name="final_total[]" class="form-control subItemAmt" readonly></td>
+    <td><button type="button" class="btn btn-danger btn-sm remove_row">X</button></td>
     </tr>`;
 
-    $('#mytbbody').append(row);
+    
+    $('#mytbbody').append(row);    
+    $('#prod_id'+rowId).select2({ width: '100%' });
 
-    calculateDynamicRow(rowId); // 🔥 IMPORTANT
+    calculateDynamicRow(rowId);
 }
 
 function toggleContractCount()
 {
-    var type = $('#contract_type').val();
+    let type = $('#contract_type').val();
 
-    if(type == 'Yearly')
+    if(type === 'Yearly')
     {
         $('#year_block').show();
         $('#quarter_block').hide();
 
-        $('#no_of_quarters').val('');
+        $('#no_of_years').prop('required', true);
+        $('#no_of_quarters').prop('required', false).val('');
     }
-    else if(type == 'Quarterly')
+    else if(type === 'Quarterly')
     {
         $('#quarter_block').show();
         $('#year_block').hide();
 
-        $('#no_of_years').val('');
+        $('#no_of_quarters').prop('required', true);
+        $('#no_of_years').prop('required', false).val('');
     }
     else
     {
-        $('#year_block').hide();
-        $('#quarter_block').hide();
+        $('#year_block, #quarter_block').hide();
+
+        $('#no_of_years').prop('required', false).val('');
+        $('#no_of_quarters').prop('required', false).val('');
     }
 }
 
@@ -882,7 +1098,8 @@ function buildDynamicTable()
 
     let header = `
         <tr>
-            <th>System</th>
+            <th>Description</th>
+             <th>Brand</th>
             <th>Price (AED + VAT)</th>
             <th>Qty</th>
     `;
@@ -917,9 +1134,15 @@ function rebuildRows(count)
 
     rows += `
         <td>
-            <input type="text" name="prod_id[]" class="form-control">
-        </td>
+        <select name="prod_id[]" id="prod_id0" class="form-control select2 product-select">
+${productOptions}
+        </select>
+    </td>
 
+     <td>
+            <input type="text" name="brand[]" id="brand" class="form-control"
+       onkeyup="calculateDynamicRow(0)">
+        </td>
         <td>
             <input type="number" name="price[]" id="price0" class="form-control"
        onkeyup="calculateDynamicRow(0)">
@@ -964,6 +1187,7 @@ function rebuildRows(count)
     rows += '</tr>';
 
     $('#mytbbody').html(rows);
+    $('#prod_id0').select2({ width: '100%' });
 }
 $('#contract_type').change(function(){
     toggleContractCount();
@@ -1131,8 +1355,19 @@ function addAnnexureRow()
             <td><input type="text" name="type[]" class="form-control"></td>
             <td><input type="text" name="location[]" class="form-control"></td>
             <td><input type="number" name="annex_qty[]" class="form-control annex_qty" onkeyup="calculateAnnexTotal()"></td>
-            <td><button type="button" class="btn btn-danger btn-sm" onclick="removeAnnexRow(${annex_i})">X</button></td>
-        </tr>
+<td>
+            <button type="button" 
+                    class="btn btn-primary btn-sm"
+                    onclick="addAnnexureRow()">
+                +
+            </button>
+
+            <button type="button" 
+                    class="btn btn-danger btn-sm"
+                    onclick="removeAnnexRow(${annex_i})">
+                X
+            </button>
+        </td>          </tr>
     `);
 
     annex_i++;
@@ -1156,4 +1391,41 @@ function removeAnnexRow(id)
     $('#annex_' + id).remove();
     calculateAnnexTotal();
 }
+
+$(document).ready(function () {
+    toggleContractCount();
+});
 </script>
+<?php if (!empty($prefill)): ?>
+<script>
+$(document).ready(function() {
+
+    // Prefill customer (select2)
+    $('#customer_id').val('<?php echo $prefill['customer_id']; ?>').trigger('change');
+
+    // Prefill project name
+    $('#project_name').val('<?php echo addslashes($prefill['project_name']); ?>');
+
+    // Tag this quotation as Replacement, linked to original project quote
+    $('#main').append('<input type="hidden" name="quote_type" value="Replacement">');
+    $('#main').append('<input type="hidden" name="parent_quote_id" value="<?php echo $prefill['parent_quote_id']; ?>">');
+
+    // Prefill replacement item rows into the items table
+    var replItems = <?php echo json_encode($prefill['items']); ?>;
+
+    replItems.forEach(function(it) {
+        addNewRow();              // adds a blank row, uses & increments global i
+        var rowId = i - 1;        // row just added
+
+        $('#addr'+rowId+' input[name="prod_id[]"]').val(it.item_name);        
+        $('#price'+rowId).val(it.unit_price);
+        $('#qty'+rowId).val(it.qty);
+
+        // remember which replacement_id this row came from (used in add_quot_direct)
+        $('#addr'+rowId).append('<input type="hidden" name="replacement_ids[]" value="'+it.replacement_id+'">');
+
+        calculateDynamicRow(rowId);
+    });
+});
+</script>
+<?php endif; ?>

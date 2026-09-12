@@ -2,28 +2,28 @@
 
     class amc_model extends CI_Model {
  
-    function add_new_amc_enquiry()
+    public function add_new_amc_enquiry()
 {
     /* ================= START TRANSACTION ================= */
     $this->db->trans_start();
 
     $enquiry_code = $this->input->post('amc_enq_code');
+    $branch_id    = $this->input->post('branch_id');
     $cust_id      = $this->input->post('customer_id');
-    $inv_no       = $this->input->post('inv_no') ?? '';
 
     /* ================= CUSTOMER HANDLING ================= */
     if ($cust_id == 'new') {
         $prifix1 = 'CM';
-        $num1    = $this->Setup_model->get_next_code($prifix1, 'cust_code', 'customer_master', 3);
+        $num1    = $this->Setup_model->get_next_code($prifix1, 'customer_code', 'customer_master', 3);
         $Code1   = $prifix1 . sprintf("%04d", $num1);
 
         $data1 = array(
-            'cust_code'    => $Code1,
-            'cust_name'    => $this->input->post('customer_name'),
-            'contact_no'   => $this->input->post('cust_mobile'),
-            'email_id'     => $this->input->post('cust_email'),
-            'created_by'   => $this->session->userdata('user_id'),
-            'created_date' => date('Y-m-d H:i:s')
+            'customer_code'    => $Code1,
+            'customer_name'    => $this->input->post('customer_name'),
+            'office_telephone' => $this->input->post('cust_mobile'),
+            'customer_email'   => $this->input->post('cust_email'),
+            'branch_id'        => $branch_id
+            // created_at auto-populates via current_timestamp() default
         );
 
         $this->db->insert('customer_master', $data1);
@@ -35,16 +35,18 @@
     /* ================= FILE UPLOAD HANDLING ================= */
     $other_file = '';
     if (!empty($_FILES['other_file']['name'])) {
-        $allowedExts = array("jpeg","jpg","png","pdf","doc","docx");
+        $allowedExts = array("jpeg", "jpg", "png", "pdf", "doc", "docx");
         $temp        = explode(".", $_FILES["other_file"]["name"]);
         $extension   = strtolower(end($temp));
 
         if (in_array($extension, $allowedExts) && $_FILES["other_file"]["size"] <= 15728640) { // 15MB max
-            $timestamp   = time();
-            $other_file  = $timestamp . "_" . $_FILES['other_file']['name'];
-            $file_tmp    = $_FILES["other_file"]["tmp_name"];
-if (!move_uploaded_file($file_tmp, FCPATH . "public/uploaded_documents/" . $other_file)) {
+            $timestamp  = time();
+            $other_file = $timestamp . "_" . $_FILES['other_file']['name'];
+            $file_tmp   = $_FILES["other_file"]["tmp_name"];
+
+            if (!move_uploaded_file($file_tmp, FCPATH . "public/uploaded_documents/" . $other_file)) {
                 $this->session->set_flashdata('error', 'Failed to upload document. Please check permissions.');
+                $other_file = '';
             }
         } else {
             $this->session->set_flashdata('error', 'Invalid file format or size exceeds 15MB.');
@@ -53,41 +55,46 @@ if (!move_uploaded_file($file_tmp, FCPATH . "public/uploaded_documents/" . $othe
 
     /* ================= ENQUIRY MASTER ================= */
     $data = array(
-        'amc_enq_code'  => $enquiry_code,
-        'enq_date'      => date('Y-m-d', strtotime($this->input->post('enq_date'))),
-        'revision_date' => date('Y-m-d', strtotime($this->input->post('enq_date'))),
-        'cust_id'       => $customer_id,
-        'enq_type'      => $this->input->post('enquiry_type'),
-        'client_ref'    => $this->input->post('client_ref'),
-        'remark'        => $this->input->post('remark'),
-        'invoice_no'    => $inv_no,
-        'project_name'  => $this->input->post('project_name'),
-        'other_file'    => $other_file,  // <-- store uploaded file name
-        'created_by'    => $this->session->userdata('user_id'),
-        'created_date'  => date('Y-m-d H:i:s')
+        'amc_enq_code'     => $enquiry_code,
+        'enq_date'         => date('Y-m-d', strtotime($this->input->post('enq_date'))),
+        'revision_date'    => date('Y-m-d', strtotime($this->input->post('enq_date'))),
+        'cust_id'          => $customer_id,
+        'branch_id'        => $branch_id,
+        'enq_type'         => $this->input->post('enquiry_type'),
+        'client_ref'       => $this->input->post('client_ref'),
+        'remark'           => $this->input->post('remark'),
+        'project_name'     => $this->input->post('project_name'),
+        'project_location' => '', // NOT NULL column — no field in view yet, confirm this default
+        'invoice_no'       => '', // NOT NULL column — no field in view yet, confirm this default
+        'other_file'       => $other_file,
+        'created_by'       => $this->session->userdata('user_id'),
+        'created_date'     => date('Y-m-d H:i:s')
     );
 
     $this->db->insert('amc_enquiry_master', $data);
     $enquiry_id = $this->db->insert_id();
 
     /* ================= ENQUIRY ITEMS ================= */
-    $prod_ids = $this->input->post('prod_id');
-    $brands   = $this->input->post('brand');
-    $models   = $this->input->post('model');
-    $qtys     = $this->input->post('qty');
+    $item_ids = $this->input->post('item_id');
+   // $descs    = $this->input->post('prod_desc');
+     $brands    = $this->input->post('brand');
+    $qtys     = $this->input->post('pro_qty');
 
-    for ($i = 0; $i < count($qtys); $i++) {
-        if (empty($qtys[$i]) || $qtys[$i] <= 0) continue;
+    if (!empty($qtys)) {
+        for ($i = 0; $i < count($qtys); $i++) {
+            if (empty($qtys[$i]) || $qtys[$i] <= 0) continue;
 
-        $item_data = array(
-            'enquiry_id' => $enquiry_id,
-            'product_id' => $prod_ids[$i] ?? '',
-            'brand'      => $brands[$i] ?? '',
-            'model'      => $models[$i] ?? '',
-            'quantity'   => $qtys[$i],
-            'approved'   => 1
-        );
-        $this->db->insert('amc_enquiry_transaction', $item_data);
+            $item_data = array(
+                'enquiry_id' => $enquiry_id,
+                'product_id' => $item_ids[$i] ?? '',
+               //'desc'       => $descs[$i] ?? '',
+                'brand'       => $brands[$i] ?? '',
+                'quantity'   => $qtys[$i],
+                'capacity'   => '', // NOT NULL column — no field in view yet, confirm this default
+                'approved'   => 1
+            );
+            $this->db->insert('amc_enquiry_transaction', $item_data);
+        }
     }
 
     /* ================= LOG ================= */
@@ -111,85 +118,82 @@ if (!move_uploaded_file($file_tmp, FCPATH . "public/uploaded_documents/" . $othe
     return $enquiry_id;
 }
 
-
-    function update_enquiry_data() 
+ public function update_enquiry_data($id)
 {
-    $id = $this->input->post('amc_enq_id');  
-
-    // Delete old transactions
-    $this->db->where('enquiry_id', $id);
-    $this->db->delete('amc_enquiry_transaction');
-
-    // Update main enquiry
+    /* ================= MAIN ENQUIRY ================= */
     $data = array(
-        'amc_enq_code'  => $this->input->post('amc_enq_code'),
-        'enq_date'      => date('Y-m-d', strtotime($this->input->post('enq_date'))),
-        'revision_date' => date('Y-m-d', strtotime($this->input->post('enq_date'))),
-        'cust_id'       => $this->input->post('cust_id'),
-        'enq_type'      => $this->input->post('enquiry_type'),
-        'client_ref'    => $this->input->post('client_ref'),
-        'remark'        => $this->input->post('remark'),
-        'created_by'    => $this->session->userdata('user_id'),
-        'invoice_no'    => $this->input->post('inv_no'),
-        'sales_person'  => $this->input->post('user_id'),
-        'project_name'  => $this->input->post('project_name'),
-        'created_date'  => date('Y-m-d H:i:s')
+        'enq_date'         => date('Y-m-d', strtotime($this->input->post('enq_date'))),
+        'revision_date'    => date('Y-m-d', strtotime($this->input->post('enq_date'))),
+        'enq_type'         => $this->input->post('enquiry_type'),
+        'client_ref'       => $this->input->post('client_ref'),
+        'remark'           => $this->input->post('remark'),
+        'project_name'     => $this->input->post('project_name') ?? '',
     );
+
     $this->db->where('amc_enq_id', $id);
     $res = $this->db->update('amc_enquiry_master', $data);
 
-    // Handle file upload
-    if (!empty($_FILES["other_file"]["name"])) {
-        $allowedExts = array("jpeg","jpg","png","doc","pdf");
-        $temp = explode(".", $_FILES["other_file"]["name"]);
-        $extension = strtolower(end($temp));
+    /* ================= FILE UPLOAD ================= */
+    if (!empty($_FILES['other_file']['name'])) {
+        $allowedExts = array("jpeg", "jpg", "png", "pdf", "doc", "docx");
+        $temp        = explode(".", $_FILES["other_file"]["name"]);
+        $extension   = strtolower(end($temp));
 
-        if (in_array($extension, $allowedExts) && $_FILES["other_file"]["size"] < 15728640) {
-            if ($_FILES["other_file"]["error"] == 0) {
-                $timestamp1 = time();
-                $file_tmp = $_FILES["other_file"]["tmp_name"];
-                $other_file = $timestamp1 . "_" . $_FILES['other_file']['name'];
-move_uploaded_file($file_tmp, FCPATH."public/uploaded_documents/".$other_file);
+        if (in_array($extension, $allowedExts) && $_FILES["other_file"]["size"] <= 15728640) { // 15MB max
+            $timestamp  = time();
+            $other_file = $timestamp . "_" . $_FILES['other_file']['name'];
+            $file_tmp   = $_FILES["other_file"]["tmp_name"];
 
+            if (move_uploaded_file($file_tmp, FCPATH . "public/uploaded_documents/" . $other_file)) {
                 $this->db->where('amc_enq_id', $id);
-                $this->db->update('amc_enquiry_master', ['other_file' => $other_file]);
+                $this->db->update('amc_enquiry_master', array('other_file' => $other_file));
+            } else {
+                $this->session->set_flashdata('error', 'Failed to upload document. Please check permissions.');
             }
         } else {
-            $this->session->set_flashdata('error','Invalid file or size exceeded');
+            $this->session->set_flashdata('error', 'Invalid file format or size exceeds 15MB.');
         }
     }
 
-    // Insert new transactions
-    $prod_ids = $this->input->post('prod_id');
-    $brands   = $this->input->post('brand');
-    $models   = $this->input->post('model');
-    $qtys     = $this->input->post('qty');
+    /* ================= ENQUIRY ITEMS (matches Add flow exactly) ================= */
+    $this->db->where('enquiry_id', $id);
+    $this->db->delete('amc_enquiry_transaction');
 
-    if (!empty($prod_ids)) {
-        for ($i = 0; $i < count($prod_ids); $i++) {
-            if (!empty($prod_ids[$i]) && !empty($qtys[$i])) {
-                $tdata = array(
-                    'enquiry_id' => $id,
-                    'product_id' => $prod_ids[$i],
-                    'brand'      => $brands[$i],
-                    'model'      => $models[$i],
-                    'quantity'   => $qtys[$i],
-                    'approved'   => 1
-                );
-                $this->db->insert('amc_enquiry_transaction', $tdata);
-            }
+    $item_ids = $this->input->post('item_id');
+    // $descs    = $this->input->post('prod_desc');
+ $brands    = $this->input->post('brand');
+    $qtys     = $this->input->post('pro_qty');
+
+    if (!empty($qtys)) {
+        for ($i = 0; $i < count($qtys); $i++) {
+            if (empty($qtys[$i]) || $qtys[$i] <= 0) continue;
+
+            $item_data = array(
+                'enquiry_id' => $id,
+                'product_id' => $item_ids[$i] ?? '',
+                // 'desc'       => $descs[$i] ?? '',
+                'brand'       => $brands[$i] ?? '',
+                'quantity'   => $qtys[$i],
+                'capacity'   => '', // NOT NULL column — no field in view, same default as Add flow
+                'approved'   => 1
+            );
+            $this->db->insert('amc_enquiry_transaction', $item_data);
         }
     }
 
-    // Add log entry
-    $user_se_id = $this->session->userdata('user_id');
-    $page_name  = explode('index.php/', $_SERVER['PHP_SELF']);
+    /* ================= LOG ================= */
     $this->load->helper('log');
-    add_log_entry($user_se_id, 2, $page_name[1], 'amc_enquiry_master', 'amc_enq_id', $id);
+    add_log_entry(
+        $this->session->userdata('user_id'),
+        2,
+        uri_string(),
+        'amc_enquiry_master',
+        'amc_enq_id',
+        $id
+    );
 
-    if ($res) return true;
+    return $res;
 }
-
 	
     function get_enquiry_list()
 	{
@@ -214,217 +218,767 @@ move_uploaded_file($file_tmp, FCPATH."public/uploaded_documents/".$other_file);
 		$query=$this->db->query("select * from amc_enquiry_transaction where enquiry_id='$id'");
         return $query->result();
 	}
+    // function get_amc_enquiry_list_for_qtn()
+	// {
+	// 	$query=$this->db->query("select * from amc_enquiry_master  e, customer_master c where e.cust_id=c.customer_id and feasibility in(1,2) and cancelled=0 and order_status=0 order by enq_date desc");
+	// 	return $query->result();
+	// }
     function get_amc_enquiry_list_for_qtn()
-	{
-		$query=$this->db->query("select * from amc_enquiry_master  e, customer_master c where e.cust_id=c.customer_id and feasibility in(1,2) and cancelled=0 and order_status=0 order by enq_date desc");
-		return $query->result();
-	}
-    function get_enquiry_trans_for_quote($enq_id){
-		$query=$this->db->query("select * from amc_enquiry_transaction  where enquiry_id='$enq_id'");
-		return $query->result();
-	}
+{
+    $query = $this->db->query("
+        SELECT e.*, c.customer_name AS cust_name, c.customer_code AS cust_code
+        FROM amc_enquiry_master e, customer_master c
+        WHERE e.cust_id = c.customer_id
+          AND feasibility IN (1,2)
+          AND cancelled = 0
+          AND order_status = 0
+        ORDER BY enq_date DESC
+    ");
+    return $query->result();
+}
+    // function get_enquiry_trans_for_quote($enq_id){
+	// 	$query=$this->db->query("select * from amc_enquiry_transaction  where enquiry_id='$enq_id'");
+	// 	return $query->result();
+	// }
+    public function get_enquiry_trans_for_quote($enq_id)
+{
+    $this->db->select('
+        t.*,
+        i.product_name
+    ');
+    $this->db->from('amc_enquiry_transaction t');
+    $this->db->join('item_master i', 'i.product_id = t.product_id', 'left');
+    $this->db->where('t.enquiry_id', $enq_id);
+
+    return $this->db->get()->result();
+}
     function get_amc_enquiry_record_by_id($id)
 	{
 		$query=$this->db->query("select e.*, c.cust_code, c.cust_name from amc_enquiry_master e, customer_master c where e.cust_id=c.customer_id and amc_enq_id='$id' ");
 		return $query->result();
 	}
     	//// Quotation start /////////////
-	function add_quotation_data()
-	{
-		//echo '<pre>';print_r($_POST);exit;
+
+// function add_quotation_data()
+// {
+//       $this->db->trans_start();
+
+//     $enq_id   = $this->input->post('enq_id');
+//     $enq_type = $this->input->post('enq_type');
+//     $code     = $this->input->post('qcode');
+//    $cp_select = $this->input->post('cp_select');
+
+//     $cp_name   = $this->input->post('cp_name');
+//     $cp_mobile = $this->input->post('cp_mobile');
+//     $cp_email  = $this->input->post('cp_email');
+
+//     $data = array(
+//         'quotation_code' => $code,
+//         'quotation_date' => date('Y-m-d', strtotime($this->input->post('qdate'))),
+//         'revision_date'  => date('Y-m-d', strtotime($this->input->post('qdate'))),
+//         'enq_master_id'  => $enq_id,
+//         'customer_id'    => $this->input->post('customer_id'),
+//         'sub_total'      => $this->input->post('sub_total'),
+//         'vat_amt'        => $this->input->post('vat_amt'),
+//         'vat_percent'    => $this->input->post('vat_percent'),
+//         'discount_percent' => $this->input->post('discount'),
+//         'discount'       => $this->input->post('discount_amt'),
+//         'amc_discount'   => $this->input->post('amc_discount'),
+//         'currency_id'    => $this->input->post('cid'),
+//         'currency_rate'  => $this->input->post('crate'),
+//         'grand_total'    => $this->input->post('grand_total'),
+//         'payment_term'   => $this->input->post('term1'),
+
+//         /* ================= NOT NULL columns with no DB default =================
+//          * The current form doesn't collect these, so an explicit safe fallback
+//          * is supplied instead of letting the insert fail on "cannot be null".
+//          */
+//         'amc_start_date'  => $this->input->post('amc_start_datea') ?: '',
+//         'amc_end_date'    => $this->input->post('amc_end_datea') ?: '',
+//         'project_status'  => 'Pending',
+//         'comp_id'         => $this->input->post('cmp_id') ?: 0,
+//         'quot_print_type' => $this->input->post('quot_print_type') ?: '1',
+
+//         'validity'       => $this->input->post('validity'),
+//         'scope_work'     => $this->input->post('scope_work'),
+//         'ppm_details'    => $this->input->post('ppm_details'),
+//         'project_name'   => $this->input->post('project_name'),
+//         'billing_addr'   => $this->input->post('billing_addr1'),
+//         'billing_city'   => $this->input->post('billing_city'),
+//         'billing_state'  => $this->input->post('billing_state'),
+//         'billing_pincode'=> $this->input->post('billing_po'),
+//         'billing_country'=> $this->input->post('billing_country'),
+//         'service_scheme' => $this->input->post('service_scheme'),
+//         'bank_id'        => $this->input->post('bank'),
+//         'cp_name'   => $cp_name,
+//         'cp_mobile' => $cp_mobile,
+//         'cp_email'  => $cp_email,
+//         'sales_person'   => $this->input->post('user_id'),
+//         //'created_by'     => $this->session->userdata('user_id'),
+//         'created_by'       => $this->input->post('employee_prepared'),
+//         'created_date'   => date('Y-m-d H:i:s')
+//     );
+
+//     $this->db->insert('amc_quotation_master', $data);
+//     $insert_id = $this->db->insert_id();
+
+//     if ($this->input->post("cp_new$cp_select") == 1) {
+//         $data = array(
+//             'cust_id'   => $this->input->post('customer_id'),
+//             'cp_name'   => $this->input->post("cp_name$cp_select"),
+//             'cp_mobile' => $this->input->post("cp_mobile$cp_select"),
+//             'cp_email'  => $this->input->post("cp_email$cp_select"),
+//         );
+//         $this->db->insert('customer_contact_person', $data);
+//     }    
+//     $query = $this->db->query("update amc_enquiry_master set order_status=1 where amc_enq_id=$enq_id");
+
+//     if ($insert_id) {
+//         for ($i = 0; $i < count($_POST['product_id']); $i++) {
+//             $data1 = array(
+//                 'quote_master_id' => $insert_id,
+//                 'product_id' => $_POST['product_id'][$i],
+//                 'brand'      => $_POST['brand'][$i],
+//                 'quantity'   => $_POST['qty'][$i],
+//                 'price'      => $_POST['price'][$i],
+//                 'total'      => $_POST['total'][$i],
+//             );
+//             $this->db->insert('amc_quotation_transaction', $data1);
+//         }
+
+//         $data3 = array(
+//             'enq_id'      => $enq_id,
+//             'status'      => "Quotation generated $code",
+//             'status_date' => date('Y-m-d H:i:s'),
+//         );
+//         $this->db->insert('sales_order_status', $data3);
+
+//         $this->load->model('Users_model');
+//         $data['user_records'] = $this->Users_model->get_active_user_list();
+
+//         $user_se_id = $this->session->userdata('user_id');
+//         $page_name  = explode('index.php/', $_SERVER['PHP_SELF']);
+//         $ci = get_instance();
+//         $ci->load->helper('log');
+//         $log_msg = add_log_entry($user_se_id, 1, $page_name[1], 'amc_quotation_master', 'quote_id', $insert_id);
+
+//         foreach ($data['user_records'] as $r) {
+//             $notice = add_notification($insert_id, $r->user_id, "AMC Quotation generated $code", "amc/edit_quotation/$insert_id/1/0");
+//         }
+//     }
+//       $this->db->trans_complete();
+
+
+//     if ($this->db->trans_status() === FALSE) {
+
+//         return false;
+//     }
+
+//     return $insert_id;
+// }
+function add_quotation_data()
+{
+   
+    $this->db->trans_start();
+
+    $enq_id = $this->input->post('enq_id');
+    $enq_type = $this->input->post('enq_type');
+
+    $code = $this->input->post('qcode');
+
+    $customer_id = $this->input->post('customer_id');
+
+    $cp_name   = $this->input->post('cp_name');
+    $cp_mobile = $this->input->post('cp_mobile');
+    $cp_email  = $this->input->post('cp_email');
+ 
+
+    $data = array(
+
+        'quotation_code' => $code,
+
+        'quotation_date' => date(
+            'Y-m-d',
+            strtotime($this->input->post('qdate'))
+        ),
+
+        'revision_date' => date(
+            'Y-m-d',
+            strtotime($this->input->post('qdate'))
+        ),
+
+        'enq_master_id' => $enq_id,
+
+        'customer_id' => $customer_id,
+
+        'sub_total' => $this->input->post('sub_total'),
+
+        'vat_amt' => $this->input->post('vat_amt'),
+
+        'vat_percent' => $this->input->post('vat_percent'),
+
+        'discount_percent' => $this->input->post('discount'),
+
+        'discount' => $this->input->post('discount_amt'),
+
+        'amc_discount' => $this->input->post('amc_discount'),
+
+        'grand_total' => $this->input->post('grand_total'),
+
+        'currency_id' => $this->input->post('cid'),
+
+        'currency_rate' => $this->input->post('crate'),
+
+        'payment_term' => $this->input->post('term1'),
+
+        'scope_work' => $this->input->post('scope_work'),
+
+        'ppm_details' => $this->input->post('ppm_details'),
+
+        'validity' => $this->input->post('validity'),
+
+        'amc_start_date' =>
+            $this->input->post('amc_start_datea') ?: '',
+
+        'amc_end_date' =>
+            $this->input->post('amc_end_datea') ?: '',
+
+        'project_name' => $this->input->post('project_name'),
+         'project_location'=> $this->input->post('project_location'),
+           'subject'=> $this->input->post('subject'),
+
+        'billing_addr' =>
+            $this->input->post('billing_addr1'),
+
+        'billing_city' =>
+            $this->input->post('billing_city'),
+
+        'billing_state' =>
+            $this->input->post('billing_state'),
+
+        'billing_pincode' =>
+            $this->input->post('billing_po'),
+
+        'billing_country' =>
+            $this->input->post('billing_country'),
+
+        'service_scheme' =>
+            $this->input->post('service_scheme'),
+
+        'bank_id' =>
+            $this->input->post('bank'),
+
+        'cp_name' => $cp_name,
+
+        'cp_mobile' => $cp_mobile,
+
+        'cp_email' => $cp_email,
+
+        'project_status' => 'Pending',
+
+        'comp_id' =>
+            $this->input->post('cmp_id') ?: 0,
+
+        'quot_print_type' =>
+            $this->input->post('quot_print_type') ?: '1',  
+
+       
+        'created_by' =>
+            $this->input->post('employee_prepared'),
+
+        'created_date' =>
+            date('Y-m-d H:i:s')
+    );
+
+    $this->db->insert(
+        'amc_quotation_master',
+        $data
+    );
+
+    $insert_id = $this->db->insert_id();
+
+
+    if (!$insert_id) {
+
+        $this->db->trans_rollback();
+
+        return false;
+    }
+
+/* ================= SLA DETAILS ================= */
+// $sla_enabled = $this->input->post('sla_enabled');
+
+// if (!empty($sla_enabled) && $insert_id) {
+
+//     $service_item      = $this->input->post('service_item');
+//     $availability      = $this->input->post('service_availability_period');
+//     $response_time     = $this->input->post('response_time');
+//     $restoration_time  = $this->input->post('restoration_time');
+//     $resolution_time   = $this->input->post('resolution_time');
+
+//     if (!empty($service_item) && is_array($service_item)) {
+//         foreach ($service_item as $i => $item) {
+//             if (!empty($item)) {
+//                 $sla = array(
+//                     'quote_id' => $insert_id,
+//                     'service_item'               => $item,
+//                     'service_availability_period'=> $availability[$i] ?? '',
+//                     'response_time'              => $response_time[$i] ?? '',
+//                     'restoration_time'           => $restoration_time[$i] ?? '',
+//                     'resolution_time'            => $resolution_time[$i] ?? ''
+//                 );
+//                 $this->db->insert('amc_invoice_sla', $sla);
+//             }
+//         }
+//     }
+// }
+/* ================= ANNEXURE DETAILS ================= */
+// $annexure_enabled = $this->input->post('annexure_enabled');
+
+// if (!empty($annexure_enabled) && $insert_id) {
+
+//     $sl_no    = $this->input->post('sl_no');
+//     $type     = $this->input->post('type');
+//     $location = $this->input->post('location');
+//     $qty      = $this->input->post('annex_qty');
+
+//     $heading_slno     = $this->input->post('heading_slno');
+//     $heading_type     = $this->input->post('heading_type');
+//     $heading_location = $this->input->post('heading_location');
+//     $heading_quantity = $this->input->post('heading_quantity');
+//     $heading_total    = $this->input->post('heading_total');
+
+//     if (!empty($type) && is_array($type)) {
+//         foreach ($type as $i => $val) {
+//             if (!empty($val)) {
+//                 $data_annex = array(
+//                     'quote_id'         => $insert_id,
+//                     'heading_slno'     => $heading_slno,
+//                     'heading_type'     => $heading_type,
+//                     'heading_location' => $heading_location,
+//                     'heading_quantity' => $heading_quantity,
+//                     'heading_total'    => $heading_total,
+//                     'annexure_title'   => $this->input->post('annexure_title'),
+//                     'section_title'    => $this->input->post('section_title'),
+//                     'sl_no'            => $sl_no[$i] ?? ($i+1),
+//                     'type'             => $val,
+//                     'location'         => $location[$i] ?? '',
+//                     'quantity'         => $qty[$i] ?? 0
+//                 );
+//                 $this->db->insert('amc_invoice_annexure', $data_annex);
+//             }
+//         }
+//     }
+// }
+    /* =====================================================
+     * SAVE CONTACT PERSON
+     * ===================================================== */
+
+    // if (!empty($cp_name)) {
+
+    //     $contact_data = array(
+
+    //         'cust_id' => $customer_id,
+
+    //         'cp_name' => $cp_name,
+
+    //         'cp_mobile' => $cp_mobile,
+
+    //         'cp_email' => $cp_email
+    //     );
+
+    //     $this->db->insert(
+    //         'customer_contact_person',
+    //         $contact_data
+    //     );
+    // }
+     if ($this->input->post("cp_new$cp_select") == 1) {
+        $contact_data = array(
+            'cust_id'   => $this->input->post('customer_id'),
+            'cp_name'   => $this->input->post("cp_name$cp_select"),
+            'cp_mobile' => $this->input->post("cp_mobile$cp_select"),
+            'cp_email'  => $this->input->post("cp_email$cp_select"),
+        );
+        $this->db->insert('customer_contact_person', $contact_data);
+    }    
+
+
+    $product_ids = $this->input->post('product_id');
+    $brands      = $this->input->post('brand');
+    $qtys        = $this->input->post('qty');
+    $prices      = $this->input->post('price');
+    $totals      = $this->input->post('total');
+
+
+    if (!empty($product_ids)) {
+
+        for ($i = 0; $i < count($product_ids); $i++) {
+
+            /* Skip empty product rows */
+
+            if (
+                empty($product_ids[$i]) ||
+                empty($qtys[$i])
+            ) {
+                continue;
+            }
+
+
+            $data1 = array(
+
+                'quote_master_id' => $insert_id,
+
+                'product_id' =>
+                    $product_ids[$i],
+
+                'brand' =>
+                    isset($brands[$i])
+                    ? $brands[$i]
+                    : '',
+
+                'quantity' =>
+                    isset($qtys[$i])
+                    ? $qtys[$i]
+                    : 0,
+
+                'price' =>
+                    isset($prices[$i])
+                    ? $prices[$i]
+                    : 0,
+
+                'total' =>
+                    isset($totals[$i])
+                    ? $totals[$i]
+                    : 0
+            );
+
+
+            $this->db->insert(
+                'amc_quotation_transaction',
+                $data1
+            );
+        }
+    }
+
+
+
+    $this->db
+        ->where('amc_enq_id', $enq_id)
+        ->update(
+            'amc_enquiry_master',
+            array(
+                'order_status' => 1
+            )
+        );
+
+
+    $data3 = array(
+
+        'enq_id' => $enq_id,
+
+        'status' =>
+            'Quotation generated ' . $code,
+
+        'status_date' =>
+            date('Y-m-d H:i:s')
+    );
+
+
+    $this->db->insert(
+        'sales_order_status',
+        $data3
+    );
+
+    $user_se_id =
+        $this->session->userdata('user_id');
+
+    $page_name =
+        explode(
+            'index.php/',
+            $_SERVER['PHP_SELF']
+        );
+
+    $this->load->helper('log');
+
+    add_log_entry(
+        $user_se_id,
+        1,
+        isset($page_name[1])
+            ? $page_name[1]
+            : '',
+        'amc_quotation_master',
+        'quote_id',
+        $insert_id
+    );
+
+    $this->load->model('Users_model');
+
+    $user_records =
+        $this->Users_model->get_active_user_list();
+
+
+    foreach ($user_records as $r) {
+
+        add_notification(
+            $insert_id,
+            $r->user_id,
+            'AMC Quotation generated ' . $code,
+            'amc/edit_quotation/' .
+            $insert_id .
+            '/1/0'
+        );
+    }
+
+    $this->db->trans_complete();
+
+
+    if ($this->db->trans_status() === FALSE) {
+
+        return false;
+    }
+
+
+    return $insert_id;
+}
+  
+    // function update_quotation_data()
+	// {
+    //     $enq_id = $this->input->post('enq_id');
+	// 	$enq_type = $this->input->post('enq_type');
+	// 	$code = $this->input->post('qcode');
+	// 	$cp_select=$this->input->post('cp_select');
+    //     $qid = $this->input->post('qid');
+	// 	//echo '<pre>';print_r($this->input->post());exit;
+	// 	$data = array(
+	// 	'quotation_code' => $code,
+	// 	'quotation_date' => date('Y-m-d',strtotime($this->input->post('qdate'))),
+	// 	'revision_date'=> date('Y-m-d',strtotime($this->input->post('qdate'))),
+	// 	'enq_master_id' => $enq_id,
+	// 	'customer_id' => $this->input->post('customer_id'),
+	// 	'sub_total' => $this->input->post('sub_total'),
+	// 	'vat_amt' => $this->input->post('vat_amt'),
+	// 	'vat_percent' => $this->input->post('vat_percent'),
+	// 	'discount_percent' =>$this->input->post('discount'),
+	// 	'discount' => $this->input->post('discount_amt'),
+	// 	'amc_discount' => $this->input->post('amc_discount'),
+	// 	'currency_id' => $this->input->post('cid'),
+	// 	'currency_rate' => $this->input->post('crate'),		
+	// 	'grand_total' => $this->input->post('grand_total'),
+	// 	'payment_term' => $this->input->post('term1'),
+	// 	'comp_id'  => $this->input->post('cmp_id)'),
+	// 	// 'amc_start_date'=> date('Y-m-d',strtotime($this->input->post('amc_start_date'))),
+    //     // 'amc_end_date'  => date('Y-m-d',strtotime($this->input->post('amc_end_date')))  ,
+	// 	'validity' => $this->input->post('validity'),
+	// 	'scope_work' =>$this->input->post('scope_work'),
+	// 	'billing_addr' => $this->input->post('billing_addr1'),
+	// 	'billing_city' => $this->input->post('billing_city'),
+	// 	'billing_state' => $this->input->post('billing_state'),
+	// 	'billing_pincode' => $this->input->post('billing_po'),
+	// 	'billing_country' => $this->input->post('billing_country'),
+	// 	'service_scheme' => $this->input->post('service_scheme'),	
+	// 	'bank_id' =>  $this->input->post('bank'),
 		
-		$enq_id = $this->input->post('enq_id');
-		$enq_type = $this->input->post('enq_type');
-		$code = $this->input->post('qcode');
-		$cp_select=$this->input->post('cp_select');
-		$data = array(
-		'quotation_code' => $code,
-		'quotation_date' => date('Y-m-d',strtotime($this->input->post('qdate'))),
-		'revision_date'=> date('Y-m-d',strtotime($this->input->post('qdate'))),
-		'enq_master_id' => $enq_id,
-		'customer_id' => $this->input->post('customer_id'),
-		'sub_total' => $this->input->post('sub_total'),
-		'vat_amt' => $this->input->post('vat_amt'),
-		'vat_percent' => $this->input->post('vat_percent'),
-		'discount_percent' =>$this->input->post('discount'),
-		'discount' => $this->input->post('discount_amt'),
-		'amc_discount' => $this->input->post('amc_discount'),
-		'currency_id' => $this->input->post('cid'),
-		'currency_rate' => $this->input->post('crate'),		
-		'grand_total' => $this->input->post('grand_total'),
-		'payment_term' => $this->input->post('term1'),
+	// 	'cp_name' => $this->input->post("cp_name$cp_select"),
+	// 	'cp_mobile' => $this->input->post("cp_mobile$cp_select"),
+	// 	'cp_email' => $this->input->post("cp_email$cp_select"),
+	// 	'sales_person'=>$this->input->post('user_id'),	
+	// 	'created_by' => $this->session->userdata('user_id'),
+	// 	'created_date' => date('Y-m-d H:i:s')
+	// 	);
 		
-		// 'amc_start_date'=> date('Y-m-d',strtotime($this->input->post('amc_start_datea'))),
-        // 'amc_end_date'  => date('Y-m-d',strtotime($this->input->post('amc_end_datea')))  ,
-		'validity'       => $this->input->post('validity'),
-		'scope_work'     =>$this->input->post('scope_work'),
-		'project_name'   =>$this->input->post('project_name'),
-		'billing_addr'   => $this->input->post('billing_addr1'),
-		'billing_city'   => $this->input->post('billing_city'),
-		'billing_state'  => $this->input->post('billing_state'),
-		'billing_pincode'=> $this->input->post('billing_po'),
-		'billing_country'=> $this->input->post('billing_country'),
-		'service_scheme' => $this->input->post('service_scheme'),	
-		'bank_id' 		 =>  $this->input->post('bank'),
-		'comp_id'  		 => $this->input->post('cmp_id'),		
-		'cp_name' => $this->input->post("cp_name$cp_select"),
-		'cp_mobile' => $this->input->post("cp_mobile$cp_select"),
-		'cp_email' => $this->input->post("cp_email$cp_select"),
-		'sales_person'=>$this->input->post('user_id'),	
-		'created_by' => $this->session->userdata('user_id'),
-		'created_date' => date('Y-m-d H:i:s')
-		);
-		$this->db->insert('amc_quotation_master', $data);
-		$insert_id = $this->db->insert_id();
+
+    //     $this->db->where('quote_id',$qid);
+	// 	$insert_id = $this->db->update('amc_quotation_master', $data);
 		
-		if($this->input->post("cp_new$cp_select")==1)
-		{
-			$data = array(
-			'cust_id' =>$this->input->post('customer_id'),
-			'cp_name' => $this->input->post("cp_name$cp_select"),
-			'cp_mobile' => $this->input->post("cp_mobile$cp_select"),
-			'cp_email' => $this->input->post("cp_email$cp_select"),
-		    );
-	      	$this->db->insert('customer_contact_person', $data);
-	    }
-	        
-		$query=$this->db->query("update amc_enquiry_master set order_status=1 where amc_enq_id=$enq_id");
+    //     $this->db->query("delete from amc_quotation_transaction where quote_master_id=$qid"); 
+    //     $this->db->query("delete from amc_workscope_quot where quote_master_id=$qid"); 
 		
-		if($insert_id)
-		{	
+		
+	// 	if($insert_id)
+	// 	{	
 			
-				for ($i = 0; $i < count($_POST['product_id']); $i++)
-		        {		
-			      $data1 = array(
-					'quote_master_id' => $insert_id,
-					'product_id' => $_POST['product_id'][$i],
-                   // 'desc'  	=> $_POST['desc'][$i],
-					'brand' 	=> $_POST['brand'][$i],
-					//'capacity' 	=> $_POST['capacity'][$i],
-					'quantity'   => $_POST['qty'][$i],	
-					//'balance_qty'=> $_POST['qty'][$i],	
-					'price'      => $_POST['price'][$i],
-					//'dis_per'    => $_POST['dis_per'][$i],
-					//'dis_val'    => $_POST['dis_val'][$i],
-					'total'  	 => $_POST['total'][$i],
-			      );
+	// 			for ($i = 0; $i < count($_POST['product_id']); $i++)
+	// 	        {		
+	// 		      $data1 = array(
+	// 				'quote_master_id' => $qid ,
+	// 				'product_id' => $_POST['product_id'][$i],                   
+	// 				'brand' => $_POST['brand'][$i],
+	// 				// 'capacity' => $_POST['capacity'][$i],
+	// 				'quantity'   => $_POST['qty'][$i],	
+	// 				'price'      => $_POST['price'][$i],
+	// 				'total'  	 => $_POST['total'][$i],
+	// 		      );
 				 
-			     $this->db->insert('amc_quotation_transaction', $data1);	
+	// 		     $this->db->insert('amc_quotation_transaction', $data1);	
 				
-				}
+	// 			}
 
                 
                 
-			$data3 = array(
-			'enq_id' => $enq_id,
-			'status' => "Quotation generated $code",
-			'status_date' =>  date('Y-m-d H:i:s'),
-			);
-			$this->db->insert('sales_order_status', $data3);
 			
-			$this->load->model('Users_model');
-			$data['user_records']=$this->Users_model->get_active_user_list();
-      
-			$user_se_id=$this->session->userdata('user_id');
-			$page_name=explode('index.php/', $_SERVER['PHP_SELF']);
-			$ci = get_instance();
-			$ci->load->helper('log');
-			$log_msg=add_log_entry($user_se_id,1,$page_name[1],'amc_quotation_master','quote_id',$insert_id);
-			/* notification */ 
-			foreach($data['user_records'] as $r)
-   			{
-				$notice=add_notification($insert_id,$r->user_id,"AMC Quotation generated $code","amc/edit_quotation/$insert_id/1/0");
-			}
-			 /* end notification */
-		}
-		return $insert_id;
-	}
-
-
+	// 	}
+	// 	return $insert_id;
+	// }
     function update_quotation_data()
-	{
-        $enq_id = $this->input->post('enq_id');
-		$enq_type = $this->input->post('enq_type');
-		$code = $this->input->post('qcode');
-		$cp_select=$this->input->post('cp_select');
-        $qid = $this->input->post('qid');
-		//echo '<pre>';print_r($this->input->post());exit;
-		$data = array(
-		'quotation_code' => $code,
-		'quotation_date' => date('Y-m-d',strtotime($this->input->post('qdate'))),
-		'revision_date'=> date('Y-m-d',strtotime($this->input->post('qdate'))),
-		'enq_master_id' => $enq_id,
-		'customer_id' => $this->input->post('customer_id'),
-		'sub_total' => $this->input->post('sub_total'),
-		'vat_amt' => $this->input->post('vat_amt'),
-		'vat_percent' => $this->input->post('vat_percent'),
-		'discount_percent' =>$this->input->post('discount'),
-		'discount' => $this->input->post('discount_amt'),
-		'amc_discount' => $this->input->post('amc_discount'),
-		'currency_id' => $this->input->post('cid'),
-		'currency_rate' => $this->input->post('crate'),		
-		'grand_total' => $this->input->post('grand_total'),
-		'payment_term' => $this->input->post('term1'),
-		'comp_id'  => $this->input->post('cmp_id)'),
-		// 'amc_start_date'=> date('Y-m-d',strtotime($this->input->post('amc_start_date'))),
+{
+    $enq_id    = $this->input->post('enq_id');
+    $enq_type  = $this->input->post('enq_type');
+    $code      = $this->input->post('qcode');
+    $cp_select = $this->input->post('cp_select');
+    $qid       = $this->input->post('qid');
+
+    $data = array(
+        'quotation_code' => $code,
+        'quotation_date' => date('Y-m-d', strtotime($this->input->post('qdate'))),
+        'revision_date'  => date('Y-m-d', strtotime($this->input->post('qdate'))),
+        'enq_master_id'  => $enq_id,
+        'customer_id'    => $this->input->post('customer_id'),
+        'sub_total'      => $this->input->post('sub_total'),
+        'vat_amt'        => $this->input->post('vat_amt'),
+        'vat_percent'    => $this->input->post('vat_percent'),
+        'discount_percent' => $this->input->post('discount'),
+        'discount'       => $this->input->post('discount_amt'),
+        'amc_discount'   => $this->input->post('amc_discount'),
+        'currency_id'    => $this->input->post('cid'),
+        'currency_rate'  => $this->input->post('crate'),
+        'grand_total'    => $this->input->post('grand_total'),
+        'payment_term'   => $this->input->post('term1'),
+        'comp_id'        => $this->input->post('cmp_id') ?: 0,
+        // 'amc_start_date'=> date('Y-m-d',strtotime($this->input->post('amc_start_date'))),
         // 'amc_end_date'  => date('Y-m-d',strtotime($this->input->post('amc_end_date')))  ,
-		'validity' => $this->input->post('validity'),
-		'scope_work' =>$this->input->post('scope_work'),
-		'billing_addr' => $this->input->post('billing_addr1'),
-		'billing_city' => $this->input->post('billing_city'),
-		'billing_state' => $this->input->post('billing_state'),
-		'billing_pincode' => $this->input->post('billing_po'),
-		'billing_country' => $this->input->post('billing_country'),
-		'service_scheme' => $this->input->post('service_scheme'),	
-		'bank_id' =>  $this->input->post('bank'),
-		
-		'cp_name' => $this->input->post("cp_name$cp_select"),
-		'cp_mobile' => $this->input->post("cp_mobile$cp_select"),
-		'cp_email' => $this->input->post("cp_email$cp_select"),
-		'sales_person'=>$this->input->post('user_id'),	
-		'created_by' => $this->session->userdata('user_id'),
-		'created_date' => date('Y-m-d H:i:s')
-		);
-		
+        'validity'       => $this->input->post('validity'),
+        'scope_work'     => $this->input->post('scope_work'),
+        'ppm_details'    => $this->input->post('ppm_details'),
+        'project_name'   => $this->input->post('project_name'),
+        'billing_addr'   => $this->input->post('billing_addr1'),
+        'billing_city'   => $this->input->post('billing_city'),
+        'billing_state'  => $this->input->post('billing_state'),
+        'billing_pincode'=> $this->input->post('billing_po'),
+        'billing_country'=> $this->input->post('billing_country'),
+        'service_scheme' => $this->input->post('service_scheme'),
+        'bank_id'        => $this->input->post('bank'),
 
-        $this->db->where('quote_id',$qid);
-		$insert_id = $this->db->update('amc_quotation_master', $data);
-		
-        $this->db->query("delete from amc_quotation_transaction where quote_master_id=$qid"); 
-        $this->db->query("delete from amc_workscope_quot where quote_master_id=$qid"); 
-		
-		
-		if($insert_id)
-		{	
-			
-				for ($i = 0; $i < count($_POST['product_id']); $i++)
-		        {		
-			      $data1 = array(
-					'quote_master_id' => $qid ,
-					'product_id' => $_POST['product_id'][$i],                   
-					'brand' => $_POST['brand'][$i],
-					// 'capacity' => $_POST['capacity'][$i],
-					'quantity'   => $_POST['qty'][$i],	
-					'price'      => $_POST['price'][$i],
-					'total'  	 => $_POST['total'][$i],
-			      );
-				 
-			     $this->db->insert('amc_quotation_transaction', $data1);	
-				
-				}
+        'cp_name'   => $this->input->post("cp_name$cp_select"),
+        'cp_mobile' => $this->input->post("cp_mobile$cp_select"),
+        'cp_email'  => $this->input->post("cp_email$cp_select"),
+        'sales_person'   => $this->input->post('user_id'),
+        //'created_by'     => $this->session->userdata('user_id'),
+         'created_by'       => $this->input->post('employee_prepared'),
+        'created_date'   => date('Y-m-d H:i:s')
+    );
 
-                
-                
-			
-		}
-		return $insert_id;
-	}
-    function get_quotation_list()
-	{
-		$query=$this->db->query("select e.*, c.customer_code, c.customer_name,i.amc_enq_code, i.enq_date, i.client_ref, i.enq_type from amc_quotation_master  e, customer_master c,amc_enquiry_master i  where e.customer_id=c.customer_id and e.enq_master_id=i.amc_enq_id and approval=0 order by quotation_date desc, quotation_code desc");
-        return $query->result();
-	}
- function get_quotation_master_by_id($id)
+    $this->db->where('quote_id', $qid);
+    $insert_id = $this->db->update('amc_quotation_master', $data);
+
+    $this->db->where('quote_master_id', $qid);
+    $this->db->delete('amc_quotation_transaction');
+
+    $this->db->where('quote_master_id', $qid);
+    $this->db->delete('amc_workscope_quot');
+
+    if ($insert_id) {
+        for ($i = 0; $i < count($_POST['product_id']); $i++) {
+            $data1 = array(
+                'quote_master_id' => $qid,
+                'product_id' => $_POST['product_id'][$i],
+                'brand'      => $_POST['brand'][$i],
+                'quantity'   => $_POST['qty'][$i],
+                'price'      => $_POST['price'][$i],
+                'total'      => $_POST['total'][$i],
+            );
+
+            $this->db->insert('amc_quotation_transaction', $data1);
+        }
+    }
+
+    return $insert_id;
+}
+    // function get_quotation_list()
+	// {
+	// 	$query=$this->db->query("select e.*, c.customer_code, c.customer_name,i.amc_enq_code, i.enq_date, i.client_ref, i.enq_type from amc_quotation_master  e, customer_master c,amc_enquiry_master i  where e.customer_id=c.customer_id and e.enq_master_id=i.amc_enq_id and approval=0 order by quotation_date desc, quotation_code desc");
+    //     return $query->result();
+	// }
+//     function get_quotation_list()
+// {
+//     $query = $this->db->query("
+//         SELECT e.*, c.customer_code, c.customer_name AS cust_name,
+//                i.amc_enq_code, i.enq_date, i.client_ref, i.enq_type
+//         FROM amc_quotation_master e, customer_master c, amc_enquiry_master i
+//         WHERE e.customer_id = c.customer_id
+//           AND e.enq_master_id = i.amc_enq_id
+//           AND approval = 0
+//         ORDER BY quotation_date DESC, quotation_code DESC
+//     ");
+//     return $query->result();
+// }
+function get_quotation_list()
+{
+    $query = $this->db->query("
+        SELECT 
+            e.*,
+            c.customer_code,
+            c.customer_name AS cust_name,
+            i.amc_enq_code,
+            i.enq_date,
+            i.client_ref,
+            i.enq_type
+        FROM amc_quotation_master e
+        INNER JOIN customer_master c 
+            ON e.customer_id = c.customer_id
+        LEFT JOIN amc_enquiry_master i 
+            ON e.enq_master_id = i.amc_enq_id
+        WHERE e.approval = 0
+        ORDER BY e.quotation_date DESC, e.quotation_code DESC
+    ");
+
+    return $query->result();
+}
+//  function get_quotation_master_by_id($id)
+// {   
+//     $sql = "
+//         SELECT 
+//             one.*,
+//             three.user_name,
+//             three.contact_no,
+//             four.currency_abbr,
+//             five.branch_name,
+// 			five.branch_id,
+//              six.contact_name
+//         FROM (
+//             SELECT 
+//                 e.*,
+//                 c.customer_code,
+//                 c.customer_name,
+//                 c.customer_TR_no,
+//                  c.customer_email,
+//                 c.contact_number,
+//                 i.amc_enq_code,
+//                 i.enq_date,
+//                 i.client_ref,
+//                 i.enq_type
+//             FROM amc_quotation_master e
+//             JOIN customer_master c 
+//                 ON e.customer_id = c.customer_id
+//             JOIN amc_enquiry_master i 
+//                 ON e.enq_master_id = i.amc_enq_id
+//             WHERE e.quote_id = ?
+//         ) AS one
+//         LEFT JOIN users AS three 
+//             ON one.sales_person = three.user_id
+//         LEFT JOIN currency_master AS four 
+//             ON one.currency_id = four.currency_id
+//         LEFT JOIN branch_master AS five 
+//             ON one.branch_id = five.branch_id
+
+//              LEFT JOIN customer_contact_details AS six
+//         ON one.customer_id = six.customer_id
+//     ";
+    
+//     $query = $this->db->query($sql, [$id]);
+
+//     return $query->result();
+// }
+function get_quotation_master_by_id($id)
 {   
     $sql = "
         SELECT 
@@ -440,9 +994,9 @@ move_uploaded_file($file_tmp, FCPATH."public/uploaded_documents/".$other_file);
                 e.*,
                 c.customer_code,
                 c.customer_name,
-                c.customer_TR_no,
-                 c.customer_email,
-                c.contact_number,
+                c.tax_registration_no AS customer_TR_no,
+                c.customer_email,
+                c.office_telephone AS contact_number,
                 i.amc_enq_code,
                 i.enq_date,
                 i.client_ref,
@@ -450,7 +1004,8 @@ move_uploaded_file($file_tmp, FCPATH."public/uploaded_documents/".$other_file);
             FROM amc_quotation_master e
             JOIN customer_master c 
                 ON e.customer_id = c.customer_id
-            JOIN amc_enquiry_master i 
+           
+                LEFT JOIN amc_enquiry_master i
                 ON e.enq_master_id = i.amc_enq_id
             WHERE e.quote_id = ?
         ) AS one
@@ -471,12 +1026,30 @@ move_uploaded_file($file_tmp, FCPATH."public/uploaded_documents/".$other_file);
 }
 
 
-    function get_quotation_tr_by_id($id)
-	{
-		$query=$this->db->query("select * from amc_quotation_transaction where quote_master_id='$id'  ");
-		//echo $this->db->last_query();exit;
-        return $query->result();
-	}
+    // function get_quotation_tr_by_id($id)
+	// {
+	// 	$query=$this->db->query("select * from amc_quotation_transaction where quote_master_id='$id'  ");
+	// 	//echo $this->db->last_query();exit;
+    //     return $query->result();
+	// }
+
+    public function get_quotation_tr_by_id($id)
+{
+    $query = $this->db->query("
+        SELECT 
+            aq.*,
+            im.product_name
+        FROM amc_quotation_transaction aq
+        LEFT JOIN item_master im 
+            ON im.product_id = aq.product_id
+        WHERE aq.quote_master_id = '$id'
+    ");
+
+    // echo $this->db->last_query(); exit;
+
+    return $query->result();
+}
+
     function get_quotation_scope_by_id($id){
         $query=$this->db->query("select * from amc_workscope_quot where quote_master_id='$id'");
        
@@ -540,11 +1113,23 @@ move_uploaded_file($file_tmp, FCPATH."public/uploaded_documents/".$other_file);
         'amc_end_date'      => $this->input->post('amc_end_date'),
         'project_name'      => $this->input->post('project_name'),
         'conditions'        => $this->input->post('conditions'),
-        'exclusions'        => $this->input->post('exclusions')
+        'exclusions'        => $this->input->post('exclusions'),
+        'created_by' 			=>$this->input->post('employee_prepared')
+        
     );
 
     $this->db->insert('amc_invoice_master', $data);
     $insert_id = $this->db->insert_id();
+
+    // Update quotation invoice reference
+$qid = $this->input->post('qid');
+
+if (!empty($qid)) {
+    $this->db->where('quote_id', $qid);
+    $this->db->update('amc_quotation_master', [
+        'invoice_id' => $insert_id
+    ]);
+}
 
     if (!$insert_id) {
         return false;
@@ -624,6 +1209,13 @@ if (!empty($annexure_enabled) && $insert_id) {
     $location = $this->input->post('location');
     $qty      = $this->input->post('annex_qty');
 
+     // Heading values
+    $heading_slno     = $this->input->post('heading_slno');
+    $heading_type     = $this->input->post('heading_type');
+    $heading_location = $this->input->post('heading_location');
+    $heading_quantity = $this->input->post('heading_quantity');
+    $heading_total    = $this->input->post('heading_total');
+
     if (!empty($type) && is_array($type)) {
 
         foreach ($type as $i => $val) {
@@ -632,6 +1224,14 @@ if (!empty($annexure_enabled) && $insert_id) {
 
                 $data = array(
                     'inv_master_id' => $insert_id,
+                      'heading_slno'     => $heading_slno,
+                    'heading_type'     => $heading_type,
+                    'heading_location' => $heading_location,
+                    'heading_quantity' => $heading_quantity,
+                    'heading_total'    => $heading_total,
+                       'annexure_title' => $this->input->post('annexure_title'),
+
+                        'section_title' => $this->input->post('section_title'),
                     'sl_no'         => $sl_no[$i] ?? ($i+1),
                     'type'          => $val,
                     'location'      => $location[$i] ?? '',
@@ -720,7 +1320,8 @@ if (!empty($annexure_enabled) && $insert_id) {
             'amc_end_date'  	=> $this->input->post('amc_end_date'),
 			'project_name'      => $this->input->post('project_name'),
 			'conditions'		=> $this->input->post('conditions'),
-			'exclusions'		=> $this->input->post('exclusions')
+			'exclusions'		=> $this->input->post('exclusions'),
+            'prepared_by' 			=>$this->input->post('employee_prepared')
 		);
 		
 		
@@ -728,13 +1329,15 @@ if (!empty($annexure_enabled) && $insert_id) {
 		$this->db->update('amc_invoice_master', $data);
 
 		$query=$this->db->query("delete from amc_invoice_transaction where inv_master_id='$inv_id' ");
-			for ($i = 0; $i < count($_POST['product_id']); $i++)
+			$product_ids = $_POST['product_id'] ?? [];
+
+for ($i = 0; $i < count($product_ids); $i++) 
 		        {	
 			      $data = array(
 					'inv_master_id' => $inv_id,
 					'product_id' 	=> $_POST['product_id'][$i],
 					//'item_desc'  	=> $_POST['desc'][$i],
-					'brand' 		=> $_POST['brand'][$i],
+					//'brand' 		=> $_POST['brand'][$i],
 					//'capacity' 		=> $_POST['capacity'][$i],
 					'quantity'  	=> $_POST['qty'][$i],							
 					'balance_qty'  	=> $_POST['qty'][$i],
@@ -749,29 +1352,111 @@ if (!empty($annexure_enabled) && $insert_id) {
                 $trans_id=$_POST['trans_id'][$i];
                 $bal_qty=0;
                 $query=$this->db->query("update amc_quotation_transaction set balance_qty='$bal_qty' where trans_id='$trans_id'");
-			    $append_id=$_POST['append_id'][$i];
+			    //$append_id=$_POST['append_id'][$i];
 			      
 		        }
-				$query=$this->db->query("delete from amc_payment_terms where inv_master_id='$inv_id' ");
-				$ins_count = count($_POST['from']);
+				// $query=$this->db->query("delete from amc_payment_terms where inv_master_id='$inv_id' ");
+				// $ins_count = count($_POST['from']);
 				
-				if ($ins_count>0){
-                for ($i = 0; $i < $ins_count; $i++)
-		        {	
+				// if ($ins_count>0){
+                // for ($i = 0; $i < $ins_count; $i++)
+		        // {	
 					
-			      $data1 = array(
-                    'inv_master_id' 	 => $inv_id,
-					'ins_name'			 => $_POST['ins_name'][$i],
-                    'from_date'			 => $_POST['from'][$i],
-					'to_date' 			 => $_POST['to'][$i],
-					'pay_date' 			 => $_POST['payment_date'][$i],
-                    'installment_amount' => $_POST['installment_amount'][$i], 
-			      );
+			    //   $data1 = array(
+                //     'inv_master_id' 	 => $inv_id,
+				// 	'ins_name'			 => $_POST['ins_name'][$i],
+                //     'from_date'			 => $_POST['from'][$i],
+				// 	'to_date' 			 => $_POST['to'][$i],
+				// 	'pay_date' 			 => $_POST['payment_date'][$i],
+                //     'installment_amount' => $_POST['installment_amount'][$i], 
+			    //   );
 				 
-			      $this->db->insert('amc_payment_terms', $data1);	
+			    //   $this->db->insert('amc_payment_terms', $data1);	
 			     
-		        }}
+		        // }}
 		        	 
+                /* ================= SLA DETAILS ================= */
+
+// Delete old SLA records
+$this->db->where('inv_master_id', $inv_id);
+$this->db->delete('amc_invoice_sla');
+
+$sla_enabled = $this->input->post('sla_enabled');
+
+if (!empty($sla_enabled)) {
+
+    $service_item     = $this->input->post('service_item');
+    $availability     = $this->input->post('service_availability_period');
+    $response_time    = $this->input->post('response_time');
+    $restoration_time = $this->input->post('restoration_time');
+    $resolution_time  = $this->input->post('resolution_time');
+
+    if (!empty($service_item) && is_array($service_item)) {
+
+        foreach ($service_item as $i => $item) {
+
+            if (!empty($item)) {
+
+                $this->db->insert('amc_invoice_sla', array(
+                    'inv_master_id' => $inv_id,
+                    'service_item' => $item,
+                    'service_availability_period' => $availability[$i] ?? '',
+                    'response_time' => $response_time[$i] ?? '',
+                    'restoration_time' => $restoration_time[$i] ?? '',
+                    'resolution_time' => $resolution_time[$i] ?? ''
+                ));
+            }
+        }
+    }
+}
+
+/* ================= ANNEXURE DETAILS ================= */
+
+// Delete old annexure records
+$this->db->where('inv_master_id', $inv_id);
+$this->db->delete('amc_invoice_annexure');
+
+$annexure_enabled = $this->input->post('annexure_enabled');
+
+if (!empty($annexure_enabled)) {
+
+    $sl_no    = $this->input->post('sl_no');
+    $type     = $this->input->post('type');
+    $location = $this->input->post('location');
+    $qty      = $this->input->post('annex_qty');
+
+    // Heading values
+    $heading_slno     = $this->input->post('heading_slno');
+    $heading_type     = $this->input->post('heading_type');
+    $heading_location = $this->input->post('heading_location');
+    $heading_quantity = $this->input->post('heading_quantity');
+    $heading_total    = $this->input->post('heading_total');
+
+    if (!empty($type) && is_array($type)) {
+
+        foreach ($type as $i => $val) {
+
+            if (!empty($val)) {
+
+                $this->db->insert('amc_invoice_annexure', array(
+                    'inv_master_id' => $inv_id,
+                     'heading_slno'     => $heading_slno,
+                    'heading_type'     => $heading_type,
+                    'heading_location' => $heading_location,
+                    'heading_quantity' => $heading_quantity,
+                    'heading_total'    => $heading_total,
+                       'annexure_title' => $this->input->post('annexure_title'),
+
+                        'section_title' => $this->input->post('section_title'),
+                    'sl_no'      => $sl_no[$i] ?? ($i + 1),
+                    'type'       => $val,
+                    'location'   => $location[$i] ?? '',
+                    'quantity'   => $qty[$i] ?? 0
+                ));
+            }
+        }
+    }
+}
 			$enqid= $this->input->post('enq_id');
 			$revision= $this->input->post('revision');
 			$qid=$this->input->post('qid');
@@ -1151,11 +1836,13 @@ function get_amc_report()
 		$query=$this->db->query("select distinct scheme_name from service_schemes ;");
 		 return $query->result();
 	 }
-	 function get_work_scope_by_id($id){
-		$query=$this->db->query("select * from amc_work_scope_master where category ='$id' ;");
-		//echo $this->db->last_query();exit;
-	    return $query->result();
-	 }
+	function get_work_scope_by_id($id)
+{
+    $this->db->where('category', $id);
+    $query = $this->db->get('amc_work_scope_master');
+
+    return $query->result();
+}
 	 function get_ser_sch($id){
 		$query=$this->db->query("select * from service_schemes where scheme_name ='$id' ;");
 		//echo $this->db->last_query();exit;
@@ -1632,6 +2319,19 @@ function get_ppm_with_id($id)
     $this->db->where('ppm_id', $id);
     $res = $this->db->update('amc_ppm_master', $data);
 
+    // Store old completed dates
+$old_completed_dates = [];
+
+$old_records = $this->db
+    ->where('ppm_master_id', $id)
+    ->get('amc_ppm_summary')
+    ->result();
+
+foreach($old_records as $old)
+{
+    $old_completed_dates[$old->ppm_num] = $old->completed_date;
+}
+
     // SAFE DELETE (CI style)
     $this->db->where('ppm_master_id', $id)->delete('amc_ppm_summary');
     $this->db->where('ppm_master_id', $id)->delete('amc_ppm_details');
@@ -1657,9 +2357,15 @@ function get_ppm_with_id($id)
                         'ppm_amt'        => $_POST['ppm_amt'][$i] ?? 0,
                         'ppm_remarks'    => $_POST['ppm_remarks'][$i] ?? '',
                         'ppm_status'     => $_POST['ppm_status'][$i] ?? 'Scheduled',
-						'completed_date' => (!empty($_POST['ppm_status'][$i]) && $_POST['ppm_status'][$i] == 'Finished')
+						'completed_date' => (
+    !empty($old_completed_dates[$ppm_num[$i]])
+)
+? $old_completed_dates[$ppm_num[$i]]
+: (
+    (!empty($_POST['ppm_status'][$i]) && $_POST['ppm_status'][$i] == 'Finished')
     ? date('Y-m-d')
-    : null,
+    : null
+),
                     );
 
                     $this->db->insert('amc_ppm_summary', $data);
@@ -1729,11 +2435,11 @@ function get_ppm_with_id($id)
 	function add_quot_direct()
 { 
     $post_data = $this->input->post();
-    $result = $this->add_direct_enquiry_from_quot($post_data);
+  //  $result = $this->add_direct_enquiry_from_quot($post_data);
+    $cust_id = $this->input->post('customer_id');
+    // $enq_id = $result['enquiry_id'];
 
-    $enq_id = $result['enquiry_id'];
-
-    if ($enq_id)
+    if ($cust_id)
     {
         $code = $this->input->post('qcode');
 
@@ -1743,9 +2449,9 @@ function get_ppm_with_id($id)
             'quotation_date' => date('Y-m-d', strtotime($this->input->post('qdate'))),
             'revision_date'  => date('Y-m-d', strtotime($this->input->post('qdate'))),
 
-            'enq_master_id'  => $enq_id,
-            'customer_id'    => $result['customer_id'],
-
+            'enq_master_id'  => NULL,
+            // 'customer_id'    => $result['customer_id'],
+              'customer_id'    => $cust_id,
             // Financials
             'sub_total'      => $this->input->post('sub_total'),
             'vat_amt'        => $this->input->post('vat_amt'),
@@ -1765,6 +2471,10 @@ function get_ppm_with_id($id)
             'scope_work'     => $this->input->post('scope_work'),
             'exclusion_terms'=> $this->input->post('exclusion_terms'),
             'ppm_details'    => $this->input->post('ppm_details'),
+             'contract_period'     => $this->input->post('contract_period'),
+            'contract_value'     => $this->input->post('contract_value'),
+            'termcond'     => $this->input->post('termcond'),
+            'exclusions'     => $this->input->post('exclusions'),
 
             // Project
             'project_name'   => $this->input->post('project_name'),
@@ -1787,62 +2497,67 @@ function get_ppm_with_id($id)
             'subject'     => $this->input->post('subject'),
             'sales_person'=> $this->input->post('user_id'),
 
-            // ✅ CONTRACT INFO (IMPORTANT)
+            //  Replacement-quotation linkage (NEW)
+            'quote_type'      => $this->input->post('quote_type') ? $this->input->post('quote_type') : 'AMC',
+            'parent_quote_id' => $this->input->post('parent_quote_id') ? $this->input->post('parent_quote_id') : null,
+
+            //  CONTRACT INFO 
             'contract_type'  => $this->input->post('contract_type'),
             'no_of_years'    => $this->input->post('no_of_years'),
             'no_of_quarters' => $this->input->post('no_of_quarters'),
+             'amc_start_date' => $this->input->post('amc_start_date'),
+              'amc_end_date' => $this->input->post('amc_end_date'),
 
-            'created_by'   => $this->session->userdata('user_id'),
+            'created_by'=> $this->input->post('employee_prepared'),
+
+           // 'created_by'   => $this->session->userdata('user_id'),
             'created_date' => date('Y-m-d H:i:s')
         );
 
         $this->db->insert('amc_quotation_master', $data);
         $insert_id = $this->db->insert_id();
-
-        // ================= UPDATE ENQUIRY =================
-        $this->db->query("
-            UPDATE amc_enquiry_master 
-            SET order_status = 1 
-            WHERE amc_enq_id = $enq_id
-        ");
-
+// ✅ Mark source replacement items as Quoted (NEW)
+$replacement_ids = $this->input->post('replacement_ids');
+if (!empty($replacement_ids) && is_array($replacement_ids) && $insert_id)
+{
+    $this->db->where_in('replacement_id', $replacement_ids)
+              ->update('amc_ppm_replacement', array(
+                    'status'               => 'Quoted',
+                    'replacement_quote_id' => $insert_id
+              ));
+}
+       
         // ================= DETAIL SAVE =================
         if ($insert_id)
         {
-            $type = $this->input->post('contract_type');
-
-            $count = 0;
-            if ($type == 'Yearly') {
-                $count = $this->input->post('no_of_years');
-            } elseif ($type == 'Quarterly') {
-                $count = $this->input->post('no_of_quarters');
-            }
-
             $prod_ids = $this->input->post('prod_id');
-            $qtys     = $this->input->post('qty');
+            $brands   = $this->input->post('brand');
             $prices   = $this->input->post('price');
+            $qtys     = $this->input->post('qty');
             $totals   = $this->input->post('final_total');
 
-           for ($i = 0; $i < count($_POST['prod_id']); $i++)
-{
-    $prod  = $_POST['prod_id'][$i] ?? null;
-    $price = $_POST['price'][$i] ?? 0;
-    $qty   = $_POST['qty'][$i] ?? 0;
+            if (!empty($prod_ids)) {
+                for ($i = 0; $i < count($prod_ids); $i++)
+                {
+                    if (empty($prod_ids[$i]) || empty($qtys[$i])) continue;
 
-    if (!$prod) continue;
+                    $price       = $prices[$i] ?? 0;
+                    $qty         = $qtys[$i] ?? 0;
+                    $final_total = $totals[$i] ?? ($price * $qty);
 
-    $final_total = $_POST['final_total'][$i] ?? ($price * $qty);
+                    $data1 = array(
+                        'quote_master_id' => $insert_id,
+                        'product_id'      => $prod_ids[$i],
+                        'brand'           => $brands[$i] ?? '',
+                        'quantity'        => $qty,
+                        'price'           => $price,
+                        'total'           => $final_total
+                    );
 
-    $data1 = array(
-        'quote_master_id' => $insert_id,
-        'product_id'      => $prod,
-        'quantity'        => $qty,
-        'price'           => $price,
-        'total'           => $final_total
-    );
-
-    $this->db->insert('amc_quotation_transaction', $data1);
-}
+                    $this->db->insert('amc_quotation_transaction', $data1);
+                }
+            }
+        }
 
 /* ================= SLA DETAILS ================= */
 $sla_enabled = $this->input->post('sla_enabled');
@@ -1886,6 +2601,13 @@ if (!empty($annexure_enabled) && $insert_id) {
     $location = $this->input->post('location');
     $qty      = $this->input->post('annex_qty');
 
+     // Heading values
+    $heading_slno     = $this->input->post('heading_slno');
+    $heading_type     = $this->input->post('heading_type');
+    $heading_location = $this->input->post('heading_location');
+    $heading_quantity = $this->input->post('heading_quantity');
+    $heading_total    = $this->input->post('heading_total');
+
     if (!empty($type) && is_array($type)) {
 
         foreach ($type as $i => $val) {
@@ -1894,6 +2616,16 @@ if (!empty($annexure_enabled) && $insert_id) {
 
                 $data = array(
                     'quote_id' => $insert_id,
+                     // headings
+                    'heading_slno'     => $heading_slno,
+                    'heading_type'     => $heading_type,
+                    'heading_location' => $heading_location,
+                    'heading_quantity' => $heading_quantity,
+                    'heading_total'    => $heading_total,
+                    'annexure_title' => $this->input->post('annexure_title'),
+
+
+                    'section_title' => $this->input->post('section_title'),
                     'sl_no'         => $sl_no[$i] ?? ($i+1),
                     'type'          => $val,
                     'location'      => $location[$i] ?? '',
@@ -1906,6 +2638,8 @@ if (!empty($annexure_enabled) && $insert_id) {
     }
 }
 
+if ($insert_id) {
+
             // ================= STATUS LOG =================
             $data3 = array(
                 'enq_id'      => $enq_id,
@@ -1913,6 +2647,8 @@ if (!empty($annexure_enabled) && $insert_id) {
                 'status_date' => date('Y-m-d H:i:s'),
             );
 
+
+            
             $this->db->insert('sales_order_status', $data3);
 
             // ================= LOG =================
@@ -1996,6 +2732,7 @@ if (!empty($annexure_enabled) && $insert_id) {
             'revision_date' => date('Y-m-d',strtotime($this->input->post('qdate'))),
             'cust_id'       => $customer_id,
             'enq_type'      => $this->input->post('enquiry_type'),
+             'branch'      => $this->input->post('branch'),
             //'client_ref'    => $this->input->post('client_ref'),
             //'remark'        => $this->input->post('remark'),
             // 'amc_start_date'=> date('Y-m-d',strtotime($this->input->post('amc_start_date'))),
@@ -2071,6 +2808,11 @@ if (!empty($annexure_enabled) && $insert_id) {
 			'revision_date'=> date('Y-m-d',strtotime($this->input->post('qdate'))),
 			'enq_master_id' => $enq_id,
 			'customer_id' => $this->input->post('customer_id'),
+           'project_name' =>$this->input->post('project_name'),
+            'project_location' =>$this->input->post('project_location'),
+            'subject' =>$this->input->post('subject'),
+
+
 			'sub_total' => $this->input->post('sub_total'),
 			'vat_amt' => $this->input->post('vat_amt'),
 			'vat_percent' => $this->input->post('vat_percent'),
@@ -2084,8 +2826,14 @@ if (!empty($annexure_enabled) && $insert_id) {
 			'exclusion_terms' => $this->input->post('exclusion_terms'),
 			'scope_work' => $this->input->post('scope_work'),
 			'ppm_details' => $this->input->post('ppm_details'),
+              'contract_period'     => $this->input->post('contract_period'),
+            'contract_value'     => $this->input->post('contract_value'),
+            'termcond'     => $this->input->post('termcond'),
+            'exclusions'     => $this->input->post('exclusions'),
 			'comp_id'  => $this->input->post('cmp_id)'),
 			'quot_print_type' => $this->input->post('quot_print_type'),
+            'amc_start_date' => $this->input->post('amc_start_date'),
+              'amc_end_date' => $this->input->post('amc_end_date'),
 			// 'amc_start_date'=> date('Y-m-d',strtotime($this->input->post('amc_start_date'))),
 			// 'amc_end_date'  => date('Y-m-d',strtotime($this->input->post('amc_end_date')))  ,
 			'validity' => $this->input->post('validity'),
@@ -2102,7 +2850,8 @@ if (!empty($annexure_enabled) && $insert_id) {
 			'cp_mobile' => $this->input->post("cp_mobile$cp_select"),
 			'cp_email' => $this->input->post("cp_email$cp_select"),
 			'sales_person'=>$this->input->post('user_id'),	
-			'created_by' => $this->session->userdata('user_id'),
+          
+			'created_by' => $this->session->userdata('employee_prepared'),
 			'created_date' => date('Y-m-d H:i:s')
 			);
 			
@@ -2117,23 +2866,99 @@ if (!empty($annexure_enabled) && $insert_id) {
 			if($insert_id)
 			{	
 				
-					for ($i = 0; $i < count($_POST['product_id']); $i++)
-					{		
-					$data1 = array(
-						'quote_master_id' => $qid ,
-						'product_id' => $_POST['product_id'][$i],                   
-						// 'brand' => $_POST['brand'][$i],
-						// 'model' => $_POST['model'][$i],
-						'quantity'   => $_POST['qty'][$i],	
-						'price'      => $_POST['price'][$i],
-						'total'  	 => $_POST['total'][$i],
-					);
-					
-					$this->db->insert('amc_quotation_transaction', $data1);	
-					
-					}
+					for ($i = 0; $i < count($_POST['prod_id']); $i++)
+{		
+    $data1 = array(
+        'quote_master_id' => $qid,
+        'product_id'      => $_POST['prod_id'][$i],
+         'brand'           => $_POST['brand'][$i] ?? '',
+        'quantity'       => $_POST['qty'][$i],
+        'price'          => $_POST['price'][$i],
+        'total'          => $_POST['final_total'][$i],
+    );
+    
+    $this->db->insert('amc_quotation_transaction', $data1);	
+}
+$this->db->query("DELETE FROM amc_invoice_sla WHERE quote_id = $qid");
 
-					
+$sla_enabled = $this->input->post('sla_enabled');
+
+if (!empty($sla_enabled)) {
+
+    $service_item     = $this->input->post('service_item');
+    $availability     = $this->input->post('service_availability_period');
+    $response_time    = $this->input->post('response_time');
+    $restoration_time = $this->input->post('restoration_time');
+    $resolution_time  = $this->input->post('resolution_time');
+
+    if (!empty($service_item) && is_array($service_item)) {
+
+        foreach ($service_item as $i => $item) {
+
+            if (!empty($item)) {
+
+                $sla = [
+                    'quote_id' => $qid,
+                    'service_item' => $item,
+                    'service_availability_period' => $availability[$i] ?? '',
+                    'response_time' => $response_time[$i] ?? '',
+                    'restoration_time' => $restoration_time[$i] ?? '',
+                    'resolution_time' => $resolution_time[$i] ?? ''
+                ];
+
+                $this->db->insert('amc_invoice_sla', $sla);
+            }
+        }
+    }
+}
+				
+// DELETE OLD ANNEXURE
+$this->db->where('quote_id', $qid);
+$this->db->delete('amc_invoice_annexure');
+
+$annexure_enabled = $this->input->post('annexure_enabled');
+
+if (!empty($annexure_enabled)) {
+
+    $sl_no    = $this->input->post('sl_no');
+    $type     = $this->input->post('type');
+    $location = $this->input->post('location');
+    $qty      = $this->input->post('annex_qty');
+
+     // Heading values
+    $heading_slno     = $this->input->post('heading_slno');
+    $heading_type     = $this->input->post('heading_type');
+    $heading_location = $this->input->post('heading_location');
+    $heading_quantity = $this->input->post('heading_quantity');
+    $heading_total    = $this->input->post('heading_total');
+
+    if (!empty($type)) {
+
+        foreach ($type as $i => $val) {
+
+            if (!empty($val)) {
+
+                $this->db->insert('amc_invoice_annexure', [
+                    'quote_id' => $qid,
+                      // headings
+                    'heading_slno'     => $heading_slno,
+                    'heading_type'     => $heading_type,
+                    'heading_location' => $heading_location,
+                    'heading_quantity' => $heading_quantity,
+                    'heading_total'    => $heading_total,
+                       'annexure_title' => $this->input->post('annexure_title'),
+
+                        'section_title' => $this->input->post('section_title'),
+
+                    'sl_no'    => $sl_no[$i] ?? ($i + 1),
+                    'type'     => $val,
+                    'location' => $location[$i] ?? '',
+                    'quantity' => $qty[$i] ?? 0
+                ]);
+            }
+        }
+    }
+}
 					
 				
 			}
@@ -2385,6 +3210,326 @@ public function get_quotation_annexure_by_id($quote_id)
         ->where('quote_id', $quote_id)
         ->get('amc_invoice_annexure')
         ->result();
+}
+public function get_enquiry_by_id($enq_id)
+{
+    return $this->db
+        ->where('amc_enq_id', $enq_id)
+        ->get('amc_enquiry_master')
+        ->row();
+}
+//work order
+  // ---------- Ref No generation ----------
+    // TEMP logic — replace with exact pattern once you share the existing
+    // amc_enq_code / quotation_code generator function for consistency.
+    public function generate_ref_no($branch_code)
+    {
+        $prefix = strtoupper($branch_code) . date('ym'); // e.g. SWE2608
+        $this->db->like('ref_no', $prefix, 'after');
+        $this->db->order_by('wo_id', 'DESC');
+        $last = $this->db->get('work_order_master')->row();
+        $next = 1;
+        if ($last) {
+            $next = (int) substr($last->ref_no, strlen($prefix)) + 1;
+        }
+        return $prefix . str_pad($next, 3, '0', STR_PAD_LEFT);
+    }
+
+    // ---------- Customer auto-fetch ----------
+    public function get_customer_by_code($customer_code)
+    {
+        return $this->db->where('customer_code', $customer_code)
+                         ->get('customer_master')->row();
+    }
+
+    // ---------- Product search (Select2 AJAX) ----------
+    public function search_products($term)
+    {
+        $this->db->select('product_id, product_code, product_name');
+        $this->db->from('item_master');
+        $this->db->group_start();
+        $this->db->like('product_code', $term);
+        $this->db->or_like('product_name', $term);
+        $this->db->group_end();
+        $this->db->where('is_inactive', 0);
+        $this->db->limit(20);
+        return $this->db->get()->result();
+    }
+
+    // ---------- AMC Lookup ----------
+    public function get_active_amc_contracts($cust_id)
+    {
+        $this->db->select('invoice_id, invoice_code, amc_start_date, amc_end_date, project_name');
+        $this->db->from('amc_invoice_master');
+        $this->db->where('customer_id', $cust_id);
+        $this->db->where('cancelled', 0);
+        $this->db->where('amc_end_date >=', date('Y-m-d'));
+        return $this->db->get()->result();
+    }
+
+    public function get_amc_contract_detail($invoice_id)
+    {
+        return $this->db->where('invoice_id', $invoice_id)
+                         ->get('amc_invoice_master')->row();
+    }
+
+    // ---------- CRUD ----------
+    public function insert_work_order($data)
+    {
+        $this->db->insert('work_order_master', $data);
+        return $this->db->insert_id();
+    }
+
+    public function insert_work_order_items($items)
+    {
+        $this->db->insert_batch('work_order_transaction', $items);
+    }
+        public function replace_work_order_items($wo_id, $product_ids)
+    {
+        // Edit ചെയ്യുമ്പോൾ duplicate items വരാതിരിക്കാൻ, പഴയവ delete ചെയ്ത് പുതിയത് insert ചെയ്യുന്നു
+        $this->db->where('wo_id', $wo_id)->delete('work_order_transaction');
+
+        $items = [];
+        foreach ($product_ids as $pid) {
+            $product = $this->db->select('product_code')->where('product_id', $pid)->get('item_master')->row();
+            $items[] = [
+                'wo_id'        => $wo_id,
+                'product_id'   => $pid,
+                'product_code' => $product ? $product->product_code : ''
+            ];
+        }
+        if (!empty($items)) {
+            $this->db->insert_batch('work_order_transaction', $items);
+        }
+    }
+
+    public function update_work_order($wo_id, $data)
+    {
+        $this->db->where('wo_id', $wo_id)->update('work_order_master', $data);
+    }
+
+    public function get_work_order($wo_id)
+    {
+        return $this->db->where('wo_id', $wo_id)->get('work_order_master')->row();
+    }
+
+    // public function get_work_order_items($wo_id)
+    // {
+    //     return $this->db->where('wo_id', $wo_id)->get('work_order_transaction')->result();
+    // }
+      public function get_work_order_items($wo_id)
+    {
+        $this->db->select('t.*, i.product_name');
+        $this->db->from('work_order_transaction t');
+        $this->db->join('item_master i', 'i.product_id = t.product_id', 'left');
+        $this->db->where('t.wo_id', $wo_id);
+        return $this->db->get()->result();
+    }
+
+    // public function get_work_order_list($wo_type)
+    // {
+    //     return $this->db->where('wo_type', $wo_type)
+    //                      ->order_by('wo_id', 'DESC')
+    //                      ->get('work_order_master')->result();
+    // }
+        public function get_work_order_list()
+    {
+        $this->db->select('wo.*, c.customer_name');
+        $this->db->from('work_order_master wo');
+        $this->db->join('customer_master c', 'c.customer_id = wo.cust_id', 'left');
+       // $this->db->where('wo.wo_type', $wo_type);
+        $this->db->order_by('wo.wo_id', 'DESC');
+        return $this->db->get()->result();
+    }
+        // ---------- Staff search (Supervisor / Technician Select2) ----------
+    public function search_staff($term)
+    {
+        $this->db->select('user_id, user_name, user_code');
+        $this->db->from('users');
+        $this->db->group_start();
+        $this->db->like('user_name', $term);
+        $this->db->or_like('user_code', $term);
+        $this->db->group_end();
+        $this->db->where('active', 1);
+        $this->db->limit(20);
+        return $this->db->get()->result();
+    }
+
+    // ---------- Branch dropdown ----------
+    public function get_branches()
+    {
+        return $this->db->get('branch_master')->result();
+    }
+        public function generate_wo_ref_no($branch_code)
+    {
+        $this->load->model('Setup_model'); // ഇതിനകം load ആയിട്ടില്ലെങ്കിൽ
+        $prefix = strtoupper($branch_code) . date('ym'); // e.g. SWE2609
+        $sublen = strlen($prefix) + 1;
+        $count  = $this->Setup_model->get_next_code($prefix, 'ref_no', 'work_order_master', $sublen);
+        $num    = (int) $count + 1;
+        $digit  = sprintf("%1\$03d", $num);
+        return $prefix . $digit;
+    }
+    //     public function get_work_order_by_ref($ref_no)
+    // {
+    //     return $this->db->where('ref_no', $ref_no)->get('work_order_master')->row();
+    // }
+     public function get_work_order_by_ref($ref_no)
+    {
+        $this->db->select('wo.*, s.user_name AS supervisor_name, s.user_code AS supervisor_code, t.user_name AS technician_name, t.user_code AS technician_code');
+        $this->db->from('work_order_master wo');
+        $this->db->join('users s', 's.user_id = wo.supervisor_id', 'left');
+        $this->db->join('users t', 't.user_id = wo.technician_id', 'left');
+        $this->db->where('wo.ref_no', $ref_no);
+        return $this->db->get()->row();
+    }
+function get_ppm_detail_with_master($ppm_detail_id)
+{
+    $this->db->select('d.*, m.ppm_code, m.quote_id, q.project_name, q.customer_id, c.customer_name');
+    $this->db->from('amc_ppm_details d');
+    $this->db->join('amc_ppm_master m', 'm.ppm_id = d.ppm_master_id');
+    $this->db->join('amc_quotation_master q', 'q.quote_id = m.quote_id', 'left');
+    $this->db->join('customer_master c', 'c.customer_id = q.customer_id', 'left');
+    $this->db->where('d.id', $ppm_detail_id);   // ← changed from d.ppm_detail_id
+    return $this->db->get()->row();
+}
+
+function get_visit_checklist($ppm_detail_id, $default_items)
+{
+    $existing = $this->db->where('ppm_detail_id', $ppm_detail_id)
+                          ->get('amc_ppm_visit_checklist')->result();
+
+    if (!empty($existing)) return $existing;
+
+    // First time opening this visit — build a blank checklist from the defaults
+    $blank = array();
+    foreach ($default_items as $item)
+    {
+        $blank[] = (object) array(
+            'checklist_item' => $item,
+            'is_checked'     => 0,
+            'remarks'        => ''
+        );
+    }
+    return $blank;
+}
+
+function save_visit_checklist($ppm_detail_id, $post)
+{
+    // Re-save is safe: clear old rows for this visit and re-insert
+    $this->db->where('ppm_detail_id', $ppm_detail_id)->delete('amc_ppm_visit_checklist');
+
+    $items   = $post['checklist_item'];   // array
+    $checked = isset($post['is_checked']) ? $post['is_checked'] : array(); // only checked boxes are posted
+    $remarks = isset($post['remarks']) ? $post['remarks'] : array();
+
+    for ($i = 0; $i < count($items); $i++)
+    {
+        $this->db->insert('amc_ppm_visit_checklist', array(
+            'ppm_detail_id'  => $ppm_detail_id,
+            'checklist_item' => $items[$i],
+            'is_checked'     => isset($checked[$i]) ? 1 : 0,
+            'remarks'        => isset($remarks[$i]) ? $remarks[$i] : '',
+            'checked_by'     => $this->session->userdata('user_id'),
+            'checked_date'   => date('Y-m-d H:i:s')
+        ));
+    }
+
+    // If every checklist item is ticked, auto-mark the visit Finished
+    if (count($checked) == count($items) && count($items) > 0)
+    {
+        $this->db->where('ppm_detail_id', $ppm_detail_id)
+                  ->update('amc_ppm_details', array(
+                        'ppmstatus'      => 'Finished',
+                        'completed_date' => date('Y-m-d H:i:s')
+                  ));
+    }
+
+    return true;
+}
+
+function add_ppm_replacement($data)
+{
+    $this->db->insert('amc_ppm_replacement', $data);
+    return $this->db->insert_id();
+}
+
+function get_replacements_by_detail($ppm_detail_id)
+{
+    return $this->db->where('ppm_detail_id', $ppm_detail_id)
+                     ->where('status', 'Pending')
+                     ->get('amc_ppm_replacement')->result();
+}
+
+function create_replacement_quotation($ppm_detail_id, $replacement_ids)
+{
+    $visit = $this->get_ppm_detail_with_master($ppm_detail_id);
+    if (!$visit) return false;
+
+    $items = $this->db->where_in('replacement_id', $replacement_ids)
+                       ->where('status', 'Pending')
+                       ->get('amc_ppm_replacement')->result();
+    if (empty($items)) return false;
+
+    $sub_total = 0;
+    foreach ($items as $it) { $sub_total += $it->total; }
+
+    $this->load->model('Setup_model');
+    $vat_percent = $this->Setup_model->get_vat_for_calculation();
+    $vat_amt     = round($sub_total * $vat_percent / 100, 2);
+    $grand_total = $sub_total + $vat_amt;
+
+    $prefix = 'ADL/RQT/';
+    $num    = $this->Setup_model->get_next_code($prefix, 'quotation_code', 'amc_quotation_master', 9) + 1;
+    $code   = $prefix . sprintf("%04d", $num);
+
+    $master = array(
+        'quotation_code'  => $code,
+        'quotation_date'  => date('Y-m-d'),
+        'revision_date'   => date('Y-m-d'),
+        'customer_id'     => $visit->customer_id,
+        'project_name'    => $visit->project_name,
+        'sub_total'       => $sub_total,
+        'vat_percent'     => $vat_percent,
+        'vat_amt'         => $vat_amt,
+        'grand_total'     => $grand_total,
+        'quote_type'      => 'Replacement',
+        'parent_quote_id' => $visit->quote_id,
+        'created_by'      => $this->session->userdata('user_id'),
+        'created_date'    => date('Y-m-d H:i:s')
+    );
+
+    $this->db->insert('amc_quotation_master', $master);
+    $insert_id = $this->db->insert_id();
+
+    if ($insert_id)
+    {
+        foreach ($items as $it)
+        {
+            $this->db->insert('amc_quotation_transaction', array(
+                'quote_master_id' => $insert_id,
+                'product_id'      => $it->item_name,
+                'quantity'        => $it->qty,
+                'price'           => $it->unit_price,
+                'total'           => $it->total
+            ));
+
+            $this->db->where('replacement_id', $it->replacement_id)
+                      ->update('amc_ppm_replacement', array(
+                            'status'               => 'Quoted',
+                            'replacement_quote_id' => $insert_id
+                      ));
+        }
+    }
+
+    return $insert_id;
+}
+
+function get_replacement_items_by_ids($ids)
+{
+    return $this->db->where_in('replacement_id', $ids)
+                     ->where('status', 'Pending')
+                     ->get('amc_ppm_replacement')->result();
 }
 }
 

@@ -34,11 +34,31 @@
 							
 							</td>
 							<td>
-							<a href="<?php echo base_url().'index.php/AMC/edit_quotation/'.$row->quote_id.'/'.$row->revision.'/1';?>" title="Edit"><?php echo $this->session->userdata('edit_icon');?></a>							
-							<a href="javascript:confirmcancel(<?php echo $row->quote_id;?>,<?php echo $row->enq_master_id;?>)" title="Delete" class='delete' id='delete'><?php echo $this->session->userdata('delete_icon');?></a>
+
+							 <!-- EDIT -->
+
+                        <a
+                            href="<?php  echo base_url('index.php/AMC/edit_quotation/'. $row->quote_id.'/'.$row->revision.'/1'); ?>"
+                            title="Edit" style="margin-right:10px;">
+                             <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
+
+
+                        </a>
+                        <!-- DELETE -->
+
+                        <a  href="javascript:void(0);"  onclick="confirmcancel(<?php echo $row->quote_id;?>,<?php echo $row->enq_master_id;?>)"  title="Delete" style="margin-right:10px;">
+                             <i class="glyphicon glyphicon-trash"></i>
+                        </a>
+  			<a target="_blank" href="<?php echo base_url().'index.php/AMC/print_quotation/'.$row->quote_id.'/'.$row->revision.'/'.$row->enq_type.'/1/1';?>" style="margin-right:10px;">
+                  <i class="fa fa-print"></i>
+              </a>
+
+
+							<!-- <a href="<?php echo base_url().'index.php/AMC/edit_quotation/'.$row->quote_id.'/'.$row->revision.'/1';?>" title="Edit"><?php echo $this->session->userdata('edit_icon');?></a>							
+							<a href="javascript:confirmcancel(<?php echo $row->quote_id;?>,<?php echo $row->enq_master_id;?>)" title="Delete" class='delete' id='delete'><?php echo $this->session->userdata('delete_icon');?></a> -->
 							<br>
 							
-							 <a target='_blank' href="<?php echo base_url().'index.php/AMC/print_quotation/'.$row->quote_id.'/'.$row->revision.'/'.$row->enq_type.'/1/1';?>" title="print quotation">Print</a>
+							 <!-- <a target='_blank' href="<?php echo base_url().'index.php/AMC/print_quotation/'.$row->quote_id.'/'.$row->revision.'/'.$row->enq_type.'/1/1';?>" title="print quotation">Print</a> -->
 							 <!-- <br>
 							
 							 <a target='_blank' href="<?php echo base_url().'index.php/AMC/print_quotation/'.$row->quote_id.'/'.$row->revision.'/'.$row->enq_type.'/1/0';?>" title="print quotation">Print w/o LH</a> -->

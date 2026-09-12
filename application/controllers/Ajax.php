@@ -1166,7 +1166,34 @@ class Ajax extends CI_Controller
             ));
         }
     }
+function ajax_get_amc_enquiry_info()
+    {
+          $this->load->model('Amc_model');
+		$value=array();
+        $enq_id = $this->input->post('enq_id');
 
+        $data['records']=$this->Amc_model->get_enquiry_record_by_id($enq_id);
+		foreach($data['records'] as $row)
+		{
+			$value=array('enq_id'=>$row->amc_enq_id,'enq_type'=>$row->enq_type,'customer_id'=>$row->cust_id, 'cust_name'=>$row->cust_name, 'cust_code'=>$row->cust_code, 'enquiry_code'=>$row->amc_enq_code, 'enquiry_date'=>date('d-m-Y',strtotime($row->enq_date)),'project_name'=>$row->project_name);
+		}
+		echo json_encode($value);
+    }
+
+     function get_amc_enquiry_items_for_quote()
+     {
+        $enq_id = $this->input->post('enq_id');
+        $version = $this->input->post('rev_version');
+          $this->load->model('Product_model');
+           $this->load->model('Amc_model');
+		//$data['products']=$this->Product_model->get_product_list();
+       // $data['active_items']       = $this->Setup_model->get_active_item_list();	
+		$data['records']=$this->Amc_model->get_enquiry_record_by_id($enq_id);				 	
+		$data['records2']=$this->Amc_model->get_enquiry_trans_for_quote($enq_id);
+      
+		$this->load->view('ajax/amc_enq_items_for_quote',$data);
+     }
+     
     /////////////////////////////// TERMS & CONDITIONS AJAX END //////////////////////////////
 
 
