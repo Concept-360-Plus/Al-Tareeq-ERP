@@ -804,7 +804,7 @@ class Hr_model extends CI_Model
 
 	//////////////////////////////////////////function start resignation application//////////////////
 
-	public function add_resignation()
+	public function add_resignation_old()
 	{
 
 		$prifix = 'RA';
@@ -876,7 +876,106 @@ class Hr_model extends CI_Model
 		return $insert_id;
 	}
 
-	function update_resigning_application($id)
+	public function add_resignation()
+	{
+		$prefix = 'RA';
+
+		$this->load->model('Setup_model');
+
+		// IMPORTANT: remove the accidental tab/space from resign_code
+		$num = $this->Setup_model->get_next_code($prefix, 'resign_code', 'employee_resignation', 3) + 1;
+		$RA_code = $prefix . sprintf("%04d", $num);
+
+		$employee_id = $this->input->post('employee_id', TRUE);
+		$resignation_date = $this->input->post('resignation_date', TRUE);
+		$last_working_date = $this->input->post('last_working_date', TRUE);
+		$notice_days = $this->input->post('notice_days', TRUE);
+		$reason = $this->input->post('reason', TRUE);
+
+		// -----------------------------
+		// Server-side validation
+		// -----------------------------
+
+		if (empty($employee_id)) {
+			return false;
+		}
+
+		if (empty($resignation_date) || empty($last_working_date)) {
+			return false;
+		}
+
+		$resignation_date = date('Y-m-d', strtotime($resignation_date));
+		$last_working_date = date('Y-m-d', strtotime($last_working_date));
+
+		if (strtotime($last_working_date) < strtotime($resignation_date)) {
+			return false;
+		}
+
+		// -----------------------------
+		// Duplicate resignation check
+		// -----------------------------
+
+		$existing = $this->db
+			->where('employee_id', $employee_id)
+			->where('resignation_date', $resignation_date)
+			->get('employee_resignation')
+			->row();
+
+		if ($existing) {
+			return false;
+		}
+
+		// -----------------------------
+		// Resignation master
+		// -----------------------------
+
+		$data = array(
+			'employee_id'       => $employee_id,
+			'resign_code'       => $RA_code,
+			'resignation_date'  => $resignation_date,
+			'last_working_date' => $last_working_date,
+			'notice_days'       => $notice_days,
+			'reason'            => $reason
+		);
+
+		$this->db->trans_start();
+		$this->db->insert('employee_resignation', $data);
+
+		$insert_id = $this->db->insert_id();
+
+		if (!$insert_id) {
+			$this->db->trans_complete();
+			return false;
+		}
+
+		// -----------------------------
+		// Upload documents
+		// -----------------------------
+
+		$this->_save_resignation_documents($insert_id, $employee_id);
+
+		// -----------------------------
+		// Audit log
+		// -----------------------------
+
+		$user_se_id = $this->session->userdata('user_id');
+		$page_name = explode('index.php/', $_SERVER['PHP_SELF']);
+
+		$ci = get_instance();
+		$ci->load->helper('log');
+
+		add_log_entry($user_se_id, 1, isset($page_name[1]) ? $page_name[1] : '', 'employee_resignation', 'resig_id', $insert_id);
+
+		$this->db->trans_complete();
+
+		if ($this->db->trans_status() === FALSE) {
+			return false;
+		}
+
+		return $insert_id;
+	}
+
+	function update_resigning_application_old($id)
 	{
 		$data = array(
 			'employee_id' => $this->input->post('employee_id'),
@@ -943,6 +1042,177 @@ class Hr_model extends CI_Model
 		}
 	}
 
+	public function update_resigning_application($id)
+	{
+		if (empty($id)) {
+			return false;
+		}
+
+		// Get existing resignation
+		$existing = $this->db
+			->where('resig_id', $id)
+			->get('employee_resignation')
+			->row();
+
+		if (!$existing) {
+			return false;
+		}
+
+		$employee_id = $this->input->post('employee_id', TRUE);
+
+		if (empty($employee_id)) {
+			$employee_id = $existing->employee_id;
+		}
+
+		$resignation_date = $this->input->post(
+			'resignation_date',
+			TRUE
+		);
+
+		$last_working_date = $this->input->post(
+			'last_working_date',
+			TRUE
+		);
+
+		if (empty($resignation_date) || empty($last_working_date)) {
+			return false;
+		}
+
+		$resignation_date = date(
+			'Y-m-d',
+			strtotime($resignation_date)
+		);
+
+		$last_working_date = date(
+			'Y-m-d',
+			strtotime($last_working_date)
+		);
+
+		// Server-side date validation
+		if (
+			strtotime($last_working_date) <
+			strtotime($resignation_date)
+		) {
+			return false;
+		}
+
+		$data = array(
+			'employee_id'       => $employee_id,
+			'resignation_date'  => $resignation_date,
+			'last_working_date' => $last_working_date,
+			'notice_days'       => $this->input->post(
+				'notice_days',
+				TRUE
+			),
+			'reason'            => $this->input->post(
+				'reason',
+				TRUE
+			)
+		);
+
+		$this->db->trans_start();
+
+		$this->db
+			->where('resig_id', $id)
+			->update(
+				'employee_resignation',
+				$data
+			);
+
+		// Save newly uploaded documents
+		$this->_save_resignation_documents(
+			$id,
+			$employee_id
+		);
+
+		// Audit log
+		$user_se_id = $this->session->userdata('user_id');
+
+		$page_name = explode(
+			'index.php/',
+			$_SERVER['PHP_SELF']
+		);
+
+		$ci = get_instance();
+		$ci->load->helper('log');
+
+		add_log_entry(
+			$user_se_id,
+			2,
+			isset($page_name[1]) ? $page_name[1] : '',
+			'employee_resignation',
+			'resig_id',
+			$id
+		);
+
+		$this->db->trans_complete();
+
+		return $this->db->trans_status();
+	}
+
+	private function _save_resignation_documents($resig_id, $employee_id)
+	{
+		if (
+			empty($_FILES['documents_res']) ||
+			empty($_FILES['documents_res']['name'])
+		) {
+			return true;
+		}
+
+		$allowedExts = array('jpeg', 'jpg', 'png', 'doc', 'docx', 'pdf');
+		$upload_path = FCPATH . 'public/uploaded_documents/';
+
+		if (!is_dir($upload_path)) {
+			mkdir($upload_path, 0755, true);
+		}
+
+		$files = $_FILES['documents_res'];
+		$types = $this->input->post('document_types');
+
+		foreach ($files['name'] as $key => $original_name) {
+
+			if (empty($original_name)) {
+				continue;
+			}
+
+			if ($files['error'][$key] !== UPLOAD_ERR_OK) {
+				continue;
+			}
+
+			// File extension
+			$extension = strtolower(
+				pathinfo($original_name, PATHINFO_EXTENSION)
+			);
+
+			if (!in_array($extension, $allowedExts)) {
+				continue;
+			}
+
+			// 15 MB maximum
+			if ($files['size'][$key] > 15 * 1024 * 1024) {
+				continue;
+			}
+
+			// Generate safe unique filename
+			$file_name = uniqid('res_', true) . '_' . time() . '.' . $extension;
+			$target = $upload_path . $file_name;
+
+			if (move_uploaded_file($files['tmp_name'][$key], $target)) {
+
+				$document_type = isset($types[$key]) ? trim($types[$key]) : 'Other';
+				$document_data = array(
+					'resig_id'      => $resig_id,
+					'employee_id'   => $employee_id,
+					'document_name' => $document_type,
+					'document_path' => $file_name
+				);
+
+				$this->db->insert('employee_resignation_documents', $document_data);
+			}
+		}
+
+		return true;
+	}
 
 	function get_employee_resignation_list()
 	{
@@ -953,7 +1223,6 @@ class Hr_model extends CI_Model
 		$query = $this->db->get();
 		return $query->result();
 	}
-
 
 
 	function get_employee_document_doc_id($id)
@@ -978,32 +1247,112 @@ class Hr_model extends CI_Model
 	}
 
 
-	// function get_employee_resigning_by_id($id)
-	// {
-	// 	$query = $this->db->query("SELECT r.*, u.*, u.joining_date as jdate
-	// 							   FROM employee_resignation AS r
-	// 							   INNER JOIN users AS u 
-	// 							   WHERE resig_id = '$id'
-	// 							   ORDER BY r.resignation_date DESC");
-
-	// 	return $query->result();
-	// }
-
-	function get_employee_resigning_by_id($id)
+	public function get_employee_resigning_by_id($id)
 	{
-		$this->db->select('r.*, u.*, u.joining_date as jdate');
-		$this->db->from('employee_resignation r');
-		$this->db->join('employee_master u', 'r.employee_id = u.employee_id', 'inner');
-		$this->db->where('r.resig_id', $id);
-		$query = $this->db->get();
+		$this->db->select('
+			r.*,
+			e.employee_name,
+			e.user_code,
+			e.mobile,
+			e.gender,
+			e.birth_date,
+			e.nationality,
+			e.joining_date,
+			e.department_id,
+			e.designation_id,
+			d.dept_name AS department_name,
+			des.designation_name
+		');
 
-		return $query->row(); // return a single row, not an array
+		$this->db->from(
+			'employee_resignation r'
+		);
+
+		$this->db->join(
+			'employee_master e',
+			'e.employee_id = r.employee_id',
+			'inner'
+		);
+
+		$this->db->join(
+			'department_master d',
+			'd.dept_id = e.department_id',
+			'left'
+		);
+
+		$this->db->join(
+			'designation_master des',
+			'des.id = e.designation_id',
+			'left'
+		);
+
+		$this->db->where(
+			'r.resig_id',
+			$id
+		);
+
+		return $this->db->get()->row();
 	}
 
 	function delete_resignation_application($id)
 	{
 		$this->db->where('resig_id', $id);
 		$this->db->delete('employee_resignation');
+	}
+
+	public function delete_resignation_document($doc_id)
+	{
+		if (empty($doc_id)) {
+			return [
+				'status' => 0,
+				'message' => 'Invalid document ID.'
+			];
+		}
+
+		$file = $this->db
+			->where('doc_id', $doc_id)
+			->get('employee_resignation_documents')
+			->row();
+
+		if (!$file) {
+			return [
+				'status' => 0,
+				'message' => 'Document not found.'
+			];
+		}
+
+		$path =
+			FCPATH .
+			'public/uploaded_documents/' .
+			$file->document_path;
+
+		// Delete physical file
+		if (
+			!empty($file->document_path) &&
+			file_exists($path)
+		) {
+			unlink($path);
+		}
+
+		// Delete DB record
+		$this->db
+			->where('doc_id', $doc_id)
+			->delete(
+				'employee_resignation_documents'
+			);
+
+		if ($this->db->affected_rows() > 0) {
+
+			return [
+				'status' => 1,
+				'message' => 'Document deleted successfully.'
+			];
+		}
+
+		return [
+			'status' => 0,
+			'message' => 'Unable to delete document.'
+		];
 	}
 
 	///this is new inseration passport relese data/////////////////////////////////////////////////////
@@ -1175,13 +1524,8 @@ class Hr_model extends CI_Model
 		$data = array(
 			'employee_id'     => $employee_id,
 			'date_ot'         => date('Y-m-d', strtotime($date_ot)),
-
-			// Keep old column temporarily for migration compatibility
 			'overtime'        => NULL,
-
-			// New correct representation
 			'overtime_minutes' => $overtime_minutes,
-
 			'remark'          => $remark,
 			'created_by'      => $this->session->userdata('user_id'),
 			'created_date'    => date('Y-m-d H:i:s')
@@ -1257,9 +1601,7 @@ class Hr_model extends CI_Model
 			return false;
 		}
 
-
-		/*
-		* Convert Hours + Minutes
+		/* Convert Hours + Minutes
 		* into total minutes
 		*
 		* Example:
@@ -1268,12 +1610,6 @@ class Hr_model extends CI_Model
 		*/
 
 		$overtime_minutes = ($hours * 60) + $minutes;
-
-		/*
-		* Check duplicate employee + date
-		*
-		* Exclude current record being edited.
-		*/
 
 		$this->db->where('employee_id', $employee_id);
 		$this->db->where('date_ot', $date_ot);
@@ -1325,7 +1661,7 @@ class Hr_model extends CI_Model
 	{
 		$this->db->select('r.emp_oid,r.employee_id,r.date_ot,r.overtime_minutes,r.remark,u.employee_name AS name,u.user_code');
 		$this->db->from('employee_overtime r');
-		$this->db->join('employee_master u','r.employee_id = u.employee_id','inner');
+		$this->db->join('employee_master u', 'r.employee_id = u.employee_id', 'inner');
 		$this->db->order_by('r.date_ot', 'DESC');
 		return $this->db->get()->result();
 	}
@@ -1341,12 +1677,12 @@ class Hr_model extends CI_Model
 		return $query->row();
 	}
 
-
-
 	function delete_emp_overtime($id)
 	{
 		$this->db->where('emp_oid', $id);
 		$this->db->delete('employee_overtime');
+
+		return ($this->db->affected_rows() > 0);
 	}
 	//////////////////////////////////////start attendance/////////////////////////////////////////////
 	function add_emp_attendance_data()
@@ -1461,11 +1797,12 @@ class Hr_model extends CI_Model
 
 	}
 
-
 	function delete_attendance_emp($id)
 	{
 		$this->db->where('emp_aId', $id);
 		$this->db->delete('employee_attendance');
+
+		return ($this->db->affected_rows() > 0);
 	}
 
 

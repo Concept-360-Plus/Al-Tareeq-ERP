@@ -841,10 +841,6 @@ class Setup extends CI_Controller
             'product_code'       => $this->input->post('product_code', true),
             'unit_id'            => $this->input->post('unit_id', true),
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 6c468d3 (sales module changes)
             'category_id'        => $this->input->post('category_id', true) ?: null,
             'sub_category_id'    => $this->input->post('sub_category_id', true) ?: null,
             'child_category_id'  => $this->input->post('child_category_id', true) ?: null,
@@ -1091,92 +1087,92 @@ class Setup extends CI_Controller
         $this->session->set_flashdata('success', 'Item moved to trash successfully');
         redirect('Setup/list_items');
     }
-     /////// RAW MATERIAL MASTER START /////////////////////
+    //  /////// RAW MATERIAL MASTER START /////////////////////
 
-    public function list_raw_materials()
-    {
-        $data['title'] = 'Raw Material List';
-        $data['all_raw_materials'] = $this->Setup_model->get_all_raw_materials();
-        $data['main_content'] = 'setup/list_raw_materials.php';
+    // public function list_raw_materials()
+    // {
+    //     $data['title'] = 'Raw Material List';
+    //     $data['all_raw_materials'] = $this->Setup_model->get_all_raw_materials();
+    //     $data['main_content'] = 'setup/list_raw_materials.php';
 
-        $this->load->view('includes/template', $data);
-    }
+    //     $this->load->view('includes/template', $data);
+    // }
 
-    public function add_raw_material()
-    {
-        $data['title'] = 'Add Raw Material';
-        $data['material'] = null;
-        $data['active_units'] = $this->Setup_model->get_all_units();
-        $data['main_content'] = 'setup/add_raw_material.php';
+    // public function add_raw_material()
+    // {
+    //     $data['title'] = 'Add Raw Material';
+    //     $data['material'] = null;
+    //     $data['active_units'] = $this->Setup_model->get_all_units();
+    //     $data['main_content'] = 'setup/add_raw_material.php';
 
-        $this->load->view('includes/template', $data);
-    }
+    //     $this->load->view('includes/template', $data);
+    // }
 
-    public function add_raw_material_data()
-    {
-        $material_name = trim($this->input->post('material_name', true));
+    // public function add_raw_material_data()
+    // {
+    //     $material_name = trim($this->input->post('material_name', true));
 
-        $data = [
-            'material_name'    => $material_name,
-            'material_code'    => trim($this->input->post('material_code', true)),
-            'unit'             => $this->input->post('unit', true),
-            'created_at'       => date('Y-m-d H:i:s'),
-        ];
+    //     $data = [
+    //         'material_name'    => $material_name,
+    //         'material_code'    => trim($this->input->post('material_code', true)),
+    //         'unit'             => $this->input->post('unit', true),
+    //         'created_at'       => date('Y-m-d H:i:s'),
+    //     ];
 
-        $inserted = $this->Setup_model->insert_rawmat($data);
+    //     $inserted = $this->Setup_model->insert_rawmat($data);
 
-        if ($inserted) {
-            $this->session->set_flashdata('success', 'Raw Material added successfully');
-        } else {
-            $this->session->set_flashdata('error', 'Failed to add Raw Material');
-        }
+    //     if ($inserted) {
+    //         $this->session->set_flashdata('success', 'Raw Material added successfully');
+    //     } else {
+    //         $this->session->set_flashdata('error', 'Failed to add Raw Material');
+    //     }
 
-        redirect('Setup/list_raw_materials');
-    }
+    //     redirect('Setup/list_raw_materials');
+    // }
 
-    public function edit_raw_material($id)
-    {
-        $data['title'] = 'Edit Raw Material';
-        $data['material'] = $this->Setup_model->get_raw_material_by_id($id);
-        $data['active_units'] = $this->Setup_model->get_all_units();
-        $data['main_content'] = 'setup/add_raw_material.php';
+    // public function edit_raw_material($id)
+    // {
+    //     $data['title'] = 'Edit Raw Material';
+    //     $data['material'] = $this->Setup_model->get_raw_material_by_id($id);
+    //     $data['active_units'] = $this->Setup_model->get_all_units();
+    //     $data['main_content'] = 'setup/add_raw_material.php';
 
-        $this->load->view('includes/template', $data);
-    }
+    //     $this->load->view('includes/template', $data);
+    // }
 
-    public function update_raw_material_data($id)
-    {
-        $material_name = trim($this->input->post('material_name', true));
+    // public function update_raw_material_data($id)
+    // {
+    //     $material_name = trim($this->input->post('material_name', true));
 
-        $data = [
-            'material_name'    => $material_name,
-            'material_code'    => trim($this->input->post('material_code', true)),
-            'unit'             => $this->input->post('unit', true),
-            'updated_at'       => date('Y-m-d H:i:s'),
-        ];
+    //     $data = [
+    //         'material_name'    => $material_name,
+    //         'material_code'    => trim($this->input->post('material_code', true)),
+    //         'unit'             => $this->input->post('unit', true),
+    //         'updated_at'       => date('Y-m-d H:i:s'),
+    //     ];
 
-        $this->Setup_model->update_rawmat($data, $id);
+    //     $this->Setup_model->update_rawmat($data, $id);
 
-        $this->session->set_flashdata('success', 'Raw Material updated successfully');
-        redirect('Setup/list_raw_materials');
-    }
+    //     $this->session->set_flashdata('success', 'Raw Material updated successfully');
+    //     redirect('Setup/list_raw_materials');
+    // }
 
-    public function delete_raw_material($id)
-    {
-        $this->Setup_model->delete_raw_material($id);
+    // public function delete_raw_material($id)
+    // {
+    //     $this->Setup_model->delete_raw_material($id);
 
-        $this->session->set_flashdata('success', 'Raw Material deleted successfully');
-        redirect('Setup/list_raw_materials');
-    }
+    //     $this->session->set_flashdata('success', 'Raw Material deleted successfully');
+    //     redirect('Setup/list_raw_materials');
+    // }
 
-    public function check_material_code_duplicate()
-    {
-        echo $this->Setup_model->material_code_exists(
-            $this->input->post('material_code'),
-            $this->input->post('material_id')
-        );
-    }
-    /////// RAW MATERIAL MASTER END   /////////////////////
+    // public function check_material_code_duplicate()
+    // {
+    //     echo $this->Setup_model->material_code_exists(
+    //         $this->input->post('material_code'),
+    //         $this->input->post('material_id')
+    //     );
+    // }
+    // /////// RAW MATERIAL MASTER END   /////////////////////
 
     /////// RAW MATERIAL MASTER START /////////////////////
 
@@ -1357,10 +1353,6 @@ class Setup extends CI_Controller
                 'status' => 1,
                 'sub_category_id' => $sub_category_id
             );
-<<<<<<< HEAD
-=======
-
->>>>>>> 6c468d3 (sales module changes)
         } else {
 
             $data['sub_category_code'] = $this->Setup_model->get_subcategory_code();
@@ -2580,12 +2572,8 @@ class Setup extends CI_Controller
         // master data fields editable from this modal
         $master_data = array(
             'description'  => trim($this->input->post('description')),
-<<<<<<< HEAD
-            'retail_price' => $this->input->post('retail_price') !== '' ? $this->input->post('retail_price') : 0
-=======
             'retail_price' => $this->input->post('retail_price') !== '' ? $this->input->post('retail_price') : 0,
             'total_price'  => $this->input->post('retail_price') !== '' ? $this->input->post('retail_price') : 0
->>>>>>> 6c468d3 (sales module changes)
         );
 
         $this->Setup_model->update_item_type_and_materials($product_id, $product_type, $materials, $master_data);
