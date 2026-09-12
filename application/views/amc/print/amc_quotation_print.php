@@ -39,6 +39,17 @@ $quotation_date = !empty($record->revision_date)
             clear: both;
         }
 
+        /* Prevent orphan headings and section splits */
+        .keep-together {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }
+        
+        .no-break-after {
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+        }
+
         .footer {
             position: fixed;
             bottom: -100px;
@@ -74,18 +85,32 @@ $quotation_date = !empty($record->revision_date)
         }
 
         .cover-img {
-            width: 100%;
-            height: 100%;
             position: absolute;
             top: 0;
             left: 0;
+            width: 100%;
+            height: 100%;
             z-index: 1;
         }
-
+        
         .cover-img img {
             width: 100%;
             height: 100%;
-            object-fit: fill;
+            object-fit: cover;
+            display: block;
+        }
+
+        .cover-logo {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            z-index: 10;
+            text-align: right;
+        }
+
+        .cover-logo img {
+            max-height: 100px;
+            width: auto;
             display: block;
         }
         
@@ -106,7 +131,6 @@ $quotation_date = !empty($record->revision_date)
             margin-left: 20px;
         }
 
-        /* Zero out margins and HIDE the fixed header on the very first page */
         @page :first {
             margin: 0 !important;
             .header {
@@ -129,85 +153,152 @@ $quotation_date = !empty($record->revision_date)
 </head>
 <body>
 
-    <div class="header">
-        <table class="no-border" style="width:100%; border-collapse:collapse;">
-            <tr>
-                <td style="width:60%; padding:0 10px;">
-                    <img src="<?= $headerPath ?>" style="max-height:120px;">
-                </td>
-                <td style="width:40%; text-align:right; font-size:13px; font-family: Arial, sans-serif; padding-right:10px;">
-                    <b>Ref No:</b> <?= $record->quotation_code ?><br>
-                    <b>Date:</b> <?= $quotation_date ?>
-                </td>
-            </tr>
-        </table>
+<!-- <div class="cover-page">
+    <div class="cover-img">
+        <?php if (!empty($cover_page)) { ?>
+            <img src="<?= base_url($cover_page) ?>" alt="Cover Page">
+        <?php } ?>
     </div>
+    <div class="cover-details">
+        <h3><?= $branch_name ?></h3>
+        <?php
+        $address = trim($branch_address);
+        if (!empty($branch_location)) {
+            $address .= (!empty($address) ? ', ' : '') ;
+        }
 
-    <div class="cover-page">
-        <div class="cover-img">
-            <img src="<?= base_url('public/quotation_cover/Quotation_cover_page.jpeg') ?>">
-        </div>
-
-        <div class="cover-details">
-            <h3><?= $company['company_name'] ?></h3>
-            <?= nl2br($company['company_address']) ?>
-            <?= $company['company_state'] ?>, <?= $company['company_country'] ?><br>
-            <?= $company['company_telephone'] ?>
-
-            <?php if(!empty($company['company_telephone_alt'])) { ?>
-                 <?= $company['company_telephone_alt'] ?>
-            <?php } ?>
-            <br>
-            <a href="mailto:<?= $company['company_email_id'] ?>" style="color: #0066cc; text-decoration: underline; font-weight: normal;"><?= $company['company_email_id'] ?></a><br>
-            <a href="https://<?= str_replace(['http://', 'https://'], '', $company['company_website']) ?>" target="_blank" style="color: #0066cc; text-decoration: underline; font-weight: normal;"><?= $company['company_website'] ?></a>
-        </div>
+        if (!empty($address)) {
+            echo nl2br($address) . '<br>';
+        }
+        if (!empty($branch_location)) {
+            echo nl2br($branch_location) . ', UNITED ARAB EMIRATES'.'<br>';
+        }
+        ?>
+        
+        <?php if (!empty($branch_contact)) { ?>
+            <?= $branch_contact; ?><br>
+        <?php } ?>
+            
+        <a href="mailto:<?= $branch_email ?>" style="color: #0066cc; text-decoration: underline; font-weight: normal;"><?= $company['company_email_id'] ?></a><br>
+        <a href="https://<?= str_replace(['http://', 'https://'], '', $company['company_website']) ?>" target="_blank" style="color: #0066cc; text-decoration: underline; font-weight: normal;"><?= $company['company_website'] ?></a>
     </div>
+</div> -->
 
-    <div class="main-content">
-        <h2 align="center">ANNUAL MAINTENANCE PROPOSAL</h2>
+<div class="header">
+    <table class="no-border" style="width:100%; border-collapse:collapse;">
+        <tr>
+            <td style="width:60%; padding:0 10px;">
+                <img src="<?= $headerPath ?>" style="max-height:120px;">
+            </td>
+            <td style="width:40%; text-align:right; font-size:13px; font-family: Arial, sans-serif; padding-right:10px;">
+                <b>Ref No:</b> <?= $record->quotation_code ?><br>
+                <b>Date:</b> <?= $quotation_date ?>
+            </td>
+        </tr>
+    </table>
+</div>
 
-        <table width="100%" border="1" cellspacing="0" cellpadding="6" style="border-collapse:collapse; font-size:13px; margin-top:10px;">
-            <tr>
-               <td width="15%"><b>To</b></td>
-                <td width="35%">
-                    <b><?php echo $record->customer_name ?? ''; ?></b><br>
-                    <b>Contact Person:</b><?= $record->contact_name ?><br>
-                    <b>Phone:</b>  <?php echo $record->contact_number ?? ''; ?><br>
-                    <b>Email:</b> <?php echo $record->customer_email ?? ''; ?>
-                </td>
-                <td width="15%"><b>From</b></td>
-                <td width="35%">
-                    Al Adel Automatic Doors Tr. L.L.C.
-                </td>
-            </tr>
-            <tr>
-                <td><b>Project Location</b></td>
-                <td><?= $record->project_location ?></td>
-                <td><b>Subject</b></td>
-                <td><?= $record->subject ?></td>
-            </tr>
-        </table>
+<div class="main-content">
+    <h2 align="center">ANNUAL MAINTENANCE PROPOSAL</h2>
 
-        <p style="margin-top:10px; font-size:13px; text-align:justify;">
-            The maintenance contract for the above project as discussed, please read the following details:
+    <table width="100%" border="1" cellspacing="0" cellpadding="6" style="border-collapse:collapse; font-size:13px; margin-top:10px;">
+        <tr>
+            <td width="15%"><b>To</b></td>
+            <td width="35%">
+                <b><?php echo $record->customer_name ?? ''; ?></b><br>
+                <b>Contact Person:</b> <?php echo $record->cp_name ?? ''; ?><br>
+                <b>Phone:</b> <?php echo $record->cp_mobile ?? ''; ?><br>
+                <b>Email:</b> <?php echo $record->cp_email ?? ''; ?>
+            </td>
+            <td width="15%"><b>From</b></td>
+            <td width="35%">
+                Al Adel Automatic Doors Tr. L.L.C.
+            </td>
+        </tr>
+        <tr>
+            <td><b>Location</b></td>
+            <td><?php echo $record->project_location ?? ''; ?></td>
+            <td><b>Subject</b></td>
+            <td><?php echo $record->subject ?? ''; ?></td>
+        </tr>
+        <tr>
+            <td><b>Start Date</b></td>
+            <td>
+                <?php echo !empty($record->amc_start_date) ? date('d-M-Y', strtotime($record->amc_start_date)) : ''; ?>
+            </td>
+            <td><b>End Date</b></td>
+            <td>
+                <?php echo !empty($record->amc_end_date) ? date('d-M-Y', strtotime($record->amc_end_date)) : ''; ?>
+            </td>
+        </tr>
+    </table>
+
+    <p style="margin-top:10px; font-size:13px; text-align:justify;">
+        The maintenance contract for the above project as discussed, please read the following details:
+    </p>
+ <div class="keep-together">
+        <p class="no-break-after" style="margin-top:10px; font-size:14px; font-weight:bold; text-decoration:underline;">
+            CONRACT PERIOD:           
         </p>
-
-        <p style="margin-top:10px; font-size:14px; font-weight:bold; text-decoration:underline;">
-            SCOPE OF WORK
+        <p style="margin-top:5px; font-size:13px; text-align:justify;">
+            <?= nl2br($record->contract_period); ?>
+        </p>
+    </div>
+ <div class="keep-together">
+        <p class="no-break-after" style="margin-top:10px; font-size:14px; font-weight:bold; text-decoration:underline;">
+            CONTRACT VALUE:           
+        </p>
+        <p style="margin-top:5px; font-size:13px; text-align:justify;">
+            <?= nl2br($record->contract_value); ?>
+        </p>
+    </div>
+  <!-- <div class="keep-together">
+        <p class="no-break-after" style="margin-top:10px; font-size:14px; font-weight:bold; text-decoration:underline;">
+            TERMS OF PAYMENT:           
+        </p>
+        <p style="margin-top:5px; font-size:13px; text-align:justify;">
+            <?= nl2br($record->payment_term); ?>
+        </p>
+    </div> -->
+    <div class="keep-together">
+        <p class="no-break-after" style="margin-top:10px; font-size:14px; font-weight:bold; text-decoration:underline;">
+            SCOPE OF SERVICES:           
         </p>
         <p style="margin-top:5px; font-size:13px; text-align:justify;">
             <?= nl2br($record->scope_work); ?>
         </p>
-        <p style="margin-top:10px; font-size:14px; font-weight:bold; text-decoration:underline;">
+    </div>
+ <div class="keep-together">
+        <p class="no-break-after" style="margin-top:10px; font-size:14px; font-weight:bold; text-decoration:underline;">
+            TERMS AND CONDITIONS:           
+        </p>
+        <p style="margin-top:5px; font-size:13px; text-align:justify;">
+            <?= nl2br($record->termcond); ?>
+        </p>
+    </div>
+<div class="keep-together">
+        <p class="no-break-after" style="margin-top:10px; font-size:14px; font-weight:bold; text-decoration:underline;">
+            EXCLUSIONS:           
+        </p>
+        <p style="margin-top:5px; font-size:13px; text-align:justify;">
+            <?= nl2br($record->exclusions); ?>
+        </p>
+    </div>
+   
+
+    <div class="keep-together">
+        <p class="no-break-after" style="margin-top:10px; font-size:14px; font-weight:bold; text-decoration:underline;">
             NUMBER OF VISITS
         </p>
         <p style="margin-top:5px; font-size:13px; text-align:justify;">
             <?= nl2br($record->ppm_details); ?>
         </p>
+    </div>
 
-        <?php if(!empty($sla_records)) { ?>
-        SLA Response Time
-        <table width="100%" border="1" cellspacing="0" cellpadding="6" style="border-collapse:collapse; font-size:13px; margin-top:10px;">
+    <?php if(!empty($sla_records)) { ?>
+    <div class="keep-together" style="margin-top:15px;">
+        <b>SLA Response Time</b>
+        <table width="100%" border="1" cellspacing="0" cellpadding="6" style="border-collapse:collapse; font-size:13px; margin-top:5px;">
             <tr style="background:#2e6da4; color:#fff; font-weight:bold; text-align:center;">
                 <td>SERVICE ITEM</td>
                 <td>SERVICE AVAILABILITY</td>
@@ -225,22 +316,22 @@ $quotation_date = !empty($record->revision_date)
             </tr>
             <?php } ?>
         </table>
-        <?php if(!empty($sla_records)) { ?>
-            <div class="page-break"></div>
-        <?php } ?>
-        <?php } ?>
+    </div>
+    <?php } ?>
 
-        <br><br>
-        Our offer for Annual maintenance is as follows:
-        <br>
+    <br><br>
+    Our offer for Annual maintenance is as follows:
+    <br>
 
-        <p style="margin-top:15px; font-size:14px; font-weight:bold; text-decoration:underline;">
+    <div class="keep-together" style="margin-top:15px;">
+        <p class="no-break-after" style="font-size:14px; font-weight:bold; text-decoration:underline; margin-bottom:5px;">
             AMC COST DETAILS
         </p>
 
-        <table width="100%" border="1" cellspacing="0" cellpadding="6" style="border-collapse:collapse; font-size:13px; margin-top:10px;">
-            <tr style="background:#2e6da4; color:#fff; text-align:center; font-weight:bold;">
-                <th>SYSTEM</th>
+        <table width="100%" border="1" cellspacing="0" cellpadding="6" style="border-collapse:collapse; font-size:13px;">
+            <tr style="background:#2e6da4; color:#000; text-align:center; font-weight:bold;">
+                <th>DESCRIPTION</th>
+                  <th>BRAND</th>
                 <th>PRICE (AED)</th>
                 <th>QTY</th>
                 <?php
@@ -270,7 +361,8 @@ $quotation_date = !empty($record->revision_date)
                 $grand_total += $row_total;
             ?>
                 <tr>
-                    <td><?= $row2->product_id ?></td>
+                       <td><?= htmlspecialchars($row2->product_name ?? '') ?></td>
+                       <td><?= htmlspecialchars($row2->brand ?? '') ?></td>
                     <td style="text-align:right;"><?= number_format($rate,2) ?></td>
                     <td style="text-align:center;"><?= $qty ?></td>
                     <?php for ($p = 1; $p <= $period_count; $p++) { ?>
@@ -284,7 +376,7 @@ $quotation_date = !empty($record->revision_date)
                 </tr>
             <?php } ?>
             <tr style="font-weight:bold;">
-                <td colspan="<?= 3 + $period_count ?>" style="text-align:right;">Sub Total</td>
+                <td colspan="<?= 4 + $period_count ?>" style="text-align:right;">Sub Total</td>
                 <td style="text-align:right;">
                     <?= number_format($record->sub_total, 2) ?>
                 </td>
@@ -292,7 +384,7 @@ $quotation_date = !empty($record->revision_date)
 
             <?php if (!empty($record->amc_discount) && $record->amc_discount > 0) { ?>
             <tr style="font-weight:bold;">
-                <td colspan="<?= 3 + $period_count ?>" style="text-align:right;">AMC Discount</td>
+                <td colspan="<?= 4 + $period_count ?>" style="text-align:right;">AMC Discount</td>
                 <td style="text-align:right;">
                     - <?= number_format($record->amc_discount, 2) ?>
                 </td>
@@ -300,7 +392,7 @@ $quotation_date = !empty($record->revision_date)
             <?php } ?>
             <?php if (!empty($record->discount_amt) && $record->discount_amt > 0) { ?>
             <tr style="font-weight:bold;">
-                <td colspan="<?= 3 + $period_count ?>" style="text-align:right;">
+                <td colspan="<?= 4 + $period_count ?>" style="text-align:right;">
                     Discount (<?= $record->discount_percent ?>%)
                 </td>
                 <td style="text-align:right;">
@@ -310,7 +402,7 @@ $quotation_date = !empty($record->revision_date)
             <?php } ?>
             <?php if (!empty($record->vat_amt) && $record->vat_amt > 0) { ?>
             <tr style="font-weight:bold;">
-                <td colspan="<?= 3 + $period_count ?>" style="text-align:right;">
+                <td colspan="<?= 4 + $period_count ?>" style="text-align:right;">
                     VAT (<?= $record->vat_percent ?>%)
                 </td>
                 <td style="text-align:right;">
@@ -319,7 +411,7 @@ $quotation_date = !empty($record->revision_date)
             </tr>
             <?php } ?>
             <tr style="background:#f2f2f2; font-weight:bold;">
-                <td colspan="<?= 3 + $period_count ?>" style="text-align:right;">
+                <td colspan="<?= 4 + $period_count ?>" style="text-align:right;">
                     GRAND TOTAL
                 </td>
                 <td style="text-align:right;">
@@ -327,33 +419,81 @@ $quotation_date = !empty($record->revision_date)
                 </td>
             </tr>
         </table>
+    </div>
 
-        <p style="margin-top:10px; font-size:14px; font-weight:bold; text-decoration:underline;">
-            Payment Terms:
+    <!-- WRAPPED PAYMENT TERMS IN KEEP-TOGETHER CONTAINER -->
+    <div class="keep-together" style="margin-top:15px;">
+        <p class="no-break-after" style="font-size:14px; font-weight:bold; text-decoration:underline; margin:0 0 5px 0;">
+            TERMS OF PAYMENT:
         </p>
-        <p style="margin-top:5px; font-size:13px; text-align:justify;">
+        <p style="font-size:13px; text-align:justify; margin:0;">
             <?= nl2br($record->payment_term); ?>
         </p>
-        <br><br>
+    </div>
+
+    <!-- WRAPPED SIGNATURE & ACCEPTANCE IN KEEP-TOGETHER CONTAINERS -->
+    <div class="keep-together">
         <table width="100%" style="font-size:13px; margin-top:20px; border:none;">
             <tr>
-                <td style="width:50%; text-align:left;border:none;">
-                    _______________________<br><br>
-                    <b>Authorized Personnel Signature</b>
-                </td>
+                <td style="text-align:left; vertical-align:top; width:33%; padding-top:10px; padding-left:5px; padding-right:5px; border:none;">
+    <strong>Authorized Personnel Signature:</strong><br>
+
+   <?php if (!empty($prepared_signature)) { ?>
+
+    <?php
+    $signature_path = FCPATH . 'public/employee/' . $prepared_signature;
+
+    if (file_exists($signature_path)) {
+
+        $type = pathinfo($signature_path, PATHINFO_EXTENSION);
+        $image = file_get_contents($signature_path);
+        $signature_base64 = 'data:image/' . $type . ';base64,' . base64_encode($image);
+    ?>
+
+        <img src="<?= $signature_base64 ?>" 
+             style="height:70px; margin-top:5px;"><br>
+
+    <?php } ?>
+
+<?php } ?>
+
+<span><?= htmlspecialchars($prepared_by_name ?? '') ?></span>
+
+<?php if (!empty($prepared_by_contact)) { ?>
+    <br>
+    <span><?= htmlspecialchars($prepared_by_contact) ?></span>
+<?php } ?>
+
+    <span><?= htmlspecialchars($authorized_name ?? '') ?></span>
+</td>
+
+            <td colspan="3" style="text-align:center; padding-top:20px; border:none;">
+                            <?php if (!empty($branch_stamp)) { 
+                                $path = FCPATH . ltrim($branch_stamp, './');
+                                if (file_exists($path)) {
+                                    $type = pathinfo($path, PATHINFO_EXTENSION);
+                                    $data = file_get_contents($path);
+                                    $base64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
+                                ?>
+                                    <img src="<?= $base64 ?>" style="max-width:200px; max-height:140px;">
+                                <?php } ?>
+                            <?php } ?>
+                        </td>
+
                 <td style="width:50%; text-align:right;border:none;">
                     <b>Date:</b> <?= date('d-m-Y') ?>
                 </td>
             </tr>
         </table>
-        <br><br>
-        <p style="margin-top:10px; font-size:14px; font-weight:bold; text-decoration:underline;">
+    </div>
+
+    <div class="keep-together" style="margin-top:20px;">
+        <p class="no-break-after" style="font-size:14px; font-weight:bold; text-decoration:underline; margin-bottom:5px;">
             ACCEPTANCE
         </p>
         The above prices, Specifications and conditions are satisfactory and here by accepted. You are
         authorized to specify the work as specified. Payment will be made as outlined above.
 
-        <br><br>
         <table width="100%" style="font-size:13px; margin-top:20px; border:none;">
             <tr>
                 <td style="width:50%; text-align:left;border:none;">
@@ -366,59 +506,74 @@ $quotation_date = !empty($record->revision_date)
                 </td>
             </tr>
         </table>
+    </div>
 
-        <?php if(!empty($annexure_records)) { ?>
+    <?php if(!empty($annexure_records)) { ?>
         <div style="page-break-before: always;"></div>
+
         <h3 style="text-align:center; margin-bottom:20px;">
-            ANNEXURE
+            <?= !empty($annexure_records[0]->annexure_title) ? $annexure_records[0]->annexure_title : 'ANNEXURE'; ?>
         </h3>
 
         <table width="100%" border="1" cellspacing="0" cellpadding="6" style="border-collapse:collapse; font-size:13px;">
-            <tr style="background:#2e6da4; color:#fff; font-weight:bold; text-align:center;">
-                <td width="10%">Sl No</td>
-                <td width="35%">Type</td>
-                <td width="35%">Location</td>
-                <td width="20%">Quantity</td>
+            <?php if(!empty($annexure_records[0]->section_title)) { ?>
+            <tr>
+                <td colspan="4" style="background:#e9f2fb; color:#000; font-weight:bold; text-align:center;">
+                    <?= $annexure_records[0]->section_title ?>
+                </td>
             </tr>
+            <?php } ?>
+
+            <tr style="background:#2e6da4; color:#fff; font-weight:bold; text-align:center;">
+                <td width="10%">
+                    <?= !empty($annexure_records[0]->heading_slno) ? $annexure_records[0]->heading_slno : 'Sl No'; ?>
+                </td>
+                <td width="35%">
+                    <?= !empty($annexure_records[0]->heading_type) ? $annexure_records[0]->heading_type : 'Type'; ?>
+                </td>
+                <td width="35%">
+                    <?= !empty($annexure_records[0]->heading_location) ? $annexure_records[0]->heading_location : 'Location'; ?>
+                </td>
+                <td width="20%">
+                    <?= !empty($annexure_records[0]->heading_quantity) ? $annexure_records[0]->heading_quantity : 'Quantity'; ?>
+                </td>
+            </tr>
+
             <?php 
             $total_qty = 0;
+            $sl = 1;
             foreach($annexure_records as $a) { 
                 $total_qty += $a->quantity;
             ?>
             <tr>
-                <td style="text-align:center;">
-                    <?= $a->sl_no ?>
-                </td>
+                <td style="text-align:center;"><?= $sl++ ?></td>
                 <td><?= $a->type ?></td>
                 <td><?= $a->location ?></td>
-                <td style="text-align:center;">
-                    <?= $a->quantity ?>
-                </td>
+                <td style="text-align:center;"><?= $a->quantity ?></td>
             </tr>
             <?php } ?>
+
             <tr style="font-weight:bold; background:#f2f2f2;">
                 <td colspan="3" style="text-align:right;">
-                    Total Quantity
+                    <?= !empty($annexure_records[0]->heading_total) ? $annexure_records[0]->heading_total : 'Total Quantity'; ?>
                 </td>
-                <td style="text-align:center;">
-                    <?= $total_qty ?>
-                </td>
+                <td style="text-align:center;"><?= $total_qty ?></td>
             </tr>
         </table>
-        <?php } ?>
-    </div>
+    <?php } ?>
+</div>
 
-    <div class="footer">
-        <img src="<?= $footerPath ?>" alt="Footer">
-    </div>
+<div class="footer">
+    <img src="<?= $footerPath ?>" alt="Footer">
+</div>
 
-    <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        setTimeout(function () {
-            window.focus();
-            window.print();
-        }, 1200);
-    });
-    </script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    setTimeout(function () {
+        window.focus();
+        window.print();
+    }, 1200);
+});
+</script>
 </body>
 </html>

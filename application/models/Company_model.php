@@ -446,4 +446,9 @@ class Company_model extends CI_Model
             ->get_where('branch_bank_details', ['branch_id' => $branch_id])
             ->row();
     }
+
+  public function get_branch_by_id($id){
+        return $this->db->get_where('branch_master', ['branch_id' => $id])->row();  
+    }
+
 }

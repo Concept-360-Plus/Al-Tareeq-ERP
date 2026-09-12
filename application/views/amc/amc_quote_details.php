@@ -24,6 +24,12 @@ defined('BASEPATH') OR exit('No direct script access allowed');
         <input type="hidden" name="quote_id" value="<?php echo $row->quote_id; ?>">
         <input type="hidden" name="revision" value="<?php echo $row->revision; ?>">
         <input type="hidden" id="branch_id_ajax" value="<?php echo $row->branch_id; ?>">
+    <input type="hidden" id="quotation_amc_start_date" value="<?php echo $row->amc_start_date; ?>">
+<input type="hidden" id="quotation_amc_end_date" value="<?php echo $row->amc_end_date; ?>">
+<input type="hidden" 
+       id="quotation_annexure" 
+       value='<?php echo json_encode($annexure_records); ?>'>
+       
     </div>
 </div>
 

@@ -75,7 +75,9 @@
 
 					</select>
 				</td>
-				<td><a  onclick="deleteRow(this)"><span class="fa fa-trash"></span></a></td>
+				<td><a  onclick="deleteRow(this)"><span class="fa fa-trash"></span></a>
+				
+			</td>
 				</tr>
 				<?php } $i++;}?>
 			</tbody>
@@ -130,7 +132,12 @@
 						<option <?php if($d->ppmstatus=="Finished") echo 'selected'; ?> value="Finished">Finished</option>
 					</select>
 				</td>
-				<td><a href="" onclick="deleteRow(this)"><span class="fa fa-trash"></span></a></td>
+				<td>
+   <a href="" onclick="deleteRow(this)"><span class="fa fa-trash"></span></a>
+   <a href="<?php echo base_url('index.php/AMC/ppm_visit_checklist/'.$d->id); ?>" target="_blank">
+      <span class="fa fa-check-square"></span>
+   </a>
+</td>
 				</tr>
 				<?php } $i++;}?>
 			</tbody>
@@ -281,7 +288,7 @@ function addRow2() {
 
 	cell11.innerHTML = optionsHTML;				
 	cell12.innerHTML = '<a href="" onclick="deleteRow(this)"><span class="fa fa-trash"></span></a>';
-  	rowNum++; 
+	rowNum++; 
 }
 function deleteRow(btn) {
   var row = btn.parentNode.parentNode;
