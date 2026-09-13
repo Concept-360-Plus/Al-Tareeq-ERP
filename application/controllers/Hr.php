@@ -1499,16 +1499,32 @@ class Hr extends CI_Controller
 	function delete_resignation_application()
 	{
 		$user = $this->session->userdata('user_id');
+
 		if (!has_access($user, 'Hr/view_emp_resignation_list', 'D')) {
 			$data['title'] = 'Access Denied';
 			$data['main_content'] = 'errors/access_control.php';
 			$this->load->view('includes/template', $data);
+
 			return;
 		}
-		$id = $this->uri->segment('3');
+
+		$id = $this->uri->segment(3);
+
+		if (empty($id)) {
+			$this->session->set_flashdata('error', 'Invalid resignation ID.');
+			redirect('Hr/view_emp_resignation_list');
+			return;
+		}
+
 		$this->load->model('Hr_model');
-		$data['user_records'] = $this->Hr_model->delete_resignation_application($id);
-		$this->session->set_flashdata('success', 'Delete Record Successfully');
+		$deleted = $this->Hr_model->delete_resignation_application($id);
+
+		if ($deleted) {
+			$this->session->set_flashdata('success', 'Resignation deleted successfully.');
+		} else {
+			$this->session->set_flashdata('error', 'Unable to delete resignation.');
+		}
+
 		redirect('Hr/view_emp_resignation_list');
 	}
 

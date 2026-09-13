@@ -46,29 +46,15 @@
                     <label class="control-label col-md-3 col-sm-3 col-xs-12">Resignation Date:</label>
 
                     <div class="col-md-6 col-sm-6 col-xs-12">
-
-                        <input type="date"
-                            class="form-control"
-                            name="resignation_date"
-                            value="<?= $row->resignation_date ?? ''; ?>">
-
-
+                        <input type="date" class="form-control" name="resignation_date" value="<?= $row->resignation_date ?? ''; ?>">
                     </div>
                 </div>
-
 
                 <!-- Last Working Date -->
                 <div class="form-group row">
                     <label class="control-label col-md-3 col-sm-3 col-xs-12">Effective Last Working Date:</label>
-
                     <div class="col-md-6 col-sm-6 col-xs-12">
-
-
-                        <input type="date"
-                            class="form-control"
-                            name="last_working_date"
-                            value="<?= $row->last_working_date ?? ''; ?>">
-
+                        <input type="date" class="form-control" name="last_working_date" value="<?= $row->last_working_date ?? ''; ?>">
                     </div>
                 </div>
 
@@ -99,7 +85,7 @@
                         <table class="table table-bordered table-hover" id="tab_logic">
                             <thead>
                                 <tr>
-                                    <th>#</th>
+                                    <th>Sl. No</th>
                                     <th>File</th>
                                     <th>Document Type</th>
                                     <th>Action</th>
@@ -323,23 +309,6 @@
     document.getElementById('start_date').addEventListener('input', calculate_total_days);
     document.getElementById('end_date').addEventListener('input', calculate_total_days);
 
-    function delete_doc(doc_id) {
-
-        if (confirm("Are you sure you want to delete this file?")) {
-
-            $.ajax({
-                url: "<?php echo base_url('index.php/Hr/delete_resignation_document'); ?>",
-                type: "POST",
-                data: {
-                    doc_id: doc_id
-                },
-                success: function(res) {
-                    location.reload();
-                }
-            });
-
-        }
-    }
 
     function delete_doc(doc_id) {
         if (!confirm("Are you sure you want to delete this file?")) {
