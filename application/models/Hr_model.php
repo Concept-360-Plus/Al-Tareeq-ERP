@@ -1214,16 +1214,34 @@ class Hr_model extends CI_Model
 		return true;
 	}
 
+	// function get_employee_resignation_list()
+	// {
+	// 	$this->db->select('r.*, u.employee_name');
+	// 	$this->db->from('employee_resignation r');
+	// 	$this->db->join('employee_master u', 'r.employee_id = u.employee_id', 'inner');
+	// 	$this->db->order_by('r.resignation_date', 'desc');
+	// 	$query = $this->db->get();
+	// 	return $query->result();
+	// }
+
 	function get_employee_resignation_list()
 	{
-		$this->db->select('r.*, u.employee_name as name');
+		$this->db->select('r.*, u.employee_name');
 		$this->db->from('employee_resignation r');
-		$this->db->join('employee_master u', 'r.employee_id = u.employee_id', 'inner');
-		$this->db->order_by('r.resignation_date', 'desc');
+		$this->db->join(
+			'employee_master u',
+			'r.employee_id = u.employee_id',
+			'inner'
+		);
+		$this->db->order_by(
+			'r.resignation_date',
+			'desc'
+		);
+
 		$query = $this->db->get();
+
 		return $query->result();
 	}
-
 
 	function get_employee_document_doc_id($id)
 	{
@@ -1294,10 +1312,36 @@ class Hr_model extends CI_Model
 		return $this->db->get()->row();
 	}
 
-	function delete_resignation_application($id)
+	public function delete_resignation_application($id)
 	{
-		$this->db->where('resig_id', $id);
-		$this->db->delete('employee_resignation');
+		if (empty($id)) {
+			return false;
+		}
+
+		$this->db->trans_start();
+
+		// Get documents
+		$documents = $this->db->where('resig_id', $id)->get('employee_resignation_documents')->result();
+
+		// Delete physical files
+		foreach ($documents as $document) {
+
+			if (!empty($document->document_path)) {
+				$path = FCPATH . 'public/uploaded_documents/' . $document->document_path;
+				if (file_exists($path)) {
+					unlink($path);
+				}
+			}
+		}
+
+		// Delete document records
+		$this->db->where('resig_id', $id)->delete('employee_resignation_documents');
+
+		// Delete resignation
+		$this->db->where('resig_id', $id)->delete('employee_resignation');
+		$this->db->trans_complete();
+
+		return $this->db->trans_status();
 	}
 
 	public function delete_resignation_document($doc_id)
