@@ -160,7 +160,7 @@ class Hr extends CI_Controller
 			$user_data = [
 				'user_name'     => $post['employee_name'],
 				'user_login'    => $this->input->post('user_login'),
-				'user_password' => $this->input->post('user_password'),
+				'user_password' => password_hash($this->input->post('user_password'), PASSWORD_DEFAULT),
 				'gender'        => $post['gender'],
 				'dob'           => $post['birth_date'],
 				'employee_id'   => $insert_id,
@@ -989,8 +989,10 @@ class Hr extends CI_Controller
 		$this->load->model('Hr_model');
 		$this->load->model('Users_model');
 		$data['title'] = "Create Offer Letter";
+		$data['branch_list'] = $this->Setup_model->get_all_branches();
 		$data['user_records'] = $this->Users_model->get_user_list();
 		$data['desig_list'] = $this->Setup_model->get_designation_list();
+		$data['department_list'] = $this->Setup_model->get_active_department_list();
 		$data['main_content'] = 'hr/offer_letter_add.php';
 		$this->load->view('includes/template', $data);
 	}
