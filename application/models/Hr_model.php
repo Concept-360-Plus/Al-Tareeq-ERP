@@ -2021,12 +2021,18 @@ class Hr_model extends CI_Model
 		$data = [
 			'offer_code'       => $code,
 			'user_name'        => $this->input->post('user_name'),
-			'desig_id'         => $this->input->post('desig_id'),
+			'designation_id'   => $this->input->post('designation_id'),
+			'department_id'    => $this->input->post('department_id'),
+			'branch_id'        => $this->input->post('branch_id'),
 			'gender'           => $this->input->post('gender'),
 			'offer_date'       => $this->input->post('offer_date'),
 			'manager_id'       => $this->input->post('manager_id'),
 			'employee_address' => $this->input->post('employee_address'),
 			'office_address'   => $this->input->post('office_address'),
+			'offer_body'       => $this->input->post('offer_body'),
+			'incentive_structure' => $this->input->post('incentive_structure'),
+			'other_benefits'   => $this->input->post('other_benefits'),
+			'annexure_b'       => $this->input->post('annexure_b'),
 			'created_by'       => $this->session->userdata('user_id'),
 			'created_at'       => date("Y-m-d H:i:s")
 		];
@@ -2093,15 +2099,37 @@ class Hr_model extends CI_Model
 
 	function get_all_offer_letter_details()
 	{
-		$query = $this->db->query("
-		SELECT ol.*,dm.designation_name FROM employee_offer_letter AS ol LEFT JOIN designation_master AS dm ON dm.did = ol.desig_id ORDER BY ol.created_at DESC");
-		return $query->result();
+		$this->db->select('
+        ol.*,
+        em.employee_name,
+        dm.designation_name
+    ');
+
+		$this->db->from('employee_offer_letter AS ol');
+
+		$this->db->join(
+			'designation_master AS dm',
+			'dm.id = ol.designation_id',
+			'LEFT'
+		);
+
+		$this->db->order_by('ol.created_at', 'DESC');
+
+		return $this->db->get()->result();
 	}
 
 	function get_offer_letter_by_id($id)
 	{
-		$query = $this->db->query("SELECT ol.*,u.user_name AS manager_name,u.middle_name,u.last_name,u.user_code,u.address,ds.designation_name FROM employee_offer_letter AS ol LEFT JOIN users AS u ON ol.manager_id = u.user_id LEFT JOIN designation_master AS ds ON ds.did = ol.desig_id  WHERE offer_id='$id'");
-		return $query->row();
+		$this->db->select('ol.*,u.user_name AS manager_name,u.middle_name,u.last_name,u.user_code,u.address,ds.designation_name,d.dept_name AS department_name,b.branch_name');
+
+		$this->db->from('employee_offer_letter AS ol');
+		$this->db->join('users AS u','ol.manager_id = u.user_id','LEFT');
+		$this->db->join('designation_master AS ds','ds.id = ol.designation_id','LEFT');
+		$this->db->join('department_master AS d','d.dept_id = ol.department_id','LEFT');
+		$this->db->join('branch_master AS b','b.branch_id = ol.branch_id','LEFT');
+		$this->db->where('ol.offer_id', $id);
+
+		return $this->db->get()->row();
 	}
 
 	function get_offer_salary_by_id($id)

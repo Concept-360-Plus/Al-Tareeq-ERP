@@ -995,21 +995,23 @@ class Company extends CI_Controller
 
     public function save_user()
     {
+        $password = $this->input->post('user_password');
+
         $data = [
-            'user_name'         => $this->input->post('user_name'),
-            'user_login'             => $this->input->post('user_login'),
-            'user_password'                => $this->input->post('user_password'),
-            'gender'                => $this->input->post('gender'),
+            'user_name'      => $this->input->post('user_name'),
+            'user_login'     => $this->input->post('user_login'),
+            'user_password'  => password_hash($password, PASSWORD_DEFAULT),
+            'gender'         => $this->input->post('gender'),
             'dob'            => $this->input->post('dob'),
-            'active'                => 1
+            'active'         => 1
         ];
 
         $insert_status = $this->Company_model->insert_user($data);
 
         if ($insert_status) {
-            $this->session->set_flashdata('success', 'Employee updated successfully.');
+            $this->session->set_flashdata('success', 'User created successfully.');
         } else {
-            $this->session->set_flashdata('error', 'an error occured while adding new user .');
+            $this->session->set_flashdata('error', 'An error occurred while adding new user.');
         }
         redirect('Company/list_users');
     }
@@ -1047,19 +1049,31 @@ class Company extends CI_Controller
 
         if (!empty($new_password)) {
 
-            // Check length
-            if (strlen($new_password) < 6) {  // minimum 6 characters
-                $this->session->set_flashdata('error', 'Password must be at least 6 characters long.');
+            if (strlen($new_password) < 6) {
+                $this->session->set_flashdata(
+                    'error',
+                    'Password must be at least 6 characters long.'
+                );
+
                 redirect('Company/edit_user/' . $user_id);
+                return;
             }
 
             if ($new_password !== $confirm_password) {
-                $this->session->set_flashdata('error', 'Password and Confirm Password do not match');
+                $this->session->set_flashdata(
+                    'error',
+                    'Password and Confirm Password do not match'
+                );
+
                 redirect('Company/edit_user/' . $user_id);
+                return;
             }
 
-            // Secure password hash
-            $data['user_password'] = $new_password;
+            // Hash the new password before saving
+            $data['user_password'] = password_hash(
+                $new_password,
+                PASSWORD_DEFAULT
+            );
         }
 
         // Update the data using model
@@ -1180,5 +1194,4 @@ class Company extends CI_Controller
         }
         return $this->form_validation->run();
     }
-
 }
