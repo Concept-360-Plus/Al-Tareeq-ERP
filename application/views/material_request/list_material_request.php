@@ -1,4 +1,7 @@
 <style>
+    .dt-buttons{
+     padding-left: 18px !important;
+}
     th {
         background: #f5f5f5;
         font-weight: bold;
@@ -46,6 +49,7 @@
     }
     #project_filter{
         margin-left:-2px;
+        margin-bottom:10px;
     }
 </style>
 <link rel="stylesheet" href="<?= base_url('assets/datatables/buttons.dataTables.min.css');?>">
@@ -58,7 +62,7 @@
 <div class="x_panel">
     <div class="col-md-4 left">
         <label>Project</label>
-        <select id="project_filter" class="form-control">
+        <select id="project_filter" class="form-control select2" tabindex="1">
             <option value="">All Projects</option>
             <?php foreach($project_list as $project){ ?>
                 <option value="<?= $project->project_name; ?>" data-id='<?=$project->project_id ?>'>
@@ -133,12 +137,13 @@
     </td> -->
     <td>
     <a href="<?= base_url('index.php/Project/edit_material_request/'.$mr['mr_id']) ?>" 
-       class="btn btn-info btn-sm">Edit</a>
+       title="Edit">
+       <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
+    </a>
     
     <a href="<?= base_url('index.php/Project/delete_material_request/'.$mr['mr_id']) ?>" 
-       class="btn btn-danger btn-sm" 
-       onclick="return confirm('Are you sure you want to delete this Material Request?');">
-       Delete
+       title="Delete"  onclick="return confirm('Are you sure you want to delete this Material Request?');">
+       <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
     </a>
 </td>
 
@@ -166,14 +171,16 @@
         var table=$('#datatable-responsive1').DataTable({
             order:[[1,'desc']],
             dom:'lBfrtip',
-            buttons:[
+           buttons:[
                 {
                     extend:'excelHtml5',
-                    title:'Project Progress Report'
+                    title:'Material Request Report',
+                    className: 'btn-sm'
                 },
                 {
                     extend:'print',
-                    title:'Project Progress Report'
+                    title:'Material Request Report',
+                    className: 'btn-sm'
                 }
             ],
             responsive: true
@@ -196,6 +203,13 @@
                 .val(project_name)
                 .trigger('change');
         }
+
+    $('.select2').select2({
+        placeholder: '-- Select Project --',
+        allowClear: true,
+        width: '100%'
+    });
     }); 
+    
 
 </script>

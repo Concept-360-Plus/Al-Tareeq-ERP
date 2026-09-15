@@ -331,7 +331,7 @@ public function get_project_items_list($project_id)
 }
 
 
-
+/*
 public function delete_project($project_id)
 {
     // Optional: Delete related items or technicians if needed
@@ -341,6 +341,65 @@ public function delete_project($project_id)
     $this->db->delete('project_technicians');
     $this->db->where('project_id', $project_id);
     return $this->db->delete('project_master'); // Replace 'projects' with your actual table name
+}*/
+public function delete_project($project_id)
+{
+    $project_id = (int) $project_id;
+
+    if ($project_id <= 0) {
+        return [
+            'status'  => false,
+            'message' => 'Invalid project.'
+        ];
+    }
+
+    // Check Job Order
+    $job_order_count = $this->db
+        ->where('fk_project_id', $project_id)
+        ->count_all_results('job_order');
+
+    if ($job_order_count > 0) {
+        return [
+            'status'  => false,
+            'message' => 'Project cannot be deleted because it is already used in Job Order.'
+        ];
+    }
+
+    $this->db->trans_start();
+
+    $this->db
+        ->where('project_id', $project_id)
+        ->delete('project_task_items');
+
+    $this->db
+        ->where('project_id', $project_id)
+        ->delete('project_task');
+
+    $this->db
+        ->where('project_id', $project_id)
+        ->delete('project_items');
+
+    $this->db
+        ->where('project_id', $project_id)
+        ->delete('project_technicians');
+
+    $this->db
+        ->where('project_id', $project_id)
+        ->delete('project_master');
+
+    $this->db->trans_complete();
+
+    if ($this->db->trans_status() === FALSE) {
+        return [
+            'status'  => false,
+            'message' => 'Project deletion failed.'
+        ];
+    }
+
+    return [
+        'status'  => true,
+        'message' => 'Project deleted successfully.'
+    ];
 }
 
     
@@ -782,6 +841,16 @@ public function get_last_progress_log($project_id)
         $this->db->join('item_master im', 'im.product_id = qp.prd_id', 'left');
         $this->db->join('unit_master u', 'u.unit_id = qp.unit_id', 'left');
         $this->db->where('qp.qtn_id', $q_id);
+        return $this->db->get()->result_array();
+    }
+
+    public function get_all_products_by_sales($q_id) {
+   
+        $this->db->select('qp.quantity as qty,qp.product_id as prd_id, qp.unit_price, im.product_name, u.unit_abbr');
+        $this->db->from('sales_order_products qp');
+        $this->db->join('item_master im', 'im.product_id = qp.product_id', 'left');
+        $this->db->join('unit_master u', 'u.unit_id = qp.unit_id', 'left');
+        $this->db->where('qp.so_id', $q_id);
         return $this->db->get()->result_array();
     }
 
@@ -1581,7 +1650,7 @@ public function get_last_progress_log($project_id)
 		$id = $this->session->userdata('product_id');
 
 
-		$query = $this->db->query("SELECT pw.*,pm.project_id,pm.project_name,pm.project_code FROM project_work_order pw JOIN project_master pm ON pw.project_id = pm.project_id ORDER BY pw.work_order_date DESC");		
+		$query = $this->db->query("SELECT pw.*,pm.project_id,pm.project_name,pm.project_code FROM project_work_order pw JOIN project_master pm ON pw.project_id = pm.project_id ORDER BY pw.work_id DESC");		
 		return $query->result();
 	}
     function transaction_work_order($id)
@@ -2067,6 +2136,10 @@ if(isset($_POST['wo_plan']) && !empty($_POST['wo_plan'])) {
 		$ci->load->helper('log');
 		$log_msg = add_log_entry($user_se_id, 1, $page_name[1], 'project_work_order', 'work_id', $insert_id);
 	}
+
+
+
+
 	return $insert_id;
 }
 
@@ -2904,6 +2977,10 @@ if(isset($_POST['wo_plan']) && !empty($_POST['wo_plan'])) {
                 pm.start_date,
                 pm.end_date,
                 
+                pm.status,pm.customer_name,
+               
+
+                cm.customer_name as ustomer_name1,
                 pm.status,
                
 
@@ -3435,5 +3512,257 @@ if(isset($_POST['wo_plan']) && !empty($_POST['wo_plan'])) {
 
         return $this->db->get()->result_array();
     }
+
+    public function get_stock_transfer_for_print($stock_id)
+{
+    return $this->db
+        ->select('
+            st.*,
+
+            jo.job_order_no,
+            jo.order_date,
+            jo.order_no,
+            jo.rep_name,
+            jo.contact_person,
+            jo.remarks AS job_order_remarks,
+            jo.start_date,
+            jo.finish_date,
+            jo.status AS job_order_status,
+
+            jc.job_completion_no,
+            jc.completion_date,
+            jc.remarks AS job_completion_remarks
+
+        ')
+        ->from('stock_transfers st')
+
+        ->join(
+            'job_order jo',
+            'jo.job_order_id = st.job_order_id',
+            'left'
+        )
+
+        ->join(
+            'job_completion jc',
+            'jc.job_completion_id = st.job_completion_id',
+            'left'
+        )
+
+        ->where(
+            'st.stock_transfer_id',
+            $stock_id
+        )
+
+        ->get()
+        ->row();
+}
+
+public function get_job_completion_for_stock_print(
+    $job_completion_id
+) {
+    return $this->db
+        ->select('
+            jc.*,
+            jo.job_order_no,
+            jo.fk_project_id,
+            jo.order_date,
+            jo.order_no,
+            jo.rep_name,
+            jo.contact_person
+        ')
+        ->from('job_completion jc')
+
+        ->join(
+            'job_order jo',
+            'jo.job_order_id = jc.job_order_id',
+            'left'
+        )
+
+        ->where(
+            'jc.job_completion_id',
+            $job_completion_id
+        )
+
+        ->get()
+        ->row();
+}
+public function get_job_completion_items_for_stock_print(
+    $job_completion_id
+) {
+    return $this->db
+        ->select('
+            jci.*,
+
+            joi.item_master_id,
+            joi.item_code,
+            joi.item_description,
+            joi.unit,
+
+            im.product_name,
+            im.product_code
+
+        ')
+        ->from('job_completion_items jci')
+
+        ->join(
+            'job_order_items joi',
+            'joi.job_order_item_id = jci.job_order_item_id',
+            'left'
+        )
+
+        ->join(
+            'item_master im',
+            'im.product_id = joi.item_master_id',
+            'left'
+        )
+
+        ->where(
+            'jci.job_completion_id',
+            $job_completion_id
+        )
+
+        ->order_by(
+            'jci.job_completion_item_id',
+            'ASC'
+        )
+
+        ->get()
+        ->result();
+}
+public function get_job_order_items_for_stock_print(
+    $job_order_id
+) {
+    $items =
+        $this->db
+            ->select('
+                joi.*,
+
+                im.product_name,
+                im.product_code
+
+            ')
+            ->from('job_order_items joi')
+
+            ->join(
+                'item_master im',
+                'im.product_id = joi.item_master_id',
+                'left'
+            )
+
+            ->where(
+                'joi.job_order_id',
+                $job_order_id
+            )
+
+            ->order_by(
+                'joi.job_order_item_id',
+                'ASC'
+            )
+
+            ->get()
+            ->result();
+
+
+    /*
+     * Load BOM materials
+     */
+    foreach ($items as &$item) {
+
+        $item->materials =
+            $this->db
+                ->select('
+                    job_order_material_id,
+                    material_id,
+                    material_code,
+                    material_name,
+                    quantity_required,
+                    unit,
+                    cost,
+                    source
+                ')
+                ->from('job_order_item_materials')
+                ->where(
+                    'job_order_item_id',
+                    $item->job_order_item_id
+                )
+                ->order_by(
+                    'job_order_material_id',
+                    'ASC'
+                )
+                ->get()
+                ->result();
+    }
+
+    unset($item);
+
+    return $items;
+}
+public function get_material_requests_for_stock_print(
+    $job_order_id
+) {
+    return $this->db
+        ->select('
+            pmr.*
+        ')
+        ->from(
+            'production_material_requests pmr'
+        )
+
+        ->where(
+            'pmr.job_order_id',
+            $job_order_id
+        )
+
+        ->order_by(
+            'pmr.production_material_request_id',
+            'ASC'
+        )
+
+        ->get()
+        ->result();
+}
+public function get_material_request_items_for_stock_print(
+    $material_request_id
+) {
+    return $this->db
+        ->select('
+            pmri.*,
+
+            joi.item_code,
+            joi.item_description,
+
+            im.product_name,
+            im.product_code
+
+        ')
+        ->from(
+            'production_material_request_items pmri'
+        )
+
+        ->join(
+            'job_order_items joi',
+            'joi.job_order_item_id = pmri.job_order_item_id',
+            'left'
+        )
+
+        ->join(
+            'item_master im',
+            'im.product_id = pmri.material_id',
+            'left'
+        )
+
+        ->where(
+            'pmri.production_material_request_id',
+            $material_request_id
+        )
+
+        ->order_by(
+            'pmri.production_material_request_item_id',
+            'ASC'
+        )
+
+        ->get()
+        ->result();
+}
 
 }

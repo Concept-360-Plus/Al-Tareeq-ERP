@@ -20,9 +20,9 @@
           <ul class="nav nav-tabs">
             <li class="active"><a data-toggle="tab" href="#items">Items</a></li>
             <li><a data-toggle="tab" href="#materials">Materials</a></li>
-            <li><a data-toggle="tab" href="#resources">Resources</a></li>
+            <!--<li><a data-toggle="tab" href="#resources">Resources</a></li>
+            <li><a data-toggle="tab" href="#team">Team</a></li>-->
             <li><a data-toggle="tab" href="#tasks">Tasks</a></li>
-            <li><a data-toggle="tab" href="#team">Team</a></li>
             <li><a data-toggle="tab" href="#workorders">Work Orders</a></li>
             <!--<li><a data-toggle="tab" href="#timeline">Timeline</a></li>-->
           </ul>
@@ -62,7 +62,7 @@
               </table>
             </div>
 
-            <div id="resources" class="tab-pane fade">
+            <!--<div id="resources" class="tab-pane fade">
               <div class="text-right" style="margin-bottom:10px;">
                   <a href="<?= base_url('index.php/Project/project_resource_planning/'.$project['project_id']); ?>"
                     class="btn btn-primary btn-sm">
@@ -75,19 +75,19 @@
                 <tr><td><?= $r['machine_name'] ?? '' ?></td><td><?= $r['employee_name'] ?? '' ?></td></tr>
                 <?php endforeach; endif; ?>
               </table>
-            </div>
+            </div>-->
 
             <div id="tasks" class="tab-pane fade">
               <div class="text-right" style="margin-bottom:10px;">
-                  <a href="<?= base_url('index.php/Project/list_task/'.$project['project_id']); ?>"
+                  <!--<a href="<?= base_url('index.php/Project/list_task/'.$project['project_id']); ?>"
                     class="btn btn-primary btn-sm">
                       <i class="fa fa-external-link"></i> Open Task Planning
-                  </a>
+                  </a>-->
               </div>
               <table class="table table-bordered">
-                <tr><th>Task</th><th>Status</th></tr>
+                <tr><th>Task</th><th>Milestone</th><th>Designation</th><th>Employee</th><th>Status</th></tr>
                 <?php if(!empty($tasks)): foreach($tasks as $r): ?>
-                <tr><td><?= $r['task_name'] ?? '' ?></td><td><?= $r['status'] ?? '' ?></td></tr>
+                <tr><td><?= $r['task_name'] ?? '' ?></td><td><?= $r['milestone_name'] ?? '' ?></td><td><?= $r['designation_name'] ?? '' ?></td><td><?= $r['employee_name'] ?? '' ?></td><td><?= $r['status'] ?? '' ?></td></tr>
                 <?php endforeach; endif; ?>
               </table>
             </div>
@@ -109,16 +109,117 @@
 
             <div id="workorders" class="tab-pane fade">
               <div class="text-right" style="margin-bottom:10px;">
-                  <a href="<?= base_url('index.php/Project/material_planning/'.$project['project_id']); ?>"
+                  <!--<a href="<?= base_url('index.php/Project/material_planning/'.$project['project_id']); ?>"
                     class="btn btn-primary btn-sm">
                       <i class="fa fa-external-link"></i> Open  Planning
-                  </a>
+                  </a>-->
               </div>
               <table class="table table-bordered">
-                <tr><th>WO No</th><th>Status</th></tr>
-                <?php if(!empty($work_orders)): foreach($work_orders as $r): ?>
-                <tr><td><?= $r['work_order_code'] ?? '' ?></td><td><?= $r['status'] ?? '' ?></td></tr>
-                <?php endforeach; endif; ?>
+                 <tr> <th width="5%">#</th>
+                            <th>WO Code</th>
+                            <th>Work Order Date</th>
+                            <th>Status</th>
+                            <!--<th class="text-right">Fabrication Man-Hours</th>
+                            <th class="text-right">Installation Man-Hours</th>
+                            <th class="text-center">Total Items</th>-->
+                        </tr>
+                <?php if(!empty($work_orders)){ foreach($work_orders as $r): ?>
+                
+                    <?php
+                    $i = 1;
+
+                    foreach ($work_orders as $wo) {
+                    ?>
+
+                        <tr>
+
+                            <td>
+                                <?= $i++; ?>
+                            </td>
+
+                            <td>
+                                <strong>
+                                    <?= htmlspecialchars($wo->wo_code); ?>
+                                </strong>
+                            </td>
+
+                            <td>
+                                <?php
+                                if (!empty($wo->work_order_date)) {
+                                    echo date(
+                                        'd-m-Y',
+                                        strtotime($wo->work_order_date)
+                                    );
+                                } else {
+                                    echo '-';
+                                }
+                                ?>
+                            </td>
+
+                            <td>
+                                <?php
+
+                                if ($wo->status == 'Completed') {
+
+                                    echo '<span class="label label-success">
+                                            Completed
+                                          </span>';
+
+                                } elseif ($wo->status == 'In Progress') {
+
+                                    echo '<span class="label label-primary">
+                                            In Progress
+                                          </span>';
+
+                                } elseif ($wo->status == 'Pending') {
+
+                                    echo '<span class="label label-warning">
+                                            Pending
+                                          </span>';
+
+                                } elseif ($wo->status == 'Cancelled') {
+
+                                    echo '<span class="label label-danger">
+                                            Cancelled
+                                          </span>';
+
+                                } else {
+
+                                    echo '<span class="label label-default">'
+                                        . htmlspecialchars($wo->status) .
+                                        '</span>';
+                                }
+
+                                ?>
+                            </td>
+
+                            <!--<td class="text-right">
+                                <?= number_format(
+                                    (float)$wo->fabrication_manhr,
+                                    2
+                                ); ?>
+                            </td>
+
+                            <td class="text-right">
+                                <?= number_format(
+                                    (float)$wo->installation_manhr,
+                                    2
+                                ); ?>
+                            </td>
+
+                            <td class="text-center">
+                                <span class="label label-info">
+                                    <?= (int)$wo->total_items; ?>
+                                </span>
+                            </td>-->
+
+                        </tr>
+
+                    <?php } ?>
+
+                <?php endforeach; } else{ ?>
+                <tr> <td colspan="7">No work orders Found</td></tr>
+                <?php } ?>
               </table>
             </div>
 

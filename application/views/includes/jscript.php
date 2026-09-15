@@ -7,7 +7,22 @@
     <!-- NProgress -->
     <script src="<?php echo base_url()."vendors/nprogress/nprogress.js";?>"></script>
     <!-- Chart.js -->
-    <script src="<?php echo base_url()."vendors/Chart.js/dist/Chart.min.js";?>"></script>
+      <!-- Chart.js -->
+     <?php
+     
+      $current_controller = $this->router->fetch_class();
+      $current_method     = $this->router->fetch_method();
+      //if($current_controller='Production'&& $current_method='production_dashboard'){ 
+      if($current_controller='Production'){ 
+      ?>
+     
+      <?php
+      }else{ ?>
+      <script src="<?php echo base_url()."vendors/Chart.js/dist/Chart.min.js";?>"></script>
+      <?php
+      }
+     ?>
+    
     <!-- gauge.js -->
     <script src="<?php echo base_url()."vendors/gauge.js/dist/gauge.min.js";?>"></script>
     <!-- bootstrap-progressbar -->

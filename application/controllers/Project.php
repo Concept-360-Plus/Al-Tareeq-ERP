@@ -131,9 +131,10 @@ public function fetch_so_details()
 
 
 public function save_project()
-{
+{   
     $this->load->model('Project_model');
     $project_id = $this->input->post('project_id');
+    $user_id = $this->session->userdata('user_id');
     $projectData = [
         'so_id'            => $this->input->post('so_id'),
         //'fk_enq_id'        => $this->input->post('e_id'),
@@ -156,6 +157,9 @@ public function save_project()
         'loa_received'     => $this->input->post('loa_received'),
         'loa_date'         => $this->input->post('loa_date'),
         'subject'          => $this->input->post('subject'),
+        'bit_quo'          => $this->input->post('bit_quo'),
+        'created_by'       => $user_id
+        
         'bit_quo'          => $this->input->post('bit_quo')
     ];
 
@@ -182,6 +186,385 @@ if ($project_id) {
 
     $project_id = $this->Project_model->insert_project($projectData);
 
+    /* =========================================================
+ * SAVE PROJECT TASKS
+ * ========================================================= */
+
+//$task_ids       = $this->input->post('task_id');
+//$task_categories = $this->input->post('task_category');
+$task_names     = $this->input->post('task_name');
+$milestones     = $this->input->post('milestone');
+$designations   = $this->input->post('designation_id');
+$employees      = $this->input->post('employee_id');
+$priorities     = $this->input->post('priority');
+$start_dates    = $this->input->post('start_date');
+$end_dates      = $this->input->post('end_date');
+$statuses       = $this->input->post('status');
+$descriptions   = $this->input->post('task_description');
+
+$submittedIds = array();
+
+/*
+ * Make sure task_name is an array
+ */
+if (!empty($task_names) && is_array($task_names)) {
+    
+    foreach ($task_names as $i => $task_name) {
+
+        $task_name = trim($task_name);
+
+        /*
+         * Ignore empty task rows
+         */
+        if ($task_name === '') {
+            continue;
+        }
+
+        /*
+         * Dates
+         */
+        $start_date = !empty($start_dates[$i])
+            ? $this->normalize_date($start_dates[$i])
+            : null;
+
+        $end_date = !empty($end_dates[$i])
+            ? $this->normalize_date($end_dates[$i])
+            : null;
+
+
+        /*
+         * Task data
+         */
+        $taskData = array(
+            'project_id'       => $project_id,
+            'task_name'        => $task_name,
+            'designation_id'   => !empty($designations[$i])
+                                    ? $designations[$i]
+                                    : null,
+            'employee_id'      => !empty($employees[$i])
+                                    ? $employees[$i]
+                                    : null,
+            'priority'         => !empty($priorities[$i])
+                                    ? $priorities[$i]
+                                    : 'Medium',
+            'start_date'       => $start_date,
+            'end_date'         => $end_date,
+            'status'           => !empty($statuses[$i])
+                                    ? $statuses[$i]
+                                    : 'not_started'
+        );
+
+
+        /*
+         * Category
+         *
+         * Only add this if your project_task_items table
+         * contains task_category_id.
+         */
+        /*if (isset($task_categories[$i])) {
+            $taskData['task_category_id'] =
+                !empty($task_categories[$i])
+                    ? $task_categories[$i]
+                    : null;
+        }*/
+
+
+        /*
+         * Milestone
+         *
+         * Only add this if your table contains milestone_id.
+         */
+        if (isset($milestones[$i])) {
+            $taskData['milestone_id'] =
+                !empty($milestones[$i])
+                    ? $milestones[$i]
+                    : null;
+        }
+
+
+        /*
+         * Description
+         *
+         * Only add if your table has task_description.
+         */
+        if (isset($descriptions[$i])) {
+            $taskData['task_description'] =
+                $descriptions[$i]? $descriptions[$i] : null;
+        }
+
+
+        /*
+         * UPDATE existing task
+         */
+        if (
+            !empty($task_ids[$i]) &&
+            is_numeric($task_ids[$i]) &&
+            (int)$task_ids[$i] > 0
+        ) {
+
+            $task_id = (int)$task_ids[$i];
+
+            $this->Project_model->update_project_task(
+                $task_id,
+                $taskData
+            );
+
+            $submittedIds[] = $task_id;
+
+        } else {
+
+            /*
+             * INSERT new task
+             */
+            $new_task_id =
+                $this->Project_model->insert_project_task(
+                    $taskData
+                );
+            
+            if ($new_task_id) {
+                $submittedIds[] = $new_task_id;
+            }
+        }
+    }
+}
+
+
+/*
+ * Delete tasks removed from the screen
+ *
+ * IMPORTANT:
+ * Only do this when task_ids are actually being
+ * submitted. Otherwise, during a new project creation
+ * it can cause unexpected deletion behaviour.
+ */
+if ($project_id && !empty($submittedIds)) {
+
+    $this->Project_model->delete_removed_tasks(
+        $project_id,
+        $submittedIds
+    );
+}
+    // =========================================================
+    // PROJECT CODE
+    // =========================================================
+
+    $project_code =
+        'PRJ-' . str_pad($project_id, 6, '0', STR_PAD_LEFT);
+
+    $this->Project_model->update_project(
+        $project_id,
+        array(
+            'project_code' => $project_code
+        )
+    );
+
+
+    // =========================================================
+    // QUOTATION / MANUAL ITEM SOURCE
+    // =========================================================
+
+    $qid     = $this->input->post('quotation_id');
+    $bit_quo = $this->input->post('bit_quo');
+
+
+    // =========================================================
+    // OPTION 1 : QUOTATION SELECTED
+    // =========================================================
+
+    if (!empty($qid) && $bit_quo == 1) {
+
+        // -----------------------------------------------------
+        // Save project quotation
+        // -----------------------------------------------------
+
+        $dataq = array(
+            'pid' => $project_id,
+            'qid' => $qid
+        );
+
+        $this->db->insert(
+            'project_quotation',
+            $dataq
+        );
+
+
+        // -----------------------------------------------------
+        // Get quotation main headings
+        // -----------------------------------------------------
+
+        $query = $this->db->query(
+            "SELECT *
+             FROM quotation_main_heading
+             WHERE qtn_id = ?",
+            array($qid)
+        );
+
+        $res1 = $query->result();
+
+
+        foreach ($res1 as $r1) {
+
+            // -------------------------------------------------
+            // project_transaction1
+            // -------------------------------------------------
+
+            $data = array(
+                'pid'          => $project_id,
+                'qid'          => $qid,
+                'product_desc' => $r1->main_heading,
+                'item_remark'  => $r1->description
+            );
+
+            $this->db->insert(
+                'project_transaction1',
+                $data
+            );
+
+            $insert_id1 = $this->db->insert_id();
+
+
+            // -------------------------------------------------
+            // Get quotation products
+            // -------------------------------------------------
+
+            $query = $this->db->query(
+                "SELECT *
+                 FROM quotation_products
+                 WHERE qtn_id = ?",
+                array($qid)
+            );
+
+            $res2 = $query->result();
+
+
+            foreach ($res2 as $r2) {
+
+                // ---------------------------------------------
+                // project_transaction2
+                // ---------------------------------------------
+
+                $data = array(
+                    'trans_id1'        => $insert_id1,
+                    'pid'              => $project_id,
+                    'sub_details'      => $r2->prd_id,
+                    'qty'              => $r2->qty,
+                    'unit'             => $r2->unit_id,
+                    'price'            => $r2->unit_price,
+                    'discount_percent' => $r2->discount_percent,
+                    'discount_amount'  => $r2->discount_amount,
+                    'taxable_amount'   => $r2->taxable_amount
+                );
+
+                $this->db->insert(
+                    'project_transaction2',
+                    $data
+                );
+            }
+        }
+
+
+    } else {
+
+        // =====================================================
+        // OPTION 2 : NO QUOTATION
+        // ITEMS SELECTED FROM ITEM MASTER
+        // =====================================================
+
+        $products   = $this->input->post('product_id');
+        $quantities = $this->input->post('quantity');
+
+
+        if (!empty($products)) {
+
+            // -------------------------------------------------
+            // Create one transaction header
+            // -------------------------------------------------
+
+            $data = array(
+                'pid'          => $project_id,
+                'qid'          => 0,
+                'product_desc' => 'Project Items',
+                'item_remark'  => 'Items added from Item Master'
+            );
+
+            $this->db->insert(
+                'project_transaction1',
+                $data
+            );
+
+            $insert_id1 = $this->db->insert_id();
+
+
+            // -------------------------------------------------
+            // Insert selected Item Master products
+            // -------------------------------------------------
+
+            foreach ($products as $i => $pid) {
+
+                if (empty($pid)) {
+                    continue;
+                }
+
+                $qty = $quantities[$i] ?? 0;
+
+                if ($qty <= 0) {
+                    continue;
+                }
+
+
+                // ---------------------------------------------
+                // Get item details
+                // ---------------------------------------------
+
+                $item = $this->db
+                    ->select('
+                        i.product_id,
+                        i.product_name,
+                        i.unit_id
+                    ')
+                    ->from('item_master i')
+                    ->where(
+                        'i.product_id',
+                        $pid
+                    )
+                    ->where(
+                        'i.is_inactive',
+                        0
+                    )
+                    ->where(
+                        'i.is_marked_delete',
+                        0
+                    )
+                    ->get()
+                    ->row();
+
+
+                if (!$item) {
+                    continue;
+                }
+
+
+                // ---------------------------------------------
+                // project_transaction2
+                // ---------------------------------------------
+
+                $data = array(
+                    'trans_id1'        => $insert_id1,
+                    'pid'              => $project_id,
+                    'sub_details'      => $item->product_id,
+                    'qty'              => $qty,
+                    'unit'             => $item->unit_id,
+                    'price'            => 0,
+                    'discount_percent' => 0,
+                    'discount_amount'  => 0,
+                    'taxable_amount'   => 0
+                );
+
+                $this->db->insert(
+                    'project_transaction2',
+                    $data
+                );
+            }
 
     // =========================================================
     // TASK CATEGORY / TASK ITEMS
@@ -236,6 +619,8 @@ if ($project_id) {
 
 
     // =========================================================
+<<<<<<< HEAD
+=======
     // PROJECT CODE
     // =========================================================
 
@@ -461,6 +846,7 @@ if ($project_id) {
 
 
     // =========================================================
+>>>>>>> master
     // SUCCESS MESSAGE
     // =========================================================
 
@@ -742,6 +1128,29 @@ public function update_project()
 
 public function get_project_list()
 {
+    $user = $this->session->userdata('user_id');
+    /*if (!has_view_access($user, 'Company/list_employee')) {
+        $data['title'] = 'Access Denied';
+        $data['main_content'] = 'errors/access_control.php';
+    } else {
+        */
+        $this->load->model('Setup_model');
+        $data['company'] =  $this->Setup_model->get_company_details();
+
+        $data['title'] = 'Project List';
+        $data['projects'] = $this->Project_model->get_all_projects();
+        $data['main_content'] = 'project/project_list';
+        $this->load->view('includes/template', $data);
+   // }
+    
+}
+//filter
+public function get_project_list_ajax()
+{
+    $status = $this->input->post('status');
+    $from_date = $this->input->post('from_date');
+    $to_date = $this->input->post('to_date');
+
     $data['title'] = 'Project List';
     $data['projects'] = $this->Project_model->get_all_projects();
     $data['main_content'] = 'project/project_list';
@@ -792,6 +1201,7 @@ public function get_project_list_ajax()
     echo json_encode($output);
     exit();
 }
+/*
 public function delete($project_id)
 {
     // Load the Project model
@@ -802,6 +1212,33 @@ public function delete($project_id)
         $this->session->set_flashdata('success', 'Project deleted successfully.');
     } else {
         $this->session->set_flashdata('error', 'Failed to delete the project.');
+    }
+
+    // Redirect back to project list
+    redirect('Project/get_project_list');
+}
+    */
+public function delete($project_id)
+{
+    // Load the Project model
+    $this->load->model('Project_model');
+
+    // Attempt to delete the project
+    $result = $this->Project_model->delete_project($project_id);
+
+    if ($result['status'] === true) {
+
+        $this->session->set_flashdata(
+            'success',
+            $result['message']
+        );
+
+    } else {
+
+        $this->session->set_flashdata(
+            'error',
+            $result['message']
+        );
     }
 
     // Redirect back to project list
@@ -1322,11 +1759,22 @@ public function delete_progress_log()
         echo json_encode($final);
     }
     
-    public function fetch_quotation_details(){
+    /*sspublic function fetch_quotation_details(){
 
         $q_id = $this->input->post('q_id');
         //$so_master = $this->Sales_model->get_sales_order_by_id($_id);
         $q_products = $this->Project_model->get_all_products_by_quotation($q_id); 
+
+        echo json_encode([
+            'q_products' => $q_products
+        ]);
+    }*/
+    public function fetch_quotation_details(){
+
+        $q_id = $this->input->post('so_id');
+        //$so_master = $this->Sales_model->get_sales_order_by_id($_id);
+        //$q_products = $this->Project_model->get_all_products_by_quotation($q_id); 
+        $q_products = $this->Project_model->get_all_products_by_sales($q_id);
 
         echo json_encode([
             'q_products' => $q_products
@@ -2743,6 +3191,8 @@ public function delete_progress_log()
         $data['title']     = 'Project Progress Report';
         $data['project_list'] = $this->Project_model->get_projects();
         $data['projects']  = $this->Project_model->get_project_progress_report();
+        $this->load->model('Setup_model');
+        $data['company'] =  $this->Setup_model->get_company_details();
         $data['main_content'] = 'project/project_progress_report.php';
         $this->load->view('includes/template', $data);
     }
@@ -2788,13 +3238,17 @@ public function delete_progress_log()
     }
     public function print_work_order($id)
     {
+        $data['title'] = 'Print Work Order';
         $data['workorder'] = $this->Project_model->get_workorder($id);
         $data['items'] = $this->Project_model->get_workorder_items($id);
         $data['routes'] = $this->Project_model->get_workorder_routes($id);
         $data['plans'] = $this->Project_model->get_workorder_plans($id);
         $data['attachments'] = $this->Project_model->get_workorder_attachments($id);
-
-        $this->load->view('project/print_work_order',$data);
+        $this->load->model('Setup_model');
+        $data['company'] = $this->Setup_model->get_company_details();
+        $data['main_content'] = 'project/print_work_order.php';
+        $this->load->view('includes/template', $data);
+       
     }
     //EDIT PROJECTS POPUPS
     public function get_project_work_orders()
@@ -2852,6 +3306,7 @@ public function delete_progress_log()
     public function project_full_report($project_id)
     {
         $data['title']  = "Project Details";
+        $this->load->model('Setup_model');
         $data['project']             = $this->Project_model->get_project_repo($project_id);
         $data['tasks']               = $this->Project_model->get_project_tasks_repo($project_id);
         $data['attendance']          = $this->Project_model->get_project_attendance_repo($project_id);
@@ -2860,6 +3315,7 @@ public function delete_progress_log()
         $data['outsource']           = $this->Project_model->get_outsource_repo($project_id);
         $data['progress_history']    = $this->Project_model->get_progress_history_repo($project_id);
         $data['cost_summary']        = $this->Project_model->get_cost_summary($project_id);
+        $data['company'] =  $this->Setup_model->get_company_details();
        
         $data['main_content'] = 'project/project_full_report.php';
         $this->load->view('includes/template', $data);
