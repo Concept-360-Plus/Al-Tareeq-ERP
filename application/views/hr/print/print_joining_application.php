@@ -72,7 +72,7 @@ $printed_by = $this->session->userdata('user_name') ?? $this->session->userdata(
     <table>
         <tr>
             <th>Employee Name</th>
-            <td><?php echo $row->user_name; ?></td>
+            <td><?php echo htmlspecialchars($row->employee_name ?? ''); ?></td>
 
             <th>Direct Manager</th>
             <td></td>
@@ -80,14 +80,14 @@ $printed_by = $this->session->userdata('user_name') ?? $this->session->userdata(
 
         <tr>
             <th>Employee ID</th>
-            <td><?php echo $row->employee_id; ?></td>
+            <td><?php echo $row->user_code; ?></td>
 
             <th>Department/Project</th>
             <td>
                 <?php
                 if (!empty($dept_list)) {
                     foreach ($dept_list as $d) {
-                        if ($d->dept_id == $row->dept_id) {
+                        if ($d->dept_id == $row->department_id) {
                             echo $d->dept_name;
                         }
                     }
@@ -98,7 +98,7 @@ $printed_by = $this->session->userdata('user_name') ?? $this->session->userdata(
 
         <tr>
             <th>Designation</th>
-            <td><?php echo $row->designation_id ?? ''; ?></td>
+            <td><?php echo $row->designation_name ?? '' ?></td>
 
             <th>Passport No</th>
             <td><?php echo $row->document_number ?? ''; ?></td>

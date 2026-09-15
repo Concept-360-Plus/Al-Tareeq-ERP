@@ -139,20 +139,61 @@
 
     <h6>ANNEXURE DETAILS</h6>
 
-    <button type="button" class="btn btn-primary btn-sm mb-2"
-            onclick="addAnnexureRow()">
-        + Add Row
-    </button>
+ <div class="form-group row">
+    <label class="col-lg-2 col-form-label">
+        Annexure Main Heading
+    </label>
+
+    <div class="col-lg-4">
+        <input type="text" 
+               name="annexure_title"
+               class="form-control"
+               value="ANNEXURE - 1">
+    </div>
+</div>
+
+    <div class="form-group row">
+    <label class="col-sm-3 col-form-label">
+        Annexure Subtitle
+    </label>
+
+    <div class="col-sm-6">
+        <input type="text" 
+               id="section_title" 
+               name="section_title"
+               class="form-control"
+               placeholder="Eg: Sliding Doors">
+    </div>
+</div>
+
 
     <table class="table table-bordered">
         <thead>
             <tr>
-                <th>Sl No</th>
-                <th>Type</th>
-                <th>Location</th>
-                <th>Quantity</th>
-                <th></th>
-            </tr>
+            <th>
+                <input type="text" name="heading_slno" 
+                       class="form-control" value="Sl No">
+            </th>
+
+            <th>
+                <input type="text" name="heading_type" 
+                       class="form-control" value="Type">
+            </th>
+
+            <th>
+                <input type="text" name="heading_location" 
+                       class="form-control" value="Location">
+            </th>
+
+            <th>
+                <input type="text" name="heading_quantity" 
+                       class="form-control" value="Quantity">
+            </th>
+
+            <th>
+                Action
+            </th>
+        </tr>
         </thead>
 
         <tbody id="annexure_body"></tbody>
@@ -170,17 +211,19 @@
 </div>
 
 		<div class="form-group row">
-		     	<label class="col-xs-12 col-sm-3 col-md-2 col-lg-2 col-form-label">Sales Person:</label>
-		    	<div class="col-xs-12 col-sm-9 col-md-2 col-lg-2">
-			      <select tabindex="1" class="form-select form-control-sm select2" id="user_id" name="user_id" required style='width:170px'>
-				<option value="">Select</option>
-				<?php foreach($user_records as $s) {?>
-				  <option <?php if($this->session->userdata('user_id')==$s->user_id) echo 'selected'; ?> value="<?php echo $s->user_id ?>"><?php echo $s->user_name;?></option>
-				<?php } ?>
-			      </select>
-		       </div>
-		     	
-		</div>
+
+<label class="col-md-1 control-label">Prepared By:</label>
+    <div class="col-md-3">
+ <select class="form-control select2" 
+                id="employee_prepared" name="employee_prepared" required>
+                <option value="">Select</option>
+                <?php foreach ($employees as $s) { ?>
+                <option value="<?php echo $s->employee_id  ?>"><?php echo $s->user_code . ' ' . $s->employee_name; ?></option>
+                <?php } ?>
+              </select>
+
+ </div>
+        </div>
 		  
 		<div class="form-group row">
 			<label class="col-sm-2"></label>
@@ -237,6 +280,12 @@ function get_quotation_info()
 
             // IMPORTANT: inject HTML
             $('#item_list_id').html(response);
+             // Default AMC Start & End Date from Quotation
+var amcStartDate = $('#item_list_id').find('#quotation_amc_start_date').val();
+var amcEndDate   = $('#item_list_id').find('#quotation_amc_end_date').val();
+
+$('#amc_start_date').val(amcStartDate);
+$('#amc_end_date').val(amcEndDate);
 			var branch_id = $('#item_list_id').find('#branch_id_ajax').val();
 console.log(branch_id);
 
@@ -289,7 +338,11 @@ if(annex && annex != '[]')
 
         last.find('input[name="type[]"]').val(r.type);
         last.find('input[name="location[]"]').val(r.location);
-        last.find('input[name="annex_qty[]"]').val(r.qty);
+        // last.find('input[name="annex_qty[]"]').val(r.qty);
+        last.find('input[name="annex_qty[]"]').val(r.quantity);
+
+            $('#section_title').val(r.section_title);
+
 
     });
 
@@ -731,12 +784,19 @@ function addAnnexureRow()
                 <input type="number" name="annex_qty[]" class="form-control annex_qty"
                        onkeyup="calculateAnnexTotal()">
             </td>
-            <td>
-                <button type="button" class="btn btn-danger btn-sm"
-                        onclick="removeAnnexRow(${annex_i})">
-                    X
-                </button>
-            </td>
+           <td>
+            <button type="button" 
+                    class="btn btn-primary btn-sm"
+                    onclick="addAnnexureRow()">
+                +
+            </button>
+
+            <button type="button" 
+                    class="btn btn-danger btn-sm"
+                    onclick="removeAnnexRow(${annex_i})">
+                X
+            </button>
+        </td> 
         </tr>
     `);
 

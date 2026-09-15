@@ -53,11 +53,6 @@ table td{
     font-weight:bold;
 }
 
-.terms{
-    border:1px solid #000;
-    padding:10px;
-    min-height:60px;
-}
 
 
 @media print {
@@ -197,7 +192,7 @@ table td{
                     <!-- Sales Representative / Prepared By -->
                     <tr>
                         <td style="font-family: Arial, sans-serif; font-size: 13px; font-weight: bold; padding: 2px 0; border: none;">Rep.</td>
-                        <td style="font-family: Arial, sans-serif; font-size: 13px; padding: 2px 0; border: none;">: <?= !empty($quotation->sales_rep_id) ? $quotation->sales_rep_id : '' ?></td>
+                        <td style="font-family: Arial, sans-serif; font-size: 13px; padding: 2px 0; border: none;">: <?= !empty($quotation->sales_rep_name) ? $quotation->sales_rep_name : '' ?></td>
                     </tr>
                     
                     <!-- Local Purchase Order Number -->
@@ -265,6 +260,7 @@ Email :
     <thead>
         <tr style="background-color: #f7f7f7; border-top: 1px solid #ddd; border-bottom: 2px solid #ddd;">
             <th width="5%" style="padding: 8px 5px; font-weight: bold; text-align: center;">#</th>
+            <th width="10%" style="padding: 8px 10px; font-weight: bold; text-align: left;">Code</th>
             <th style="padding: 8px 10px; font-weight: bold; text-align: left;">Item Description</th>
             <th width="12%" style="padding: 8px 5px; font-weight: bold; text-align: center;">Qty</th>
             <th width="15%" style="padding: 8px 10px; font-weight: bold; text-align: right;">Rate</th>
@@ -278,6 +274,7 @@ Email :
         ?>
         <tr style="border-bottom: 1px solid #eee;">
             <td style="padding: 8px 5px; text-align: center; vertical-align: top;"><?= $i++ ?></td>
+            <td style="padding: 8px 10px; text-align: left; vertical-align: top;"><?= !empty($item->product_code) ? $item->product_code : '' ?></td>
             <td style="padding: 8px 10px; text-align: left; vertical-align: top;">
                 <span style="font-weight: bold; color: #111;"><?= $item->product_name ?></span>
             </td>
@@ -342,67 +339,45 @@ Email :
 <!-- TERMS -->
 
 
-<!-- TERMS, CONDITIONS & WARRANTY SECTION -->
-<table style="width: 100%; border-collapse: collapse; border: none; margin-top: 25px; font-family: Arial, sans-serif; font-size: 13px; line-height: 1.5; color: #333;">
-    <!-- Row 1: Payment Term & Validity -->
-    <tr>
-        <td style="width: 48%; vertical-align: top; border: none; padding: 0 0 15px 0;">
-            <b style="color: #000; text-transform: uppercase; font-size: 12px; display: block; margin-bottom: 4px;">Payment Term</b>
-            <div class="terms" style="color: #555;">
-                <?= !empty($quotation->payment_term) ? nl2br($quotation->payment_term) : '---' ?>
-            </div>
-        </td>
-        <td style="width: 4%; border: none;"></td> <!-- Spacer -->
-        <td style="width: 48%; vertical-align: top; border: none; padding: 0 0 15px 0;">
-            <b style="color: #000; text-transform: uppercase; font-size: 12px; display: block; margin-bottom: 4px;">Validity</b>
-            <div class="terms" style="color: #555;">
-                <?= !empty($quotation->validity) ? nl2br($quotation->validity) : '---' ?>
-            </div>
-        </td>
-    </tr>
-
-    <!-- Row 2: Warranty & Warranty Description -->
-    <tr>
-        <td style="vertical-align: top; border: none; padding: 0 0 15px 0;">
-            <b style="color: #000; text-transform: uppercase; font-size: 12px; display: block; margin-bottom: 4px;">Warranty</b>
-            <div class="terms" style="color: #555;">
-                <?= !empty($quotation->warranty) ? nl2br($quotation->warranty) : '---' ?>
-            </div>
-        </td>
-        <td style="border: none;"></td> <!-- Spacer -->
-        <td style="vertical-align: top; border: none; padding: 0 0 15px 0;">
-            <b style="color: #000; text-transform: uppercase; font-size: 12px; display: block; margin-bottom: 4px;">Warranty Description</b>
-            <div class="terms" style="color: #555;">
-                <?= !empty($quotation->warranty_description) ? nl2br($quotation->warranty_description) : '---' ?>
-            </div>
-        </td>
-    </tr>
-
-    <!-- Row 3: Delivery Term & Terms & Conditions -->
-    <tr>
-        <td style="vertical-align: top; border: none; padding: 0 0 15px 0;">
-            <b style="color: #000; text-transform: uppercase; font-size: 12px; display: block; margin-bottom: 4px;">Delivery Term</b>
-            <div class="terms" style="color: #555;">
-                <?= !empty($quotation->delivery_term) ? nl2br($quotation->delivery_term) : '---' ?>
-            </div>
-        </td>
-        <td style="border: none;"></td> <!-- Spacer -->
-        <td style="vertical-align: top; border: none; padding: 0 0 15px 0;">
-            <b style="color: #000; text-transform: uppercase; font-size: 12px; display: block; margin-bottom: 4px;">Terms & Conditions</b>
-            <div class="terms" style="color: #555;">
-                <?= !empty($quotation->terms_condition) ? nl2br($quotation->terms_condition) : '---' ?>
-            </div>
-        </td>
-    </tr>
-</table>
+<!-- TERMS & CONDITIONS SECTION -->
+<div style="width: 100%; margin-top: 20px; font-family: Arial, sans-serif; font-size: 13px; line-height: 1.7; color: #000;">
+    <u style="font-weight: bold;">Sales Terms :-</u>
+    <table style="width: 100%; border-collapse: collapse; border: none; margin-top: 4px;">
+        <tr>
+            <td style="width: 150px; border: none; padding: 1px 0; vertical-align: top;">Payment :-</td>
+            <td style="border: none; padding: 1px 0;"><?= !empty($quotation->payment_term) ? nl2br($quotation->payment_term) : '---' ?></td>
+        </tr>
+        <tr>
+            <td style="border: none; padding: 1px 0; vertical-align: top;">Validity :-</td>
+            <td style="border: none; padding: 1px 0;"><?= !empty($quotation->validity) ? nl2br($quotation->validity) : '---' ?></td>
+        </tr>
+        <tr>
+            <td style="border: none; padding: 1px 0; vertical-align: top;">Delivery :-</td>
+            <td style="border: none; padding: 1px 0;"><?= !empty($quotation->delivery_term) ? nl2br($quotation->delivery_term) : '---' ?></td>
+        </tr>
+        <?php if (!empty($quotation->warranty) || !empty($quotation->warranty_description)) { ?>
+        <tr>
+            <td style="border: none; padding: 1px 0; vertical-align: top;">Warranty :-</td>
+            <td style="border: none; padding: 1px 0;">
+                <?= !empty($quotation->warranty) ? nl2br($quotation->warranty) : '' ?>
+                <?= !empty($quotation->warranty_description) ? ' ' . nl2br($quotation->warranty_description) : '' ?>
+            </td>
+        </tr>
+        <?php } ?>
+        <?php if (!empty($quotation->terms_condition)) { ?>
+        <tr>
+            <td style="border: none; padding: 1px 0; vertical-align: top;">Terms & Conditions :-</td>
+            <td style="border: none; padding: 1px 0;"><?= nl2br($quotation->terms_condition) ?></td>
+        </tr>
+        <?php } ?>
+    </table>
+</div>
 
 <!-- NOTES SECTION -->
-<?php if(!empty($quotation->notes)) { ?>
-<div class="notes-section" style="width: 100%; margin-top: 15px; font-family: Arial, sans-serif; font-size: 13px; line-height: 1.5;">
-    <b style="color: #000; text-transform: uppercase; font-size: 12px; display: block; margin-bottom: 4px;">Notes</b>
-    <div class="terms" style="color: #555;">
-        <?= nl2br($quotation->notes) ?>
-    </div>
+<?php if (!empty($quotation->notes)) { ?>
+<div style="width: 100%; margin-top: 12px; font-family: Arial, sans-serif; font-size: 13px; line-height: 1.6; color: #000;">
+    <u style="font-weight: bold;">Notes :-</u>
+    <div style="margin-top: 2px;"><?= nl2br($quotation->notes) ?></div>
 </div>
 <?php } ?>
 
@@ -421,7 +396,8 @@ Prepared By:
 
 <br><br><br>
 
-____________________
+____________________<br>
+<?= !empty($quotation->prepared_by_name) ? $quotation->prepared_by_name : '' ?>
 
 </td>
 
@@ -432,7 +408,8 @@ Approved By:
 
 <br><br><br>
 
-____________________
+____________________<br>
+<?= !empty($quotation->approved_by_name) ? $quotation->approved_by_name : '' ?>
 
 </td>
 

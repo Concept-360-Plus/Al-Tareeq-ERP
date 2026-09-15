@@ -831,6 +831,9 @@ class Setup_model extends CI_Model
             'tax_emirate'           => $this->input->post('tax_emirate'),
             'tax_code'              => $this->input->post('tax_code'),
 
+            'sales_vat_applicable'    => $this->input->post('sales_vat_applicable') ? 1 : 0,
+            'purchase_vat_applicable' => $this->input->post('purchase_vat_applicable') ? 1 : 0,
+
             'created_at'            => date('Y-m-d H:i:s')
         );
 
@@ -852,7 +855,8 @@ class Setup_model extends CI_Model
                 'group_no'         => $grp_no,
                 'customer_id'      => $customer_id,
                 'opening_bal_type' => 'Dr',
-                'branch_id' => $branch_id
+                'branch_id'        => $this->input->post('branch_id') ?: null,
+                'employee_id'      => $this->session->userdata('user_id') ?: 0,
             ];
 
             $this->db->insert('general_ledger', $ledger_data);
@@ -872,7 +876,7 @@ class Setup_model extends CI_Model
                         'contact_email' => $contact_email[$i]
                     );
 
-                    $this->db->insert('customer_contact_person', $contactData);
+                    $this->db->insert('customer_contact_details', $contactData);
                 }
             }
         }
@@ -954,6 +958,9 @@ class Setup_model extends CI_Model
             'tax_emirate'           => $this->input->post('tax_emirate'),
             'tax_code'              => $this->input->post('tax_code'),
 
+            'sales_vat_applicable'    => $this->input->post('sales_vat_applicable') ? 1 : 0,
+            'purchase_vat_applicable' => $this->input->post('purchase_vat_applicable') ? 1 : 0,
+
             'updated_at'            => date('Y-m-d H:i:s')
         );
 
@@ -962,7 +969,7 @@ class Setup_model extends CI_Model
 
         // Delete old contacts
         $this->db->where('customer_id', $customer_id);
-        $this->db->delete('customer_contact_person');
+        $this->db->delete('customer_contact_details');
 
         $contact_name  = $this->input->post('contact_name');
         $contact_phone = $this->input->post('contact_phone');
@@ -972,7 +979,7 @@ class Setup_model extends CI_Model
 
             if (trim($contact_name[$i]) != '') {
 
-                $this->db->insert('customer_contact_person', array(
+                $this->db->insert('customer_contact_details', array(
                     'customer_id'   => $customer_id,
                     'contact_name'  => $contact_name[$i],
                     'contact_phone' => $contact_phone[$i],
@@ -1017,6 +1024,23 @@ class Setup_model extends CI_Model
         $this->db->from('unit_master');
         $query = $this->db->get()->result();
         return $query;
+    }
+
+    public function get_all_product_types()
+    {
+        return $this->db->where('is_active', 1)
+            ->order_by('type_name', 'ASC')
+            ->get('product_type_master')
+            ->result();
+    }
+
+    public function get_product_type_code($product_type_id)
+    {
+        $row = $this->db->where('product_type_id', $product_type_id)
+            ->get('product_type_master')
+            ->row();
+
+        return $row ? $row->type_code : null;
     }
 
     public function insert_unit($data)
@@ -1079,9 +1103,10 @@ class Setup_model extends CI_Model
 
     public function get_all_item_list()
     {
-        $this->db->select('im.*, um.unit_name, um.unit_id');
+        $this->db->select('im.*, um.unit_name, um.unit_id, pt.type_name as product_type_name');
         $this->db->from('item_master im');
         $this->db->join('unit_master um', 'im.unit_id = um.unit_id', 'left');
+        $this->db->join('product_type_master pt', 'im.product_type_id = pt.product_type_id', 'left');
         $this->db->where('im.is_marked_delete', 0);
 
 
@@ -1191,6 +1216,8 @@ class Setup_model extends CI_Model
         return $this->db->update('category_master', $data);
     }
     
+
+
     public function get_all_categories()
     {
         $this->db->select('*');
@@ -1342,9 +1369,9 @@ class Setup_model extends CI_Model
     }
 
        // inserts raw materials for a newly created custom made item
-    public function save_item_raw_materials($item_id, $product_type)
+    public function save_item_raw_materials($item_id, $product_type_id)
     {
-        if ($product_type != 'custom_made') {
+        if ($this->get_product_type_code($product_type_id) != 'custom_made') {
             return;
         }
 
@@ -1377,11 +1404,10 @@ class Setup_model extends CI_Model
         }
     }
 
-    // updates existing raw material rows individually and inserts newly added rows
-    // rows removed by the user are deleted immediately via Ajax/delete_record
-    public function update_item_raw_materials($item_id, $product_type)
+
+    public function update_item_raw_materials($item_id, $product_type_id)
     {
-        if ($product_type != 'custom_made') {
+        if ($this->get_product_type_code($product_type_id) != 'custom_made') {
             $this->delete_raw_materials($item_id);
             return;
         }
@@ -1816,7 +1842,6 @@ class Setup_model extends CI_Model
         }
         return false;
     }
-
     public function get_rawmaterials($id)
     {
         if ($id) {
@@ -1857,9 +1882,14 @@ class Setup_model extends CI_Model
             ->row();
     }
 
+
+
+
+
+
     ////// item popups
 
-          public function get_units_and_materials_for_popup()
+        public function get_units_and_materials_for_popup()
     {
         $units = $this->db->get('unit_master')->result();
 
@@ -1869,8 +1899,9 @@ class Setup_model extends CI_Model
             ->result();
 
         $categories = $this->get_active_categories();
+        $product_types = $this->get_all_product_types();
 
-        return array('units' => $units, 'materials' => $materials, 'categories' => $categories);
+        return array('units' => $units, 'materials' => $materials, 'categories' => $categories, 'product_types' => $product_types);
     }
 
     public function is_product_code_exists($product_code)
@@ -1913,7 +1944,7 @@ class Setup_model extends CI_Model
         $this->db->insert('item_master', $data);
         $item_id = $this->db->insert_id();
 
-        if ($item_id && !empty($materials) && $data['product_type'] == 'custom_made') {
+        if ($item_id && !empty($materials) && $this->get_product_type_code($data['product_type_id']) == 'custom_made') {
 
             foreach ($materials as $m) {
 
@@ -1955,16 +1986,16 @@ class Setup_model extends CI_Model
         return array('item' => $item, 'raw_materials' => $raw_materials);
     }
 
-    public function update_item_type_and_materials($id, $product_type, $materials, $master_data = array())
+    public function update_item_type_and_materials($id, $product_type_id, $materials, $master_data = array())
     {
-        $update_data = array_merge(array('product_type' => $product_type), $master_data);
+        $update_data = array_merge(array('product_type_id' => $product_type_id), $master_data);
 
         $this->db->where('product_id', $id);
         $this->db->update('item_master', $update_data);
 
         $this->delete_raw_materials($id);
 
-        if (!empty($materials) && $product_type == 'custom_made') {
+        if (!empty($materials) && $this->get_product_type_code($product_type_id) == 'custom_made') {
 
             foreach ($materials as $m) {
 

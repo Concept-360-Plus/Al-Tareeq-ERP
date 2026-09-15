@@ -1,6 +1,6 @@
 <?php
-    $page_name = 'Hr/list_employee';
-    $user = $this->session->userdata('user_id');
+$page_name = 'Hr/list_employee';
+$user = $this->session->userdata('user_id');
 ?>
 <style>
     #filter_list li {
@@ -51,11 +51,11 @@
         <table class="table table-bordered table-striped">
             <thead>
                 <tr>
-                    <th>#</th>
+                    <th>Sl. No</th>
                     <th>Photo</th>
-                    <th>Name</th>
+                    <th>Employee Code/</br> Name</th>
                     <th>Branch</th>
-                    <!-- <th>Designation</th> -->
+                    <th>Designation</th>
                     <th>Mobile</th>
                     <th>Joining Date</th>
                     <th>Actions</th>
@@ -73,9 +73,13 @@
                                 <span>No Photo</span>
                             <?php endif; ?>
                         </td>
-                        <td><?= $emp->employee_name ?></td>
+                        <td>
+                            <strong><?= html_escape($emp->user_code) ?></strong>
+                            <br>
+                            <?= html_escape($emp->employee_name) ?>
+                        </td>
                         <td><?= $emp->branch_name ?></td>
-                        <!-- <td><?= $emp->designation_name ?></td> -->
+                        <td><?= $emp->designation_name ?></td>
                         <td><?= $emp->mobile ?></td>
                         <td><?= date('d-M-Y', strtotime($emp->joining_date)) ?></td>
                         <td class="action-icons">

@@ -168,7 +168,20 @@
 
 </div>
 
-
+<div class="row">
+    <div class="col-md-12">
+        <div class="form-check">
+            <input type="checkbox"
+                   class="form-check-input"
+                   id="create_revision"
+                   name="create_revision"
+                   value="1">
+            <label class="form-check-label" for="create_revision">
+                Create New Revision
+            </label>
+        </div>
+    </div>
+</div>
 
 <input type="hidden"
        name="qtn_id"
@@ -193,10 +206,12 @@
 
        <table class="table table-bordered">
 
-    <thead>
+        <thead>
         <tr>
             <th width="35">#</th>
+            <th width="100">Code</th>
             <th>Item</th>
+            <th>Description</th>
             <th width="100">Qty</th>
             <th width="150">Price</th>
             <th width="150">Amount</th>
@@ -228,6 +243,9 @@ foreach($cart_items as $item) {
     <?= $i++ ?>
 </td>
 
+<td>
+    <?= isset($item->product_code) ? $item->product_code : '' ?>
+</td>
 
 <td>
 
@@ -244,7 +262,11 @@ foreach($cart_items as $item) {
 
 </td>
 
-
+<td>
+    <textarea class="form-control form-control-sm"
+              name="description[]"
+              rows="1"><?= isset($item->product_description) ? $item->product_description : '' ?></textarea>
+</td>
 
 <td>
 
@@ -417,7 +439,7 @@ foreach($cart_items as $item) {
                         <input type="number"
                                name="qtn_vat_percentage"
                                id="qtn_vat_percentage"
-                               value="<?= isset($quotation->vat_percentage) ? $quotation->vat_percentage : 5 ?>"
+                               value="<?= isset($quotation->vat_percentage) ? $quotation->vat_percentage : (isset($vat_percentage) ? $vat_percentage : 5) ?>"
                                class="form-control mt-2"
                                style="width:100px;">
 
@@ -682,34 +704,17 @@ Prepared By:
 
 
 <div class="col-md-6 col-sm-6">
+    <select class="form-control select2" id="employee_prepared" name="employee_prepared">
+        <option value="">Select</option>
 
+        <?php foreach ($employees as $s) { ?>
+            <option value="<?php echo $s->employee_id; ?>"
+                <?php echo ($quotation->prepared_by == $s->employee_id) ? 'selected' : ''; ?>>
+                <?php echo $s->user_code . ' ' . $s->employee_name; ?>
+            </option>
+        <?php } ?>
 
-<select class="form-control select2"
-        id="employee_prepared"
-        name="employee_prepared">
-
-
-<option value="">
-Select
-</option>
-
-
-
-<?php foreach ($employees as $s) { ?>
-
-
-<option value="<?= $s->employee_id ?>"
-<?= ($quotation->employee_prepared == $s->employee_id) ? 'selected' : '' ?>>
-<?= $s->user_code.' '.$s->employee_name ?>
-</option>
-
-
-<?php } ?>
-
-
-</select>
-
-
+    </select>
 </div>
 
 
@@ -729,15 +734,21 @@ Select
                value="<?= $quotation->qtn_id ?>">
 
         <button type="submit" 
-                class="btn btn-success">
+                id="btnUpdateQuotation"
+                class="btn btn-success"
+                name="action"
+                value="update">
             <i class="fa fa-save"></i> Update Quotation
         </button>
 
-
-        <a href="<?= base_url('index.php/Sales/view_quotation/'.$quotation->qtn_id) ?>"
-           class="btn btn-secondary">
-            <i class="fa fa-arrow-left"></i> Cancel
-        </a>
+        <?php if (isset($quotation->quotation_status) && $quotation->quotation_status == 'Draft'): ?>
+        <button type="submit"
+                class="btn btn-primary"
+                name="action"
+                value="quotation">
+            <i class="fa fa-check"></i> Confirm Quotation
+        </button>
+        <?php endif; ?>
 
     </div>
 </div>
@@ -766,6 +777,7 @@ Select
                     <thead>
                         <tr>
                             <th>Product</th>
+                            <th>Description</th>
                             <th>Price</th>
                             <th>Qty</th>
                             <th>Select</th>
@@ -797,22 +809,7 @@ Select
 
 </form>
 
-<script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
 <script>
-    
-    CKEDITOR.replace('delivery_term');
-  var termsEditor = CKEDITOR.replace('terms_condition');
-  CKEDITOR.replace('payment_term', {
-    height: 120
-});
-
-CKEDITOR.replace('notes', {
-    height: 120
-});
-
-
-       
-      
 
     // Prevent accidental form submit on Enter
 $(document).on("keydown", "form input, form select", function(e) {
@@ -868,7 +865,8 @@ function calculateQuotationTotal()
 
     $('#qtn_add_discount_amount').val(discountAmount.toFixed(2));
 
-    $('#qtn_total').val((subtotal - discountAmount).toFixed(2));
+    // Always recalc VAT + Net whenever subtotal changes
+    calculateTotals();
 }
 
 $('#qtn_add_discount_percentage').on('keyup change', function () {
@@ -1034,13 +1032,13 @@ $('#new_item_search').keyup(function(){
             $.each(data,function(i,item){
 
 
-                html += `
+                               html += `
 
                 <tr>
 
                 <td>
 
-                ${item.product_name}
+                ${item.product_name} (${item.product_code})
 
                 <input type="hidden"
                        class="new_item_id"
@@ -1052,7 +1050,20 @@ $('#new_item_search').keyup(function(){
                        value="${item.product_name}">
 
 
+                <input type="hidden"
+                       class="new_item_code"
+                       value="${item.product_code}">
+
+
+                <input type="hidden"
+                       class="new_item_description"
+                       value="${item.description ? item.description : ''}">
+
+
                 </td>
+
+
+                <td>${item.description ? item.description : ''}</td>
 
 
                 <td>
@@ -1107,10 +1118,12 @@ $('#addSelectedNewItem').click(function(){
         if($(this).find('.new_item_check').is(':checked'))
         {
 
-            let id = $(this).find('.new_item_id').val();
-            let name = $(this).find('.new_item_name').val();
-            let price = parseFloat($(this).find('.new_item_price').val()) || 0;
-            let qty = parseFloat($(this).find('.new_item_qty').val()) || 0;
+            let id          = $(this).find('.new_item_id').val();
+            let name        = $(this).find('.new_item_name').val();
+            let code        = $(this).find('.new_item_code').val();
+            let description = $(this).find('.new_item_description').val();
+            let price       = parseFloat($(this).find('.new_item_price').val()) || 0;
+            let qty         = parseFloat($(this).find('.new_item_qty').val()) || 0;
 
 
             // Check item already exists
@@ -1148,12 +1161,14 @@ $('#addSelectedNewItem').click(function(){
                 let amount = qty * price;
 
 
-                $('#selectedCartItems').append(`
+                                $('#selectedCartItems').append(`
 
                 <tr>
                   <td>
         ${$('#selectedCartItems tr').length + 1}
     </td>
+
+    <td>${code}</td>
 
                    <td>
     ${name}
@@ -1167,6 +1182,11 @@ $('#addSelectedNewItem').click(function(){
            value="${name}">
 </td>
 
+    <td>
+        <textarea class="form-control form-control-sm"
+                  name="description[]"
+                  rows="1">${description}</textarea>
+    </td>
 
                     <td>
                         <input type="number"
@@ -1357,7 +1377,13 @@ $('#enquiry_id').change(function(){
 
 }
 
-    });
+        });
 
+});
+
+$('#create_revision').on('change', function () {
+    $('#btnUpdateQuotation').text(
+        this.checked ? ' Save as New Revision' : ' Update Quotation'
+    ).prepend('<i class="fa fa-save"></i>');
 });
 </script>

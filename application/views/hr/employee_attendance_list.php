@@ -5,6 +5,7 @@
         vertical-align: middle;
     }
 </style>
+
 <div class="card-body">
     <div class="dt-responsive table-responsive">
 
@@ -19,11 +20,11 @@
                 <?php echo $this->session->flashdata('success'); ?>
             </div>
         <?php endif; ?>
-        
+
         <table id="datatable" class="table table-striped" data-toggle="data-table">
             <thead>
                 <tr>
-                    <th>Sr No</th>
+                    <th>Sl. No</th>
                     <th>Employee Name</th>
                     <th>Attendance</th>
                     <th>Date</th>
@@ -42,8 +43,9 @@
 
                         <td class="action-icons">
                             <a href="<?php echo base_url() . 'index.php/Hr/edit_emp_attendance/' . $row->emp_aId; ?>" title="Edit"><i class="fa fa-edit"></i><?php echo $this->session->userdata('edit_icon'); ?></a>
-                            
-                            <a href="<?php echo base_url() . 'index.php/Hr/delete_attendance_emp/' . $row->emp_aId; ?>" title="Delete" onclick="return confirmcancel(<?php echo $row->emp_aId; ?>);"><i class="fa fa-trash"></i><?php echo $this->session->userdata('delete_icon'); ?></a>
+
+                            <a href="<?php echo base_url() . 'index.php/Hr/delete_attendance_emp/' . $row->emp_aId; ?>" title="Delete"
+                                onclick="return confirm('Are you sure you want to delete this attendance record?');"><i class="fa fa-trash"></i><?php echo $this->session->userdata('delete_icon'); ?></a>
 
                         </td>
                     </tr>
@@ -53,12 +55,7 @@
     </div>
 
 </div>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
+
 
 <!-- Static Table End -->
 

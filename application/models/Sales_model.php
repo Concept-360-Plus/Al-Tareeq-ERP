@@ -243,13 +243,34 @@ public function get_enquiry_by_id($id)
     }
 
 
-    public function get_max_revision($enq_master_id)
+       public function get_max_revision($enq_master_id)
     {
         $this->db->select_max('quotation_revision');
         $this->db->where('enquiry_id', $enq_master_id);
         $query = $this->db->get('quotation_master');
         $row = $query->row();
         return $row ? (int) $row->quotation_revision : 0;
+    }
+
+
+    public function get_max_revision_by_root($root_qtn_id)
+    {
+        $this->db->select_max('quotation_revision');
+        $this->db->group_start();
+            $this->db->where('qtn_id', $root_qtn_id);
+            $this->db->or_where('parent_qtn_id', $root_qtn_id);
+        $this->db->group_end();
+        $query = $this->db->get('quotation_master');
+        $row = $query->row();
+        return $row ? (int) $row->quotation_revision : 0;
+    }
+
+    // Plain row (no joins) — used to clone a quotation_master record for a new revision
+    public function get_quotation_master_row($qtn_id)
+    {
+        return $this->db->where('qtn_id', $qtn_id)
+                         ->get('quotation_master')
+                         ->row_array();
     }
     public function get_all_qtn_revisions($qtn_master_id)
     {
@@ -280,12 +301,12 @@ public function get_enquiry_by_id($id)
     public function get_quotation_details_by_id($qtn_id)
     {
         $query = $this->db
-            ->select('
+        ->select('
             q.*, 
             c.customer_name, 
-            c.customer_TR_no, 
-            c.contact_number, 
-            c.emirate, 
+            c.tax_registration_no AS customer_TR_no, 
+            c.office_telephone AS contact_number, 
+            c.tax_emirate AS emirate, 
             c.customer_address, 
             c.customer_email, 
              q.payment_term,
@@ -302,8 +323,7 @@ public function get_enquiry_by_id($id)
             b.branch_location,
             b.branch_header,
             b.branch_footer,
-            em.employee_name AS prepared_by,
-             u.user_name AS prepared_by
+            em.employee_name AS prepared_by
         ')
             ->from('quotation_master q')
 
@@ -324,8 +344,9 @@ public function get_enquiry_by_id($id)
                 'left'
             )
 
-            ->join('users u', 'u.user_id = q.created_by', 'left')
-            ->join('employee_master em', 'em.employee_id = u.employee_id', 'left')
+            // Prepared By must reflect the employee actually selected on the quotation,
+            // not the creator's own linked employee record
+            ->join('employee_master em', 'em.employee_id = q.prepared_by', 'left')
 
             ->where('q.qtn_id', $qtn_id)
             ->get();
@@ -344,9 +365,9 @@ public function get_enquiry_by_id($id)
     }
     public function get_quotation_products_by_id($qtn_id)
     {
-        $this->db->select("qp.*,um.unit_name,im.item_name,im.item_image,im.item_code");
+        $this->db->select("qp.*,um.unit_name,im.product_name AS item_name,im.product_image AS item_image,im.product_code AS item_code");
         $this->db->from("quotation_products qp");
-        $this->db->join("item_master im", "im.item_id  = qp.prd_id", "left");
+        $this->db->join("item_master im", "im.product_id  = qp.prd_id", "left");
         $this->db->join("unit_master um", "um.unit_id  = qp.unit_id", "left");
         $this->db->where("qp.qtn_id", $qtn_id);
         $query = $this->db->get();
@@ -741,9 +762,9 @@ public function get_enquiry_by_id($id)
     $this->db->select("qm.*,c.customer_name, 
     c.customer_address, 
     c.customer_email, 
-    c.customer_TR_no,
+    c.tax_registration_no AS customer_TR_no,
     cd.contact_name,
-    c.contact_number, b.branch_name, b.branch_header, b.branch_footer, b.branch_contact, b.branch_email, b.branch_location, b.branch_address, b.branch_web,b.branch_stamp, u.user_name");
+    cd.contact_phone AS contact_number, b.branch_name, b.branch_header, b.branch_footer, b.branch_contact, b.branch_email, b.branch_location, b.branch_address, b.branch_web,b.branch_stamp, u.user_name");
     $this->db->from("quotation_master qm");
 
     $this->db->join("customer_master c", "qm.quotation_customer = c.customer_id", "left");
@@ -1359,24 +1380,7 @@ public function get_enquiry_by_id($id)
     }
 
 
-    public function get_sales_order_by_id($so_id)
-    {
-        $this->db->select('
-        so.so_id,
-        so.so_code,
-        so.qtn_id,
-        qm.project_name,
-        cm.customer_name,
-        bm.branch_name
-    ');
-        $this->db->from('sales_order_master so');
-        $this->db->join('quotation_master qm', 'qm.qtn_id = so.qtn_id', 'left');
-        $this->db->join('customer_master cm', 'cm.customer_id = qm.quotation_customer', 'left');
-        $this->db->join('branch_master bm', 'bm.branch_id = qm.quotation_branch_id', 'left');
-        $this->db->where('so.so_id', $so_id);
-
-        return $this->db->get()->row_array();
-    }
+   
 
 
     public function get_all_products_by_so($so_id)
@@ -1728,7 +1732,7 @@ public function add_enquiry_cart($data)
 
 public function get_enquiry_cart($enquiry_id)
 {
-    $this->db->select('c.*, i.product_name');
+    $this->db->select('c.*, i.product_code, i.product_name, i.description');
     $this->db->from('enquiry_cart c');
     $this->db->join('item_master i','i.product_id=c.product_id','left');
     $this->db->where('c.enquiry_id',$enquiry_id);
@@ -1831,7 +1835,10 @@ public function get_quotation_by_id($id)
         customer_master.tax_emirate,
         customer_master.tax_country,
         enquiry_master.enquiry_code,
-        branch_master.branch_name
+        branch_master.branch_name,
+        prepared_emp.employee_name AS prepared_by_name,
+        approved_user.user_name AS approved_by_name,
+        sales_rep.sales_rep_name
     ');
 
     $this->db->from('quotation_master');
@@ -1851,6 +1858,27 @@ public function get_quotation_by_id($id)
     $this->db->join(
         'enquiry_master',
         'enquiry_master.enquiry_id = quotation_master.enquiry_id',
+        'left'
+    );
+
+    // Prepared By is stored as an employee_master id
+    $this->db->join(
+        'employee_master prepared_emp',
+        'prepared_emp.employee_id = quotation_master.prepared_by',
+        'left'
+    );
+
+    // Approved By is stored as a users id (set by accept_quotation_approval())
+    $this->db->join(
+        'users approved_user',
+        'approved_user.user_id = quotation_master.approved_by',
+        'left'
+    );
+
+    // Sales rep is stored on quotation_master.sales_person, referencing sales_rep_master
+    $this->db->join(
+        'sales_rep_master sales_rep',
+        'sales_rep.sales_rep_id = quotation_master.sales_person',
         'left'
     );
 
@@ -1895,6 +1923,11 @@ public function get_pending_quotations()
 
     $this->db->where('qm.active', 1);
     $this->db->where('qm.aproval', 0);
+    $this->db->group_start();
+        $this->db->where("UPPER(qm.quotation_status) =", 'CONFIRMED');
+        $this->db->or_where('qm.quotation_status', '');
+        $this->db->or_where('qm.quotation_status', NULL);
+    $this->db->group_end();
 
     $this->db->order_by('qm.qtn_id', 'DESC');
 
@@ -1936,4 +1969,376 @@ public function get_approved_quotations()
 
     return $this->db->get()->result();
 }
+
+public function add_enquiry_attachments($data)
+{
+    return $this->db->insert_batch('enquiry_attachments', $data);
+}
+
+public function get_enquiry_attachments($enquiry_id)
+{
+    $this->db->select('*');
+    $this->db->from('enquiry_attachments');
+    $this->db->where('enquiry_id', $enquiry_id);
+    $this->db->order_by('attachment_id', 'DESC');
+
+    return $this->db->get()->result();
+}
+
+public function delete_enquiry_attachment($attachment_id)
+{
+    $this->db->where('attachment_id', $attachment_id);
+    return $this->db->delete('enquiry_attachments');
+}
+
+
+    /* ========================================================
+       Migrated from Sales_order_model — Sales Order / Delivery / Invoice
+       ======================================================== */
+
+    public function get_sales_order_master($so_id)
+    {
+        $this->db->select("
+            so.*,
+            qm.quotation_code,
+            qm.project_name AS qtn_project_name,
+            qm.quotation_customer,
+            qm.quotation_branch_id,
+            cm.customer_name,
+            bm.branch_name
+        ");
+        $this->db->from("sales_order_master so");
+        $this->db->join("quotation_master qm", "qm.qtn_id = so.qtn_id", "left");
+        $this->db->join("customer_master cm", "cm.customer_id = qm.quotation_customer", "left");
+        $this->db->join("branch_master bm", "bm.branch_id = qm.quotation_branch_id", "left");
+        $this->db->where("so.so_id", $so_id);
+        return $this->db->get()->row_array();
+    }
+
+    public function get_sales_order_master_details($so_id)
+    {
+        $this->db->select("
+            so.*,
+            qm.quotation_code,
+            COALESCE(qm.project_name, enq.project_name) AS project_name,
+            cm.customer_name, cm.customer_address, cm.customer_email,
+            cm.office_telephone AS contact_number,
+            cm.tax_registration_no AS customer_TR_no,
+            cm.tax_emirate AS emirate,
+            bm.branch_name, bm.branch_address, bm.branch_contact, bm.branch_email,
+            bm.branch_header, bm.branch_footer, bm.branch_stamp, bm.branch_web,
+            emp.employee_name AS prepared_by
+        ");
+        $this->db->from("sales_order_master so");
+        $this->db->join("quotation_master qm", "qm.qtn_id = so.qtn_id", "left");
+        $this->db->join("enquiry_master enq", "enq.enquiry_id = so.enquiry_id", "left");
+        $this->db->join("customer_master cm", "cm.customer_id = COALESCE(enq.enquiry_customer, qm.quotation_customer)", "left");
+        $this->db->join("branch_master bm", "bm.branch_id = COALESCE(enq.branch_id, qm.quotation_branch_id)", "left");
+        $this->db->join("employee_master emp", "emp.employee_id = qm.prepared_by", "left");
+        $this->db->where("so.so_id", $so_id);
+        return $this->db->get()->row_array();
+    }
+
+    public function get_sales_order_by_id($so_id)
+    {
+        return $this->get_sales_order_master_details($so_id);
+    }
+
+    public function list_all_sales_order()
+    {
+        $this->db->select("
+            so.so_id, so.so_code, so.so_date, so.qtn_id,
+            so.enquiry_id, so.active,
+            so.delivery_status, so.reserved_status,
+            so.sub_total, so.discount_percentage, so.discount_amount,
+            so.vat_percentage, so.vat_amount, so.grand_total,
+
+            qm.quotation_code, COALESCE(qm.project_name, enq.project_name) AS project_name,
+            enq.enquiry_code,
+            cm.customer_name, bm.branch_name
+        ");
+        $this->db->from("sales_order_master so");
+        $this->db->join("quotation_master qm", "qm.qtn_id = so.qtn_id", "left");
+        $this->db->join("enquiry_master enq", "enq.enquiry_id = so.enquiry_id", "left");
+        $this->db->join("customer_master cm", "cm.customer_id = COALESCE(enq.enquiry_customer, qm.quotation_customer)", "left");
+        $this->db->join("branch_master bm", "bm.branch_id = COALESCE(enq.branch_id, qm.quotation_branch_id)", "left");
+        $this->db->where("so.active", 1);
+        $this->db->where("qm.qtn_id IS NOT NULL", NULL, FALSE);
+        $this->db->order_by("so.so_id", "DESC");
+        return $this->db->get()->result_array();
+    }
+
+    public function get_so_address($so_id)
+    {
+        $this->db->where('so_id', $so_id);
+        return $this->db->get('sales_order_addres')->row_array();
+    }
+
+    public function insert_sales_order_master($data)
+    {
+        $this->db->insert('sales_order_master', $data);
+        return $this->db->insert_id();
+    }
+
+    public function insert_sales_order_products_batch($data)
+    {
+        return $this->db->insert_batch('sales_order_products', $data);
+    }
+
+    public function insert_sales_order_address($data)
+    {
+        return $this->db->insert('sales_order_addres', $data);
+    }
+
+    public function get_so_products($so_id)
+    {
+        $this->db->select("sop.*, im.product_name, im.product_code, um.unit_name");
+        $this->db->from("sales_order_products sop");
+        $this->db->join("item_master im", "im.product_id = sop.product_id", "left");
+        $this->db->join("unit_master um", "um.unit_id = sop.unit_id", "left");
+        $this->db->where("sop.so_id", $so_id);
+        return $this->db->get()->result_array();
+    }
+
+    public function update_sales_order_master($so_id, $data)
+    {
+        $this->db->where('so_id', $so_id);
+        return $this->db->update('sales_order_master', $data);
+    }
+
+    public function update_sales_order_address($so_id, $data)
+    {
+        $this->db->where('so_id', $so_id);
+        return $this->db->update('sales_order_addres', $data);
+    }
+
+    public function get_available_quantities($enquiry_id, $qtn_id)
+    {
+        $this->db->select("
+            sqi.quotation_item_id,
+            sqi.item_id AS prd_id,
+            sqi.qty AS available_qty,
+            COALESCE(sqi.product_description, '') AS prd_description,
+            sqi.price AS unit_price,
+            sqi.amount,
+            im.product_name AS item_name,
+            im.product_code AS item_code,
+            im.unit_id,
+            um.unit_name
+        ");
+        $this->db->from("sales_quotation_items sqi");
+        $this->db->join("item_master im", "im.product_id = sqi.item_id", "left");
+        $this->db->join("unit_master um", "um.unit_id = im.unit_id", "left");
+        $this->db->where("sqi.quotation_id", $qtn_id);
+        return $this->db->get()->result_array();
+    }
+
+    // 🔶 Best-effort reconstruction — no original source or error log to verify against. Test this one.
+    public function get_edit_so_quantities($so_id, $enq_id = null, $qtn_id = null)
+    {
+        $this->db->select("
+            sop.product_table_id, sop.so_id, sop.product_id, sop.unit_id,
+            sop.quantity AS ordered_qty, sop.unit_price, sop.amount,
+            sop.discount_amount, sop.taxable_amount,
+            pm.product_name AS item_name, pm.product_code, um.unit_name
+        ");
+        $this->db->from("sales_order_products sop");
+        $this->db->join("item_master pm", "pm.product_id = sop.product_id", "left");
+        $this->db->join("unit_master um", "um.unit_id = sop.unit_id", "left");
+        $this->db->where("sop.so_id", $so_id);
+        $products = $this->db->get()->result_array();
+
+        $can_create_dc = false;
+
+        foreach ($products as &$row)
+        {
+            $this->db->select_sum('dp.quantity', 'delivered_qty');
+            $this->db->from('delivery_products dp');
+            $this->db->join('delivery_master dm', 'dm.del_id = dp.del_master_id');
+            $this->db->where('dm.so_id', $so_id);
+            $this->db->where('dp.product_id', $row['product_id']);
+            $delivered = $this->db->get()->row();
+
+            $delivered_qty = $delivered && $delivered->delivered_qty ? (float) $delivered->delivered_qty : 0;
+            $pending_qty   = (float) $row['ordered_qty'] - $delivered_qty;
+
+            $row['delivered_qty'] = $delivered_qty;
+            $row['pending_qty']   = $pending_qty > 0 ? $pending_qty : 0;
+
+            if ($row['pending_qty'] > 0)
+            {
+                $can_create_dc = true;
+            }
+        }
+
+        return [
+            'products'      => $products,
+            'can_create_dc' => $can_create_dc
+        ];
+    }
+
+    public function list_all_delivery_challan()
+    {
+        $this->db->select("dm.*, so.so_code, cm.customer_name, bm.branch_name");
+        $this->db->from("delivery_master dm");
+        $this->db->join("sales_order_master so", "so.so_id = dm.so_id", "left");
+        $this->db->join("quotation_master qm", "qm.qtn_id = so.qtn_id", "left");
+        $this->db->join("customer_master cm", "cm.customer_id = qm.quotation_customer", "left");
+        $this->db->join("branch_master bm", "bm.branch_id = qm.quotation_branch_id", "left");
+        $this->db->order_by("dm.del_id", "DESC");
+        return $this->db->get()->result_array();
+    }
+
+    public function get_last_delivery_code()
+    {
+        $this->db->select('delivery_code');
+        $this->db->from('delivery_master');
+        $this->db->order_by('del_id', 'DESC');
+        $this->db->limit(1);
+        $row = $this->db->get()->row();
+        return $row ? $row->delivery_code : null;
+    }
+
+    public function get_sales_order_list_data()
+    {
+        $this->db->select("so.so_id, so.so_code, qm.project_name, cm.customer_name");
+        $this->db->from("sales_order_master so");
+        $this->db->join("quotation_master qm", "qm.qtn_id = so.qtn_id", "left");
+        $this->db->join("customer_master cm", "cm.customer_id = qm.quotation_customer", "left");
+        $this->db->order_by("so.so_id", "DESC");
+        return $this->db->get()->result_array();
+    }
+
+    // 🔶 Filter guessed (only shows challans not yet invoiced) — check this excludes/includes what you expect
+    public function get_delivery_challan_list_data()
+    {
+        $this->db->select("dm.del_id, dm.delivery_code, dm.so_id, so.qtn_id, qm.project_name, cm.customer_name");
+        $this->db->from("delivery_master dm");
+        $this->db->join("sales_order_master so", "so.so_id = dm.so_id", "left");
+        $this->db->join("quotation_master qm", "qm.qtn_id = so.qtn_id", "left");
+        $this->db->join("customer_master cm", "cm.customer_id = qm.quotation_customer", "left");
+        $this->db->where("dm.invoice_status !=", 1);
+        $this->db->order_by("dm.del_id", "DESC");
+        return $this->db->get()->result_array();
+    }
+
+    public function get_delivery_master($del_id)
+    {
+        $this->db->where('del_id', $del_id);
+        return $this->db->get('delivery_master')->row_array();
+    }
+
+    public function insert_invoice_master($data)
+    {
+        $this->db->insert('invoice_master', $data);
+        return $this->db->insert_id();
+    }
+
+    public function insert_invoice_products($data)
+    {
+        return $this->db->insert_batch('invoice_product', $data);
+    }
+
+    public function get_invoice_master($invoice_id)
+    {
+        $this->db->where('invoice_id', $invoice_id);
+        return $this->db->get('invoice_master')->row_array();
+    }
+
+    public function get_quotation_print_data($qtn_id)
+    {
+        return $this->get_quotation_details_by_id($qtn_id);
+    }
+
+    public function list_all_invoices()
+    {
+        $this->db->select("im.*, cm.customer_name, bm.branch_name");
+        $this->db->from("invoice_master im");
+        $this->db->join("sales_order_master so", "so.so_id = im.so_id", "left");
+        $this->db->join("quotation_master qm", "qm.qtn_id = so.qtn_id", "left");
+        $this->db->join("customer_master cm", "cm.customer_id = COALESCE(im.invoice_customer, qm.quotation_customer)", "left");
+        $this->db->join("branch_master bm", "bm.branch_id = im.branch_id", "left");
+        $this->db->where("im.cancelled", 0);
+        $this->db->where("im.sales_return", 0);
+        $this->db->where("im.invoice_type !=", "direct");
+        $this->db->order_by("im.invoice_id", "DESC");
+        return $this->db->get()->result_array();
+    }
+
+    public function list_Cancel_invoices()
+    {
+        $this->db->select("im.*, cm.customer_name, bm.branch_name");
+        $this->db->from("invoice_master im");
+        $this->db->join("sales_order_master so", "so.so_id = im.so_id", "left");
+        $this->db->join("quotation_master qm", "qm.qtn_id = so.qtn_id", "left");
+        $this->db->join("customer_master cm", "cm.customer_id = COALESCE(im.invoice_customer, qm.quotation_customer)", "left");
+        $this->db->join("branch_master bm", "bm.branch_id = im.branch_id", "left");
+        $this->db->where("im.cancelled", 1);
+        $this->db->order_by("im.invoice_id", "DESC");
+        return $this->db->get()->result_array();
+    }
+
+    public function list_Sales_retun_invoices()
+    {
+        $this->db->select("im.*, cm.customer_name, bm.branch_name");
+        $this->db->from("invoice_master im");
+        $this->db->join("sales_order_master so", "so.so_id = im.so_id", "left");
+        $this->db->join("quotation_master qm", "qm.qtn_id = so.qtn_id", "left");
+        $this->db->join("customer_master cm", "cm.customer_id = COALESCE(im.invoice_customer, qm.quotation_customer)", "left");
+        $this->db->join("branch_master bm", "bm.branch_id = im.branch_id", "left");
+        $this->db->where("im.sales_return", 1);
+        $this->db->order_by("im.invoice_id", "DESC");
+        return $this->db->get()->result_array();
+    }
+
+    public function list_direct_invoices()
+    {
+        $this->db->select("im.*, cm.customer_name, bm.branch_name");
+        $this->db->from("invoice_master im");
+        $this->db->join("customer_master cm", "cm.customer_id = im.invoice_customer", "left");
+        $this->db->join("branch_master bm", "bm.branch_id = im.branch_id", "left");
+        $this->db->where("im.invoice_type", "direct");
+        $this->db->order_by("im.invoice_id", "DESC");
+        return $this->db->get()->result_array();
+    }
+
+
+    public function get_sales_order_print_data($so_id)
+    {
+        $this->db->select("
+            so.*,
+            qm.quotation_code,
+            qm.lpo_number,
+            COALESCE(qm.project_name, enq.project_name) AS project_name,
+
+            cm.customer_code,
+            cm.customer_name,
+            cm.customer_address,
+            cm.customer_email,
+            cm.office_telephone,
+            cm.office_fax,
+            cm.tax_registration_no,
+
+            bm.branch_name, bm.branch_address, bm.branch_contact, bm.branch_email,
+            bm.branch_header, bm.branch_footer, bm.branch_stamp, bm.branch_web,
+
+            emp.employee_name AS prepared_by_name,
+            rep.sales_rep_name
+        ");
+        $this->db->from("sales_order_master so");
+        $this->db->join("quotation_master qm", "qm.qtn_id = so.qtn_id", "left");
+        $this->db->join("enquiry_master enq", "enq.enquiry_id = so.enquiry_id", "left");
+        $this->db->join("customer_master cm", "cm.customer_id = COALESCE(enq.enquiry_customer, qm.quotation_customer)", "left");
+        $this->db->join("branch_master bm", "bm.branch_id = COALESCE(enq.branch_id, qm.quotation_branch_id)", "left");
+        $this->db->join("employee_master emp", "emp.employee_id = qm.prepared_by", "left");
+        $this->db->join("sales_rep_master rep", "rep.sales_rep_id = qm.sales_person", "left");
+        $this->db->where("so.so_id", $so_id);
+
+        return $this->db->get()->row();
+    }
+
+
+
+
+
 }

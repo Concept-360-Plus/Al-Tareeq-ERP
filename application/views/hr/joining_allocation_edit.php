@@ -7,17 +7,17 @@
         <?php $row = $record; ?> <!-- single object -->
 
         <form onsubmit="return check_duplicate_exist();" id="main" method="post"
-              action="<?php echo base_url('index.php/Hr/update_joining_application/'.$row->jid); ?>"
-              autocomplete="off" enctype="multipart/form-data" class="form-horizontal form-label-left">
+          action="<?php echo base_url('index.php/Hr/update_joining_application/' . $row->jid); ?>"
+          autocomplete="off" enctype="multipart/form-data" class="form-horizontal form-label-left">
 
           <!-- Employee Name -->
           <div class="item form-group">
             <label class="col-form-label col-md-3 col-sm-3 label-align">Employee Name:</label>
             <div class="col-md-6 col-sm-6">
               <input type='text' class="form-control form-control-sm bg-soft-gray"
-                     value="<?php echo $row->user_name; ?>" readonly />
+                value="<?php echo htmlspecialchars($row->employee_name); ?>" readonly />
               <input type='hidden' name="employee_id_hidden"
-                     value="<?php echo $row->employee_id; ?>" />
+                value="<?php echo $row->employee_id; ?>" />
             </div>
           </div>
 
@@ -26,18 +26,18 @@
             <label class="col-form-label col-md-3 col-sm-3 label-align">Joining Code:</label>
             <div class="col-md-6 col-sm-6">
               <input type="text" name="ja_code" id="ja_code" class="form-control bg-light"
-                     value="<?php echo $row->joining_code; ?>" readonly tabindex="2">
+                value="<?php echo $row->joining_code; ?>" readonly tabindex="2">
             </div>
           </div>
 
-          
-          
+
+
           <!-- Joining Date -->
           <div class="item form-group">
             <label class="col-form-label col-md-3 col-sm-3 label-align">Joining Date:</label>
             <div class="col-md-6 col-sm-6">
-                <input type="date" class="form-control" id="joining_date" name="joining_date"
-                       value= "<?= $row->joining_date ?? ''; ?>">
+              <input type="date" class="form-control" id="joining_date" name="joining_date"
+                value="<?= $row->joining_date ?? ''; ?>">
             </div>
           </div>
 
@@ -72,7 +72,7 @@
             <label class="col-form-label col-md-3 col-sm-3 label-align">Remark:</label>
             <div class="col-md-6 col-sm-6">
               <textarea id="remark" name="remark" rows="3" class="form-control"
-                        placeholder="Enter remark" tabindex="6"><?php echo $row->remark; ?></textarea>
+                placeholder="Enter remark" tabindex="6"><?php echo $row->remark; ?></textarea>
             </div>
           </div>
 
@@ -98,25 +98,25 @@
 </div>
 
 <script>
-$(document).ready(function() {
+  $(document).ready(function() {
     var i = 1;
     $("#add_row").click(function() {
-        $('#addr' + i).html("<td>" + (i + 1) + "</td><td><div class='col-sm-6'><input class='form-control' id='documents" + i + "' name='documents[]' type='file'></div></td><td></td>");
-        $('#tab_logic').append('<tr id="addr' + (i + 1) + '"></tr>');
-        i++;
+      $('#addr' + i).html("<td>" + (i + 1) + "</td><td><div class='col-sm-6'><input class='form-control' id='documents" + i + "' name='documents[]' type='file'></div></td><td></td>");
+      $('#tab_logic').append('<tr id="addr' + (i + 1) + '"></tr>');
+      i++;
     });
 
     $("#delete_row").click(function() {
-        if (i > 1) {
-            $("#addr" + (i - 1)).html('');
-            i--;
-        }
+      if (i > 1) {
+        $("#addr" + (i - 1)).html('');
+        i--;
+      }
     });
 
     $("#tab_logic").on('click', '.remove', function() {
-        $(this).closest('tr').remove();
+      $(this).closest('tr').remove();
     });
-});
+  });
 
-function calculate_total_days() {}
+  function calculate_total_days() {}
 </script>

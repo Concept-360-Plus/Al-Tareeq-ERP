@@ -37,7 +37,7 @@ label,h4 {
 						<div class="form-group">
 							<label>Location <span class="text-danger">*</span></label>
 							<?= form_error('emirate', '<small class="text-danger">', '</small>') ?>
-							<select name="emirate" class="form-control">
+							<select name="location" class="form-control">
 								<option value="">Select</option>
 								<option value="Abu Dhabi">Abu Dhabi</option>
 								<option value="Dubai">Dubai</option>
@@ -61,192 +61,216 @@ label,h4 {
 				</div>	
 				<div class="row">
 
-    <div class="col-md-4">
-        <div class="form-group">
-            <label>Office Telephone</label>
-            <input type="text" name="office_telephone" class="form-control">
-        </div>
-    </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Office Telephone</label>
+                                <input type="text" name="office_telephone" class="form-control">
+                            </div>
+                        </div>
 
-    <div class="col-md-4">
-        <div class="form-group">
-            <label>Office Fax</label>
-            <input type="text" name="office_fax" class="form-control">
-        </div>
-    </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Office Fax</label>
+                                <input type="text" name="office_fax" class="form-control">
+                            </div>
+                        </div>
 
-    <div class="col-md-4">
-			<div class="form-group">
-							<label>Email </label>
-							
-							<input type="email" name="customer_email" class="form-control">
-						</div>
-           
-    </div>
+                        <div class="col-md-4">
+                                <div class="form-group">
+                                                <label>Email </label>
+                                                
+                                                <input type="email" name="customer_email" class="form-control">
+                                            </div>
+                            
+                        </div>
 
-</div>
-<div class="row">
-	<div class="col-md-4">
-	 <div class="form-group">
-         <label>Reference Code</label>
-            <input type="text" name="reference_code" class="form-control">
-			</div>
-</div>
-
-
-
-    <div class="col-md-4">
-        <div class="form-group">
-            <label>Customer Group</label>
-            <select name="customer_group_id" class="form-control">
-                <option value="">Select</option>
-                <?php foreach($customer_groups as $g){ ?>
-                    <option value="<?= $g->customer_group_id ?>">
-                        <?= $g->customer_group_name ?>
-                    </option>
-                <?php } ?>
-            </select>
-        </div>
-    </div>
-
-    <div class="col-md-4">
-        <div class="form-group">
-            <label>Agent Code</label>
-            <input type="text" name="agent_code" class="form-control">
-        </div>
-    </div>
-
-    <div class="col-md-4">
-       
-    </div>
-
-</div>
-<div class="row">
-    <div class="col-md-4">
-
- <div class="form-group">
-            <label>Sales Rep Code</label>
-            <select name="sales_rep_id" class="form-control">
-                <option value="">Select</option>
-                <?php foreach($sales_rep_list as $r){ ?>
-                    <option value="<?= $r->sales_rep_id ?>">
-                        <?= $r->sales_rep_name ?>
-                    </option>
-                <?php } ?>
-            </select>
-        </div>
-		 </div>
-    <div class="col-md-4">
-        <div class="form-group">
-            <label>Sales Area</label>
-            <select name="sales_area_id" class="form-control">
-                <option value="">Select</option>
-                <?php foreach($sales_area_list as $s){ ?>
-                    <option value="<?= $s->sales_area_id ?>">
-                        <?= $s->sales_area_name ?>
-                    </option>
-                <?php } ?>
-            </select>
-        </div>
-    </div>
-
-    <div class="col-md-4">
-        <div class="form-group">
-            <label>Continent</label>
-            <select name="continent" class="form-control">
-                <option value="">Select</option>
-                <option>Africa</option>
-                <option>Asia</option>
-                <option>Europe</option>
-                <option>North America</option>
-                <option>South America</option>
-                <option>Australia</option>
-            </select>
-        </div>
-    </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                        <div class="form-group">
+                            <label>Reference Code</label>
+                                <input type="text" name="reference_code" class="form-control">
+                                </div>
+                    </div>
 
 
-</div>
-<div class="row">
 
-   <div class="col-md-6">
-    <div class="form-group">
-        <label>Payment Terms</label>
-        <textarea name="payment_terms" class="form-control" rows="3"></textarea>
-    </div>
-</div>
-</div>
-<div class="row">
-    <div class="col-md-4">
-        <div class="form-group">
-            <label>Credit Limit</label>
-            <input type="number" name="credit_limit" class="form-control">
-        </div>
-    </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Customer Group</label>
+                                <select name="customer_group_id" class="form-control">
+                                    <option value="">Select</option>
+                                    <?php foreach($customer_groups as $g){ ?>
+                                        <option value="<?= $g->customer_group_id ?>">
+                                            <?= $g->customer_group_name ?>
+                                        </option>
+                                    <?php } ?>
+                                </select>
+                            </div>
+                        </div>
 
-    <div class="col-md-4">
-        <div class="form-group">
-            <label>Credit Days</label>
-            <input type="number" name="credit_days" class="form-control">
-        </div>
-    </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Agent Code</label>
+                                <input type="text" name="agent_code" class="form-control">
+                            </div>
+                        </div>
 
-    <div class="col-md-4">
-        <div class="form-group">
-            <label>Max Discount %</label>
-            <input type="number" step="0.01" name="max_discount_percent" class="form-control">
-        </div>
-    </div>
+                        <div class="col-md-4">
+                        
+                        </div>
 
-</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
 
-<div class="row">
-    <div class="col-md-12">
-        <h4><b>Tax Information</b></h4>
-        <hr>
-    </div>
-</div>
+                    <div class="form-group">
+                                <label>Sales Rep Code <span class="text-danger">*</span></label>
+                                <select name="sales_rep_id" class="form-control" required>
+                                    <option value="">Select</option>
+                                    <?php foreach($sales_rep_list as $r){ ?>
+                                        <option value="<?= $r->sales_rep_id ?>">
+                                            <?= $r->sales_rep_name ?>
+                                        </option>
+                                    <?php } ?>
+                                </select>
+                            </div>
+                            </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Sales Area</label>
+                                <select name="sales_area_id" class="form-control">
+                                    <option value="">Select</option>
+                                    <?php foreach($sales_area_list as $s){ ?>
+                                        <option value="<?= $s->sales_area_id ?>">
+                                            <?= $s->sales_area_name ?>
+                                        </option>
+                                    <?php } ?>
+                                </select>
+                            </div>
+                        </div>
 
-<div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Continent</label>
+                                <select name="continent" class="form-control">
+                                    <option value="">Select</option>
+                                    <option>Africa</option>
+                                    <option>Asia</option>
+                                    <option>Europe</option>
+                                    <option>North America</option>
+                                    <option>South America</option>
+                                    <option>Australia</option>
+                                </select>
+                            </div>
+                        </div>
 
-    <div class="col-md-3">
-        <div class="form-group">
-            <label>Tax Registration No</label>
-            <input type="text" name="tax_registration_no" class="form-control">
-        </div>
-    </div>
 
-    <div class="col-md-3">
-        <div class="form-group">
-            <label>Country</label>
-            <input type="text" name="tax_country" class="form-control">
-        </div>
-    </div>
+                    </div>
+                    <div class="row">
 
-    <div class="col-md-3">
-        <div class="form-group">
-            <label>Emirate <small>(Applicable for UAE)</small></label>
-            <select name="tax_emirate" class="form-control">
-                <option value="">Select Emirate</option>
-                <option value="Abu Dhabi">Abu Dhabi</option>
-                <option value="Dubai">Dubai</option>
-                <option value="Sharjah">Sharjah</option>
-                <option value="Ajman">Ajman</option>
-                <option value="Umm Al Quwain">Umm Al Quwain</option>
-                <option value="Ras Al Khaimah">Ras Al Khaimah</option>
-                <option value="Fujairah">Fujairah</option>
-            </select>
-        </div>
-    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Payment Terms</label>
+                            <textarea name="payment_terms" class="form-control" rows="3"></textarea>
+                        </div>
+                    </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Credit Limit</label>
+                                <input type="number" name="credit_limit" class="form-control">
+                            </div>
+                        </div>
 
-    <div class="col-md-3">
-        <div class="form-group">
-            <label>Tax Code</label>
-            <input type="text" name="tax_code" class="form-control">
-        </div>
-    </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Credit Days</label>
+                                <input type="number" name="credit_days" class="form-control">
+                            </div>
+                        </div>
 
-</div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Max Discount %</label>
+                                <input type="number" step="0.01" name="max_discount_percent" class="form-control">
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h4><b>Tax Information</b></h4>
+                            <hr>
+                        </div>
+                    </div>
+
+                    <div class="row">
+
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Tax Registration No</label>
+                                <input type="text" name="tax_registration_no" class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Country</label>
+                                <input type="text" name="tax_country" class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Emirate <small>(Applicable for UAE)</small></label>
+                                <select name="tax_emirate" class="form-control">
+                                    <option value="">Select Emirate</option>
+                                    <option value="Abu Dhabi">Abu Dhabi</option>
+                                    <option value="Dubai">Dubai</option>
+                                    <option value="Sharjah">Sharjah</option>
+                                    <option value="Ajman">Ajman</option>
+                                    <option value="Umm Al Quwain">Umm Al Quwain</option>
+                                    <option value="Ras Al Khaimah">Ras Al Khaimah</option>
+                                    <option value="Fujairah">Fujairah</option>
+                                </select>
+                            </div>
+                        </div>
+
+                            <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Tax Code</label>
+                                <input type="text" name="tax_code" class="form-control">
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h4><b>Sales</b></h4>
+                            <hr>
+                            <div class="form-group">
+                                <label style="margin-right:15px;">
+                                    <input type="checkbox" name="sales_vat_applicable" value="1">
+                                    VAT Applicable
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h4><b>Purchase</b></h4>
+                            <hr>
+                            <div class="form-group">
+                                <label style="margin-right:15px;">
+                                    <input type="checkbox" name="purchase_vat_applicable" value="1">
+                                    VAT Applicable
+                                </label>
+                            </div>
+                        </div>
+                    </div>
 				
 				
 				<!-- Row 7: Contact Person Table -->

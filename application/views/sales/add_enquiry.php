@@ -9,7 +9,7 @@
         <div class="col-md-6 col-sm-6 form-group">
             <label>Branch <span class="text-danger">*</span></label>
             <?= form_error('branch', '<small class="text-danger">', '</small>') ?>
-            <select name="branch" id="branch" class="form-control" required>
+            <select name="branch" id="branch" class="form-control select2" required>
                 <option value="">Select</option>
                 <?php foreach($branch_list as $branch): ?>
                     <option value="<?= $branch->branch_id ?>"
@@ -94,6 +94,20 @@
             </select>
         </div>
 
+        <!-- Sales Person -->
+        <div class="col-md-6 col-sm-6 form-group">
+            <label>Sales Person</label>
+            <select name="sales_person" id="sales_person" class="form-control">
+                <option value="">-- Select --</option>
+                <?php if(!empty($sales_rep_list)) { foreach($sales_rep_list as $rep) { ?>
+                <option value="<?= $rep->sales_rep_id ?>"
+                    <?= (isset($enquiry_data['sales_person']) && $enquiry_data['sales_person'] == $rep->sales_rep_id) ? 'selected' : '' ?>>
+                    <?= $rep->sales_rep_name ?>
+                </option>
+                <?php } } ?>
+            </select>
+        </div>
+
     </div>
 
     <!-- Customer Section -->
@@ -148,6 +162,11 @@
             <i class="fa fa-shopping-cart"></i> Add Items
         </button>
 
+        <button type="button"
+                class="btn btn-success openQuickAddItemBtn">
+            <i class="fa fa-plus"></i> Add New Item
+        </button>
+
     </div>
 </div>
 
@@ -155,10 +174,12 @@
 <div class="row mt-3">
     <div class="col-md-12">
 
-        <table class="table table-bordered">
+    <table class="table table-bordered">
             <thead>
 <tr>
+    <th width="100">Code</th>
     <th>Item</th>
+    <th>Description</th>
     <th width="100">Qty</th>
     <th width="150">Price</th>
     <th width="150">Amount</th>
@@ -175,7 +196,44 @@
     </div>
 </div>
 
-    <div class="ln_solid"></div>
+        <div class="ln_solid"></div>
+
+        <div class="row">
+        <div class="col-md-12">
+            <h4>Upload Drawings</h4>
+            <hr>
+
+            <table class="table table-bordered" id="drawingRows">
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th width="80">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <input type="file"
+                                   name="drawings[]"
+                                   class="form-control"
+                                   accept=".pdf,.jpg,.jpeg,.png">
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-danger btn-sm removeDrawingRow">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <button type="button" class="btn btn-info btn-sm" id="addDrawingRow">
+                <i class="fa fa-plus"></i> Add Row
+            </button>
+
+            <p class="text-muted" style="margin-top:8px;">Allowed file types: PDF, JPG, JPEG, PNG. Max size 5MB each.</p>
+        </div>
+    </div>
 
       <div class="form-group text-center">
                           <button type="submit" id="saveBtn" class="btn btn-success">Submit</button>
@@ -210,6 +268,7 @@
 <thead>
 <tr>
 <th>Item</th>
+<th>Description</th>
 <th>Price</th>
 <th width="200">Quantity</th>
 </tr>
@@ -244,6 +303,8 @@ Add To Cart
 
 </form>
 <script>
+var baseUrl = "<?php echo base_url(); ?>";
+
 $(document).on('click','.plus',function(){
 
     let qty=$(this).siblings('.qty');
@@ -275,10 +336,11 @@ $('#addCart').click(function(){
         {
             let row = $(this).closest('tr');
 
-            let name  = row.find('.item_name').val();
-            let id    = row.find('.item_id').val();
-            console.log("ID:", id);
-            let price = row.find('.item_price').val();
+            let name        = row.find('.item_name').val();
+            let id          = row.find('.item_id').val();
+            let code        = row.find('.item_code').val();
+            let description = row.find('.item_description').val();
+            let price       = row.find('.item_price').val();
 
             // Check item already exists in cart
             let existingRow = $('#selectedCartItems')
@@ -308,9 +370,11 @@ $('#addCart').click(function(){
             {
                 // New item add row
 
-               $('#selectedCartItems').append(`
+            $('#selectedCartItems').append(`
 
 <tr>
+
+<td>${code}</td>
 
 <td>
     ${name}
@@ -320,6 +384,7 @@ $('#addCart').click(function(){
     value="${id}">
 </td>
 
+<td>${description}</td>
 
 <td>
 
@@ -357,6 +422,12 @@ value="${(qty*price).toFixed(2)}">
 
 
 <td>
+
+<button type="button"
+class="btn btn-primary btn-sm editItemTypeBtn"
+data-product-id="${id}">
+<i class="fa fa-edit"></i>
+</button>
 
 <button type="button"
 class="btn btn-danger btn-sm removeCartItem">
@@ -419,13 +490,13 @@ $('#item_search').keyup(function(){
             $.each(data,function(i,item){
 
 
-                html += `
+            html += `
 
                 <tr>
 
                 <td>
 
-                ${item.product_name}
+                ${item.product_name} (${item.product_code})
 
                 <input type="hidden"
                        class="item_name"
@@ -435,8 +506,17 @@ $('#item_search').keyup(function(){
                        class="item_id"
                        value="${item.product_id}">
 
+                <input type="hidden"
+                       class="item_code"
+                       value="${item.product_code}">
+
+                <input type="hidden"
+                       class="item_description"
+                       value="${item.description ? item.description : ''}">
+
                 </td>
 
+                <td>${item.description ? item.description : ''}</td>
 
                 <td>
 
@@ -523,8 +603,135 @@ $(document).on('keyup change','.cart_qty',function(){
        .text(amount.toFixed(2));
 
 
-    row.find('.amount_input')
+        row.find('.amount_input')
        .val(amount.toFixed(2));
 
 });
+
+$(document).on('click','#addDrawingRow',function(){
+
+    let row = `
+
+<tr>
+
+<td>
+<input type="file"
+       name="drawings[]"
+       class="form-control"
+       accept=".pdf,.jpg,.jpeg,.png">
+</td>
+
+<td>
+<button type="button" class="btn btn-danger btn-sm removeDrawingRow">
+<i class="fa fa-trash"></i>
+</button>
+</td>
+
+</tr>
+
+`;
+
+    $('#drawingRows tbody').append(row);
+
+});
+
+$(document).on('click','.removeDrawingRow',function(){
+
+    let rowCount = $('#drawingRows tbody tr').length;
+
+    if(rowCount <= 1)
+    {
+        $(this).closest('tr').find('input[type="file"]').val('');
+        return;
+    }
+
+    $(this).closest('tr').remove();
+
+});
+
+$(document).on('itemQuickAdded', function(e, item){
+
+    let existingRow = $('#selectedCartItems')
+        .find('input[name="item_id[]"][value="'+item.product_id+'"]')
+        .closest('tr');
+
+    if(existingRow.length > 0)
+    {
+        return;
+    }
+
+        $('#selectedCartItems').append(`
+
+<tr>
+
+<td>${item.product_code}</td>
+
+<td>
+    ${item.product_name}
+
+    <input type="hidden"
+    name="item_id[]"
+    value="${item.product_id}">
+</td>
+
+<td>${item.description ? item.description : ''}</td>
+
+<td>
+
+<input type="number"
+class="form-control form-control-sm cart_qty"
+name="qty[]"
+value="1"
+style="width:70px">
+
+</td>
+
+
+<td>
+    ${item.retail_price}
+
+    <input type="hidden"
+    name="price[]"
+    value="${item.retail_price}">
+
+</td>
+
+
+<td>
+
+<span class="amount_display">
+${parseFloat(item.retail_price).toFixed(2)}
+</span>
+
+<input type="hidden"
+class="amount_input"
+name="amount[]"
+value="${parseFloat(item.retail_price).toFixed(2)}">
+
+</td>
+
+
+<td>
+
+<button type="button"
+class="btn btn-primary btn-sm editItemTypeBtn"
+data-product-id="${item.product_id}">
+<i class="fa fa-edit"></i>
+</button>
+
+<button type="button"
+class="btn btn-danger btn-sm removeCartItem">
+<i class="fa fa-trash"></i>
+</button>
+
+</td>
+
+
+</tr>
+
+`);
+
+});
 </script>
+
+<?php $this->load->view('includes/items/item_popups'); ?>

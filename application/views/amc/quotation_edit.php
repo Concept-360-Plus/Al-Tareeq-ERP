@@ -50,7 +50,9 @@ foreach($records1 as $row) { ?>
 					<th><input type="text" id='enquiry_code' name='enquiry_code' value='<?php echo $row->amc_enq_code;?>'></th>
 					<th><input type="text" id='enq_date' class="form-control" value="<?php echo $row->enq_date;?>" readonly="TRUE"></th>					
 					<th >
-						<input type="text" id='cust_name' name='cust_name' value="<?php echo $row->cust_name;?>" >
+						<!-- <input type="text" id='cust_name' name='cust_name' value="<?php echo $row->cust_name;?>" > -->
+				<input type='text' tabindex="5" class="form-control form-control-sm" id="cust_name" name="cust_name" value="<?php echo $row->customer_code." ".$row->customer_name?>" readonly ="true" />
+
 						<input type="hidden" id='customer_id' name='customer_id' value="<?php echo $row->customer_id;?>" > 
 					</th>
 					

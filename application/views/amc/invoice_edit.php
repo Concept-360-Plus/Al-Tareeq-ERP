@@ -284,6 +284,9 @@ Enable SLA
 
     </tbody>
     </table>
+    <button type="button" class="btn btn-primary btn-sm" onclick="addSlaRow()">
+        + Add SLA
+    </button>
 </div>
 
     <!-- NOTES -->
@@ -315,6 +318,11 @@ Enable SLA
 
 <div id="annexure_section" style="<?php echo !empty($annexure_records) ? '' : 'display:none;'; ?>">
 
+<button type="button" class="btn btn-primary btn-sm mb-2"
+            onclick="addAnnexureRow()">
+        + Add Row
+    </button>
+
     <table class="table table-bordered">
         <thead>
             <tr>
@@ -336,7 +344,7 @@ Enable SLA
                 <td><input type="text" name="type[]" class="form-control" value="<?php echo $a->type; ?>"></td>
                 <td><input type="text" name="location[]" class="form-control" value="<?php echo $a->location; ?>"></td>
                 <td>
-                    <input type="number" name="quantity[]" class="form-control annex_qty"
+                    <input type="number" name="annex_qty[]" class="form-control annex_qty"
                            value="<?php echo $a->quantity; ?>"
                            onkeyup="calculateAnnexTotal()">
                 </td>
@@ -362,7 +370,25 @@ Enable SLA
         </tfoot>
 
     </table>
-</div>
+
+    </div>
+<div class="form-group row">
+
+<label class="col-md-1 control-label">Prepared By:</label>
+    <div class="col-md-3">
+  <select class="form-control select2" 
+                id="employee_prepared" name="employee_prepared" required>
+                <option value="">Select</option>
+                <?php foreach ($employees as $s) { ?>
+                <option value="<?php echo $s->employee_id  ?>" <?= (isset($row->prepared_by) && $row->prepared_by == $s->employee_id) ? 'selected' : '' ?>><?php echo $s->user_code . ' ' . $s->employee_name; ?></option>
+                <?php } ?>
+              </select>
+
+ </div>
+        </div>
+
+
+
     <div class="form-group row">
         <div class="col-lg-10 offset-lg-2">
             <button type="submit" class="btn btn-primary">SAVE</button>
@@ -720,29 +746,45 @@ $(document).ready(function() {
         get_quotation_info(); // load rows for the selected quotation
     }
 });
+let sla_i = $('#sla_body tr').length;
+
 function toggleSlaTable()
 {
     if($('#sla_enabled').is(':checked')){
         $('#sla_section').show();
 
-        // only add defaults if no PHP rows exist
-        if($('#sla_body').children().length === 0){
-            let defaults = [
-                {
-                    item: "Critical / Emergency",
-                    avail: "24/7 call-out services",
-                    response: "1-2 hrs",
-                    restore: "3-6 hrs",
-                    resolve: "2-3 Days"
-                }
-            ];
-
-            defaults.forEach(d => addSlaRow(d));
+        // only add default if EMPTY (no PHP rows)
+        if($('#sla_body tr').length === 0){
+            addSlaRow({
+                item: "Critical / Emergency",
+                avail: "24/7 call-out services",
+                response: "1-2 hrs",
+                restore: "3-6 hrs",
+                resolve: "2-3 Days"
+            });
         }
 
     } else {
         $('#sla_section').hide();
     }
+}
+
+function addSlaRow(d = null)
+{
+    let id = sla_i++;
+
+    $('#sla_body').append(`
+        <tr>
+            <td><input type="text" name="service_item[]" value="${d?.item || ''}" class="form-control"></td>
+            <td><input type="text" name="service_availability_period[]" value="${d?.avail || ''}" class="form-control"></td>
+            <td><input type="text" name="response_time[]" value="${d?.response || ''}" class="form-control"></td>
+            <td><input type="text" name="restoration_time[]" value="${d?.restore || ''}" class="form-control"></td>
+            <td><input type="text" name="resolution_time[]" value="${d?.resolve || ''}" class="form-control"></td>
+            <td>
+                <button type="button" class="btn btn-danger btn-sm remove-sla">X</button>
+            </td>
+        </tr>
+    `);
 }
 function toggleAnnexureTable()
 {
@@ -754,17 +796,16 @@ function toggleAnnexureTable()
 }
 $(document).ready(function () {
 
-    // SLA
-    if($('#sla_enabled').is(':checked')){
+    // SLA INIT
+    if($('#sla_enabled').is(':checked') || $('#sla_body tr').length > 0){
         $('#sla_section').show();
     } else {
         $('#sla_section').hide();
     }
 
-    // Annexure
-    if($('#annexure_enabled').is(':checked')){
+    // Annexure INIT
+    if($('#annexure_enabled').is(':checked') || $('#annexure_body tr').length > 0){
         $('#annexure_section').show();
-        calculateAnnexTotal();
     } else {
         $('#annexure_section').hide();
     }
@@ -786,7 +827,74 @@ function calculateAnnexTotal()
     $('#annex_total_qty').val(total);
 }
 
+$(document).on('click', '.remove-sla', function () {
+    $(this).closest('tr').remove();
+});
 
+let annex_i = 0;
+
+function addAnnexureRow()
+{
+    $('#annexure_body').append(`
+        <tr id="annex_${annex_i}">
+            <td>
+                <input type="text" name="sl_no[]" class="form-control" readonly>
+            </td>
+            <td><input type="text" name="type[]" class="form-control"></td>
+            <td><input type="text" name="location[]" class="form-control"></td>
+            <td>
+                <input type="number" name="annex_qty[]" class="form-control annex_qty"
+                       onkeyup="calculateAnnexTotal()">
+            </td>
+            <td>
+                <button type="button" class="btn btn-danger btn-sm"
+                        onclick="removeAnnexRow(${annex_i})">
+                    X
+                </button>
+            </td>
+        </tr>
+    `);
+
+    annex_i++;
+
+    updateAnnexureSerialNo();
+    calculateAnnexTotal();
+}
+
+function calculateAnnexTotal()
+{
+    let total = 0;
+
+    $('.annex_qty').each(function(){
+        let val = parseFloat($(this).val());
+        if(!isNaN(val)) total += val;
+    });
+
+    $('#annex_total_qty').val(total);
+}
+
+function removeAnnexRow(id)
+{
+    $('#annex_' + id).remove();
+
+    updateAnnexureSerialNo();
+    calculateAnnexTotal();
+}
+
+function updateAnnexureSerialNo()
+{
+    $('#annexure_body tr').each(function(index){
+
+        $(this).find('input[name="sl_no[]"]').val(index + 1);
+
+    });
+}
+$(document).ready(function(){
+
+    updateAnnexureSerialNo();
+    calculateAnnexTotal();
+
+});
 
     
 

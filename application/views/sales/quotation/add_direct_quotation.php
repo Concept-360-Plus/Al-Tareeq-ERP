@@ -61,32 +61,38 @@
 
                        <div class="col-md-6">
                             <div class="form-group row align-items-center"> <label class="col-sm-4 col-form-label">Project Name:</label>
-                                <div class="col-sm-8"> <input type="text" id="project_name" name="project_name" value="<?= isset($enquiry_data['project_name']) ? $enquiry_data['project_name'] : "" ?>" class="form-control"> </div>
+                                <div class="col-sm-8"> <input type="text" id="project_name" name="project_name" value="" class="form-control"> </div>
                             </div>
                         </div>
                     </div>
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group row align-items-center"> <label class="col-sm-4 col-form-label">Select Customer:</label>
-                                <div class="col-sm-8"> <select name="quotation_customer" id="quotation_customer" class="form-control select2" required> 
-                                  <option value=''>Select</option> <?php foreach ($customer_list as $c): ?> <option value="<?= $c->customer_id ?>"><?= $c->customer_name ?></option> <?php endforeach; ?>
-
-                                </select> </div>
+                                <div class="col-sm-8">
+                                    <select name="quotation_customer" id="quotation_customer" class="form-control select2" required>
+                                        <option value="">-- Select Customer --</option>
+                                        <?php foreach ($customer_list as $c): ?>
+                                            <option value="<?= $c->customer_id ?>">
+                                                <?= $c->customer_name ?> (<?= $c->customer_code ?>)
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
                             </div>
-                        </div> 
+                        </div>
                         <div class="col-md-6">
                          <div class="form-group row align-items-center">
                            <label class="col-sm-4 col-form-label">Project Location:</label>
                             <div class="col-sm-8">
-                                 <input type="text" name="project_location" id="project_location"
-                                  value="<?= isset($enquiry_data['project_location']) ? $enquiry_data['project_location'] : '' ?>"
+                                <input type="text" name="project_location" id="project_location"
+                                  value=""
                                   class="form-control" placeholder="Enter Project Location">
                             </div>
                           </div>
 
 </div>
                     </div>
-                    <div class="row"> <!-- Quotation Code -->
+                                        <div class="row"> <!-- Quotation Code -->
                         <div class="col-md-6">
                             <div class="form-group row align-items-center"> <label class="col-sm-4 col-form-label">Quotation Code:</label>
                                 <div class="col-sm-8"> <input type="text" id="quotation_code" name="quotation_code" value="<?= isset($quotation_code) ? $quotation_code : "" ?>" class="form-control" readonly> </div>
@@ -98,14 +104,30 @@
                             </div>
                         </div>
                     </div> 
+
+                    <div class="row"> <!-- Sales Person -->
+                        <div class="col-md-6">
+                            <div class="form-group row align-items-center"> <label class="col-sm-4 col-form-label">Sales Person:</label>
+                                <div class="col-sm-8">
+                                    <select name="sales_person" id="sales_person" class="form-control select2">
+                                        <option value="">Select</option>
+                                        <?php if(!empty($sales_rep_list)) { foreach($sales_rep_list as $rep) { ?>
+                                        <option value="<?= $rep->sales_rep_id ?>" data-discount="<?= $rep->sales_discount_percent ?>"><?= $rep->sales_rep_name ?></option>
+                                        <?php } } ?>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     
                    
 
 <table class="table table-bordered">
     <thead>
         <tr>
-            <th width="35">#</th>
+            <th width="100">Code</th>
             <th>Item</th>
+            <th>Description</th>
             <th width="100">Qty</th>
             <th width="150">Price</th>
             <th width="150">Amount</th>
@@ -115,24 +137,26 @@
             id="addNewItem">
         <i class="fa fa-plus"></i>
     </button>
+
+    <button type="button"
+            class="btn btn-primary btn-xs openQuickAddItemBtn"
+            title="Create New Item">
+        <i class="fa fa-plus"></i>
+    </button>
 </th>
         </tr>
     </thead>
 
     <tbody id="selectedCartItems">
 
-    <?php if(!empty($cart_items)) { ?>
+        <?php if(!empty($cart_items)) { ?>
 
 <?php 
-$i = 1;
 foreach($cart_items as $item) { 
 ?>
         <tr>
 
-
-<td>
-    <?= $i++ ?>
-</td>
+            <td><?= isset($item->product_code) ? $item->product_code : '' ?></td>
 
             <td>
                 <?= $item->product_name ?>
@@ -143,6 +167,12 @@ foreach($cart_items as $item) {
                        <input type="hidden"
        name="product_name[]"
        value="<?= $item->product_name ?>">
+            </td>
+
+            <td>
+                <textarea class="form-control form-control-sm"
+                          name="description[]"
+                          rows="1"><?= isset($item->description) ? $item->description : '' ?></textarea>
             </td>
 
             <td>
@@ -176,6 +206,12 @@ foreach($cart_items as $item) {
             </td>
 
             <td>
+
+                <button type="button"
+                        class="btn btn-primary btn-sm editItemTypeBtn"
+                        data-product-id="<?= $item->product_id ?>">
+                    <i class="fa fa-edit"></i>
+                </button>
 
                 <button type="button"
                         class="btn btn-danger btn-sm removeCartItem">
@@ -253,8 +289,9 @@ foreach($cart_items as $item) {
                         <input type="number" 
                                name="qtn_vat_percentage" 
                                id="qtn_vat_percentage" 
-                               value="5"
+                               value="<?= isset($vat_percentage) ? $vat_percentage : 5 ?>"
                                class="form-control mt-2"
+                               readonly
                                style="width:100px;">
                     </div>
                 </div>
@@ -432,6 +469,7 @@ foreach($cart_items as $item) {
                     <thead>
                         <tr>
                             <th>Item</th>
+                            <th>Description</th>
                             <th>Price</th>
                             <th width="120">Qty</th>
                             <th>Select</th>
@@ -469,18 +507,8 @@ foreach($cart_items as $item) {
         </div>
     </div>
 </div>
-<script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
 <script>
-    
-    CKEDITOR.replace('delivery_term');
-  var termsEditor = CKEDITOR.replace('terms_condition');
-  CKEDITOR.replace('payment_term', {
-    height: 120
-});
-
-CKEDITOR.replace('notes', {
-    height: 120
-});
+var baseUrl = "<?php echo base_url(); ?>";
 
 
        
@@ -508,6 +536,12 @@ $(document).ready(function() {
 $(document).ready(function () {
     calculateQuotationTotal();
     calculateTotals();
+});
+
+$('form').on('submit', function (e) {
+    if (!validateDiscountAgainstSalesPerson()) {
+        e.preventDefault();
+    }
 });
 
    
@@ -541,12 +575,10 @@ function calculateQuotationTotal()
 
     $('#qtn_add_discount_amount').val(discountAmount.toFixed(2));
 
-    $('#qtn_total').val((subtotal - discountAmount).toFixed(2));
+    // Always recalc VAT + Net whenever subtotal changes
+    calculateTotals();
 }
 
-$('#qtn_add_discount_percentage').on('keyup change', function () {
-    calculateQuotationTotal();
-});
 // Discount % -> Discount Amount
 $('#qtn_add_discount_percentage').on('keyup change', function () {
 
@@ -558,6 +590,8 @@ $('#qtn_add_discount_percentage').on('keyup change', function () {
     $('#qtn_add_discount_amount').val(amount.toFixed(2));
 
     calculateTotals();
+
+    validateDiscountAgainstSalesPerson();
 });
 
 // Discount Amount -> Discount %
@@ -574,7 +608,49 @@ $('#qtn_add_discount_amount').on('keyup change', function () {
     $('#qtn_add_discount_percentage').val(per.toFixed(2));
 
     calculateTotals();
+
+    validateDiscountAgainstSalesPerson();
 });
+
+// Sales Person -> re-validate discount against their allowed max
+$('#sales_person').on('change', function () {
+    validateDiscountAgainstSalesPerson();
+});
+
+function validateDiscountAgainstSalesPerson() {
+
+    var selectedOption = $('#sales_person option:selected');
+
+    if (!$('#sales_person').val()) {
+        return true;
+    }
+
+    var maxDiscount = parseFloat(selectedOption.data('discount'));
+
+    if (isNaN(maxDiscount)) {
+        return true;
+    }
+
+    var currentPercent = parseFloat($('#qtn_add_discount_percentage').val()) || 0;
+
+    if (currentPercent > maxDiscount) {
+
+        alert('Discount of ' + currentPercent.toFixed(2) + '% exceeds the maximum allowed (' + maxDiscount.toFixed(2) + '%) for the selected Sales Person. It has been reset to the maximum allowed.');
+
+        $('#qtn_add_discount_percentage').val(maxDiscount.toFixed(2));
+
+        var gross = parseFloat($('#qtn_sub_total').val()) || 0;
+        var amount = (gross * maxDiscount) / 100;
+
+        $('#qtn_add_discount_amount').val(amount.toFixed(2));
+
+        calculateTotals();
+
+        return false;
+    }
+
+    return true;
+}
 function calculateTotals() {
 
     var subtotal = parseFloat($('#qtn_sub_total').val()) || 0;
@@ -707,13 +783,13 @@ $('#new_item_search').keyup(function(){
             $.each(data,function(i,item){
 
 
-                html += `
+            html += `
 
                 <tr>
 
                 <td>
 
-                ${item.product_name}
+                ${item.product_name} (${item.product_code})
 
                 <input type="hidden"
                        class="new_item_id"
@@ -725,7 +801,20 @@ $('#new_item_search').keyup(function(){
                        value="${item.product_name}">
 
 
+                <input type="hidden"
+                       class="new_item_code"
+                       value="${item.product_code}">
+
+
+                <input type="hidden"
+                       class="new_item_description"
+                       value="${item.description ? item.description : ''}">
+
+
                 </td>
+
+
+                <td>${item.description ? item.description : ''}</td>
 
 
                 <td>
@@ -780,10 +869,12 @@ $('#addSelectedNewItem').click(function(){
         if($(this).find('.new_item_check').is(':checked'))
         {
 
-            let id = $(this).find('.new_item_id').val();
-            let name = $(this).find('.new_item_name').val();
-            let price = parseFloat($(this).find('.new_item_price').val()) || 0;
-            let qty = parseFloat($(this).find('.new_item_qty').val()) || 0;
+            let id          = $(this).find('.new_item_id').val();
+            let name        = $(this).find('.new_item_name').val();
+            let code        = $(this).find('.new_item_code').val();
+            let description = $(this).find('.new_item_description').val();
+            let price       = parseFloat($(this).find('.new_item_price').val()) || 0;
+            let qty         = parseFloat($(this).find('.new_item_qty').val()) || 0;
 
 
             // Check item already exists
@@ -821,12 +912,11 @@ $('#addSelectedNewItem').click(function(){
                 let amount = qty * price;
 
 
-                $('#selectedCartItems').append(`
+                                $('#selectedCartItems').append(`
 
                 <tr>
-                <td>
-        ${$('#selectedCartItems tr').length + 1}
-    </td>
+
+                    <td>${code}</td>
 
                     <td>
                         ${name}
@@ -834,8 +924,17 @@ $('#addSelectedNewItem').click(function(){
                         <input type="hidden"
                                name="item_id[]"
                                value="${id}">
+
+                        <input type="hidden"
+                               name="product_name[]"
+                               value="${name}">
                     </td>
 
+                    <td>
+                        <textarea class="form-control form-control-sm"
+                                  name="description[]"
+                                  rows="1">${description}</textarea>
+                    </td>
 
                     <td>
                         <input type="number"
@@ -870,6 +969,12 @@ $('#addSelectedNewItem').click(function(){
 
                     <td>
                         <button type="button"
+                                class="btn btn-primary btn-sm editItemTypeBtn"
+                                data-product-id="${id}">
+                            <i class="fa fa-edit"></i>
+                        </button>
+
+                        <button type="button"
                                 class="btn btn-danger btn-sm removeCartItem">
                             <i class="fa fa-trash"></i>
                         </button>
@@ -893,12 +998,6 @@ $('#addSelectedNewItem').click(function(){
 
 });
 $(document).off('click', '.removeCartItem');
-function updateSerialNo()
-{
-    $('#selectedCartItems tr').each(function(index){
-        $(this).find('td:first').text(index + 1);
-    });
-}
 
 $(document).on('click', '.removeCartItem', function(e){
 
@@ -906,12 +1005,11 @@ $(document).on('click', '.removeCartItem', function(e){
 
     let row = $(this).closest('tr');
 
-    let itemName = row.find('td:first').text().trim();
+    let itemName = row.find('td:nth-child(2)').text().trim();
 
     if(confirm("Are you sure you want to remove this item?\n\n" + itemName))
     {
         row.remove();
-        updateSerialNo();
 
         calculateQuotationTotal();
         calculateTotals();
@@ -919,117 +1017,98 @@ $(document).on('click', '.removeCartItem', function(e){
 
 });
 
-$('#enquiry_id').change(function(){
+$(document).on('itemQuickAdded', function(e, item){
 
-    var enquiry_id = $(this).val();
+    let existingRow = $('#selectedCartItems')
+        .find('input[name="item_id[]"][value="'+item.product_id+'"]')
+        .closest('tr');
 
-    if(enquiry_id == '')
+    if(existingRow.length > 0)
     {
         return;
     }
 
+    let price = parseFloat(item.retail_price) || 0;
+    let qty = 1;
+    let amount = qty * price;
 
-    $.ajax({
+    $('#selectedCartItems').append(`
 
-        url:"<?= base_url('index.php/Sales/get_enquiry_details') ?>",
+    <tr>
 
-        type:"POST",
+        <td>${item.product_code ? item.product_code : ''}</td>
 
-        data:{
-            enquiry_id: enquiry_id
-        },
+        <td>
+            ${item.product_name}
 
-        dataType:"json",
+            <input type="hidden"
+                   name="item_id[]"
+                   value="${item.product_id}">
 
-       success:function(data){
+            <input type="hidden"
+                   name="product_name[]"
+                   value="${item.product_name}">
+        </td>
 
-    $('#enquiry_code').val(data.enquiry_code);
-    $('#branch_name').val(data.branch_name);
-    $('#project_name').val(data.project_name);
-    $('#customer_name').val(data.customer_name);
+        <td>
+            <textarea class="form-control form-control-sm"
+                      name="description[]"
+                      rows="1">${item.description ? item.description : ''}</textarea>
+        </td>
 
-    $('#quotation_branch_id').val(data.branch_id);
-    $('#quotation_customer').val(data.enquiry_customer);
+        <td>
+            <input type="number"
+                   class="form-control cart_qty"
+                   name="qty[]"
+                   value="${qty}"
+                   style="width:70px">
+        </td>
 
+        <td>
+            <input type="number"
+                   class="form-control cart_price"
+                   name="price[]"
+                   value="${price}"
+                   step="0.01"
+                   style="width:100px">
+        </td>
 
-    // Load enquiry items
-    $('#selectedCartItems').html('');
+        <td>
 
+            <span class="amount_display">
+                ${amount.toFixed(2)}
+            </span>
 
-    $.each(data.cart_items,function(i,item){
+            <input type="hidden"
+                   class="amount_input"
+                   name="amount[]"
+                   value="${amount.toFixed(2)}">
 
-        let amount = parseFloat(item.qty) * parseFloat(item.price);
+        </td>
 
+        <td>
 
-        $('#selectedCartItems').append(`
+            <button type="button"
+                    class="btn btn-primary btn-sm editItemTypeBtn"
+                    data-product-id="${item.product_id}">
+                <i class="fa fa-edit"></i>
+            </button>
 
-        <tr>
+            <button type="button"
+                    class="btn btn-danger btn-sm removeCartItem">
+                <i class="fa fa-trash"></i>
+            </button>
 
-            <td>
-                ${item.product_name}
+        </td>
 
-                <input type="hidden"
-                       name="item_id[]"
-                       value="${item.product_id}">
-            </td>
+    </tr>
 
-
-            <td>
-                <input type="number"
-                       class="form-control cart_qty"
-                       name="qty[]"
-                       value="${item.qty}"
-                       style="width:70px">
-            </td>
-
-
-            <td>
-                <input type="number"
-                       class="form-control cart_price"
-                       name="price[]"
-                       value="${item.price}"
-                       step="0.01"
-                       style="width:100px">
-            </td>
-
-
-            <td>
-
-                <span class="amount_display">
-                    ${amount.toFixed(2)}
-                </span>
-
-                <input type="hidden"
-                       class="amount_input"
-                       name="amount[]"
-                       value="${amount.toFixed(2)}">
-
-            </td>
-
-
-            <td>
-
-                <button type="button"
-                        class="btn btn-danger btn-sm removeCartItem">
-                    <i class="fa fa-trash"></i>
-                </button>
-
-            </td>
-
-
-        </tr>
-
-        `);
-
-    });
-
+    `);
 
     calculateQuotationTotal();
     calculateTotals();
 
-}
-
-    });
-
 });
 </script>
+
+<?php $this->load->view('includes/items/item_popups'); ?>

@@ -147,6 +147,10 @@
                 <td><?= nl2br($so['delivery_term']) ?></td>
             </tr>
             <tr>
+                <th>General Terms & Conditions</th>
+                <td><?= nl2br($so['terms_and_condition']) ?></td>
+            </tr>
+            <tr>
                 <th>Remarks</th>
                 <td><?= nl2br($so['remarks']) ?></td>
             </tr>

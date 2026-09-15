@@ -3,8 +3,6 @@ $this->load->helper('menu_helper.php');
 
 $row = $records1;
 
-// $enquiry_code     = $row->amc_enq_code;
-// $enquiry_date     = date('d-M-Y', strtotime($row->enq_date));
 $revision         = $row->revision;
 $invoice_date     = date('d-M-Y', strtotime($row->invoice_date));
 $project_name     = $row->project_name;
@@ -37,12 +35,10 @@ $revtext = ($revision > 0) ? 'Rev -'.$revision : '';
     body {
       font-family: Arial, sans-serif;
       font-size: 13px;
-    margin: 0 25px;   /* left right space */
-
-    padding: 0;
+      margin: 0 25px;
+      padding: 0;
       color: #333;
-          margin-top: 0px;
-
+      margin-top: 0px;
     }
 
     .title {
@@ -86,16 +82,6 @@ $revtext = ($revision > 0) ? 'Rev -'.$revision : '';
       background: #f9f9f9;
     }
 
-    /* @page {
-      margin: 5mm 10mm 10mm 10mm;
-    }
-
-    .header-img {
-      margin-top: 0mm;
-    } */
-
-    
-
     .footer img {
       max-width: 100%;
       height: auto;
@@ -106,47 +92,53 @@ $revtext = ($revision > 0) ? 'Rev -'.$revision : '';
     table {
       margin-top: 5px !important;
     }
-   @page {
-    margin-top: 140px;
-    margin-right: 20px;
-    margin-bottom: 110px;
-    margin-left: 20px;
-}
 
-.header {
-    position: fixed;
-    top: -120px;
-    left: 0;
-    right: 0;
-}
+    @page {
+      margin-top: 140px;
+      margin-right: 20px;
+      margin-bottom: 110px;
+      margin-left: 20px;
+    }
 
-.footer {
-    position: fixed;
-    bottom: -100px;
-    left: 0;
-    right: 0;
-}
+    .header {
+      position: fixed;
+      top: -120px;
+      left: 0;
+      right: 0;
+    }
 
-     .header-img {
-    margin-top: -2mm;
-}
+    .footer {
+      position: fixed;
+      bottom: -100px;
+      left: 0;
+      right: 0;
+    }
 
-.page-break {
-    page-break-before: always;
-    clear: both;
-}
+    .header-img {
+      margin-top: -2mm;
+    }
+
+    .page-break {
+      page-break-before: always;
+      clear: both;
+    }
+
+    /* Force Payment Terms and Signatures to stick together */
+    .keep-together {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
   </style>
 </head>
 
 <body>
 
-
 <!-- HEADER -->
 <div style="position: fixed; top: -120px; left: 0; right: 0; height: 120px;">
-            <table style="width:100%; border-collapse:collapse;">
+    <table style="width:100%; border-collapse:collapse;">
         <tr>
-<td style="width:60%; padding:0 10px;">
-                    <img src="<?= $headerPath ?>" style="max-height:120px;">
+            <td style="width:60%; padding:0 10px;">
+                <img src="<?= $headerPath ?>" style="max-height:120px;">
             </td>
             <td style="width:40%; text-align:right;">
                 <b>Ref No:</b> <?= $quotation_code ?><br>
@@ -155,8 +147,8 @@ $revtext = ($revision > 0) ? 'Rev -'.$revision : '';
         </tr>
     </table>
 </div>
-<div style="text-align:center; margin-top:10px;">
 
+<div style="text-align:center; margin-top:10px;">
     <div style="font-size:16px; font-weight:bold; text-transform:uppercase;">
         <?= trim($print_type_text) ?>
     </div>
@@ -168,45 +160,34 @@ $revtext = ($revision > 0) ? 'Rev -'.$revision : '';
     <div style="font-size:13px; margin-top:3px;">
         DATED <?= strtoupper(date('dS F Y', strtotime($invoice_date))) ?>
     </div>
-
 </div>
 
 <table width="100%" border="1" cellspacing="0" cellpadding="6" style="border-collapse:collapse; font-size:13px; margin-top:10px;">
-
     <tr>
-       <td width="15%"><b>To</b></td>
-<td width="35%">
-    <b><?= $customer_name ?></b><br>
-    <b>Contact Person:</b> <?= $row->contact_name ?><br>
-    <b>Phone:</b> <?= $cp_mobile ?><br>
-    <b>Email:</b> <?= $cp_email ?>
-</td>
-
+        <td width="15%"><b>To</b></td>
+        <td width="35%">
+            <b><?= $customer_name ?></b><br>
+            <b>Contact Person:</b> <?= $row->contact_name ?><br>
+            <b>Phone:</b> <?= $cp_mobile ?><br>
+            <b>Email:</b> <?= $cp_email ?>
+        </td>
         <td width="15%"><b>From</b></td>
         <td width="35%">
             Al Adel Automatic Doors Tr. L.L.C.
         </td>
     </tr>
-
     <tr>
-     <td><b>Project Location</b></td>
-<td>
-    <?= $row->project_location ?>
-</td>
-
+        <td><b>Project Location</b></td>
+        <td><?= $row->project_location ?></td>
         <td><b>Subject</b></td>
-        <td>
-          <?= $row->subject ?>
-        </td>
+        <td><?= $row->subject ?></td>
     </tr>
-
     <tr>
         <td><b>Period</b></td>
         <td colspan="3">
             <?= $amc_start_date ?> TO <?= $amc_end_date ?>
         </td>
     </tr>
-
 </table>
 
 <p style="margin-top:10px; font-size:13px; text-align:justify;">
@@ -219,22 +200,17 @@ $revtext = ($revision > 0) ? 'Rev -'.$revision : '';
 <p style="margin-top:5px; font-size:13px; text-align:justify;">
     <?= nl2br($row->scope_work); ?>
 </p>
+
 <p style="margin-top:10px; font-size:14px; font-weight:bold; text-decoration:underline;">
     NUMBER OF VISITS
 </p>
 <p style="margin-top:5px; font-size:13px; text-align:justify;">
     <?= nl2br($row->ppm_details); ?>
-   
 </p>
+
 <?php if(!empty($sla_records)) { ?>
-
-
-SLA Response Time
- 
- 
-<table width="100%" border="1" cellspacing="0" cellpadding="6" 
-style="border-collapse:collapse; font-size:13px; margin-top:10px;">
-
+<p style="margin-top:10px; font-size:14px; font-weight:bold;">SLA Response Time</p>
+<table width="100%" border="1" cellspacing="0" cellpadding="6" style="border-collapse:collapse; font-size:13px; margin-top:5px;">
     <tr style="background:#2e6da4; color:#fff; font-weight:bold; text-align:center;">
         <td>SERVICE ITEM</td>
         <td>SERVICE AVAILABILITY</td>
@@ -242,7 +218,6 @@ style="border-collapse:collapse; font-size:13px; margin-top:10px;">
         <td>RESTORATION TIME</td>
         <td>RESOLUTION TIME</td>
     </tr>
-
     <?php foreach($sla_records as $s) { ?>
     <tr>
         <td><?php echo $s->service_item; ?></td>
@@ -252,120 +227,103 @@ style="border-collapse:collapse; font-size:13px; margin-top:10px;">
         <td><?php echo $s->resolution_time; ?></td>
     </tr>
     <?php } ?>
-
 </table>
-<!-- <div style="page-break-before: always;"></div> -->
 
-<?php if(!empty($sla_records)) { ?>
-    <div class="page-break"></div>
-<?php } ?>
+<div class="page-break"></div>
 <?php } ?>
 
-<br><br>
-Our offer for Annual maintenance is as follows:
-    <br>
+<p style="margin-top:15px; font-size:13px;">Our offer for Annual maintenance is as follows:</p>
 
-    <p style="margin-top:15px; font-size:14px; font-weight:bold; text-decoration:underline;">
+<p style="margin-top:10px; font-size:14px; font-weight:bold; text-decoration:underline;">
     AMC COST DETAILS
 </p>
 
-<table width="100%" border="1" cellspacing="0" cellpadding="6"
-       style="border-collapse:collapse; font-size:13px; margin-top:10px;">
-
+<table width="100%" border="1" cellspacing="0" cellpadding="6" style="border-collapse:collapse; font-size:13px; margin-top:10px;">
     <!-- HEADER -->
     <tr style="background:#2e6da4; color:#fff; text-align:center; font-weight:bold;">
         <th>SYSTEM</th>
         <th>PRICE (AED)</th>
         <th>QTY</th>
-
         <?php
         $period_count = 0;
-
         if ($quotation_info->contract_type == 'Yearly') {
             $period_count = $quotation_info->no_of_years;
-
             for ($i = 1; $i <= $period_count; $i++) {
                 echo "<th>Total Price {$i} Year</th>";
             }
         } else {
             $period_count = $quotation_info->no_of_quarters;
-
             for ($i = 1; $i <= $period_count; $i++) {
                 echo "<th>Q{$i}</th>";
             }
         }
         ?>
-
         <th>FINAL TOTAL</th>
     </tr>
 
     <!-- BODY -->
     <?php
     $grand_total = 0;
-
-    foreach ($records2 as $row2)
-    {
+    foreach ($records2 as $row2) {
         $rate = $row2->price;
         $qty  = $row2->quantity;
-
         $base_total = $rate * $qty;
         $row_total  = $base_total * $period_count;
-
         $grand_total += $row_total;
     ?>
         <tr>
             <td><?= $row2->product_id ?></td>
-
             <td style="text-align:right;"><?= number_format($rate,2) ?></td>
-
             <td style="text-align:center;"><?= $qty ?></td>
-
             <?php for ($p = 1; $p <= $period_count; $p++) { ?>
                 <td style="text-align:right;">
                     <?= number_format($base_total, 2) ?>
                 </td>
             <?php } ?>
-
             <td style="text-align:right; font-weight:bold;">
                 <?= number_format($row_total, 2) ?>
             </td>
         </tr>
     <?php } ?>
+
     <tr style="font-weight:bold;">
-    <td colspan="<?= 3 + $period_count ?>" style="text-align:right;">Sub Total</td>
-    <td style="text-align:right;">
-        <?= number_format($sub_total, 2) ?>
-    </td>
-</tr>
+        <td colspan="<?= 3 + $period_count ?>" style="text-align:right;">Sub Total</td>
+        <td style="text-align:right;">
+            <?= number_format($sub_total, 2) ?>
+        </td>
+    </tr>
 
     <?php if (!empty($records1->amc_discount) && $records1->amc_discount > 0) { ?>
-<tr style="font-weight:bold;">
-    <td colspan="<?= 3 + $period_count ?>" style="text-align:right;">AMC Discount</td>
-    <td style="text-align:right;">
-        - <?= number_format($records1->amc_discount, 2) ?>
-    </td>
-</tr>
-<?php } ?>
-<?php if (!empty($records1->discount_amt) && $records1->discount_amt > 0) { ?>
-<tr style="font-weight:bold;">
-    <td colspan="<?= 3 + $period_count ?>" style="text-align:right;">
-        Discount (<?= $records1->discount_percent ?>%)
-    </td>
-    <td style="text-align:right;">
-        - <?= number_format($records1->discount_amt, 2) ?>
-    </td>
-</tr>
-<?php } ?>
-<?php if (!empty($records1->vat_amt) && $records1->vat_amt > 0) { ?>
-<tr style="font-weight:bold;">
-    <td colspan="<?= 3 + $period_count ?>" style="text-align:right;">
-        VAT (<?= $records1->vat_percent ?>%)
-    </td>
-    <td style="text-align:right;">
-        <?= number_format($records1->vat_amt, 2) ?>
-    </td>
-</tr>
-<?php } ?>
+    <tr style="font-weight:bold;">
+        <td colspan="<?= 3 + $period_count ?>" style="text-align:right;">AMC Discount</td>
+        <td style="text-align:right;">
+            - <?= number_format($records1->amc_discount, 2) ?>
+        </td>
+    </tr>
+    <?php } ?>
+
+    <?php if (!empty($records1->discount_amt) && $records1->discount_amt > 0) { ?>
+    <tr style="font-weight:bold;">
+        <td colspan="<?= 3 + $period_count ?>" style="text-align:right;">
+            Discount (<?= $records1->discount_percent ?>%)
+        </td>
+        <td style="text-align:right;">
+            - <?= number_format($records1->discount_amt, 2) ?>
+        </td>
+    </tr>
+    <?php } ?>
+
+    <?php if (!empty($records1->vat_amt) && $records1->vat_amt > 0) { ?>
+    <tr style="font-weight:bold;">
+        <td colspan="<?= 3 + $period_count ?>" style="text-align:right;">
+            VAT (<?= $records1->vat_percent ?>%)
+        </td>
+        <td style="text-align:right;">
+            <?= number_format($records1->vat_amt, 2) ?>
+        </td>
+    </tr>
+    <?php } ?>
+
     <!-- GRAND TOTAL -->
     <tr style="background:#f2f2f2; font-weight:bold;">
         <td colspan="<?= 3 + $period_count ?>" style="text-align:right;">
@@ -375,111 +333,130 @@ Our offer for Annual maintenance is as follows:
             <?= number_format($records1->grand_total, 2) ?>
         </td>
     </tr>
-
-</table>
-<p style="margin-top:10px; font-size:14px; font-weight:bold; text-decoration:underline;">
-    Payment Terms:
-</p>
-<p style="margin-top:5px; font-size:13px; text-align:justify;">
-    <?= nl2br($row->payment_term); ?>
-   
-</p>
-<br><br>
-  <table width="100%" style="font-size:13px; margin-top:20px;">
-    <tr>
-        <td style="width:50%; text-align:left;">
-            _______________________<br><br>
-            <b>Authorized Personnel Signature</b>
-        </td>
-
-        <td style="width:50%; text-align:right;">
-            
-            <b>Date:</b> <?= date('d-m-Y') ?>
-        </td>
-    </tr>
-</table>
-<br><br>
-<p style="margin-top:10px; font-size:14px; font-weight:bold; text-decoration:underline;">
-
-ACCEPTANCE
-</p>
-The above prices, Specifications and conditions are satisfactory and here by accepted. You are
-authorized to specify the work as specified. Payment will be made as outlined above.
-
-<br><br>
-  <table width="100%" style="font-size:13px; margin-top:20px;">
-    <tr>
-        <td style="width:50%; text-align:left;">
-            _______________________<br><br>
-            <b>Customer Signature</b>
-        </td>
-
-        <td style="width:50%; text-align:right;">
-            ______________<br><br>
-            
-            <b>Date of Acceptance</b>
-        </td>
-    </tr>
 </table>
 
+<!-- UNIFIED CONTAINER TO PREVENT SPLITTING PAYMENT TERMS AND SIGNATURES -->
+<div class="keep-together">
+    <p style="margin-top:15px; font-size:14px; font-weight:bold; text-decoration:underline;">
+        Payment Terms:
+    </p>
+    <p style="margin-top:5px; font-size:13px; text-align:justify;">
+        <?= nl2br($row->payment_term); ?>
+    </p>
+
+    <table width="100%" style="font-size:13px; margin-top:15px; border:none;">
+        <tr>
+            <td style="text-align:left; vertical-align:top; width:40%; padding:5px; border:none;">
+                <strong>Authorized Personnel Signature:</strong><br>
+
+                <?php if (!empty($prepared_signature)) { 
+                    $signature_path = FCPATH . 'public/employee/' . $prepared_signature;
+                    if (file_exists($signature_path)) {
+                        $type = pathinfo($signature_path, PATHINFO_EXTENSION);
+                        $image = file_get_contents($signature_path);
+                        $signature_base64 = 'data:image/' . $type . ';base64,' . base64_encode($image);
+                ?>
+                    <img src="<?= $signature_base64 ?>" style="height:60px; margin-top:5px;"><br>
+                <?php } } ?>
+
+                <span><?= htmlspecialchars($prepared_by_name ?? '') ?></span>
+                <?php if (!empty($prepared_by_contact)) { ?>
+                    <br><span><?= htmlspecialchars($prepared_by_contact) ?></span>
+                <?php } ?>
+                <span><?= htmlspecialchars($authorized_name ?? '') ?></span>
+            </td>
+
+            <td style="text-align:center; vertical-align:middle; width:30%; border:none;">
+                <?php if (!empty($branch_stamp)) { 
+                    $path = FCPATH . ltrim($branch_stamp, './');
+                    if (file_exists($path)) {
+                        $type = pathinfo($path, PATHINFO_EXTENSION);
+                        $data = file_get_contents($path);
+                        $base64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
+                ?>
+                    <img src="<?= $base64 ?>" style="max-width:180px; max-height:120px;">
+                <?php } } ?>
+            </td>
+
+            <td style="width:30%; text-align:right; vertical-align:bottom; border:none;">
+                <b>Date:</b> <?= date('d-m-Y') ?>
+            </td>
+        </tr>
+    </table>
+
+    <p style="margin-top:15px; font-size:14px; font-weight:bold; text-decoration:underline;">
+        ACCEPTANCE
+    </p>
+    <p style="margin-top:5px; font-size:13px; text-align:justify;">
+        The above prices, Specifications and conditions are satisfactory and hereby accepted. You are authorized to specify the work as specified. Payment will be made as outlined above.
+    </p>
+
+    <table width="100%" style="font-size:13px; margin-top:20px;">
+        <tr>
+            <td style="width:50%; text-align:left; border:none;">
+                _______________________<br><br>
+                <b>Customer Signature</b>
+            </td>
+            <td style="width:50%; text-align:right; border:none;">
+                ______________<br><br>
+                <b>Date of Acceptance</b>
+            </td>
+        </tr>
+    </table>
+</div>
 
 <?php if(!empty($annexure_records)) { ?>
-
-<div style="page-break-before: always;"></div>
+<div class="page-break"></div>
 
 <h3 style="text-align:center; margin-bottom:20px;">
-    ANNEXURE
+    <?= !empty($annexure_records[0]->annexure_title) ? $annexure_records[0]->annexure_title : 'ANNEXURE'; ?>
 </h3>
 
-<table width="100%" border="1" cellspacing="0" cellpadding="6"
-style="border-collapse:collapse; font-size:13px;">
-
-    <tr style="background:#2e6da4; color:#fff; font-weight:bold; text-align:center;">
-        <td width="10%">Sl No</td>
-        <td width="35%">Type</td>
-        <td width="35%">Location</td>
-        <td width="20%">Quantity</td>
-    </tr>
-
-    <?php 
-    $total_qty = 0;
-
-    foreach($annexure_records as $a) { 
-        $total_qty += $a->quantity;
-    ?>
+<table width="100%" border="1" cellspacing="0" cellpadding="6" style="border-collapse:collapse; font-size:13px;">
+    <?php if(!empty($annexure_records[0]->section_title)) { ?>
     <tr>
-        <td style="text-align:center;">
-            <?= $a->sl_no ?>
-        </td>
-
-        <td>
-            <?= $a->type ?>
-        </td>
-
-        <td>
-            <?= $a->location ?>
-        </td>
-
-        <td style="text-align:center;">
-            <?= $a->quantity ?>
+        <td colspan="4" style="background:#e9f2fb; color:#000; font-weight:bold; text-align:center;">
+            <?= $annexure_records[0]->section_title ?>
         </td>
     </tr>
     <?php } ?>
 
-    <tr style="font-weight:bold; background:#f2f2f2;">
-        <td colspan="3" style="text-align:right;">
-            Total Quantity
+    <tr style="background:#2e6da4; color:#fff; font-weight:bold; text-align:center;">
+        <td width="10%">
+            <?= !empty($annexure_records[0]->heading_slno) ? $annexure_records[0]->heading_slno : 'Sl No'; ?>
         </td>
-
-        <td style="text-align:center;">
-            <?= $total_qty ?>
+        <td width="35%">
+            <?= !empty($annexure_records[0]->heading_type) ? $annexure_records[0]->heading_type : 'Type'; ?>
+        </td>
+        <td width="35%">
+            <?= !empty($annexure_records[0]->heading_location) ? $annexure_records[0]->heading_location : 'Location'; ?>
+        </td>
+        <td width="20%">
+            <?= !empty($annexure_records[0]->heading_quantity) ? $annexure_records[0]->heading_quantity : 'Quantity'; ?>
         </td>
     </tr>
 
-</table>
+    <?php 
+    $total_qty = 0;
+    $sl = 1;
+    foreach($annexure_records as $a) { 
+        $total_qty += $a->quantity;
+    ?>
+    <tr>
+        <td style="text-align:center;"><?= $sl++ ?></td>
+        <td><?= $a->type ?></td>
+        <td><?= $a->location ?></td>
+        <td style="text-align:center;"><?= $a->quantity ?></td>
+    </tr>
+    <?php } ?>
 
+    <tr style="font-weight:bold; background:#f2f2f2;">
+        <td colspan="3" style="text-align:right;">Total Quantity</td>
+        <td style="text-align:center;"><?= $total_qty ?></td>
+    </tr>
+</table>
 <?php } ?>
-</div>
+
 <div class="footer">
     <img src="<?= $footerPath ?>" alt="Footer">
 </div>
@@ -494,5 +471,4 @@ document.addEventListener("DOMContentLoaded", function () {
 </script>
 
 </body>
-
 </html>

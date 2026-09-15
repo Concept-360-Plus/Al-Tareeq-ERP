@@ -180,7 +180,7 @@
 
                             <?php if(!empty($qtn['enquiry_id'])) { ?>
 
-                            <a href="<?=base_url('index.php/CRM/view_enquiry/'.$qtn['enquiry_id']);?>">
+                            <a href="<?=base_url('index.php/Sales/view_enquiry/'.$qtn['enquiry_id']);?>">
 
                                 <?= $qtn['enquiry_code']; ?>
 

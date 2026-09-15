@@ -1,8 +1,8 @@
 <div class="x_panel">
-    <div class="x_content">
+  <div class="x_content">
     <form onsubmit="return check_duplicate_exist();" id="main" method="post"
-          action="<?php echo base_url().'index.php/'; ?>Hr/add_joining_application_data"
-          autocomplete="off" enctype="multipart/form-data">
+      action="<?php echo base_url() . 'index.php/'; ?>Hr/add_joining_application_data"
+      autocomplete="off" enctype="multipart/form-data">
 
       <!-- Employee Name -->
       <div class="form-group row">
@@ -10,10 +10,12 @@
         <div class="col-sm-5">
           <select class="form-control select2" id="employee_id" name="employee_id" required>
             <option value="">Select</option>
-            <?php foreach ($user_records as $s) { ?>
-              <option <?php if ($this->session->userdata('user_id') == $s->user_id) echo 'selected'; ?>
-                      value="<?php echo $s->user_id; ?>">
-                <?php echo $s->user_name; ?>
+            <?php foreach ($user_records as $employee) { ?>
+              <option value="<?php echo $employee->employee_id; ?>">
+                <?php echo htmlspecialchars($employee->employee_name); ?>
+                <?php if (!empty($employee->user_code)) : ?>
+                  - <?php echo htmlspecialchars($employee->user_code); ?>
+                <?php endif; ?>
               </option>
             <?php } ?>
           </select>
@@ -25,15 +27,15 @@
         <label class="col-sm-3 control-label">Joining Date:</label>
         <div class="col-sm-5">
 
-        <div class="input-group date">
-                    <input type="date" class="form-control form-control-sm" id="joining_date" name="joining_date" value="<?php echo date('Y-m-d'); ?>" tabindex="2">
-                    <div class="input-group-addon"></div>
+          <div class="input-group date">
+            <input type="date" class="form-control form-control-sm" id="joining_date" name="joining_date" value="<?php echo date('Y-m-d'); ?>" tabindex="2">
+            <div class="input-group-addon"></div>
 
 
-         
+
+          </div>
         </div>
       </div>
-       </div>
 
       <!-- Joining Type -->
       <div class="form-group row">
@@ -66,7 +68,7 @@
         <label class="col-sm-3 control-label">Remark:</label>
         <div class="col-sm-5">
           <textarea id="remark" name="remark" rows="2" class="form-control"
-                    placeholder="Enter remark here..."></textarea>
+            placeholder="Enter remark here..."></textarea>
         </div>
       </div>
 
@@ -84,49 +86,49 @@
 </div>
 
 <script>
-    $(document).ready(function() {
-        var i = 1;
-        $("#add_row").click(function() {
-            $('#addr' + i).html("<td>" + (i + 1) + "</td><td><div class='col-sm-6'><input class='form-control' id='documents" + i + "' name='documents[]' type='file'></div></td><td></td>");
-            $('#tab_logic').append('<tr id="addr' + (i + 1) + '"></tr>');
-            i++;
-        });
-
-        $("#delete_row").click(function() {
-            if (i > 1) {
-                $("#addr" + (i - 1)).html('');
-                i--;
-            }
-        });
-
-    });
-    $("#tab_logic").on('click', '.remove', function() {
-        $(this).closest('tr').remove();
+  $(document).ready(function() {
+    var i = 1;
+    $("#add_row").click(function() {
+      $('#addr' + i).html("<td>" + (i + 1) + "</td><td><div class='col-sm-6'><input class='form-control' id='documents" + i + "' name='documents[]' type='file'></div></td><td></td>");
+      $('#tab_logic').append('<tr id="addr' + (i + 1) + '"></tr>');
+      i++;
     });
 
-    function calculate_total_days() {}
+    $("#delete_row").click(function() {
+      if (i > 1) {
+        $("#addr" + (i - 1)).html('');
+        i--;
+      }
+    });
 
-    document.getElementById("main").addEventListener("submit", function (e) {
+  });
+  $("#tab_logic").on('click', '.remove', function() {
+    $(this).closest('tr').remove();
+  });
+
+  function calculate_total_days() {}
+
+  document.getElementById("main").addEventListener("submit", function(e) {
 
     var btn = document.getElementById("add");
 
     // Prevent multiple submissions
     if (btn.disabled) {
-        e.preventDefault();
-        return false;
+      e.preventDefault();
+      return false;
     }
 
     // Disable immediately
     btn.disabled = true;
     btn.innerHTML = "Processing...";
 
-});
+  });
 
-$(document).ready(function () {
+  $(document).ready(function() {
     $('.select2').select2({
-        placeholder: "Select Employee",
-        allowClear: true,
-        width: '100%'
+      placeholder: "Select Employee",
+      allowClear: true,
+      width: '100%'
     });
-});
+  });
 </script>

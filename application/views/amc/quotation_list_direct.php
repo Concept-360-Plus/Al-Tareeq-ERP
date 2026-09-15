@@ -5,7 +5,7 @@
                                             <tr>
 							<th>Sr.no</th>
 							<th>Quotation Code</th>
-							
+								<th>Source</th>
 							<th>Customer & Customer Ref</th>
 							
 							<th>Grand total</th>
@@ -21,10 +21,19 @@
 							<br>
 							<?php echo date('d-M-Y',strtotime($row->quotation_date));?>
 							</td>
-							
 							<td>
-								<a title="View customer details" target='blank' href="<?php echo base_url().'index.php/Users/edit_customer/'.$row->customer_id;?>" >
-								<?php echo $row->customer_name;?>
+                        <?php
+                       if (!empty($row->enq_master_id)) {
+						echo "<span class='badge bg-primary'>Enquiry</span>";
+                           
+                        } else {
+                            echo "<span class='badge bg-success'>Direct</span>";
+                        } 
+                        ?>
+                    </td>
+							<td>
+									<a title="View customer details" target='blank' href="<?php echo base_url().'index.php/Users/edit_customer/'.$row->customer_id;?>" >
+								<?php echo $row->cust_name;?>
 								</a>
 								<br>
 								<?php echo $row->client_ref;?>

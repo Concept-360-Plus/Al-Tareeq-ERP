@@ -5,7 +5,9 @@
 <?php 
 foreach($records1 as $row) { ?>	
 	<form onsubmit="return check_selected_age();" id="main" method="post" action="<?php echo base_url().'index.php/'; ?>AMC/update_quot_direct" autocomplete="off" enctype="multipart/form-data">
-		<div class="form-group row">
+		    <input type="hidden" id="is_edit" value="1">
+
+	<div class="form-group row">
 		    <label class="col-xs-12 col-sm-3 col-md-2 col-lg-2 col-form-label">Quotation date</label>
 		    <div class="col-xs-12 col-sm-9 col-md-2 col-lg-2" role='group'>
 				<div class="input-group date ">			                  
@@ -32,13 +34,13 @@ foreach($records1 as $row) { ?>
 				<div class="col-xs-12 col-sm-9 col-md-4 col-lg-2">
 					<input type="text" class="form-control form-control-sm" id="project_name" name="project_name" value="<?php echo $row->project_name;?>" required tabindex='2'>
 				</div>
-				<label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">Quotation Print<span style="color: red;"> * </span></label>
+				<!-- <label class="col-xs-12 col-sm-2 col-md-2 col-lg-2 col-form-label">Quotation Print<span style="color: red;"> * </span></label>
 				<div class="col-xs-12 col-sm-9 col-md-3 col-lg-2">
 					<select tabindex="4" class="form-select form-control-sm select2 " id="quot_print_type" name="quot_print_type" tabindex="9" required>
 						<option <?php if($row->quot_print_type == "1") echo 'selected';?> value="1">Non-comprehensive</option>
 						<option <?php if($row->quot_print_type == "2") echo 'selected';?> value="2">Comprehensive</option>
 						</select>
-				</div>
+				</div> -->
 		</div>
 		
 		<div class="form-group row">
@@ -60,34 +62,59 @@ foreach($records1 as $row) { ?>
 				</div>
 
 
+				 <!-- AMC Dates -->
+    <div class="form-group row">
+        <label class="col-form-label col-lg-2">AMC Start Date</label>
+        <div class="col-lg-2">
+            <input type="date" name="amc_start_date"
+                   class="form-control form-control-sm"
+                   value="<?php echo $row->amc_start_date; ?>">
+        </div>
+
+        <label class="col-form-label col-lg-2">AMC End Date</label>
+        <div class="col-lg-2">
+            <input type="date" name="amc_end_date"
+                   class="form-control form-control-sm"
+                   value="<?php echo $row->amc_end_date; ?>">
+        </div>
+    </div>
+	
 				<div class="form-group row align-items-center">
 
     <label class="col-sm-2 col-form-label">Contract Type</label>
 
     <div class="col-sm-2">
-       <select name="contract_type" id="contract_type">
+       <select name="contract_type" id="contract_type" class="form-control form-control-sm" readonly>
     <option value="">Select</option>
     <option value="Yearly" <?= ($row->contract_type=='Yearly')?'selected':'' ?>>Yearly</option>
     <option value="Quarterly" <?= ($row->contract_type=='Quarterly')?'selected':'' ?>>Quarterly</option>
 </select>
     </div>
 
-    <div class="col-sm-3" id="year_block" style="display:none;">
-        <div class="d-flex align-items-center">
-            <label class="mr-2 mb-0">No. of Years</label>
-            <input type="number" id="no_of_years"
-       value="<?= $row->no_of_years ?>">
-
-        </div>
+   <div class="col-sm-3" id="year_block" style="display:none;">
+    <div class="d-flex align-items-center">
+        <label class="mr-2 mb-0">No. of Years</label>
+        <input type="number"
+               class="form-control form-control-sm"
+               id="no_of_years"
+               name="no_of_years"
+               value="<?= $row->no_of_years ?>"
+               readonly>
     </div>
+</div>
 
-    <div class="col-sm-3" id="quarter_block" style="display:none;">
-        <div class="d-flex align-items-center">
-            <label class="mr-2 mb-0">No. of Quarters</label>
-            <input type="number" id="no_of_quarters"
-       value="<?= $row->no_of_quarters ?>">
-        </div>
+
+<div class="col-sm-3" id="quarter_block" style="display:none;">
+    <div class="d-flex align-items-center">
+        <label class="mr-2 mb-0">No. of Quarters</label>
+        <input type="number"
+               class="form-control form-control-sm"
+               id="no_of_quarters"
+               name="no_of_quarters"
+               value="<?= $row->no_of_quarters ?>"
+               readonly>
     </div>
+</div>
 	 </div>
 
 
@@ -102,21 +129,24 @@ foreach($records1 as $row) { ?>
     </tr>
 
     <tr>
-       <th>
-    <input type="text" 
-           value="<?php echo $row->branch_name; ?>" 
-           readonly>
+        <th>
+            <input type="text" 
+                   value="<?php echo $row->branch_name; ?>" 
+                   readonly
+                   style="border:none;background:transparent;font-weight:bold;width:100%;">
 
-    <input type="hidden" 
-           name="branch" 
-           value="<?php echo $row->branch_id; ?>">
-</th>
+            <input type="hidden" 
+                   name="branch" 
+                   value="<?php echo $row->branch_id; ?>">
+        </th>
 
         <th>
             <input type="text" 
                    id="cust_name" 
                    name="cust_name" 
-                   value="<?php echo $row->customer_name; ?>">
+                   value="<?php echo $row->customer_name; ?>"
+                   readonly
+                   style="border:none;background:transparent;font-weight:bold;width:100%;">
 
             <input type="hidden" 
                    id="customer_id" 
@@ -134,7 +164,8 @@ foreach($records1 as $row) { ?>
 		<table class="table table-bordered table-hover" id="tab_logic">
 		<thead>
 <tr>
-    <th>System</th>
+    <th>Description</th>
+    <th>Brand</th>
     <th>Quantity</th>
     <th>Price</th>
 
@@ -148,7 +179,11 @@ foreach($records1 as $row) { ?>
     }
 
     for ($p = 1; $p <= $count; $p++) {
-        echo "<th>Total Price $p Year</th>";
+       $label = ($row->contract_type == 'Yearly') ? 'Year' : 'Quarter';
+
+for ($p = 1; $p <= $count; $p++) {
+    echo "<th>Total Price ".$p." ".$label."</th>";
+}
     }
     ?>
 
@@ -160,14 +195,17 @@ foreach($records1 as $row) { ?>
 		<?php $i=0;
 		foreach($records2 as $r) { ?>
 		<tr id="addr<?php echo $i;?>" >
-			<td width='30%'>
-				
-				<input type="text" name ="product_id[]" id = "product_id<?php echo $i;?>" class="form-control form-control-sm" value ="<?php echo $r->product_id; ?>"/>
-			</td>	
-			<!-- <td>
-				<input type="text" name ="brand[]" id = "brand<?php echo $i;?>" class="form-control form-control-sm" value ="<?php echo $r->brand; ?>"/>
-					
-			</td> -->
+			<td width='25%'>
+		<select name="prod_id[]" id="prod_id<?php echo $i;?>" class="form-control form-control-sm select2 product-select">
+			<option value="">Select Product</option>
+			<?php foreach ($active_items as $item): ?>
+			<option value="<?php echo $item->product_id; ?>" <?php echo ($item->product_id == $r->product_id) ? 'selected' : ''; ?>><?php echo htmlspecialchars($item->product_name, ENT_QUOTES); ?></option>
+			<?php endforeach; ?>
+		</select>
+	</td>	
+	<td width='15%'>
+		<input type="text" name ="brand[]" id = "brand<?php echo $i;?>" class="form-control form-control-sm" value ="<?php echo $r->brand; ?>"/>
+	</td>
 			<!-- <td width='10%'>	
 			    <input type="text" name ="model[]" id = "model<?php echo $i;?>" class="form-control form-control-sm" value ="<?php echo $r->model; ?>"/>
 			</td> -->
@@ -191,6 +229,9 @@ foreach($records1 as $row) { ?>
 		<tr id='addr1'></tr>
 		</tbody>
 	</table>
+	<button type="button" class="btn btn-success btn-sm" onclick="addEditRow()">
+    <i class="fa fa-plus"></i> Add Row
+</button>
 	</div>
 	
 	<div class="form-group row">
@@ -204,7 +245,8 @@ foreach($records1 as $row) { ?>
 		      </div>
 			<label class="col-xs-12 col-sm-1 col-md-1 col-lg-1 col-form-label">Dis.%:</label>
 	    	    <div class="col-xs-12 col-sm-9 col-md-2 col-lg-1">
-			      <input type="number" name="discount" id="discount" class="form-control form-control-sm"  onkeyup="calculate_grand_total()"  value="<?php echo $row->discount_percent;?>">
+			      <!-- <input type="number" name="discount" id="discount" class="form-control form-control-sm"  onkeyup="calculate_grand_total()"  value="<?php echo $row->discount_percent;?>"> -->
+                  <input type="number" name="discount" id="discount" class="form-control form-control-sm"  onkeyup="calc_discount_from_percent()"  value="<?php echo $row->discount_percent;?>">
 		      </div>
 	    	    <div class="col-xs-12 col-sm-9 col-md-2 col-lg-1">
 			      <input type="number" step="0.01" name="discount_amt" id="discount_amt" class="form-control form-control-sm"  onkeyup="calculate_grand_total()" value="<?php echo $row->discount;?>" tabindex=8>
@@ -275,6 +317,51 @@ foreach($records1 as $row) { ?>
 				<input type="text" class="form-control form-control-sm" list="validity"  name="validity" value="<?php echo $row->validity;?>"/>
 			</div>
 		</div>
+         <div class="form-group row">
+		    <label class="col-xs-12 col-sm-3 col-md-2 col-lg-2 col-form-label">Contract Period:</label>
+			<div class="col-xs-12 col-sm-9 col-md-8 col-lg-8">
+				<input type="text" class="form-control form-control-sm" list="contract_period"  name="contract_period" value="<?php echo $row->contract_period;?>"/>
+			
+			</div>
+		
+		</div>
+         <div class="form-group row">
+		    <label class="col-xs-12 col-sm-3 col-md-2 col-lg-2 col-form-label">Contract value (Dhs):</label>
+			<div class="col-xs-12 col-sm-9 col-md-8 col-lg-8">
+				<input type="text" class="form-control form-control-sm" list="contract_value"  name="contract_value" value="<?php echo $row->contract_value;?>"/>
+			
+			</div>
+		
+		</div>
+          <div class="form-group row">   
+    <label class="col-xs-12 col-sm-3 col-md-2 col-lg-2 col-form-label">
+       Terms and Conditions:
+    </label>
+
+    <div class="col-xs-12 col-sm-9 col-md-8 col-lg-8">
+        <textarea class="form-control"
+                  id="termcond"
+                  name="termcond"
+                  rows="4"><?php echo $row->termcond;?></textarea>
+    </div>    
+</div>
+          <div class="form-group row">   
+    <label class="col-xs-12 col-sm-3 col-md-2 col-lg-2 col-form-label">
+       Exclusions:
+    </label>
+
+    <div class="col-xs-12 col-sm-9 col-md-8 col-lg-8">
+        <textarea class="form-control"
+                  id="exclusions"
+                  name="exclusions"
+                  rows="6"><?php echo $row->exclusions;?>
+                
+                
+                
+                
+                </textarea>
+    </div>
+</div>
 		<!-- <div class="form-group row">
 		<label class="col-xs-12 col-sm-3 col-md-2 col-lg-2 col-form-label">Select Company</label>
 			<div class="col-xs-12 col-sm-9 col-md-2 col-lg-2">
@@ -285,10 +372,10 @@ foreach($records1 as $row) { ?>
 			</div>
 		</div> -->
 	
-		 <input type="checkbox" id="sla_enabled" name="sla_enabled" value="1"
+		 <!-- <input type="checkbox" id="sla_enabled" name="sla_enabled" value="1"
        onchange="toggleSlaTable()"
        <?php if(!empty($sla_records)) echo 'checked'; ?>>
-Enable SLA
+Enable SLA -->
 
 <div id="sla_section" style="display:none;">
     <table class="table table-bordered">
@@ -346,30 +433,89 @@ Enable SLA
 <?php $i++; } } ?>
 
     </tbody>
+
     </table>
+	  <button type="button" class="btn btn-primary btn-sm" onclick="addSlaRow()">
+        + Add SLA
+    </button>
 </div>
 
  <div class="form-group row">
     <div class="col-lg-2">
-        <input type="checkbox" id="annexure_enabled" name="annexure_enabled" value="1"
+        <!-- <input type="checkbox" id="annexure_enabled" name="annexure_enabled" value="1"
                onchange="toggleAnnexureTable()"
                <?php if(!empty($annexure_records)) echo 'checked'; ?>>
-        Enable Annexure
+        Enable Annexure -->
     </div>
 </div>
 
 <div id="annexure_section" style="<?php echo !empty($annexure_records) ? '' : 'display:none;'; ?>">
 
+ <div class="form-group row">
+    <label class="col-lg-2 col-form-label">
+        Annexure Heading
+    </label>
+
+    <div class="col-lg-4">
+        <input type="text" 
+               name="annexure_title"
+               class="form-control"
+               value="<?php echo $annexure_records[0]->annexure_title ?? 'ANNEXURE - 1'; ?>">
+    </div>
+</div>
+
+
+	<div class="form-group row">
+    <label class="col-lg-2 col-form-label">
+        Annexure Subtitle
+    </label>
+
+    <div class="col-lg-4">
+        <input type="text" 
+               name="section_title"
+               class="form-control"
+               value="<?php echo !empty($annexure_records[0]->section_title) ? $annexure_records[0]->section_title : ''; ?>"
+               placeholder="Eg: Sliding Doors">
+    </div>
+</div>
+
+
     <table class="table table-bordered">
         <thead>
-            <tr>
-                <th>Sl No</th>
-                <th>Type</th>
-                <th>Location</th>
-                <th>Quantity</th>
-                <th></th>
-            </tr>
-        </thead>
+    <tr>
+        <th>
+            <input type="text" 
+                   name="heading_slno" 
+                   class="form-control"
+                   value="<?php echo !empty($annexure_records[0]->heading_slno) ? $annexure_records[0]->heading_slno : 'Sl No'; ?>">
+        </th>
+
+        <th>
+            <input type="text" 
+                   name="heading_type" 
+                   class="form-control"
+                   value="<?php echo !empty($annexure_records[0]->heading_type) ? $annexure_records[0]->heading_type : 'Type'; ?>">
+        </th>
+
+        <th>
+            <input type="text" 
+                   name="heading_location" 
+                   class="form-control"
+                   value="<?php echo !empty($annexure_records[0]->heading_location) ? $annexure_records[0]->heading_location : 'Location'; ?>">
+        </th>
+
+        <th>
+            <input type="text" 
+                   name="heading_quantity" 
+                   class="form-control"
+                   value="<?php echo !empty($annexure_records[0]->heading_quantity) ? $annexure_records[0]->heading_quantity : 'Quantity'; ?>">
+        </th>
+
+        <th>
+            Action
+        </th>
+    </tr>
+</thead>
 
         <tbody id="annexure_body">
 
@@ -381,16 +527,23 @@ Enable SLA
                 <td><input type="text" name="type[]" class="form-control" value="<?php echo $a->type; ?>"></td>
                 <td><input type="text" name="location[]" class="form-control" value="<?php echo $a->location; ?>"></td>
                 <td>
-                    <input type="number" name="quantity[]" class="form-control annex_qty"
+                    <input type="number" name="annex_qty[]" class="form-control annex_qty"
                            value="<?php echo $a->quantity; ?>"
                            onkeyup="calculateAnnexTotal()">
                 </td>
                 <td>
-                    <button type="button" class="btn btn-danger btn-sm"
-                            onclick="$('#annex_<?php echo $i; ?>').remove(); calculateAnnexTotal();">
-                        X
-                    </button>
-                </td>
+                <button type="button" 
+                        class="btn btn-primary btn-sm"
+                        onclick="addAnnexureRow()">
+                    +
+                </button>
+
+                <button type="button" 
+                        class="btn btn-danger btn-sm"
+                        onclick="$('#annex_<?php echo $i; ?>').remove(); calculateAnnexTotal();">
+                    X
+                </button>
+            </td>
             </tr>
         <?php $i++; } } ?>
 
@@ -407,6 +560,15 @@ Enable SLA
         </tfoot>
 
     </table>
+
+	<div class="mt-2">
+    <button type="button"
+            class="btn btn-primary btn-sm"
+            id="add_annexure_btn"
+            onclick="addAnnexureRow()">
+        + Add Row
+    </button>
+</div>
 </div>
 		
 		<h6>Contact Person Details</h6>
@@ -424,6 +586,23 @@ Enable SLA
 			<input id="cp_email" name="cp_email" tabindex="30" type="email" class="form-control  form-control-sm" value="<?php echo $row->cp_email;?>"/>
 			</div>
 		</div>	
+
+	<div class="form-group row">
+
+<label class="col-md-1 control-label">Prepared By:</label>
+    <div class="col-md-3">
+  <select class="form-control select2" 
+                id="employee_prepared" name="employee_prepared" required>
+                <option value="">Select</option>
+                <?php foreach ($employees as $s) { ?>
+                <option value="<?php echo $s->employee_id  ?>" <?= (isset($row->prepared_by) && $row->prepared_by == $s->employee_id) ? 'selected' : '' ?>><?php echo $s->user_code . ' ' . $s->employee_name; ?></option>
+                <?php } ?>
+              </select>
+
+ </div>
+        </div>
+
+
 		
 		   <?php if($row->status==1) echo "<b>This Quotation is cancelled, cant Edit now.</b>"; else {?>
 		<div class="form-group row">
@@ -466,6 +645,16 @@ let quarterCount = <?= (int)$row->no_of_quarters ?>;
 let saved_items = <?= json_encode($records2 ?? []) ?>;
 </script>
 <script>
+var productOptions = '<option value="">Select Product</option>' +
+<?php
+ $opts = '';
+ foreach ($active_items as $item) {
+     $opts .= "'<option value=\"" . $item->product_id . "\">" . addslashes(htmlspecialchars($item->product_name, ENT_QUOTES)) . "</option>' + ";
+ }
+ echo rtrim($opts, "+ ");
+?>;
+</script>
+<script>
 	
 
 	$(document).ready(function(){
@@ -473,13 +662,7 @@ let saved_items = <?= json_encode($records2 ?? []) ?>;
 		$("#add_row").click(function()
 		{
 			// Build product options as a JavaScript array using PHP
-var productlist = `
-    <?php foreach ($products as $s) { ?>
-        <option value='<?php echo $s->product_id; ?>'>
-            <?php echo htmlspecialchars($s->product_description, ENT_QUOTES, 'UTF-8'); ?>
-        </option>
-    <?php } ?>
-		`;
+
 
 		$('#addr' + i).html(`
 			<td>
@@ -661,50 +844,55 @@ function calculate_total(append_id)
 
 	calculate_grand_total();
 }
+
+function calc_discount_from_percent()
+{
+	let i_total = parseFloat($('#sub_total').val()) || 0;
+	let discount_percent = parseFloat($('#discount').val()) || 0;
+
+	if(discount_percent > 0)
+	{
+		let discount_val = i_total * (discount_percent/100);
+		$('#discount_amt').val(discount_val.toFixed(2));
+	}
+	else
+	{
+		$('#discount_amt').val(0);
+	}
+
+	calculate_grand_total();
+}
 function calculate_grand_total()
 {
-	var i_value=0;i_total=0;
-	$('.subItemAmt').each(function()
-	{
-		i_value=$(this).val();
-		if(i_value=='')
-			 i_value = 0;
-		else
-			i_total+=parseFloat(i_value);
-	});
-	if(isNaN(i_total)) var s_total = 0;
+    let i_total = 0;
 
-	document.getElementById("sub_total").value= parseFloat(i_total).toFixed(2);
-	if (document.getElementById("amc_discount").value>0){
-		var amc_discount = parseFloat(document.getElementById("amc_discount").value).toFixed(2)
-	}
-	else{
-		var amc_discount =0;
-	}
-	 if(document.getElementById("discount").value==0)
-	 	var discount=0;
-	 else
-	 {
-	 	var discount_per = parseFloat(document.getElementById("discount").value/100);
-	 	var discount= i_total*discount_per;
-	 	document.getElementById("discount_amt").value= parseFloat(discount).toFixed(2);
-	 }
-	 var discount= document.getElementById("discount_amt").value;
-	  var total_before_vat = i_total-amc_discount-discount;
-	
-	document.getElementById("total_before_vat").value= parseFloat(total_before_vat).toFixed(2);
+    $('.subItemAmt').each(function(){
+        let val = parseFloat($(this).val()) || 0;
+        i_total += val;
+    });
 
+    // if no row changed, keep saved value
+    if(i_total == 0 && $('#is_edit').val() == 1){
+        return;
+    }
 
-	var vat_percent= document.getElementById("vat_percent").value;
-	var vat_per= parseFloat(vat_percent/100);
-   	var calVatAmt = parseFloat(total_before_vat*vat_per);
-	document.getElementById("vat_amt").value= parseFloat(calVatAmt).toFixed(2);
-   	var grand_total = parseFloat(calVatAmt+total_before_vat);
-	
-	var crate=1;
-	var grand_total = parseFloat(grand_total*crate);
-	document.getElementById("grand_total").value= parseFloat(grand_total).toFixed(2);
+    $('#sub_total').val(i_total.toFixed(2));
+
+    let amc_discount = parseFloat($('#amc_discount').val()) || 0;
+    let discount = parseFloat($('#discount_amt').val()) || 0;
+
+    let total_before_vat = i_total - amc_discount - discount;
+
+    $('#total_before_vat').val(total_before_vat.toFixed(2));
+
+    let vat_percent = parseFloat($('#vat_percent').val()) || 0;
+    let vat_amt = total_before_vat * vat_percent / 100;
+
+    $('#vat_amt').val(vat_amt.toFixed(2));
+
+    $('#grand_total').val((total_before_vat + vat_amt).toFixed(2));
 }
+
 function check_vat_option()
 {
 	var checkBox = document.getElementById("vatbox");	
@@ -902,13 +1090,20 @@ function loadExistingRows()
 
         let grandPeriodTotal = periodTotal * count;
 
-        let row = `<tr id="addr${i}">`;
+              let row = `<tr id="addr${i}">`;
 
         row += `
             <td>
+                <select name="prod_id[]" id="prod_id${i}" class="form-control form-control-sm select2 product-select">
+                    ${productOptions}
+                </select>
+            </td>
+
+            <td>
                 <input type="text"
-                    name="product_id[]"
-                    value="${item.product_id ?? ''}"
+                    name="brand[]"
+                    id="brand${i}"
+                    value="${item.brand ?? ''}"
                     class="form-control form-control-sm">
             </td>
 
@@ -948,7 +1143,7 @@ function loadExistingRows()
         row += `
             <td>
                 <input type="text"
-                    name="total[]"
+                    name="final_total[]"
                     id="total${i}"
                     value="${grandPeriodTotal.toFixed(2)}"
                     class="form-control form-control-sm subItemAmt"
@@ -963,7 +1158,11 @@ function loadExistingRows()
         </tr>
         `;
 
-        $('#mytbbody').append(row);
+     $('#mytbbody').append(row);
+
+        $('#prod_id'+i).select2({ width: '100%' })
+            .val(item.product_id ?? '')
+            .trigger('change');
     });
 
     calculate_grand_total();
@@ -984,30 +1183,47 @@ $(document).ready(function () {
 
 });
 
+let sla_i = $('#sla_body tr').length;
+
 function toggleSlaTable()
 {
     if($('#sla_enabled').is(':checked')){
         $('#sla_section').show();
 
-        // only add defaults if no PHP rows exist
-        if($('#sla_body').children().length === 0){
-            let defaults = [
-                {
-                    item: "Critical / Emergency",
-                    avail: "24/7 call-out services",
-                    response: "1-2 hrs",
-                    restore: "3-6 hrs",
-                    resolve: "2-3 Days"
-                }
-            ];
-
-            defaults.forEach(d => addSlaRow(d));
+        // only add default if EMPTY (no PHP rows)
+        if($('#sla_body tr').length === 0){
+            addSlaRow({
+                item: "Critical / Emergency",
+                avail: "24/7 call-out services",
+                response: "1-2 hrs",
+                restore: "3-6 hrs",
+                resolve: "2-3 Days"
+            });
         }
 
     } else {
         $('#sla_section').hide();
     }
 }
+
+function addSlaRow(d = null)
+{
+    let id = sla_i++;
+
+    $('#sla_body').append(`
+        <tr>
+            <td><input type="text" name="service_item[]" value="${d?.item || ''}" class="form-control"></td>
+            <td><input type="text" name="service_availability_period[]" value="${d?.avail || ''}" class="form-control"></td>
+            <td><input type="text" name="response_time[]" value="${d?.response || ''}" class="form-control"></td>
+            <td><input type="text" name="restoration_time[]" value="${d?.restore || ''}" class="form-control"></td>
+            <td><input type="text" name="resolution_time[]" value="${d?.resolve || ''}" class="form-control"></td>
+            <td>
+                <button type="button" class="btn btn-danger btn-sm remove-sla">X</button>
+            </td>
+        </tr>
+    `);
+}
+
 function toggleAnnexureTable()
 {
     if($('#annexure_enabled').is(':checked')){
@@ -1018,17 +1234,27 @@ function toggleAnnexureTable()
 }
 $(document).ready(function () {
 
-    // SLA
-    if($('#sla_enabled').is(':checked')){
+    if($('#annexure_enabled').is(':checked')){
+        $('#annexure_section').show();
+        calculateAnnexTotal();
+    } else {
+        $('#annexure_section').hide();
+    }
+
+});
+
+$(document).ready(function () {
+
+    // SLA INIT
+    if($('#sla_enabled').is(':checked') || $('#sla_body tr').length > 0){
         $('#sla_section').show();
     } else {
         $('#sla_section').hide();
     }
 
-    // Annexure
-    if($('#annexure_enabled').is(':checked')){
+    // Annexure INIT
+    if($('#annexure_enabled').is(':checked') || $('#annexure_body tr').length > 0){
         $('#annexure_section').show();
-        calculateAnnexTotal();
     } else {
         $('#annexure_section').hide();
     }
@@ -1050,6 +1276,203 @@ function calculateAnnexTotal()
     $('#annex_total_qty').val(total);
 }
 
+$(document).on('click', '.remove-sla', function () {
+    $(this).closest('tr').remove();
+});
+
+let annex_i = 0;
+
+function addAnnexureRow()
+{
+    $('#annexure_body').append(`
+        <tr id="annex_${annex_i}">
+            <td>
+                <input type="text" name="sl_no[]" class="form-control" readonly>
+            </td>
+            <td><input type="text" name="type[]" class="form-control"></td>
+            <td><input type="text" name="location[]" class="form-control"></td>
+            <td>
+                <input type="number" name="annex_qty[]" class="form-control annex_qty"
+                       onkeyup="calculateAnnexTotal()">
+            </td>
+            <td>
+                <button type="button" class="btn btn-danger btn-sm"
+                        onclick="removeAnnexRow(${annex_i})">
+                    X
+                </button>
+            </td>
+        </tr>
+    `);
+
+    annex_i++;
+
+    updateAnnexureSerialNo();
+    calculateAnnexTotal();
+}
+
+function calculateAnnexTotal()
+{
+    let total = 0;
+
+    $('.annex_qty').each(function(){
+        let val = parseFloat($(this).val());
+        if(!isNaN(val)) total += val;
+    });
+
+    $('#annex_total_qty').val(total);
+}
+
+function removeAnnexRow(id)
+{
+    $('#annex_' + id).remove();
+
+    updateAnnexureSerialNo();
+    calculateAnnexTotal();
+}
+
+function updateAnnexureSerialNo()
+{
+    $('#annexure_body tr').each(function(index){
+
+        $(this).find('input[name="sl_no[]"]').val(index + 1);
+
+    });
+}
+$(document).ready(function(){
+
+    updateAnnexureSerialNo();
+    calculateAnnexTotal();
+
+});
+
+// let edit_row = 1;
+let edit_row = saved_items.length;
+
+function addEditRow()
+{
+    let rowId = edit_row++;
+
+    let count = 0;
+    let type = $('#contract_type').val();
+
+    if(type == 'Yearly')
+    {
+        count = parseInt($('#no_of_years').val()) || 0;
+    }
+    else if(type == 'Quarterly')
+    {
+        count = parseInt($('#no_of_quarters').val()) || 0;
+    }
+
+       let row = `<tr id="addr${rowId}">
+    
+        <td>
+            <select name="prod_id[]" id="prod_id${rowId}" class="form-control select2 product-select">
+                ${productOptions}
+            </select>
+        </td>
+
+        <td>
+            <input type="text" 
+                   name="brand[]" 
+                   id="brand${rowId}"
+                   class="form-control">
+        </td>
+
+        <td>
+            <input type="number" 
+                   name="qty[]" 
+                   id="qty${rowId}"
+                   class="form-control"
+                   onkeyup="calculateEditRow(${rowId})">
+        </td>
+
+        <td>
+            <input type="number" 
+                   name="price[]" 
+                   id="price${rowId}"
+                   class="form-control"
+                   onkeyup="calculateEditRow(${rowId})">
+        </td>
+    `;
+
+
+    for(let i=1;i<=count;i++)
+    {
+        row += `
+        <td>
+            <input type="text"
+                   id="period_${i}_${rowId}"
+                   name="period_total_${i}[]"
+                   class="form-control"
+                   readonly>
+        </td>`;
+    }
+
+
+       row += `
+        <td>
+           <input type="text"
+       id="final_total_${rowId}"
+       name="final_total[]"
+       class="form-control subItemAmt"
+       readonly>
+        </td>
+
+
+        <td>
+    <button type="button"
+            class="btn btn-danger btn-sm"
+            onclick="remove_row(${rowId})">
+        X
+    </button>
+        </td>
+
+    </tr>`;
+
+    $('#tab_logic tbody').append(row);
+    $('#prod_id'+rowId).select2({ width: '100%' });
+}
+
+function calculateEditRow(rowId)
+{
+
+ $('#is_edit').val(0);
+ 
+    let price = parseFloat($('#price'+rowId).val()) || 0;
+    let qty   = parseFloat($('#qty'+rowId).val()) || 0;
+
+    let total = price * qty;
+
+    let count = 0;
+
+    if($('#contract_type').val() == 'Yearly')
+    {
+        count = parseInt($('#no_of_years').val()) || 0;
+    }
+    else if($('#contract_type').val() == 'Quarterly')
+    {
+        count = parseInt($('#no_of_quarters').val()) || 0;
+    }
+
+
+    let finalTotal = 0;
+
+    for(let i=1; i<=count; i++)
+    {
+        $('#period_'+i+'_'+rowId).val(total.toFixed(2));
+        finalTotal += total;
+    }
+
+
+    $('#final_total_'+rowId).val(finalTotal.toFixed(2));
+
+    calculate_grand_total();
+}
+
+$(document).ready(function(){
+    calculate_grand_total();
+});
 
 </script>
 

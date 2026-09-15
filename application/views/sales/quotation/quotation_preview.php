@@ -41,6 +41,7 @@
                             <th style="width:120px;">Amount</th>
                             <th style="width:60px;">Discount</th>
                             <!-- <th style="width:120px;">Warranty</th> -->
+                            <th style="width:110px;">VAT</th>
                             <th style="width:60px;">Taxable Amount</th>
                         </tr>
                     </thead>
@@ -50,10 +51,11 @@
                             <tr>
                                 <td>
                                     <select name="products[<?= $i ?>][<?= $j ?>][<?= $k ?>][product_id]"
-                                        class="form-control form-control-sm estimation_edit select2">
+                                        class="form-control form-control-sm estimation_edit select2 qtn_product_select">
                                         <option value="">-- Select Product --</option>
                                         <?php foreach ($all_products as $p): ?>
                                             <option value="<?= $p->item_id ?>"
+                                                data-tax-applicable="<?= isset($p->tax_applicable) ? $p->tax_applicable : 0 ?>"
                                                 <?= ($p->item_id == $prod['product_id']) ? 'selected' : '' ?>>
                                                 <?= $p->item_name ?>
                                             </option>
@@ -63,9 +65,7 @@
                                     <textarea 
     id="product_desc_<?= $i ?>_<?= $j ?>_<?= $k ?>"
     name="products[<?= $i ?>][<?= $j ?>][<?= $k ?>][product_description]"
-    class="form-control product_editor">
-    <?= $prod['product_description'] ?>
-</textarea>
+    class="form-control product_editor" rows="3"><?= $prod['product_description'] ?></textarea>
                                 </td>
 
                                 <td>
@@ -125,6 +125,23 @@
         class="form-control quotation_edit">
 </td> -->
 
+                                <?php $is_taxable = isset($prod['tax_applicable']) ? $prod['tax_applicable'] : 0; ?>
+                                <td style="min-width:110px;">
+                                    <input type="number" step="0.01"
+                                        name="products[<?= $i ?>][<?= $j ?>][<?= $k ?>][vat_percentage]"
+                                        value="<?= isset($prod['vat_percentage']) ? $prod['vat_percentage'] : '' ?>"
+                                        class="form-control form-control-sm quotation_edit qtn_item_vat_percent"
+                                        placeholder="VAT %"
+                                        <?= $is_taxable ? '' : 'disabled' ?>>
+
+                                    <input type="number" step="0.01"
+                                        name="products[<?= $i ?>][<?= $j ?>][<?= $k ?>][vat_amount]"
+                                        value="<?= isset($prod['vat_amount']) ? $prod['vat_amount'] : '' ?>"
+                                        class="form-control form-control-sm mt-1 quotation_edit qtn_item_vat_amount"
+                                        placeholder="VAT Amt"
+                                        readonly>
+                                </td>
+
                                 <td>
                                     <input type="number" step="0.01"
                                         name="products[<?= $i ?>][<?= $j ?>][<?= $k ?>][taxable_amount]"
@@ -144,22 +161,34 @@
     endforeach; ?>
 <?php endif; ?>
 
-<script src="https://cdn.ckeditor.com/4.25.1-lts/standard/ckeditor.js"></script>
-
 <script>
 document.addEventListener("DOMContentLoaded", function () {
 
-    document.querySelectorAll("textarea[id^='product_desc_']").forEach(function (el) {
+    // Toggle VAT % field based on the selected product's tax_applicable flag
+    function toggleVatField($select) {
+        const $row = $select.closest('tr');
+        const $selectedOption = $select.find('option:selected');
+        const isTaxable = $selectedOption.data('tax-applicable') == 1;
 
-        CKEDITOR.replace(el.id, {
-            toolbar: [
-                { name: 'basicstyles', items: ['Bold', 'Italic', 'Underline'] },
-                { name: 'paragraph', items: ['NumberedList', 'BulletedList'] },
-                { name: 'clipboard', items: ['Undo', 'Redo'] }
-            ],
-            height: 120
-        });
+        const $vatPercent = $row.find('.qtn_item_vat_percent');
+        const $vatAmount = $row.find('.qtn_item_vat_amount');
 
+        if (isTaxable) {
+            $vatPercent.prop('disabled', false);
+        } else {
+            $vatPercent.prop('disabled', true).val('');
+            $vatAmount.val('0.00');
+        }
+    }
+
+    // Run on initial load for all existing rows
+    $('.qtn_product_select').each(function() {
+        toggleVatField($(this));
+    });
+
+    // Run whenever the product is changed/selected (works with select2 too)
+    $(document).on('change', '.qtn_product_select', function() {
+        toggleVatField($(this));
     });
 
 });

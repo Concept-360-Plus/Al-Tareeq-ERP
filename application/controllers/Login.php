@@ -1,57 +1,102 @@
 <?php
-defined('BASEPATH') OR exit('No direct script access allowed');
+defined('BASEPATH') or exit('No direct script access allowed');
 
-class Login extends CI_Controller {
+class Login extends CI_Controller
+{
 
-	public function __construct() {
-		parent::__construct();
-        $this->load->model('Sales_model');
-		
-		// Prevent browser caching
-		$this->output->set_header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
-		$this->output->set_header("Cache-Control: post-check=0, pre-check=0", false);
-		$this->output->set_header("Pragma: no-cache");
-	}
-
-	
-
-    function validate_credentials()
+    public function __construct()
     {
-		$date = date('Y-m-d h:i:s');
-		$today=date('Y-m-d');
-		
-        $this->load->model('Login_model');
-        $query = $this->Login_model->validate();
-        if($query) 
-        {
-            foreach($query as $key) 
-            {
-                $sess_id = $key->user_id.'-'.time();   
-                $data = array(
-                    'user_id' => $key->user_id,
-                    'user_name' => $key->user_name,
-                    'employee_id' => $key->employee_id,
-                    'is_logged_in' => true,
-                );
-                $this->session->set_userdata($data); 
-                $this->session->sess_regenerate(); 
-                $dashboard = $this->Login_model->get_user_dashboard($key->user_id);
+        parent::__construct();
+        $this->load->model('Sales_model');
 
-
-                if ($dashboard) {
-                    $this->session->set_userdata('dashboard_controller', $dashboard->controller_name);
-                }
-
-                redirect('Login/dashboard');
-            }   
-        }
-        else 
-        {
-           redirect('/');
-        }
+        // Prevent browser caching
+        $this->output->set_header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+        $this->output->set_header("Cache-Control: post-check=0, pre-check=0", false);
+        $this->output->set_header("Pragma: no-cache");
     }
 
-    function logout() {
+
+    // function validate_credentials()
+    // {
+    // 	$date = date('Y-m-d h:i:s');
+    // 	$today=date('Y-m-d');
+
+    //     $this->load->model('Login_model');
+    //     $query = $this->Login_model->validate();
+    //     if($query) 
+    //     {
+    //         foreach($query as $key) 
+    //         {
+    //             $sess_id = $key->user_id.'-'.time();   
+    //             $data = array(
+    //                 'user_id' => $key->user_id,
+    //                 'user_name' => $key->user_name,
+    //                 'employee_id' => $key->employee_id,
+    //                 'is_logged_in' => true,
+    //             );
+    //             $this->session->set_userdata($data); 
+    //             $this->session->sess_regenerate(); 
+    //             $dashboard = $this->Login_model->get_user_dashboard($key->user_id);
+
+    //             if ($dashboard) {
+    //                 $this->session->set_userdata('dashboard_controller', $dashboard->controller_name);
+    //             }
+
+    //             redirect('Login/dashboard');
+    //         }   
+    //     }
+    //     else 
+    //     {
+    //        redirect('/');
+    //     }
+    // }
+
+    public function validate_credentials()
+    {
+        $this->load->model('Login_model');
+
+        $user = $this->Login_model->validate();
+
+        if (!$user) {
+
+            $this->session->set_flashdata(
+                'error',
+                'Invalid Login ID or Password.'
+            );
+
+            redirect('/');
+            return;
+        }
+
+        // Regenerate session ID after successful login
+        $this->session->sess_regenerate(TRUE);
+
+        $data = array(
+            'user_id'       => $user->user_id,
+            'user_name'     => $user->user_name,
+            'employee_id'   => $user->employee_id,
+            'is_logged_in'  => true
+        );
+
+        $this->session->set_userdata($data);
+
+        // Get dashboard
+        $dashboard = $this->Login_model->get_user_dashboard(
+            $user->user_id
+        );
+
+        if ($dashboard) {
+            $this->session->set_userdata(
+                'dashboard_controller',
+                $dashboard->controller_name
+            );
+        }
+
+        redirect('Login/dashboard');
+    }
+
+    function logout()
+    {
         $this->session->sess_destroy();
         $this->session->unset_userdata('logged_in');
 
@@ -63,7 +108,7 @@ class Login extends CI_Controller {
     }
 
     // public function dashboard()
-	// {
+    // {
     //     $data['title'] = 'Dashboard';
     //     // First day of current month
     //     $firstDay = (new DateTime('first day of this month'))->format('Y-m-d');
@@ -81,17 +126,16 @@ class Login extends CI_Controller {
     //     $data['amc_alerts'] = $this->Amc_model->get_amc_alert(7);
     //     $data['ppm_alerts'] = $this->Amc_model->get_ppm_scheduled_alerts(7);
 
-	// 	$data['main_content'] = 'dashboard.php';
+    // 	$data['main_content'] = 'dashboard.php';
     //     $data['dashboard'] = true;
-	// 	$this->load->view('includes/template',$data);
-	// }
+    // 	$this->load->view('includes/template',$data);
+    // }
 
     public function dashboard()
     {
         $dashboard = $this->session->userdata('dashboard_controller');
 
-        switch ($dashboard)
-        {
+        switch ($dashboard) {
             case 'purchase_dashboard':
                 redirect('Dashboard/purchase_dashboard');
                 break;
@@ -122,9 +166,9 @@ class Login extends CI_Controller {
 
             default:
                 $data['title'] = 'Dashboard';
-            	$data['main_content'] = 'dashboard.php';
+                $data['main_content'] = 'dashboard.php';
                 $data['dashboard'] = true;
-	        	$this->load->view('includes/template',$data);
+                $this->load->view('includes/template', $data);
         }
     }
 }

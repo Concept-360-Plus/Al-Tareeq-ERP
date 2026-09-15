@@ -13,7 +13,7 @@ class Hr extends CI_Controller
 	{
 		$is_logged_in = $this->session->userdata('is_logged_in');
 		if (!isset($is_logged_in) || $is_logged_in != true) {
-			echo 'You don\'t have permission to access this page. <a href="../login">Login</a>';
+			echo 'You don\'t have permission to access this page. <a href="../">Login</a>';
 
 			die();
 			//$this->load->view('login/login_form');
@@ -160,7 +160,7 @@ class Hr extends CI_Controller
 			$user_data = [
 				'user_name'     => $post['employee_name'],
 				'user_login'    => $this->input->post('user_login'),
-				'user_password' => $this->input->post('user_password'),
+				'user_password' => password_hash($this->input->post('user_password'), PASSWORD_DEFAULT),
 				'gender'        => $post['gender'],
 				'dob'           => $post['birth_date'],
 				'employee_id'   => $insert_id,
@@ -500,17 +500,40 @@ class Hr extends CI_Controller
 
 	public function save_designation()
 	{
-		// Load form validation library if not auto-loaded
-		// $this->load->library('form_validation');
+		// Load validation library
+		$this->load->library('form_validation');
 
-		// Set validation rules
-		// $this->form_validation->set_rules('designation_code', 'Designation Code', 'required|trim|is_unique[designation_master.designation_code]');
-		// $this->form_validation->set_rules('designation_name', 'Designation Name', 'required|trim');
+		// Validation rules
+		$this->form_validation->set_rules(
+			'designation_code',
+			'Designation Code',
+			'required|trim'
+		);
 
-		// If validation fails, reload form with errors
-		//if ($this->form_validation->run() == FALSE) {
-		// $this->load->view('designation/add_designation'); // adjust to your actual view
-		//} else {
+		$this->form_validation->set_rules(
+			'designation_name',
+			'Designation Name',
+			'required|trim'
+		);
+
+		$this->form_validation->set_rules(
+			'department',
+			'Department',
+			'required|trim'
+		);
+
+		// Check validation
+		if ($this->form_validation->run() == FALSE) {
+
+			$this->session->set_flashdata(
+				'error',
+				validation_errors()
+			);
+
+			redirect('Hr/add_designation');
+			return;
+		}
+
 		// Collect data
 		$data = array(
 			'designation_code'    => $this->input->post('designation_code', TRUE),
@@ -528,14 +551,16 @@ class Hr extends CI_Controller
 			'status'              => $this->input->post('status', TRUE),
 			'created_on'          => date('Y-m-d H:i:s')
 		);
+
 		$insert_status = $this->Company_model->insert_designation($data);
+
 		if ($insert_status) {
 			$this->session->set_flashdata('success', 'Designation saved successfully!');
 		} else {
 			$this->session->set_flashdata('error', 'error occured while saving designation!');
 		}
+
 		redirect('Hr/list_designation');
-		// }
 	}
 
 	public function edit_designation()
@@ -590,7 +615,7 @@ class Hr extends CI_Controller
 		$deleted = $this->Company_model->delete_designation($id);
 		echo $deleted ? '1' : '0';
 	}
-	
+
 	//// DESIGNATION CODE END ////
 
 
@@ -899,16 +924,27 @@ class Hr extends CI_Controller
 		$this->load->view('includes/template', $data);
 	}
 
-	function update_joining_application()
+	public function update_joining_application()
 	{
-		$data['title'] = "Joining Application";
-		$id = $this->input->post('id');
+		$id = $this->input->post('id', TRUE);
+
+		if (empty($id)) {
+			$this->session->set_flashdata('error', 'Invalid Joining Application ID.');
+
+			redirect('Hr/view_joining_application_list');
+			return;
+		}
+
 		$this->load->model('Hr_model');
 		$res = $this->Hr_model->update_joining_application($id);
+
 		if ($res) {
-			$this->session->set_flashdata('success', 'Record Successfully Updated');
-			redirect('Hr/view_joining_application_list');
+			$this->session->set_flashdata('success', 'Joining Application updated successfully.');
+		} else {
+			$this->session->set_flashdata('error', 'Unable to update Joining Application.');
 		}
+
+		redirect('Hr/view_joining_application_list');
 	}
 
 	function print_joining_application()
@@ -943,6 +979,82 @@ class Hr extends CI_Controller
 
 		$this->session->set_flashdata('success', 'Delete Record Successfully');
 		redirect('Hr/view_joining_application_list');
+	}
+
+	///////////////////////////////////////OFFER LETTER////////////////////////////////////////////// 
+
+	function add_offer_letter()
+	{
+		$this->load->model('Setup_model');
+		$this->load->model('Hr_model');
+		$this->load->model('Users_model');
+		$data['title'] = "Create Offer Letter";
+		$data['branch_list'] = $this->Setup_model->get_all_branches();
+		$data['user_records'] = $this->Users_model->get_user_list();
+		$data['desig_list'] = $this->Setup_model->get_designation_list();
+		$data['department_list'] = $this->Setup_model->get_active_department_list();
+		$data['main_content'] = 'hr/offer_letter_add.php';
+		$this->load->view('includes/template', $data);
+	}
+
+	function add_offer_letter_data()
+	{
+		$this->load->model('Hr_model');
+		$flag = $this->Hr_model->add_offer_letter_data();
+		if ($flag) {
+			$this->session->set_flashdata('success', 'Record Successfully Saved');
+			redirect('Hr/list_offer_letter');
+		}
+	}
+
+	function list_offer_letter()
+	{
+		$this->load->model('Hr_model');
+		$data['title'] = "List Offer Letter Details";
+		$data['records'] = $this->Hr_model->get_all_offer_letter_details();
+
+		$data['main_content'] = 'hr/offer_letter_list.php';
+		$this->load->view('includes/template', $data);
+	}
+
+	function edit_offer_letter()
+	{
+		$id = $this->uri->segment('3');
+		$this->load->model('Users_model');
+		$this->load->model('Hr_model');
+		$this->load->model('Setup_model');
+
+		$data['title'] = "Edit Offer Letter";
+
+		$data['user_records'] = $this->Users_model->get_user_list();
+		$data['records'] = $this->Hr_model->get_offer_letter_by_id($id);
+		$data['salary'] = $this->Hr_model->get_offer_salary_by_id($id);
+		$data['incentive'] = $this->Hr_model->get_offer_incentive_by_id($id);
+		$data['desig_list'] = $this->Setup_model->get_designation_list();
+
+		$data['main_content'] = 'hr/offer_letter_edit.php';
+		$this->load->view('includes/template', $data);
+	}
+
+	function update_offer_letter_data()
+	{
+		$this->load->model('Hr_model');
+
+		$flag = $this->Hr_model->update_offer_letter_data();
+		if ($flag) {
+			$this->session->set_flashdata('success', 'Record Successfully Updated');
+			redirect('Hr/list_offer_letter');
+		}
+	}
+
+	function print_offer_letter($id)
+	{
+		$this->load->model('Hr_model');
+		$data['records'] = $this->Hr_model->get_offer_letter_by_id($id);
+		$data['salary'] = $this->Hr_model->get_offer_salary_by_id($id);
+		$data['incentive'] = $this->Hr_model->get_offer_incentive_by_id($id);
+		$data['main_content'] = 'hr/print/print_job_offer.php';
+		$this->load->view('hr/print/print_job_offer.php', $data);
 	}
 
 	///////////////////////////////////////salary_structure////////////////////////////////////////////// 
@@ -1096,12 +1208,32 @@ class Hr extends CI_Controller
 	}
 	function delete_attendance_emp()
 	{
+		$user = $this->session->userdata('user_id');
+
+		// Check Delete Permission
+		if (!has_access($user, 'Hr/view_emp_attendance_list', 'D')) {
+			$data['title'] = 'Access Denied';
+			$data['main_content'] = 'errors/access_control.php';
+			$this->load->view('includes/template', $data);
+			return;
+		}
+
 		$id = $this->uri->segment('3');
+		if (empty($id)) {
+			$this->session->set_flashdata('error', 'Invalid attendance record.');
+			redirect('Hr/view_emp_attendance_list');
+			return;
+		}
 
 		$this->load->model('Hr_model');
-		$data['user_records'] = $this->Hr_model->delete_attendance_emp($id);
+		$deleted = $this->Hr_model->delete_attendance_emp($id);
 
-		$this->session->set_flashdata('success', 'Delete Record Successfully');
+		if ($deleted) {
+			$this->session->set_flashdata('success', 'Attendance record deleted successfully.');
+		} else {
+			$this->session->set_flashdata('error', 'Unable to delete attendance record.');
+		}
+
 		redirect('Hr/view_emp_attendance_list');
 	}
 
@@ -1197,19 +1329,34 @@ class Hr extends CI_Controller
 		}
 	}
 
-	function delete_overtime_emp()
+	public function delete_overtime_emp()
 	{
 		$user = $this->session->userdata('user_id');
-		if (!has_access($user, 'Hr/view_allowances_list', 'D')) {
+
+		// Check Delete Permission
+		if (!has_access($user, 'Hr/view_emp_overtime_list', 'D')) {
 			$data['title'] = 'Access Denied';
 			$data['main_content'] = 'errors/access_control.php';
 			$this->load->view('includes/template', $data);
 			return;
 		}
-		$id = $this->uri->segment('3');
+
+		$id = $this->uri->segment(3);
+		if (empty($id)) {
+			$this->session->set_flashdata('error', 'Invalid overtime record.');
+			redirect('Hr/view_emp_overtime_list');
+			return;
+		}
+
 		$this->load->model('Hr_model');
-		$data['user_records'] = $this->Hr_model->delete_emp_overtime($id);
-		$this->session->set_flashdata('success', 'Delete Record Successfully');
+		$deleted = $this->Hr_model->delete_emp_overtime($id);
+
+		if ($deleted) {
+			$this->session->set_flashdata('success', 'Overtime record deleted successfully.');
+		} else {
+			$this->session->set_flashdata('error', 'Unable to delete overtime record.');
+		}
+
 		redirect('Hr/view_emp_overtime_list');
 	}
 
@@ -1305,44 +1452,81 @@ class Hr extends CI_Controller
 		$this->load->view('includes/template', $data);
 	}
 
+
 	function update_emp_resignation()
 	{
-		$data['title'] = "Update Resignation";
-		$id = $this->input->post('id');
 		$this->load->model('Hr_model');
-		$res = $this->Hr_model->update_resigning_application($id);
-		if ($res) {
-			$this->session->set_flashdata('success', 'Record Successfully Updated');
+		$id = $this->input->post('id');
+
+		if (empty($id)) {
+			$this->session->set_flashdata('error', 'Invalid resignation record.');
 			redirect('Hr/view_emp_resignation_list');
+			return;
+		}
+
+		$res = $this->Hr_model->update_resigning_application($id);
+
+		if ($res) {
+			$this->session->set_flashdata('success', 'Resignation updated successfully.');
+			redirect('Hr/view_emp_resignation_list');
+		} else {
+			$this->session->set_flashdata('error', 'Unable to update resignation. Please check the entered data.');
+			redirect('Hr/edit_emp_resignation/' . $id);
 		}
 	}
 
+
 	function print_resignation_application()
 	{
-		$id = $this->uri->segment('3');
+		$id = $this->uri->segment(3);
+
+		if (empty($id)) {
+			show_error('Invalid resignation ID.', 400);
+			return;
+		}
+
 		$this->load->model('Hr_model');
-		$data['records'] = $this->Hr_model->get_employee_list();
 		$data['resignation'] = $this->Hr_model->get_employee_resigning_by_id($id);
-		$this->load->model('Users_model');
-		$data['record1'] = $this->Users_model->get_user_record_by_id_pass($id);
-		$this->load->model('Setup_model');
-		$data['dept_list'] = $this->Setup_model->get_active_department_list();
+
+		if (!$data['resignation']) {
+			show_error('Resignation record not found.', 404);
+			return;
+		}
+
+		$data['file_records'] = $this->Hr_model->get_employee_document_doc_id($id);
+
 		$this->load->view('hr/print/print_resigning_application.php', $data);
 	}
 
 	function delete_resignation_application()
 	{
 		$user = $this->session->userdata('user_id');
+
 		if (!has_access($user, 'Hr/view_emp_resignation_list', 'D')) {
 			$data['title'] = 'Access Denied';
 			$data['main_content'] = 'errors/access_control.php';
 			$this->load->view('includes/template', $data);
+
 			return;
 		}
-		$id = $this->uri->segment('3');
+
+		$id = $this->uri->segment(3);
+
+		if (empty($id)) {
+			$this->session->set_flashdata('error', 'Invalid resignation ID.');
+			redirect('Hr/view_emp_resignation_list');
+			return;
+		}
+
 		$this->load->model('Hr_model');
-		$data['user_records'] = $this->Hr_model->delete_resignation_application($id);
-		$this->session->set_flashdata('success', 'Delete Record Successfully');
+		$deleted = $this->Hr_model->delete_resignation_application($id);
+
+		if ($deleted) {
+			$this->session->set_flashdata('success', 'Resignation deleted successfully.');
+		} else {
+			$this->session->set_flashdata('error', 'Unable to delete resignation.');
+		}
+
 		redirect('Hr/view_emp_resignation_list');
 	}
 
@@ -2223,23 +2407,18 @@ class Hr extends CI_Controller
 	{
 		$doc_id = $this->input->post('doc_id');
 
-		$file = $this->db->get_where('employee_resignation_documents', [
-			'doc_id' => $doc_id
-		])->row();
-
-		if ($file) {
-
-			$path = FCPATH . 'public/uploaded_documents/' . $file->document_path;
-
-			if (file_exists($path)) {
-				unlink($path);
-			}
-
-			$this->db->where('doc_id', $doc_id);
-			$this->db->delete('employee_resignation_documents');
+		if (empty($doc_id)) {
+			echo json_encode([
+				'status' => 0,
+				'message' => 'Invalid document ID.'
+			]);
+			return;
 		}
 
-		echo 1;
+		$this->load->model('Hr_model');
+		$result = $this->Hr_model->delete_resignation_document($doc_id);
+
+		echo json_encode($result);
 	}
 
 	public function add_monthly_salary_data()

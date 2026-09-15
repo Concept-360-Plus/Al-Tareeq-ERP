@@ -10,21 +10,32 @@
 	<div class="dt-responsive table-responsive">
 
 		<?php if ($this->session->flashdata('error')): ?>
-            <div class="alert alert-danger">
-                <?php echo $this->session->flashdata('error'); ?>
-            </div>
-        <?php endif; ?>
+			<div class="alert alert-danger">
+				<?php echo $this->session->flashdata('error'); ?>
+			</div>
+		<?php endif; ?>
 
-        <?php if ($this->session->flashdata('success')): ?>
-            <div class="alert alert-success">
-                <?php echo $this->session->flashdata('success'); ?>
-            </div>
-        <?php endif; ?>
-		
+		<?php if ($this->session->flashdata('success')): ?>
+			<div class="alert alert-success">
+				<?php echo $this->session->flashdata('success'); ?>
+			</div>
+		<?php endif; ?>
+
+		<?php
+		function format_resignation_date($date)
+		{
+			if (empty($date) || $date == '0000-00-00') {
+				return '-';
+			}
+
+			return date('d-M-Y', strtotime($date));
+		}
+		?>
+
 		<table id="datatable" class="table table-striped" data-toggle="data-table">
 			<thead>
 				<tr>
-					<th>Sr No</th>
+					<th>Sl. No</th>
 					<th>Resign Code</th>
 					<th>Employee Name</th>
 					<th>Resignation Date:</th>
@@ -41,9 +52,15 @@
 						<td><?php echo $i;
 							$i++; ?></td>
 						<td><?php echo $row->resign_code; ?></td>
-						<td><?php echo $row->name; ?></td>
-						<td><?php echo date('d-M-Y', strtotime($row->resignation_date)); ?></td>
-						<td><?php echo date('d-M-Y', strtotime($row->last_working_date)); ?></td>
+						<td><?php echo $row->employee_name; ?></td>
+
+						<td>
+							<?php echo format_resignation_date($row->resignation_date); ?>
+						</td>
+
+						<td>
+							<?php echo format_resignation_date($row->last_working_date); ?>
+						</td>
 						<td><?php echo $row->notice_days; ?></td>
 
 						<td class="action-icons">
@@ -51,13 +68,13 @@
 								<i class="fa fa-edit"></i>
 							</a>
 
-							<a href="<?php echo base_url('index.php/Hr/delete_resignation_application/' . $row->resig_id); ?>" 
-							title="Delete">
+							<a href="<?php echo base_url('index.php/Hr/delete_resignation_application/' . $row->resig_id); ?>"
+								title="Delete">
 								<i class="fa fa-trash"></i>
 							</a>
 
-							<a href="<?php echo base_url() . 'index.php/Hr/print_resignation_application/' . $row->resig_id; ?>" 
-							title="Print" target="_blank">
+							<a href="<?php echo base_url() . 'index.php/Hr/print_resignation_application/' . $row->resig_id; ?>"
+								title="Print" target="_blank">
 								<i class="fa fa-print"></i>
 							</a>
 						</td>
@@ -67,4 +84,3 @@
 		</table>
 	</div>
 </div>
-

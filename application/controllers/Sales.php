@@ -13,7 +13,7 @@ class Sales extends CI_Controller
 		parent::__construct();
 
 		if (!$this->session->userdata('is_logged_in')) {
-			redirect('Login/login');
+			redirect('Welcome/index');
 		}
 
 		// Prevent browser caching
@@ -25,7 +25,6 @@ class Sales extends CI_Controller
 		$this->load->model('Crm_model');
 		$this->load->model('Item_model');
 		$this->load->model('Accounts_model');
-		$this->load->model('Sales_order_model');
 		$this->load->model('Setup_model');
 		$this->load->model('Project_model');
 
@@ -65,6 +64,9 @@ public function add_enquiry()
 	$data['active_units']   = $this->Setup_model->get_all_units();
     $data['main_content'] = 'sales/add_enquiry';
 
+	// Sales rep dropdown (for discount limit validation)
+    $data['sales_rep_list'] = $this->Setup_model->get_all_sales_rep_list();
+
     $this->load->view('includes/template', $data);
 }
 
@@ -86,6 +88,7 @@ public function add_enquiry()
         'enquiry_customer' => $this->input->post('customer_id'),
         'client_ref_no'    => $this->input->post('client_ref_no'),
         'comments'         => $this->input->post('comments'),
+        'sales_person'     => $this->input->post('sales_person'),
         'created_by'       => $this->session->userdata('user_id'),
         'created_at'       => date('Y-m-d H:i:s')
     );
@@ -117,6 +120,8 @@ public function add_enquiry()
             }
         }
 
+        $this->_upload_enquiry_drawings($enquiry_id);
+
         $this->session->set_flashdata('success','Enquiry Added Successfully.');
     }
     else
@@ -127,12 +132,91 @@ public function add_enquiry()
     redirect('Sales/list_enquiries');
 }
 
-public function edit_enquiry($id)
+	// Uploads all files submitted under the drawings[] field and links them to the enquiry
+	private function _upload_enquiry_drawings($enquiry_id)
 {
-	 $data['title'] = 'Edit Enquiry';
+    if (empty($_FILES['drawings']['name'][0]))
+    {
+        return;
+    }
+
+    $upload_path = FCPATH . 'uploads/enquiry_drawings/';
+
+    if ( ! is_dir($upload_path))
+    {
+        mkdir($upload_path, 0755, true);
+    }
+
+    $config['upload_path']   = $upload_path;
+    $config['allowed_types'] = 'pdf|jpg|jpeg|png';
+    $config['max_size']      = 5120;
+    $config['encrypt_name']  = TRUE;
+
+    $this->load->library('upload', $config);
+
+    $attachments = array();
+    $file_count  = count($_FILES['drawings']['name']);
+
+    for ($i = 0; $i < $file_count; $i++)
+    {
+        if ($_FILES['drawings']['error'][$i] !== 0)
+        {
+            continue;
+        }
+
+        $_FILES['drawing_file']['name']     = $_FILES['drawings']['name'][$i];
+        $_FILES['drawing_file']['type']     = $_FILES['drawings']['type'][$i];
+        $_FILES['drawing_file']['tmp_name'] = $_FILES['drawings']['tmp_name'][$i];
+        $_FILES['drawing_file']['error']    = $_FILES['drawings']['error'][$i];
+        $_FILES['drawing_file']['size']     = $_FILES['drawings']['size'][$i];
+
+        $this->upload->initialize($config);
+
+        if ($this->upload->do_upload('drawing_file'))
+        {
+            $file_data = $this->upload->data();
+
+            $attachments[] = array(
+                'enquiry_id'  => $enquiry_id,
+                'file_title'  => $file_data['orig_name'],
+                'file_path'   => 'uploads/enquiry_drawings/' . $file_data['file_name'],
+                'file_type'   => ltrim($file_data['file_ext'], '.'),
+                'uploaded_by' => $this->session->userdata('user_id'),
+                'created_at'  => date('Y-m-d H:i:s')
+            );
+        }
+    }
+
+    if ( ! empty($attachments))
+    {
+        $this->Sales_model->add_enquiry_attachments($attachments);
+    }
+}
+
+	// Deletes a single attachment record via ajax, called from the edit view
+	public function delete_enquiry_attachment()
+{
     $this->load->model('Sales_model');
 
-   $data['customer_list']  = $this->Setup_model->get_all_customer_list();
+    $attachment_id = $this->input->post('attachment_id');
+
+    if (empty($attachment_id))
+    {
+        echo json_encode(array('status' => false));
+        return;
+    }
+
+    $this->Sales_model->delete_enquiry_attachment($attachment_id);
+
+    echo json_encode(array('status' => true));
+}
+
+public function edit_enquiry($id)
+{
+	$data['title'] = 'Edit Enquiry';
+    $this->load->model('Sales_model');
+
+   	$data['customer_list']  = $this->Setup_model->get_all_customer_list();
 	$data['branch_list']    = $this->Setup_model->get_all_branches();
 	$data['active_users']   = $this->Setup_model->get_active_user_list();
 
@@ -141,6 +225,8 @@ public function edit_enquiry($id)
    
     $data['enquiry_data']  = $this->Sales_model->get_enquiry_details($id);
 	$data['cart_items'] = $this->Sales_model->get_enquiry_cart($id);
+	$data['enquiry_attachments'] = $this->Sales_model->get_enquiry_attachments($id);
+    $data['sales_rep_list'] = $this->Setup_model->get_all_sales_rep_list();
 
     if (!$data['enquiry_data']) {
         show_404();
@@ -168,6 +254,7 @@ public function update_enquiry_data()
         'project_subject'   => $this->input->post('project_subject'),
         'project_location'  => $this->input->post('project_location'),
         'comments'          => $this->input->post('comments'),
+        'sales_person'      => $this->input->post('sales_person'),
         'updated_by'        => $this->session->userdata('user_id'),
         'updated_on'        => date('Y-m-d H:i:s')
     );
@@ -189,7 +276,7 @@ public function update_enquiry_data()
     $amount  = $this->input->post('amount');
 
 
-    if(!empty($product))
+       if(!empty($product))
     {
         for($i=0; $i<count($product); $i++)
         {
@@ -211,121 +298,32 @@ public function update_enquiry_data()
     }
 
 
+    $this->_upload_enquiry_drawings($id);
+
     $this->session->set_flashdata('success','Enquiry Updated Successfully.');
 
     redirect('Sales/list_enquiries');
 }
 
+	
+
 	public function view_enquiry()
 	{
-		$enquiry = $this->uri->segment(3);
-		$this->load->model('Company_model');
-		$this->load->model('Item_model');
-		$enquiry_details = $this->Sales_model->get_enquiry_by_id($enquiry);
+		$enquiry_id = $this->uri->segment(3);
 
-		$branch_id				= $enquiry_details['branch_id'];
+		$data['title'] = 'Enquiry Details';
+		$data['enquiry_data'] = $this->Sales_model->get_enquiry_by_id($enquiry_id);
 
-		$data['title']			=  "Enquiry Details";
-		$data['Resurvey']  		=  $enquiry_details['reschedule_survey'];
-		$data['customer_list']  =  $this->Company_model->get_customers_by_branch($branch_id);
-		$data['all_products']	=  $this->Item_model->get_all_item_list();
-		$data['active_units']	=  $this->Item_model->get_all_units();
-		$des_id					=  2; //DESIGNATION SITE ENGINEER
-		$data['employee_list']  =  $this->Company_model->get_all_employees_designation_id($des_id, $branch_id);
-		$data['enquiry_data']   =  $enquiry_details;
-		$enquiry_revision       =  $enquiry_details['enquiry_revision'];
-		$customer_id            =  $enquiry_details['enquiry_customer'];
-		if ($enquiry_revision == 1) {
-			$data['old_survey_data'] = $this->Sales_model->get_survey_old_data($enquiry);
+		if (empty($data['enquiry_data'])) {
+			$this->session->set_flashdata('error', 'Enquiry not found');
+			redirect('Sales/list_enquiry');
+			return;
 		}
-		// echo $enquiry_details['enquiry_status'];exit();
-		if ($enquiry_details['enquiry_status'] >= 2) {
-			$survey_details = $this->Sales_model->get_survey_by_enquiry_id($enquiry);
-			if (!empty($survey_details)) {
-				$data['enquiry_id']		 = $enquiry_details['enquiry_id'];
-				$data['survey_data']	 = $survey_details;
-				$data['survey_files']	 = $this->Sales_model->get_survey_files_by_id($survey_details['survey_id']);
-				$data['old_survey_data'] = $this->Sales_model->get_survey_old_data($enquiry);
-				//Resurvey from Quotation
-				if ($enquiry_revision == 1) {
-					$data['estimation_revisions'] = $this->Sales_model->get_estimation_ids($enquiry);
-				}
-				if ($enquiry_details['enquiry_status'] >= 4) {
-					// echo "here";exit();
-					$Enquiry_details     =  $this->estimation_master_data($enquiry);
-					$data['master']      =  $Enquiry_details['master'];
-					// print_r($data['master']);exit();
-					$i = 0;
-					foreach ($Enquiry_details['estimation'] as  $main) {
-						$i++;
-					}
-					$data['mainIndex']   = $i;
-					$data['estimation']  = $Enquiry_details['estimation'];
-					if ($enquiry_details['enquiry_status'] == 5) { //Register quotation
-						$customer_id    			 = $enquiry_details['enquiry_customer'];
-						$data['Customer_contacts']   = $this->Company_model->get_customer_contact_by_cust_id($customer_id);
-						$data['quotation_code']		 = "QTN-" . '0' . $enquiry_details['branch_id'] . "-" . date('Ymd');
-					}
-					if ($enquiry_details['enquiry_status'] == 6) {
-						$quotation_details			= $this->get_quotation_master_data($enquiry);
-						$data['qtn_master']			= $quotation_details['qtn_master'];
-						$data['qtn_details']        = $quotation_details['quotation'];
-						$data['qtn_revisions']		= $this->Sales_model->get_all_qtn_revisions($enquiry);
-					}
-					if ($enquiry_details['enquiry_status'] == 7) { //Creating new  sales order							
 
-						$quotation_details	 	= $this->get_quotation_master_data($enquiry, 1);
-						$data['so_code']    	= $this->Sales_model->generate_so_code();
-						$data['qtn_master']  	= $quotation_details['qtn_master'];
-						$qtn_id				 	= $data['qtn_master']['quotation_id'];
-						$products_with_avail	= $this->Sales_order_model->get_available_quantities($enquiry, $qtn_id);
-						// echo $this->db->last_query();exit();
-						$data['qtn_products']	= $products_with_avail;
-						//print_r($data['qtn_products']);exit();
-						$data['qtn_revisions']	= $this->Sales_model->get_all_qtn_revisions($enquiry);
-					}
-					if ($enquiry_details['enquiry_status'] == 8) {
-						$quotation_details = $this->get_quotation_master_data($enquiry, 1);
-						$data['so_code']     = $this->Sales_model->generate_so_code();
-						$data['qtn_master']  = $quotation_details['qtn_master'];
-						$data['qtn_details'] = $quotation_details['quotation'];
-						$data['qtn_products'] = $this->Sales_model->get_all_products($data['qtn_master']['quotation_id']);
-						$data['sales_order_list'] = $this->Sales_order_model->get_sales_order_list_data($data['enquiry_id'], $data['qtn_master']['quotation_id']);
-						$data['qtn_revisions'] = $this->Sales_model->get_all_qtn_revisions($enquiry);
-					}
-					if ($enquiry_details['enquiry_status'] == 9) {
+		$data['cart_items'] = $this->Sales_model->get_enquiry_cart($enquiry_id);
 
-						$data['qtn_revisions'] = $this->Sales_model->get_all_qtn_revisions($enquiry);
-						$quotation_details = $this->get_quotation_master_data($enquiry, 1);
-						$data['so_code']     			= $this->Sales_model->generate_so_code();
-						$data['qtn_master']  			= $quotation_details['qtn_master'];
-						$data['qtn_details'] 			= $quotation_details['quotation'];
-						$data['qtn_products']			= $this->Sales_model->get_all_products($data['qtn_master']['quotation_id']);
-						$data['sundry_accounts1']   	= $this->Accounts_model->get_gen_ledger_detors_records();
-						$data['sundry_accounts2']   	= $this->Accounts_model->get_general_ledger_by_group('Sales Accounts');
-						$data['sundry_accounts3']   	= $this->Accounts_model->get_all_general_ledger_accounts();
-						$data['enquiry_customer_id']    = $this->Accounts_model->get_cust_account_Id($customer_id);
-						$last_code = $this->Sales_order_model->get_last_delivery_code();
-						if ($last_code) {
-							// Extract numeric part
-							$number = (int) substr($last_code, 2); // Assuming prefix 'DN'
-							$number++; // Increment by 1
-						} else {
-							$number = 1; // First delivery
-						}
+		$data['main_content'] = 'sales/view_enquiry.php';
 
-						// Format with leading zeros, e.g., DN00013
-						$data['delivery_code'] = 'DN' . str_pad($number, 5, '0', STR_PAD_LEFT);
-						$data['sales_order_list'] = $this->Sales_order_model->get_sales_order_list_data($data['enquiry_id'], $data['qtn_master']['quotation_id']);
-						$data['delivery_challan_list'] = $this->Sales_order_model->get_delivery_challan_list_data($data['enquiry_id'], $data['qtn_master']['quotation_id']);
-					}
-				}
-			} else {
-				$data['Resurvey'] = 1;
-			}
-		}
-		$data['main_content'] = 'sales/view_quotation.php';
-		//$data['main_content'] = 'sales/estimation/test_estimation.php';
 		$this->load->view('includes/template', $data);
 	}
 
@@ -1282,15 +1280,15 @@ public function update_enquiry_data()
 			return;
 		}
 
-		$data['so_master']  = $this->Sales_order_model->get_sales_order_master($so_id);
+		$data['so_master']  = $this->Sales_model->get_sales_order_master($so_id);
 		$so_date = !empty($data['so_master']['so_date'])
 			? date('Y-m-d', strtotime($data['so_master']['so_date']))
 			: date('Y-m-d');
 
-		$data['so_address'] = $this->Sales_order_model->get_so_address($so_id);
+		$data['so_address'] = $this->Sales_model->get_so_address($so_id);
 
 		// get products + flag
-		$so_result = $this->Sales_order_model->get_edit_so_quantities($so_id, $enq_id, $qtn_id);
+		$so_result = $this->Sales_model->get_edit_so_quantities($so_id, $enq_id, $qtn_id);
 		$data['so_products'] = $so_result['products'];
 		$can_create_dc = $so_result['can_create_dc'];
 
@@ -1348,7 +1346,7 @@ public function update_enquiry_data()
 		// echo "here";exit();
 		$this->db->trans_start();
 
-		$so_master = $this->Sales_order_model->get_sales_order_master($so_id);
+		$so_master = $this->Sales_model->get_sales_order_master($so_id);
 		$quotation_details = $this->Sales_model->get_all_quotation_details($so_master['qtn_id']);
 
 		$customer_id = isset($quotation_details[0]['quotation_customer'])
@@ -1678,6 +1676,7 @@ $project_location = $enquiry->project_location ?? ''; // assuming you have a pro
 				'delivery_term'         => $this->input->post('delivery_term'),
 				'terms_condition'       => $this->input->post('terms_condition'),
 				'aproval'              => 0,
+				'quotation_status'     => ($action === 'draft') ? 'Draft' : 'CONFIRMED',
 				'active'                => 1,
 				'prepared_by'       => $this->input->post('employee_prepared'),
 				'approved_by'       => $this->input->post('employee_approved'),
@@ -1735,9 +1734,36 @@ $project_location = $enquiry->project_location ?? ''; // assuming you have a pro
         $data['Quotation_id'] = $qtn_id;
 
         $data['quotation'] = $this->Sales_model->get_quotation_by_id($qtn_id);
+
+        // Opening an APPROVED quotation for editing invalidates that approval —
+        // drop the status back to Confirmed and clear everything accept_quotation_approval()
+        // had set (aproval flag, remarks, LPO number, PO file), not just the label.
+        if (isset($data['quotation']->quotation_status) && $data['quotation']->quotation_status == 'APPROVED')
+        {
+            $reset_data = [
+                'quotation_status' => 'Confirmed',
+                'aproval'          => 0,
+                'approval_remarks' => '',
+                'lpo_number'       => '',
+                'po_file'          => null
+            ];
+
+            $this->Sales_model->update_quotation($qtn_id, $reset_data);
+
+            foreach ($reset_data as $key => $value)
+            {
+                $data['quotation']->$key = $value;
+            }
+        }
+
         $data['cart_items'] = $this->Sales_model->get_quotation_cart($qtn_id);
 
+        // Fallback VAT rate for quotations saved before a rate was recorded
+        $data['vat_percentage'] = $this->Setup_model->get_active_vat_percent();
+
         $data['main_content'] = 'sales/quotation/edit_quotation.php';
+		$this->load->model('Hr_model');
+    	$data['employees'] = $this->Hr_model->get_employee_list();
     }
 
     $this->load->view('includes/template', $data);
@@ -2224,14 +2250,21 @@ $project_location = $enquiry->project_location ?? ''; // assuming you have a pro
 	//-------------Sales Order
 	public function list_sales_orders()
 	{
-		$data['title']				 = 'Sales Order List';
-		$data['active_sales_orders'] = $this->Sales_order_model->list_all_sales_order();
-		// echo $this->db->last_query();exit();
-		$data['main_content']		 = 'sales/sales_order/list_sales_orders.php';
+		$user = $this->session->userdata('user_id');
+
+		if (!has_access($user, 'Sales/list_sales_orders', 'A')) {
+			$data['title'] = 'Access Denied';
+			$data['main_content'] = 'errors/access_control.php';
+		} else {
+			$data['title'] = 'Sales Order List';
+			$data['active_sales_orders'] = $this->Sales_model->list_all_sales_order();
+			$data['main_content'] = 'sales/sales_order/list_sales_orders.php';
+		}
+
 		$this->load->view('includes/template', $data);
 	}
-public function add_sales_order($quotation_id = null)
-{
+	public function add_sales_order($quotation_id = null)
+	{
     $user = $this->session->userdata('user_id');
 
     if (!has_access($user, 'Sales/list_sales_orders', 'A')) {
@@ -2254,10 +2287,11 @@ public function add_sales_order($quotation_id = null)
     }
 
     $this->load->view('includes/template', $data);
-}
+	}
+
 	public function get_quotation_details()
 	{
-		$qtn_id = $this->input->post('qtn_id', true);
+		$qtn_id = intval($this->input->post('qtn_id', true));
 		if (empty($qtn_id)) {
 			echo json_encode([
 				'status'  => false,
@@ -2268,8 +2302,6 @@ public function add_sales_order($quotation_id = null)
 		// Get quotation master details
 		$quotation = $this->Sales_model->get_quotation_details_by_id($qtn_id);
 
-$quotation['delivery_term'] = strip_tags($quotation['delivery_term'] ?? '');
-$quotation['terms_condition'] = strip_tags($quotation['terms_condition'] ?? '');
 		if (empty($quotation)) {
 			echo json_encode([
 				'status'  => false,
@@ -2278,9 +2310,21 @@ $quotation['terms_condition'] = strip_tags($quotation['terms_condition'] ?? '');
 			return;
 		}
 
+		$quotation['delivery_term']   = strip_tags($quotation['delivery_term'] ?? '');
+		$quotation['terms_condition'] = strip_tags($quotation['terms_condition'] ?? '');
+
+		// Sales rep's max discount %, so the SO form can enforce the same limit as the quotation
+		$quotation['sales_rep_max_discount'] = null;
+		if (!empty($quotation['sales_person'])) {
+			$rep = $this->Setup_model->get_sales_rep_by_id($quotation['sales_person']);
+			if ($rep) {
+				$quotation['sales_rep_max_discount'] = $rep->sales_discount_percent;
+			}
+		}
+
 		// Fetch products with available quantities
 		$enquiry_id = $quotation['enquiry_id'] ?? null;
-		$products_with_avail = $this->Sales_order_model->get_available_quantities($enquiry_id, $qtn_id);
+		$products_with_avail = $this->Sales_model->get_available_quantities($enquiry_id, $qtn_id);
 
 		// Load partial view for product table
 		$table_html = $this->load->view(
@@ -2295,24 +2339,50 @@ $quotation['terms_condition'] = strip_tags($quotation['terms_condition'] ?? '');
 			'table_html' => $table_html
 		]);
 	}
-	public function save_sales_order()
+		public function save_sales_order()
 	{
-		//print_r($this->input->post());exit();
 		if ($this->input->post()) {
 			$created_by = $this->session->userdata('user_id');
 			$created_on = date('Y-m-d H:i:s');
 			$enquiry_id = $this->input->post('enquiry_id');
 			$qtn_id     = $this->input->post('quotation_id');
 
+			if (empty($qtn_id)) {
+				$this->session->set_flashdata('error', 'Please select a Quotation before saving the Sales Order.');
+				redirect('Sales/add_sales_order');
+				return;
+			}
+
+			$quotation_row = $this->Sales_model->get_quotation_details_by_id($qtn_id);
+
+			if (!empty($quotation_row['sales_person'])) {
+
+				$rep = $this->Setup_model->get_sales_rep_by_id($quotation_row['sales_person']);
+
+				$posted_discount = floatval($this->input->post('so_add_discount_percentage'));
+
+				if ($rep && $posted_discount > $rep->sales_discount_percent) {
+
+					$this->session->set_flashdata(
+						'error',
+						'Discount % exceeds the maximum allowed for the Sales Person on this quotation.'
+					);
+
+					redirect('Sales/add_sales_order?quotation_id=' . $qtn_id);
+					return;
+				}
+			}
+
 			// Start Transaction
 			$this->db->trans_start();
 
-			// 2. Find max revision for this quotation
+			// Find max revision for this quotation
 			$this->db->select_max('so_revision');
 			$this->db->where('qtn_id', $qtn_id);
 			$max_revision_row = $this->db->get('sales_order_master')->row_array();
 
 			$max_revision = isset($max_revision_row['so_revision']) ? (int)$max_revision_row['so_revision'] : 0;
+
 			// --- Master Data ---
 			$master_data = [
 				'so_code'             => $this->input->post('so_code'),
@@ -2337,47 +2407,52 @@ $quotation['terms_condition'] = strip_tags($quotation['terms_condition'] ?? '');
 				'created_on'          => $created_on,
 				'created_by'          => $created_by,
 			];
-			$so_id = $this->Sales_order_model->insert_sales_order_master($master_data);
+			$so_id = $this->Sales_model->insert_sales_order_master($master_data);
 
 			// --- Products ---
 			if (!empty($_POST['product_id'])) {
 				$products_batch = [];
 
+				$qtn_qty_arr      = $this->input->post('qtn_qty') ?: [];
+				$qtn_discount_arr = $this->input->post('qtn_discount') ?: [];
+
 				foreach ($this->input->post('product_id') as $k => $prd_id) {
 					$products_batch[] = [
-						'so_id'      	  => $so_id,
-						'product_id' 	  => $prd_id,
-						'unit_id'    	  => $this->input->post('unit_id')[$k],
-						'quantity'		  => $this->input->post('so_qty')[$k],
-						'unit_price' 	  => str_replace(',', '', $this->input->post('so_unitp')[$k]),
-						'amount'     	  => str_replace(',', '', $this->input->post('so_amount')[$k]),
+						'so_id'           => $so_id,
+						'product_id'      => $prd_id,
+						'unit_id'         => $this->input->post('unit_id')[$k],
+						'quantity'        => $this->input->post('so_qty')[$k],
+						'unit_price'      => str_replace(',', '', $this->input->post('so_unitp')[$k]),
+						'amount'          => str_replace(',', '', $this->input->post('so_amount')[$k]),
 						'discount_amount' => str_replace(',', '', $this->input->post('so_discount')[$k]),
 						'taxable_amount'  => str_replace(',', '', $this->input->post('so_taxable')[$k]),
+						'qtn_quantity'    => isset($qtn_qty_arr[$k]) ? $qtn_qty_arr[$k] : 0,
+						'qtn_discount'    => isset($qtn_discount_arr[$k]) ? $qtn_discount_arr[$k] : 0,
 					];
 				}
 
 				if (!empty($products_batch)) {
-					$this->Sales_order_model->insert_sales_order_products_batch($products_batch);
+					$this->Sales_model->insert_sales_order_products_batch($products_batch);
 				}
 			}
 
 			// --- Address ---
 			$address_data = [
-				'so_id'                   => $so_id,
-				'billing_customer_name'   => $this->input->post('billing_name'),
+				'so_id'                    => $so_id,
+				'billing_customer_name'    => $this->input->post('billing_name'),
 				'billing_customer_address' => $this->input->post('billing_address'),
-				'billing_emirates'        => $this->input->post('billing_city'),
-				'billing_contact'         => $this->input->post('billing_phone'),
-				'billing_email'           => $this->input->post('billing_email'),
-				'shipping_customer'       => $this->input->post('shipping_name'),
-				'shipping_address'        => $this->input->post('shipping_address'),
-				'shipping_emirate'        => $this->input->post('shipping_city'),
-				'shipping_contact'        => $this->input->post('shipping_phone'),
-				'shipping_email'          => $this->input->post('shipping_email'),
-				'created_on'              => $created_on
+				'billing_emirates'         => $this->input->post('billing_city'),
+				'billing_contact'          => $this->input->post('billing_phone'),
+				'billing_email'            => $this->input->post('billing_email'),
+				'shipping_customer'        => $this->input->post('shipping_name'),
+				'shipping_address'         => $this->input->post('shipping_address'),
+				'shipping_emirate'         => $this->input->post('shipping_city'),
+				'shipping_contact'         => $this->input->post('shipping_phone'),
+				'shipping_email'           => $this->input->post('shipping_email'),
+				'created_on'               => $created_on
 			];
 
-			$this->Sales_order_model->insert_sales_order_address($address_data);
+			$this->Sales_model->insert_sales_order_address($address_data);
 
 			$updateEnqData = [
 				'enquiry_status' => 8, // converted to sales order
@@ -2385,26 +2460,23 @@ $quotation['terms_condition'] = strip_tags($quotation['terms_condition'] ?? '');
 				'updated_by'     => $created_by
 			];
 
-			$enqUpdated = $this->Sales_model->update_enquiry_master($enquiry_id, $updateEnqData);
+			if (!empty($enquiry_id)) {
+				$this->Sales_model->update_enquiry_master($enquiry_id, $updateEnqData);
+			}
 			$action = $this->input->post('action');
 
 			// Complete Transaction
 			$this->db->trans_complete();
 
-			// Check transaction status
 			if ($this->db->trans_status() === FALSE) {
-				// Rollback occurred
 				$this->session->set_flashdata('error', 'Failed to save Sales Order, please try again.');
 				redirect('Sales/list_sales_orders/');
 			} else {
-				// Success
 				$this->session->set_flashdata('success', 'Sales Order saved successfully!');
 
 				if ($action == 'delivery_challan') {
-					// Redirect to add delivery challan page with the new SO ID
 					redirect('Sales/add_delivery_challan?so_id=' . $so_id);
 				} else {
-					// Just redirect to Sales Order list
 					redirect('Sales/view_sales_order/' . $so_id);
 				}
 			}
@@ -2422,10 +2494,10 @@ $quotation['terms_condition'] = strip_tags($quotation['terms_condition'] ?? '');
 			$data['title'] = 'Edit Sales Order';
 
 			// ✅ Fetch all data
-			$data['sales_order_master']   = $this->Sales_order_model->get_sales_order_master($so_id);
+			$data['sales_order_master']   = $this->Sales_model->get_sales_order_master($so_id);
 			//echo $this->db->last_query();exit();
-			$data['so_products'] 		  = $this->Sales_order_model->get_so_products($so_id);
-			$data['sales_order_address']  = $this->Sales_order_model->get_so_address($so_id);
+			$data['so_products'] 		  = $this->Sales_model->get_so_products($so_id);
+			$data['sales_order_address']  = $this->Sales_model->get_so_address($so_id);
 			$data['all_products']         = $this->Item_model->get_active_item_list();
 			$data['active_units']         = $this->Item_model->get_all_units();
 
@@ -2474,11 +2546,11 @@ $quotation['terms_condition'] = strip_tags($quotation['terms_condition'] ?? '');
 				'updated_by'          => $updated_by,
 			];
 
-			$this->Sales_order_model->update_sales_order_master($so_id, $master_data);
+			$this->Sales_model->update_sales_order_master($so_id, $master_data);
 
 			// --- Products ---
 			// Clear existing products and re-insert (simpler than partial updates)
-			// $this->Sales_order_model->delete_sales_order_products($so_id);
+			// $this->Sales_model->delete_sales_order_products($so_id);
 
 			// if (!empty($_POST['so_edit_qty'])) {
 			// 	$products_batch = [];
@@ -2497,7 +2569,7 @@ $quotation['terms_condition'] = strip_tags($quotation['terms_condition'] ?? '');
 			// 	}
 
 			// 	if (!empty($products_batch)) {
-			// 		$this->Sales_order_model->insert_sales_order_products_batch($products_batch);
+			// 		$this->Sales_model->insert_sales_order_products_batch($products_batch);
 			// 	}
 			// }
 
@@ -2517,7 +2589,7 @@ $quotation['terms_condition'] = strip_tags($quotation['terms_condition'] ?? '');
 				'updated_on'               => $updated_on
 			];
 
-			$this->Sales_order_model->update_sales_order_address($so_id, $address_data);
+			$this->Sales_model->update_sales_order_address($so_id, $address_data);
 
 			// Complete Transaction
 			$this->db->trans_complete();
@@ -2538,8 +2610,8 @@ $quotation['terms_condition'] = strip_tags($quotation['terms_condition'] ?? '');
 	// {
 	// 	$this->load->model('Sales_model');
 	// 	$data['title'] = 'View Sales Order';
-	// 	$data['so'] = $this->Sales_order_model->get_sales_order_master_details($so_id);
-	// 	$data['so_products'] = $this->Sales_order_model->get_so_products($so_id);
+	// 	$data['so'] = $this->Sales_model->get_sales_order_master_details($so_id);
+	// 	$data['so_products'] = $this->Sales_model->get_so_products($so_id);
 	// 	// ---- CHECK IF PROJECT ALREADY CREATED ----
 	// 	$data['project_created'] = $this->Project_model->is_project_created_for_so($so_id);
 
@@ -2559,9 +2631,11 @@ $quotation['terms_condition'] = strip_tags($quotation['terms_condition'] ?? '');
     }
 
     $this->load->model('Sales_model');
+    $this->load->model('Project_model');
+
     $data['title'] = 'View Sales Order';
-    $data['so'] = $this->Sales_order_model->get_sales_order_master_details($so_id);
-    $data['so_products'] = $this->Sales_order_model->get_so_products($so_id);
+    $data['so'] = $this->Sales_model->get_sales_order_master_details($so_id);
+    $data['so_products'] = $this->Sales_model->get_so_products($so_id);
     $data['project_created'] = $this->Project_model->is_project_created_for_so($so_id);
 
     if (empty($data['so'])) {
@@ -2576,7 +2650,7 @@ $quotation['terms_condition'] = strip_tags($quotation['terms_condition'] ?? '');
 	public function list_delivery_challan()
 	{
 		$data['title'] = 'Delivery Note List';
-		$data['active_delivery_challan'] = $this->Sales_order_model->list_all_delivery_challan();
+		$data['active_delivery_challan'] = $this->Sales_model->list_all_delivery_challan();
 		$data['main_content'] = 'sales/delivery_challan/list_delivery_notes.php';
 		$this->load->view('includes/template', $data);
 	}
@@ -2592,7 +2666,7 @@ $quotation['terms_condition'] = strip_tags($quotation['terms_condition'] ?? '');
 			$data['title'] = 'Add Delivery Note';
 
 			// Get last delivery code
-			$last_code = $this->Sales_order_model->get_last_delivery_code();
+			$last_code = $this->Sales_model->get_last_delivery_code();
 
 			if ($last_code) {
 				// Extract numeric part assuming prefix 'DN'
@@ -2606,11 +2680,11 @@ $quotation['terms_condition'] = strip_tags($quotation['terms_condition'] ?? '');
 			$data['delivery_code'] = 'DN' . str_pad($number, 5, '0', STR_PAD_LEFT);
 
 			// Fetch list of sales orders for selection
-			$data['sales_order_list'] = $this->Sales_order_model->get_sales_order_list_data();
+			$data['sales_order_list'] = $this->Sales_model->get_sales_order_list_data();
 			$so_id = $this->input->get('so_id');
 			if ($so_id) {
 				$data['selected_so'] = $so_id;
-				$data['sales_order'] = $this->Sales_order_model->get_sales_order_by_id($so_id);
+				$data['sales_order'] = $this->Sales_model->get_sales_order_by_id($so_id);
 
 			}
 
@@ -2632,7 +2706,7 @@ $quotation['terms_condition'] = strip_tags($quotation['terms_condition'] ?? '');
 		}
 
 		// If no delivery yet → fallback to sales order
-		$data['so_master']   = $this->Sales_order_model->get_sales_order_master($so_id);
+		$data['so_master']   = $this->Sales_model->get_sales_order_master($so_id);
 
 		if (!empty($data['so_master']['so_date'])) {
 			$so_date = date('Y-m-d', strtotime($data['so_master']['so_date']));
@@ -2640,8 +2714,8 @@ $quotation['terms_condition'] = strip_tags($quotation['terms_condition'] ?? '');
 			$so_date = date('Y-m-d');
 		}
 
-		$data['so_address']  = $this->Sales_order_model->get_so_address($so_id);
-		$data['so_products'] = $this->Sales_order_model->get_so_products($so_id);
+		$data['so_address']  = $this->Sales_model->get_so_address($so_id);
+		$data['so_products'] = $this->Sales_model->get_so_products($so_id);
 
 		$source = 'sales_order';
 
@@ -2709,7 +2783,7 @@ $quotation['terms_condition'] = strip_tags($quotation['terms_condition'] ?? '');
 				if (!empty($insert_data)) $this->db->insert_batch('delivery_products', $insert_data);
 			}
 
-			$this->Sales_order_model->update_sales_order_master($so_id, [
+			$this->Sales_model->update_sales_order_master($so_id, [
 				'delivery_status' => 1,
 				'updated_on' => date('Y-m-d H:i:s'),
 				'updated_by' => $this->session->userdata('user_id')
@@ -2746,7 +2820,7 @@ $quotation['terms_condition'] = strip_tags($quotation['terms_condition'] ?? '');
 			$data['main_content']   = 'errors/access_control.php';
 		} else {
 			$data['title']          	 = 'Create Invoice';
-			$data['delivery_challan_list'] = $this->Sales_order_model->get_delivery_challan_list_data();
+			$data['delivery_challan_list'] = $this->Sales_model->get_delivery_challan_list_data();
 			$data['sundry_accounts1']   	= $this->Accounts_model->get_gen_ledger_detors_records();
 			$data['sundry_accounts2']   	= $this->Accounts_model->get_general_ledger_by_group('Sales Accounts');
 			$data['sundry_accounts3']   	= $this->Accounts_model->get_all_general_ledger_accounts();
@@ -2779,7 +2853,7 @@ public function get_delivery_challan_invoice()
     // =======================
     // Delivery Master
     // =======================
-    $del_master = $this->Sales_order_model->get_delivery_master($del_id);
+    $del_master = $this->Sales_model->get_delivery_master($del_id);
 
     if (empty($del_master)) {
         echo json_encode(['error' => 'Invalid Delivery Challan']);
@@ -2791,8 +2865,8 @@ public function get_delivery_challan_invoice()
     // =======================
     $so_id = $del_master['so_id'] ?? 0;
 
-    $so_master  = $this->Sales_order_model->get_sales_order_master($so_id) ?? [];
-    $so_address = $this->Sales_order_model->get_so_address($so_id) ?? [];
+    $so_master  = $this->Sales_model->get_sales_order_master($so_id) ?? [];
+    $so_address = $this->Sales_model->get_so_address($so_id) ?? [];
 
     // =======================
     // Quotation (SAFE)
@@ -2851,7 +2925,7 @@ $html_branch = $this->load->view(
     // =======================
     // PRODUCTS
     // =======================
-    $so_result = $this->Sales_order_model->get_edit_so_quantities(
+    $so_result = $this->Sales_model->get_edit_so_quantities(
         $so_id,
         $qtn_id
     );
@@ -2970,7 +3044,7 @@ $html_branch = $this->load->view(
 				'created_at'                => date('Y-m-d H:i:s'),
 			];
 			// --- 2. Insert master ---
-			$invoice_id = $this->Sales_order_model->insert_invoice_master($data_master);
+			$invoice_id = $this->Sales_model->insert_invoice_master($data_master);
 
 			// --- 3. Collect products ---
 			$products = [];
@@ -3029,7 +3103,7 @@ $html_branch = $this->load->view(
 				}
 
 				if (!empty($products)) {
-					$this->Sales_order_model->insert_invoice_products($products);
+					$this->Sales_model->insert_invoice_products($products);
 				}
 
 				// 🔹 Insert stock OUT entries
@@ -3143,7 +3217,7 @@ $html_branch = $this->load->view(
 		];
 
 		// 2️⃣ Insert invoice master
-		$invoice_id = $this->Sales_order_model->insert_invoice_master($masterData);
+		$invoice_id = $this->Sales_model->insert_invoice_master($masterData);
 
 		// 3️⃣ Prepare product details for batch insert
 		$products = [];
@@ -3174,7 +3248,7 @@ $html_branch = $this->load->view(
 
 		// 4️⃣ Insert all products in one go
 		if (!empty($products)) {
-			$this->Sales_order_model->insert_invoice_products($products);
+			$this->Sales_model->insert_invoice_products($products);
 		}
 
 		for ($i = 0; $i < count($_POST['inv_creditor']); $i++) {
@@ -3296,10 +3370,10 @@ $html_branch = $this->load->view(
 	public function list_invoices()
 	{
 		$data['title'] = 'Invoice List';
-		$data['active_invoice_list'] 	= $this->Sales_order_model->list_all_invoices();
-		$data['cancelled_invoices']  	= $this->Sales_order_model->list_Cancel_invoices();
-		$data['sales_return_invoices']  = $this->Sales_order_model->list_Sales_retun_invoices();
-		$data['direct_invoices']  		= $this->Sales_order_model->list_direct_invoices();
+		$data['active_invoice_list'] 	= $this->Sales_model->list_all_invoices();
+		$data['cancelled_invoices']  	= $this->Sales_model->list_Cancel_invoices();
+		$data['sales_return_invoices']  = $this->Sales_model->list_Sales_retun_invoices();
+		$data['direct_invoices']  		= $this->Sales_model->list_direct_invoices();
 		// echo $this->db->last_query();exit();
 		$data['main_content'] = 'sales/invoices/list_invoices.php';
 		$this->load->view('includes/template', $data);
@@ -3621,18 +3695,18 @@ $data['footerPath'] = base_url($footer);
 }
 public function generate_einvoice_xml($invoice_id)
 {
-    $invoice_master = $this->Sales_order_model->get_invoice_master($invoice_id);
+    $invoice_master = $this->Sales_model->get_invoice_master($invoice_id);
 
     if (empty($invoice_master)) {
         show_error("Invoice not found");
     }
 
-    $so = $this->Sales_order_model->get_sales_order_master($invoice_master['so_id']);
+    $so = $this->Sales_model->get_sales_order_master($invoice_master['so_id']);
     $qtn_id = $so['qtn_id'];
 
-    $quotation = $this->Sales_order_model->get_quotation_print_data($qtn_id);
+    $quotation = $this->Sales_model->get_quotation_print_data($qtn_id);
 
-    $items = $this->Sales_order_model->get_invoice_products($invoice_id);
+    $items = $this->Sales_model->get_invoice_products($invoice_id);
 
     if (empty($items)) {
         show_error("Invoice items not found");
@@ -3698,12 +3772,16 @@ public function search_items()
 {
     $keyword = $this->input->post('keyword');
 
-    $this->db->select('product_id, product_code, product_name, total_price');
+    $this->db->select('product_id, product_code, product_name, description, total_price');
     $this->db->from('item_master');
 
+    // Only active and non-deleted items
+    $this->db->where('is_inactive !=', 1);
+    $this->db->where('is_marked_delete !=', 1);
+
     $this->db->group_start();
-    $this->db->like('product_name',$keyword);
-    $this->db->or_like('product_code',$keyword);
+    $this->db->like('product_name', $keyword);
+    $this->db->or_like('product_code', $keyword);
     $this->db->group_end();
 
     $this->db->limit(20);
@@ -3741,20 +3819,29 @@ public function add_quotations($enquiry_id = 0)
     $data['quotation_code'] = $this->Sales_model->get_quotation_code();
 
 
-    // Customer and branch dropdown
+        // Customer and branch dropdown
     $data['customer_list'] = $this->Setup_model->get_all_customer_list();
     $data['branch_list'] = $this->Setup_model->get_all_branches();
 
+        // Sales rep dropdown (for discount limit validation)
+    $data['sales_rep_list'] = $this->Setup_model->get_all_sales_rep_list();
 
-    // Employees
+    // Currency dropdown
+    $data['currency_list'] = $this->Setup_model->get_currency_list();
+
+
+        // Employees
     $this->load->model('Hr_model');
     $data['employees'] = $this->Hr_model->get_employee_list();
 
+    // Current active VAT rate, used as the default % on the quotation form
+    $data['vat_percentage'] = $this->Setup_model->get_active_vat_percent();
 
     $data['main_content'] = 'sales/add_quotation.php';
 
     $this->load->view('includes/template', $data);
 }
+
 public function add_quotation_data()
 {
     $action = $this->input->post('action');
@@ -3779,11 +3866,15 @@ public function add_quotation_data()
 
         'enquiry_id' => $this->input->post('enquiry_id'),
 
-       'quotation_customer' => $this->input->post('quotation_customer'),
+              'quotation_customer' => $this->input->post('quotation_customer'),
 
-'quotation_branch_id' => $this->input->post('quotation_branch_id'),
+				'quotation_branch_id' => $this->input->post('quotation_branch_id'),
+
+				'currency_id' => $this->input->post('currency_id'),
 
         'project_name' => $this->input->post('project_name'),
+
+        'estimation_id' => 0,
 
         'sub_total' => $this->input->post('qtn_sub_total'),
 
@@ -3791,9 +3882,13 @@ public function add_quotation_data()
 
         'discount_amount' => $this->input->post('qtn_add_discount_amount'),
 
+        'total_before_vat' => (floatval($this->input->post('qtn_sub_total')) - floatval($this->input->post('qtn_add_discount_amount'))),
+
+        'vat_required' => $this->input->post('qtn_apply_vat') ? 1 : 0,
+
         'vat_percentage' => $this->input->post('qtn_vat_percentage'),
 
-        'vat_amount' => $this->input->post('qtn_vat_amount'),
+        'vat_amount' => $this->input->post('qtn_apply_vat') ? $this->input->post('qtn_vat_amount') : 0,
 
         'grand_total' => $this->input->post('qtn_grand_total'),
 
@@ -3822,12 +3917,33 @@ public function add_quotation_data()
 		 'active' => 1,
 
 
-        'created_by' => $this->session->userdata('user_id')
+                'created_by' => $this->session->userdata('user_id')
 
         // 'created_date' => date('Y-m-d H:i:s')
 
     );
 
+    // Only set sales_person if one was actually selected, otherwise let the DB default apply
+    if ($this->input->post('sales_person') !== '' && $this->input->post('sales_person') !== null) {
+        $master['sales_person'] = $this->input->post('sales_person');
+    }
+
+    // Server-side guard: enforce sales person's max discount, in case client-side check was bypassed
+    if (!empty($master['sales_person'])) {
+
+        $rep = $this->Setup_model->get_sales_rep_by_id($master['sales_person']);
+
+        if ($rep && $master['discount_percentage'] > $rep->sales_discount_percent) {
+
+            $this->session->set_flashdata(
+                'error',
+                'Discount % exceeds the maximum allowed for the selected Sales Person.'
+            );
+
+            redirect('Sales/add_quotations');
+            return;
+        }
+    }
 
     // Save quotation master
 
@@ -3839,15 +3955,17 @@ public function add_quotation_data()
     {
 
 
-        // Save quotation items
+                // Save quotation items
 
-        $item_ids = $this->input->post('item_id[]');
+        $item_ids    = $this->input->post('item_id');
 
-        $qty = $this->input->post('qty[]');
+        $qty         = $this->input->post('qty');
 
-        $price = $this->input->post('price[]');
+        $price       = $this->input->post('price');
 
-        $amount = $this->input->post('amount[]');
+        $amount      = $this->input->post('amount');
+
+        $description = $this->input->post('description');
 
 
         if(!empty($item_ids))
@@ -3861,6 +3979,8 @@ public function add_quotation_data()
                     'quotation_id' => $quotation_id,
 
                     'item_id' => $item_id,
+
+                    'product_description' => isset($description[$key]) ? $description[$key] : '',
 
                     'qty' => $qty[$key],
 
@@ -3906,7 +4026,7 @@ public function add_quotation_data()
             'Failed to save quotation'
         );
 
-        redirect('Sales/add_quotation');
+        redirect('Sales/add_quotations');
 
     }
 
@@ -3972,6 +4092,8 @@ public function update_quotation()
         show_error('Invalid Quotation ID');
     }
 
+    $create_revision = $this->input->post('create_revision') ? true : false;
+
     $master = array(
 
         'quotation_date'       => $this->input->post('quotation_date'),
@@ -3981,10 +4103,11 @@ public function update_quotation()
         'discount_percentage'  => $this->input->post('qtn_add_discount_percentage'),
         'discount_amount'      => $this->input->post('qtn_add_discount_amount'),
 
+        'total_before_vat'     => (floatval($this->input->post('qtn_sub_total')) - floatval($this->input->post('qtn_add_discount_amount'))),
+
         'vat_required'         => $this->input->post('qtn_apply_vat') ? 1 : 0,
         'vat_percentage'       => $this->input->post('qtn_vat_percentage'),
-        'vat_amount'           => $this->input->post('qtn_vat_amount'),
-
+        'vat_amount'           => $this->input->post('qtn_apply_vat') ? $this->input->post('qtn_vat_amount') : 0,
         'grand_total'          => $this->input->post('qtn_grand_total'),
 
         'payment_term'         => $this->input->post('payment_term'),
@@ -3997,79 +4120,200 @@ public function update_quotation()
 
         'notes'                => $this->input->post('notes'),
 
-        'prepared_by'          => $this->input->post('employee_prepared'),
-
-        'updated_by'           => $this->session->userdata('user_id'),
-        'updated_on'           => date('Y-m-d H:i:s')
+                'prepared_by'          => $this->input->post('employee_prepared'),
     );
 
-    $this->db->trans_begin();
+    // Only set quotation_status when Confirm Quotation is clicked, OR when the
+    // quotation being edited was previously APPROVED — editing an approved
+    // quotation invalidates that approval, so it drops back to Confirmed
+    // rather than staying marked as Approved. A normal Update on a
+    // Draft/Confirmed quotation leaves the existing status untouched.
+    $action = $this->input->post('action');
 
-    // Update quotation master
-    $this->db->where('qtn_id', $qtn_id);
-    $this->db->update('quotation_master', $master);
+    $current_quotation = $this->Sales_model->get_quotation_by_id($qtn_id);
 
-    // Delete existing items
-    $this->db->where('quotation_id', $qtn_id);
-    $this->db->delete('sales_quotation_items');
+    $was_approved = isset($current_quotation->quotation_status) && $current_quotation->quotation_status == 'APPROVED';
+
+    if ($action == 'quotation' || $was_approved)
+    {
+        $master['quotation_status'] = 'Confirmed';
+    }
+
+    // Saving over an APPROVED quotation invalidates the approval itself, not just
+    // the status label — clear the aproval flag, remarks, LPO number and PO file
+    // that accept_quotation_approval() had set, so it doesn't sit "Confirmed" while
+    // still counted as approved with stale LPO data underneath.
+    if ($was_approved)
+    {
+        $master['aproval']          = 0;
+        $master['approval_remarks'] = '';
+        $master['lpo_number']       = '';
+        $master['po_file']          = null;
+    }
 
     $item_id      = $this->input->post('item_id');
     $product_name = $this->input->post('product_name');
+    $description  = $this->input->post('description');
     $qty          = $this->input->post('qty');
     $price        = $this->input->post('price');
     $amount       = $this->input->post('amount');
 
-    if (!empty($item_id))
-    {
-        foreach ($item_id as $k => $value)
-        {
-            $details = array(
-                'quotation_id' => $qtn_id,
-                'item_id'      => $value,
-                'product_name' => isset($product_name[$k]) ? $product_name[$k] : '',
-                'qty'          => $qty[$k],
-                'price'        => $price[$k],
-                'amount'       => $amount[$k],
-                'created_by'   => $this->session->userdata('user_id'),
-                'created_date' => date('Y-m-d H:i:s')
-            );
+    $this->db->trans_begin();
 
-            $this->db->insert('sales_quotation_items', $details);
+    if ($create_revision)
+    {
+        // Clone the current row so fields not on the edit form (enquiry_id, customer, branch, etc.) survive
+        $old_row = $this->Sales_model->get_quotation_master_row($qtn_id);
+
+        if (empty($old_row))
+        {
+            $this->db->trans_rollback();
+            show_error('Quotation not found');
         }
+
+        // Revisions always chain back to the original (root) record
+        $root_qtn_id  = !empty($old_row['parent_qtn_id']) ? $old_row['parent_qtn_id'] : $qtn_id;
+        $new_revision = $this->Sales_model->get_max_revision_by_root($root_qtn_id) + 1;
+
+        // Freeze the record being revised
+        $this->db->where('qtn_id', $qtn_id);
+        $this->db->update('quotation_master', [
+            'active'     => 0,
+            'updated_by' => $this->session->userdata('user_id'),
+            'updated_on' => date('Y-m-d H:i:s')
+        ]);
+
+        // Start from the old row, overwrite with whatever was edited on the form
+        unset($old_row['qtn_id']);
+        $new_row = array_merge($old_row, $master);
+
+        $new_row['parent_qtn_id']      = $root_qtn_id;
+        $new_row['quotation_revision'] = $new_revision;
+        $new_row['active']             = 1;
+        $new_row['created_by']         = $this->session->userdata('user_id');
+        $new_row['created_on']         = date('Y-m-d H:i:s');
+        $new_row['updated_by']         = 0;
+        $new_row['updated_on']         = date('Y-m-d H:i:s');
+
+        $this->db->insert('quotation_master', $new_row);
+        $new_qtn_id = $this->db->insert_id();
+
+        // Copy the cart to the new revision — the old revision's rows stay untouched for history
+        if (!empty($item_id))
+        {
+            foreach ($item_id as $k => $value)
+            {
+                $this->db->insert('sales_quotation_items', [
+                    'quotation_id'        => $new_qtn_id,
+                    'item_id'             => $value,
+                    'product_name'        => isset($product_name[$k]) ? $product_name[$k] : '',
+                    'product_description' => isset($description[$k]) ? $description[$k] : '',
+                    'qty'                 => $qty[$k],
+                    'price'               => $price[$k],
+                    'amount'              => $amount[$k],
+                    'created_by'          => $this->session->userdata('user_id'),
+                    'created_date'        => date('Y-m-d H:i:s')
+                ]);
+            }
+        }
+
+        $redirect_qtn_id = $new_qtn_id;
+        $flash_message    = 'New quotation revision (Rev ' . $new_revision . ') created successfully';
+    }
+    else
+    {
+        $master['updated_by'] = $this->session->userdata('user_id');
+        $master['updated_on'] = date('Y-m-d H:i:s');
+
+        $this->db->where('qtn_id', $qtn_id);
+        $this->db->update('quotation_master', $master);
+
+        $this->db->where('quotation_id', $qtn_id);
+        $this->db->delete('sales_quotation_items');
+
+        if (!empty($item_id))
+        {
+            foreach ($item_id as $k => $value)
+            {
+                $this->db->insert('sales_quotation_items', [
+                    'quotation_id'        => $qtn_id,
+                    'item_id'             => $value,
+                    'product_name'        => isset($product_name[$k]) ? $product_name[$k] : '',
+                    'product_description' => isset($description[$k]) ? $description[$k] : '',
+                    'qty'                 => $qty[$k],
+                    'price'               => $price[$k],
+                    'amount'              => $amount[$k],
+                    'created_by'          => $this->session->userdata('user_id'),
+                    'created_date'        => date('Y-m-d H:i:s')
+                ]);
+            }
+        }
+
+        $redirect_qtn_id = $qtn_id;
+        $flash_message    = 'Quotation Updated Successfully';
     }
 
     if ($this->db->trans_status() == FALSE)
     {
         $this->db->trans_rollback();
         $this->session->set_flashdata('error', 'Quotation Update Failed');
+        redirect('Sales/edit_quotation/'.$qtn_id);
     }
     else
     {
         $this->db->trans_commit();
-        $this->session->set_flashdata('success', 'Quotation Updated Successfully');
+        $this->session->set_flashdata('success', $flash_message);
     }
 
-    redirect('Sales/view_quotation/'.$qtn_id);
+        redirect('Sales/view_quotation/'.$redirect_qtn_id);
+}
+
+public function confirm_quotation()
+{
+    $qtn_id = $this->input->post('qtn_id');
+
+    if (empty($qtn_id))
+    {
+        show_error('Invalid Quotation ID');
+    }
+
+    $data = [
+        'quotation_status' => 'Confirmed',
+        'updated_by'       => $this->session->userdata('user_id'),
+        'updated_on'       => date('Y-m-d H:i:s')
+    ];
+
+    $this->Sales_model->update_quotation($qtn_id, $data);
+
+    $this->session->set_flashdata('success', 'Quotation confirmed successfully.');
+
+    redirect('Sales/view_quotation/' . $qtn_id);
 }
 
 public function add_direct_quotation()
 {
    
- $data['title'] = 'Direct Quotation';
-$this->load->model('Setup_model');
-	    $this->load->model('Sales_model');
+ 	$data['title'] = 'Direct Quotation';
+	$this->load->model('Setup_model');
+	$this->load->model('Sales_model');
 
 
     // Customer and branch dropdown
-    $data['customer_list'] = $this->Setup_model->get_all_customer_list();
+    $data['customer_list']  = $this->Setup_model->get_all_customer_list();
     $data['branch_list'] = $this->Setup_model->get_all_branches();
 
     $data['quotation_code'] = $this->Sales_model->get_quotation_code();
 
-    // Employees
+        // Employees
     $this->load->model('Hr_model');
     $data['employees'] = $this->Hr_model->get_employee_list();
-   
+
+    // Sales rep dropdown (for discount limit validation)
+    $data['sales_rep_list'] = $this->Setup_model->get_all_sales_rep_list();
+
+    // Current active VAT rate, used as the default % on the quotation form
+    $data['vat_percentage'] = $this->Setup_model->get_active_vat_percent();
+
 	 $data['main_content'] = 'sales/quotation/add_direct_quotation';
 
     $this->load->view('includes/template', $data);
@@ -4101,6 +4345,8 @@ public function save_direct_quotation()
     'quotation_branch_id'  => $this->input->post('quotation_branch_id'),
 
     'quotation_customer'   => $this->input->post('quotation_customer'),
+
+    'sales_person'         => $this->input->post('sales_person'),
 
     'project_name'         => $this->input->post('project_name'),
 
@@ -4148,7 +4394,7 @@ public function save_direct_quotation()
 
 
     'quotation_status'     => ($this->input->post('action') == 'draft') 
-                              ? 'DRAFT' : 'CONFIRMED',
+                              ? 'Draft' : 'Confirmed',
 
     'active'               => 1,
 
@@ -4172,6 +4418,8 @@ public function save_direct_quotation()
 
     $product_name = $this->input->post('product_name');
 
+    $description  = $this->input->post('description');
+
     $qty          = $this->input->post('qty');
 
     $price        = $this->input->post('price');
@@ -4193,7 +4441,10 @@ public function save_direct_quotation()
                 'item_id'=>$item,
 
                 'product_name'=>isset($product_name[$k]) 
-                                ? $product_name[$k] : '',
+                ? $product_name[$k] : '',
+
+                'product_description'=>isset($description[$k]) 
+                                ? $description[$k] : '',
 
                 'qty'=>$qty[$k],
 
@@ -4247,7 +4498,6 @@ public function save_direct_quotation()
     // Pending quotations
     $data['records'] = $this->Sales_model->get_pending_quotations();
 
-    // Optional (remove if not used in the view)
     $data['currency_list'] = $this->Setup_model->get_currency_list();
 
     $data['main_content'] = 'sales/approve_quotation';
@@ -4322,7 +4572,7 @@ public function accept_quotation_approval()
     redirect('Sales/approved_quotation_list');
 }
 
-function approved_quotation_list()
+	function approved_quotation_list()
 	{
 		$data['title'] = 'Approved Quotation List';
 		$this->load->model('Sales_model');
@@ -4332,4 +4582,45 @@ function approved_quotation_list()
 		$this->load->view('includes/template.php', $data);
 	}
 
+	public function print_sales_order($so_id = null, $enquiry_id = null)
+    {
+        if (!$so_id) {
+            show_404();
+        }
+
+        $this->load->model('Sales_model');
+
+        $data['so']          = $this->Sales_model->get_sales_order_print_data($so_id);
+        $data['so_products'] = $this->Sales_model->get_so_products($so_id);
+
+        if (empty($data['so'])) {
+            show_404();
+        }
+
+        // Replace this with the same company-data call used by print_quotation()
+        $data['company'] = $this->Setup_model->get_company_details();
+
+        $this->load->view('sales/sales_order/print_sales_order', $data);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
+
+
+
+
+
+
+
