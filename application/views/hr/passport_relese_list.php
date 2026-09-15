@@ -10,24 +10,24 @@
 	<div class="dt-responsive table-responsive">
 
 		<?php if ($this->session->flashdata('error')): ?>
-            <div class="alert alert-danger">
-                <?php echo $this->session->flashdata('error'); ?>
-            </div>
-        <?php endif; ?>
+			<div class="alert alert-danger">
+				<?php echo $this->session->flashdata('error'); ?>
+			</div>
+		<?php endif; ?>
 
-        <?php if ($this->session->flashdata('success')): ?>
-            <div class="alert alert-success">
-                <?php echo $this->session->flashdata('success'); ?>
-            </div>
-        <?php endif; ?>
-		
+		<?php if ($this->session->flashdata('success')): ?>
+			<div class="alert alert-success">
+				<?php echo $this->session->flashdata('success'); ?>
+			</div>
+		<?php endif; ?>
+
 		<table id="datatable" class="table table-striped" data-toggle="data-table">
 			<thead>
 				<tr>
-                <th>Sr No</th>
+					<th>Sl. No</th>
 					<th>Employee Name</th>
-					<th>passport release date</th>
-					<th>Return date</th>
+					<th>Passport Release Date</th>
+					<th>Return Date</th>
 					<th>Action</th>
 				</tr>
 			</thead>
@@ -40,7 +40,7 @@
 						<td><?php echo $row->employee_name; ?></td>
 						<td><?php echo date('d-M-Y', strtotime($row->outdate)); ?></td>
 						<td><?php echo date('d-M-Y', strtotime($row->indate)); ?></td>
-						
+
 
 						<td class="action-icons">
 
@@ -57,11 +57,7 @@
 		</table>
 	</div>
 </div>
-</div>
-</div>
-</div>
-</div>
-</div>
+
 <!-- Static Table End -->
 
 
@@ -80,7 +76,7 @@
 				},
 				success: function(msg) {
 					if (msg == 1) {
-						
+
 						window.location.href = "<?php echo $_SERVER['PHP_SELF'] ?>";
 					} else {
 						alert("Can't Delete record. Data already exist!!!");

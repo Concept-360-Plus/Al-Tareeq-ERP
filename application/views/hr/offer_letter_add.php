@@ -297,7 +297,7 @@
                             <input type="text" name="monthly[]" class="form-control form-control-sm" />
                         </td>
                         <td>
-                            <input type="text" name="annual[]" class="form-control form-control-sm" />
+                            <input type="text" name="annual[]" class="form-control form-control-sm" readonly/>
                         </td>
                         <td>
                             <button type="button" class="btn btn-success" title="Add Row" onclick="addSalaryRow()"><i class="fa fa-plus"></i></button>
@@ -322,8 +322,10 @@
                 </div> -->
         </div>
 
+
+
         <!-- Dynamic Table -->
-        <div class="form-section">
+        <!-- <div class="form-section">
             <div class="section-title">Incentive Structure:</div>
             <table class="table table-bordered" id="incentiveTable">
                 <thead>
@@ -353,9 +355,9 @@
                         <td>
                             <input type="text" name="target_2[]" class="form-control form-control-sm" />
                         </td>
-                        <!-- <td>
+                        <td>
                             <input type="text" name="incentive_5_percent[]" class="form-control form-control-sm"/>
-                        </td> -->
+                        </td>
                         <td>
                             <button type="button" class="btn btn-danger" title="Remove Row" onclick="removeIncentiveRow(this)"><i class="fa fa-minus"></i></button>
 
@@ -366,7 +368,10 @@
                 </tbody>
             </table>
 
-        </div>
+        </div> -->
+
+
+        
         <!-- <div class="row mb-3">
                 <div class="col-md-12">
                     <label class="form-label">Other Benefits:</label>
@@ -423,51 +428,51 @@
     }
 
     // --- Add Incentive Row ---
-    function addIncentiveRow() {
-        const tableBody = document.getElementById("incentiveTable").getElementsByTagName('tbody')[0];
+    // function addIncentiveRow() {
+    //     const tableBody = document.getElementById("incentiveTable").getElementsByTagName('tbody')[0];
 
-        const newRow = document.createElement("tr");
-        newRow.innerHTML = `
-            <td><input type="text" name="case[]" class="form-control form-control-sm"/></td>
-        <td><input type="number" name="salary[]" class="form-control form-control-sm salary" oninput="calculateIncentive(this)"/></td>
-            <td><input type="number" name="target_1[]" class="form-control form-control-sm"/></td>
-            <td><input type="number" name="incentive_3_percent[]" class="form-control form-control-sm"/></td>
-            <td><input type="number" name="target_2[]" class="form-control form-control-sm"/></td>
-            <td><button type="button" class="btn btn-danger" title="Remove Row" onclick="removeIncentiveRow(this)"><i class="fa fa-minus"></i></button></td>
-        `;
+    //     const newRow = document.createElement("tr");
+    //     newRow.innerHTML = `
+    //         <td><input type="text" name="case[]" class="form-control form-control-sm"/></td>
+    //     <td><input type="number" name="salary[]" class="form-control form-control-sm salary" oninput="calculateIncentive(this)"/></td>
+    //         <td><input type="number" name="target_1[]" class="form-control form-control-sm"/></td>
+    //         <td><input type="number" name="incentive_3_percent[]" class="form-control form-control-sm"/></td>
+    //         <td><input type="number" name="target_2[]" class="form-control form-control-sm"/></td>
+    //         <td><button type="button" class="btn btn-danger" title="Remove Row" onclick="removeIncentiveRow(this)"><i class="fa fa-minus"></i></button></td>
+    //     `;
 
-        tableBody.appendChild(newRow);
-    }
+    //     tableBody.appendChild(newRow);
+    // }
 
     // --- Remove Incentive Row ---
-    function removeIncentiveRow(button) {
-        const row = button.closest("tr");
-        const tableBody = document.getElementById("incentiveTable").getElementsByTagName('tbody')[0];
+    // function removeIncentiveRow(button) {
+    //     const row = button.closest("tr");
+    //     const tableBody = document.getElementById("incentiveTable").getElementsByTagName('tbody')[0];
 
-        if (tableBody.rows.length > 1) {
-            row.remove();
-        } else {
-            alert("At least one row is required.");
-        }
-    }
+    //     if (tableBody.rows.length > 1) {
+    //         row.remove();
+    //     } else {
+    //         alert("At least one row is required.");
+    //     }
+    // }
 
 
     // Auto-calculate Target & Incentive
-    function calculateIncentive(input) {
-        const salary = parseFloat(input.value) || 0;
-        const row = input.closest("tr");
-        const targetField = row.querySelector('input[name="target_1[]"]');
-        const incentiveField = row.querySelector('input[name="incentive_3_percent[]"]');
-        const magicFigureField = row.querySelector('input[name="target_2[]"]');
+    // function calculateIncentive(input) {
+    //     const salary = parseFloat(input.value) || 0;
+    //     const row = input.closest("tr");
+    //     const targetField = row.querySelector('input[name="target_1[]"]');
+    //     const incentiveField = row.querySelector('input[name="incentive_3_percent[]"]');
+    //     const magicFigureField = row.querySelector('input[name="target_2[]"]');
 
-        const target = salary * 30;
-        const incentive = target * 0.03;
-        const magicFigure = salary * 40;
+    //     const target = salary * 30;
+    //     const incentive = target * 0.03;
+    //     const magicFigure = salary * 40;
 
-        targetField.value = target.toFixed(2);
-        incentiveField.value = incentive.toFixed(2);
-        magicFigureField.value = magicFigure.toFixed(2);
-    }
+    //     targetField.value = target.toFixed(2);
+    //     incentiveField.value = incentive.toFixed(2);
+    //     magicFigureField.value = magicFigure.toFixed(2);
+    // }
 
     // --- Enable calculation for existing rows on load ---
     document.addEventListener("DOMContentLoaded", function() {

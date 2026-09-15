@@ -29,16 +29,27 @@
 
 						<td>
 
-							<a href="<?php echo base_url() . 'index.php/Hr/edit_offer_letter/' . $row->offer_id; ?>"
-								title="Edit"><?php echo $this->session->userdata('edit_icon'); ?></a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-							<a href="<?php echo base_url() . 'index.php/Hr/list_offer_letter'; ?>"
-								title="Delete" onclick="return confirmcancel(<?php echo $row->offer_id; ?>);"><?php echo $this->session->userdata('delete_icon'); ?></a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-							<a target='_blank' href="<?php echo base_url() . 'index.php/Hr/print_offer_letter/' . $row->offer_id; ?>"
-								title="Download Offer Letter"><i class="fa fa-print" style="font-size:18px"></i></a>
+							<a href="<?php echo base_url('index.php/Hr/edit_offer_letter/' . $row->offer_id); ?>"
+								title="Edit">
+								<i class="fa fa-edit" style="font-size:18px"></i>
+							</a>
 
+							&nbsp;&nbsp;&nbsp;
 
-							<?php //}
-							?>
+							<a href="javascript:void(0);"
+								title="Delete"
+								onclick="return confirmcancel(<?php echo $row->offer_id; ?>);">
+								<i class="fa fa-trash" style="font-size:18px"></i>
+							</a>
+
+							&nbsp;&nbsp;&nbsp;
+
+							<a target="_blank"
+								href="<?php echo base_url('index.php/Hr/print_offer_letter/' . $row->offer_id); ?>"
+								title="Download Offer Letter">
+								<i class="fa fa-print" style="font-size:18px"></i>
+							</a>
+
 						</td>
 					</tr>
 				<?php } ?>
