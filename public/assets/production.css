@@ -1,0 +1,90 @@
+
+.cnc-timeline {
+    position: relative;
+    padding: 5px 0 5px 35px;
+}
+
+.cnc-timeline:before {
+    content: '';
+    position: absolute;
+    left: 12px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #ddd;
+}
+
+.cnc-timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.cnc-timeline-icon {
+    position: absolute;
+    left: -31px;
+    top: 0;
+    width: 25px;
+    height: 25px;
+    line-height: 25px;
+    text-align: center;
+    border-radius: 50%;
+    background: #337ab7;
+    color: #fff;
+    font-size: 12px;
+}
+
+.cnc-timeline-content {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 10px 12px;
+    background: #fff;
+}
+
+.cnc-timeline-title {
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.cnc-timeline-meta {
+    font-size: 11px;
+    color: #777;
+    margin-bottom: 7px;
+}
+
+.cnc-timeline-note {
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.cnc-status-badge {
+    display: inline-block;
+    padding: 3px 7px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+.cnc-status-pending {
+    background: #f0ad4e;
+    color: #fff;
+}
+
+.cnc-status-progress {
+    background: #337ab7;
+    color: #fff;
+}
+
+.cnc-status-hold {
+    background: #777;
+    color: #fff;
+}
+
+.cnc-status-completed {
+    background: #5cb85c;
+    color: #fff;
+}
+
+.cnc-status-rework {
+    background: #d9534f;
+    color: #fff;
+}

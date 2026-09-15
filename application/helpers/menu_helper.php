@@ -8,6 +8,7 @@
         $CI->db->join('menu_access m', 'u.access_id = m.menu_id', 'left');
         $CI->db->where('u.user_id', $uid);
         $CI->db->where('m.active', 1);
+        $CI->db->order_by('m.menu_pid', 'ASC');
         $CI->db->order_by('m.indexid');
         $main_menu_ids = array_column($CI->db->get()->result_array(), 'menu_sid');
         $main_menu_details = [];
@@ -16,6 +17,7 @@
             $CI->db->select('*');
             $CI->db->from('menu_access');
             $CI->db->where_in('menu_id', $main_menu_ids);
+            $CI->db->order_by('menu_pid', 'ASC');
             $CI->db->order_by('indexid');
         
             $main_menu_details = $CI->db->get()->result();

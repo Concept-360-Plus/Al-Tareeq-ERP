@@ -1,33 +1,39 @@
 
+	<div style="clear:both;"></div>
+	<div style="margin-left: 10px; margin-top: 10px;">
 	<h7>items Details:</h7>
 	<div class="form-group row">
-		
+	<style>
+		.table-bordered th, .table-bordered td {
+			border: 1px solid #dee2e6;
+			padding: 8px;
+		}</style>	
 <div style="clear:both;"></div>
-		<table border='1' width='90%' cellpadding='2' cellspacing=2 class="table table-bordered table-hover">
+		<table border='1' width='65%' cellpadding='2' cellspacing=2 class="table table-bordered table-hover">
 			<thead>
 				<tr height="50px">
-					<td style="width: 80px;" rowspan=2>SL.NO</td>
+					<td style="width: 10px !important;" rowspan=1>SL.NO</td>
 					<td style="width: 80px;" rowspan=2>ITEM CODE</td>
 					<td style="width: 100px;" rowspan=2>DESCRIPTION</td>
-					<td style="width: 90px;" rowspan=2>COLOUR/FINISH</td>
+					<!-- <td style="width: 90px;" rowspan=2>COLOUR/FINISH</td> -->
 					<td style="width: 80px;" align='center' rowspan=2>QTY</td>
 					<td style="width: 80px;" align='center' rowspan=2>&nbsp;&nbsp;UNIT</td>
 				</tr>
 			</thead>
 			<tbody>
 				<?php foreach ($records2 as $r) { ?>
-					<tr class="bg-soft-gray">
+					<!--<tr class="bg-soft-gray">
 						<td></td>
 						<td></td>
 						<td> &nbsp;&nbsp;&nbsp;
-							<b><?php echo $r->product_desc; ?></b>
+							<b><?php echo $r->product_desc; ?></b>-->
 							
 							<input type="hidden" name="desc[]" value="<?php echo $r->product_desc; ?>" />
 							<input type="hidden" name="pid[]" value="<?php echo $r->pid; ?>" />
 							<input type="hidden" name="qid[]" value="<?php echo $r->qid; ?>" />
 							<input type="hidden" name="trans_id[]" value="<?php echo $r->trans_id; ?>" />
 							<input type="hidden" name="revision[]" value="<?php echo $r->revision + 1; ?>" />
-						</td>
+						<!--</td>
 						<td></td>
 						<td></td>
 						<td></td>
@@ -41,7 +47,7 @@
 						<td></td>
 						<td></td>
 						<td></td>
-					</tr>
+					</tr>-->
 					<?php $i = 1;
 					foreach ($records3 as $tr) {
 						if ($tr->trans_id1 == $r->trans_id) { ?>
@@ -49,7 +55,7 @@
 								<td style="width: 80px;"><?php echo $i; ?></td>
 								<td style="width: 80px;"><?php echo $tr->item_code; ?></td>
 								<td style="width: 100px;"><?php echo $tr->item_name; ?></td>
-								<td style="width: 90px;"><input type="text" name="colour_finish[]" class="form-control form-control-sm" style="margin-right: 30px;" /></td>
+								<!-- <td style="width: 90px;"><input type="text" name="colour_finish[]" class="form-control form-control-sm" style="margin-right: 30px;" /></td> -->
 								<td style="width: 80px;"><input type="text" name="qty<?php echo $r->trans_id; ?>[]" class="form-control form-control-sm" value="<?php echo intval($tr->qty); ?>" readonly /></td>
 								<!-- <td style="width: 80px;" align='center'><input type="text" name="qty<?php echo $r->trans_id; ?>[]" class="form-control form-control-sm" value=" &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <?php echo intval($tr->qty); ?>" readonly style="border: none; background-color: transparent;" /></td> -->
 								<td style="width: 80px;" align='center'><?php echo $tr->unit_abbr; ?></td>
@@ -83,7 +89,7 @@
 </div>
 </div>
 </div>
-</div>
+</div></div>
 
 
 <!-- <script>

@@ -155,6 +155,14 @@ class Login extends CI_Controller
             case 'sales_dashboard':
                 redirect('Dashboard/sales_dashboard');
                 break;
+                
+            case 'project_dashboard':
+                redirect('Dashboard/project_dashboard');
+                break;
+
+            case 'production_dashboard':
+                redirect('Dashboard/production_dashboard');
+                break;
 
             default:
                 $data['title'] = 'Dashboard';

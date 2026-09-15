@@ -85,7 +85,7 @@
         <div class="input-group date datepicker1">
            <input type="date" class="form-control form-control-sm" 
        id="outsource_date" name="outsource_date" 
-       value="" tabindex="10" placeholder="Select start date">
+       value="" tabindex="10" placeholder="Select start date" required>
             
         </div>
     </div>
@@ -96,7 +96,7 @@
         <div class="input-group date datepicker1">
             <input type="date" class="form-control form-control-sm" 
        id="outsource_finish_date" name="outsource_finish_date" 
-       value="" tabindex="11" placeholder="Select finish date">
+       value="" tabindex="11" placeholder="Select finish date" required>
            
         </div>
     </div>
@@ -113,7 +113,7 @@
 
           
 		<div class="form-group row">
-			<table class="table table-bordered table-hover" id="tab_logic">
+			<table class="table table-bordered table-hover" style="width:83%" id="tab_logic">
 				<thead>
 					<tr>
 						<!-- <th>Sr</th> -->
@@ -163,9 +163,42 @@
 		</div>
 
             <div class="form-group row">
-                <label class="col-sm-2"></label>
-                <div class="col-sm-10">
-                    <button type="submit" tabindex="" id="add" class="btn btn-primary m-b-0">Submit</button>
+                 <label class="col-md-1 col-form-label pr-1">Status</label>
+            <div class="col-md-3">
+                <select class="form-control form-control-sm"id="status" name="status"
+                                style='width:155px'>
+                         <option value="">Select</option>
+                         <option  value="Outsourced">Outsourced</option>
+                         <option  value="Finished">Finished</option>
+                        
+                    </select>
+                </div>
+				<!--<div class="col-md-4" style="margin-left:10px;">
+					<label>
+						Progress  :
+						<span id="progressValue">0%</span>
+					</label>
+
+					<input type="range"
+						name="progress_percentage"
+						id="progressRange"
+						class="form-range"
+						min="0"
+						max="100"
+						value="0"
+						required
+						oninput="updateProgress(this.value)">
+
+					<div class="progress mt-2" style="height:25px;">
+						<div id="progressBar"
+							class="progress-bar progress-bar-striped progress-bar-animated"
+							style="width:0%;">
+							0%
+						</div>
+					</div>
+				</div>-->
+                <div class="col-sm-10" style="margin-top:15px;">
+                    <button type="submit" tabindex="" id="add" class="btn btn-success m-b-0">Submit</button>
                 </div>
             </div>
         </form>
@@ -174,7 +207,12 @@
  
 
 <script>
-
+function updateProgress(value) {
+    $('#progressValue').text(value + '%');
+    $('#progressBar')
+        .css('width', value + '%')
+        .text(value + '%');
+    }
 $(document).ready(function () {
 		var i = 1;
 		$("#add_row").click(function () {
@@ -270,7 +308,7 @@ $(document).ready(function () {
 $(document).ready(function () {
 
     $('.select2').select2({
-        placeholder: '-- Select Project --',
+        placeholder: '-- Select --',
         allowClear: true,
         width: '100%'
     });

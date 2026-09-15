@@ -170,3 +170,70 @@
     line-height:32px;
 
 }
+  /* =========================================
+       DASHBOARD CHART CONTAINERS
+       ========================================= */
+
+    .dashboard-chart-container {
+        position: relative;
+        width: 100%;
+        height: 300px;
+    }
+
+    .dashboard-chart-container canvas {
+        width: 100% !important;
+        height: 100% !important;
+    }
+
+    /* Smaller Project Status donut */
+    .project-status-container {
+        position: relative;
+        width: 100%;
+        height: 260px;
+    }
+
+    /* Work Order chart */
+    .workorder-chart-container {
+        position: relative;
+        width: 100%;
+        height: 280px;
+    }
+
+    /* Progress donut */
+    .progress-chart-container {
+        position: relative;
+        width: 100%;
+        height: 260px;
+    }
+
+    /* Monthly chart */
+    .monthly-chart-container {
+        position: relative;
+        width: 100%;
+        height: 280px;
+    }
+    .dashboard-chart-box {
+    position: relative;
+    width: 100%;
+    height: 300px;
+}
+
+.dashboard-chart-box canvas {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+
+/* Work Order chart */
+.workorder-chart-box {
+    position: relative;
+    width: 100%;
+    height: 300px;
+}
+
+.workorder-chart-box canvas {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+}

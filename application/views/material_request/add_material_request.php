@@ -7,9 +7,9 @@
 <form id="mr_form" action="<?= base_url('index.php/Project/save_material_request') ?>" method="post">
 
 <!-- Select Approved Project -->
-<div class="col-md-5">
+<div class="col-md-3">
     <label for="project_id" class="form-label">Approved Project</label>
-    <select name="project_id" id="project_id" class="form-control" required>
+    <select name="project_id" id="project_id" class="form-control select2" required>
     <option value="">-- Select Project --</option>
     <?php foreach ($approved_projects as $proj): ?>
         <option value="<?= $proj['project_id'] ?>"
@@ -22,7 +22,7 @@
 </div>
 
 <!-- Initiated By -->
-<div class="col-md-5">
+<div class="col-md-3">
     <label for="initiated_by" class="form-label">Initiated By</label>
     <select name="initiated_by" id="initiated_by" class="form-control" required>
         <option value="">-- Select User --</option>
@@ -33,37 +33,57 @@
             </option>
         <?php endforeach; ?>
     </select>
+</div><div class="col-md-12" min></div>
+<div class="col-md-6">
+<div class="project-info-card">
+
+    <div class="project-info-header">
+        <i class="fa fa-folder-open"></i>
+        <span>Project Information</span><br>
+    </div>
+
+    <div class="project-info-body">
+
+        <div class="row">
+
+            <div class="col-md-5">
+                <div class="project-info-item">
+                    <label>Project Name</label>
+                    <div id="project_name" class="project-info-value">-</div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="project-info-item">
+                    <label>Customer</label>
+                    <div id="customer_name" class="project-info-value">-</div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="project-info-item">
+                    <label>Branch</label>
+                    <div id="branch_name" class="project-info-value">-</div>
+                </div>
+            </div>
+
+        </div>
+
+        </div>
 </div>
-<div class="col-md-12 clear topp">
-    <!-- Auto-filled Project Info -->
-    <table class="table table-bordered">
-    <tr>
-        <th>Project</th>
-        <td id="project_name">-</td>
-    </tr>
-    <tr>
-        <th>Customer</th>
-        <td id="customer_name">-</td>
-    </tr>
-    <tr>
-        <th>Branch</th>
-        <td id="branch_name">-</td>
-    </tr>
-    <tr>
-        <th>Requested Date</th>
-        <td>
+
+</div>
+<div class="col-md-12 min"></div>
+    <div class="col-md-3">
+    <label for="project_id" class="form-label">Requested Date</label>
             <input type="date" name="requested_date" class="form-control" 
                 value="<?= date('Y-m-d') ?>" required>
-        </td>
-    </tr>
-    <tr>
-        <th>Required Date</th>
-        <td>
+     </div>
+   <div class="col-md-3">
+            <label for="project_id" class="form-label">Required Date</label>
             <input type="date" name="required_date" class="form-control" required>
-        </td>
-    </tr>
-    </table>
-</div>
+    </div>
+
 <div class="col-md-12 mt-2">
         <label>Items</label>
      </div>
@@ -74,6 +94,7 @@
 				    <tr>
 				    	    <th title="Item">Item Name</th>
                             <th title="Item">Quantity</th>
+                            <th>Unit</th>
                             <th title="Item">Description</th>
                             <th title="Item">Remarks</th>    
 				    	    <th width='30px'><a id="add_row" title="Add" class="btn btn-xs bg-orange" ><span class="fa fa-plus"></span></a></th>
@@ -82,21 +103,31 @@
 				    <tbody id="mytbbody">
 	     				<?php foreach($mitems as $r){?>
 				    	<tr id='addr0' style='font-size: 13px;'>
-						<td> <select name="product[]"  tabindex='2' class="form-control">
+						<td> <select name="product[]"  tabindex='2' class="form-control  select2-product">
                                 <option value="">-- Select product --</option>
                                 <?php foreach ($pitems as $itm): ?>
                                     <option value="<?= $itm['product_id'] ?>"
                                         >
-                                        <?= htmlspecialchars($itm['product_name']) ?>
-                                    </option>
+                                        <?= htmlspecialchars($itm['product_name']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </td>
                         
 						<td><input type="number" name="pdt_qty[]" tabindex="14" class="form-control form-control-sm" placeholder=""></td>
-						<td><textarea rows="3" cols="20" name="desc[]" id="desc0" style="font-size:11px; font-weight:bold;" class="form-control form-control-sm" tabindex="13" placeholder="Description"></textarea>
+						<td>
+                       <select name="unit[]"  tabindex='2' class="form-control">
+                                <option value="">-- Select unit --</option>
+                                <?php foreach ($units as $ut): ?>
+                                    <option value="<?= $ut['unit_id'] ?>"
+                                        >
+                                        <?= htmlspecialchars($ut['unit_abbr']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+
                         </td>
-                        <td><textarea name="item_remark[]" rows="3" id="item_remark0" tabindex="16" class="form-control form-control-sm" placeholder="remark"></textarea></td>
+                                              
+                        <td><textarea name="item_remark[]" rows="3" cols="20"  id="item_remark0"  style="font-size:11px; font-weight:bold;"  tabindex="16" class="form-control form-control-sm" placeholder="Remark"></textarea></td>
 						<td width='30px'><a id='delete_row' title="Delete" onclick='remove_row(0)' class="btn btn-xs bg-orange remove1"><span class="fa fa-trash"></span></a></td>
 					    </tr>
 						<td width='30px'>
@@ -106,7 +137,7 @@
 	     				<?php } ?>
                         <?php if(empty($mitems)) { ?>
 					<tr id='addr0' style='font-size: 13px;'>
-						<td> <select name="product[]"  tabindex='2' class="form-control">
+						<td> <select name="product[]"  tabindex='2' class="form-control select2-product">
                                 <option value="">-- Select product --</option>
                                 <?php foreach ($pitems as $itm): ?>
                                     <option value="<?= $itm['product_id'] ?>"
@@ -117,9 +148,20 @@
                             </select>
                             </td>
                             <td><input type="number" name="pdt_qty[]" tabindex="14" class="form-control form-control-sm" placeholder=""></td>
-						<td><textarea rows="4" cols="20" name="desc[]" id="desc0" style="font-size:11px; font-weight:bold;" class="form-control form-control-sm" tabindex="13" placeholder="Description"></textarea>
+                            <td>
+                                <select name="unit[]"  tabindex='2' class="form-control">
+                                            <option value="">-- Select unit --</option>
+                                            <?php foreach ($units as $ut): ?>
+                                                <option value="<?= $ut['unit_id'] ?>"
+                                            >
+                                            <?= htmlspecialchars($ut['unit_abbr']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
                             </td>
-                        <td><textarea name="item_remark[]" rows="4" id="item_remark0" tabindex="16" class="form-control form-control-sm" placeholder="remark"></textarea></td>
+                            <td><textarea rows="4" cols="20" name="desc[]" id="desc0" style="font-size:11px; font-weight:bold;" class="form-control form-control-sm" tabindex="13" placeholder="Description"></textarea>
+                            </td>
+                        <td><textarea name="item_remark[]" rows="4" cols="20" id="item_remark0" style="font-size:11px; font-weight:bold;" tabindex="16" class="form-control form-control-sm" placeholder="Remark"></textarea></td>
 						<td width='30px'><a id='delete_row' title="Delete" onclick='remove_row(0)' class="btn btn-xs bg-orange remove1"><span class="fa fa-trash"></span></a></td>
 					</tr>
                     <?php } ?>
@@ -146,12 +188,24 @@ $productOptions .= '<option value="">-- Select Product --</option>';
 foreach ($pitems as $itm) {
     $id = $itm['product_id'];
     $name = $itm['product_name'];
-    $productOptions .= '<option value="' . $id . '">' .
-                        htmlspecialchars($name) .
-                       '</option>';
+   $productOptions .= '<option value="' . $itm['product_id'] . '">'
+        . htmlspecialchars($itm['product_name']) .       
+        '</option>';
 }
+$quantityOptions="";
+$quantityOptions .= '<option value="">-- Select Quantity --</option>';
+
+foreach ($units as $itm) {
+    $id = $itm['unit_id'];
+    $name = $itm['unit_name'];
+   $quantityOptions .= '<option value="' . $itm['unit_id'] . '">'
+        . htmlspecialchars($itm['unit_abbr']) .
+        '</option>';
+}
+ 
 ?>
 <script>
+var quantityOptions = `<?= $quantityOptions ?>`;
 var productOptions = `<?= $productOptions ?>`;
 </script>
 <script>
@@ -245,7 +299,21 @@ document.getElementById("mr_form").addEventListener("submit", function (e) {
     btn.disabled = true;
     btn.innerHTML = "Processing...";
 });
+ $(document).ready(function () {
 
+$('#project_id').select2({
+        placeholder: '-- Select Project --',
+        allowClear: true,
+        width: '100%'
+    });
+
+    // 2. Initialize any existing Product dropdowns on initial page load
+    $('.select2-product').select2({
+        placeholder: '-- Select Product --',
+        allowClear: true,
+        width: '100%'
+    });
+});
 
 $(document).ready(function(){
 	var i=1;
@@ -256,7 +324,7 @@ $(document).ready(function(){
         var html = "";
 
         html += "<td>";
-        html += "<select name='product[]' class='form-control' tabindex='2'>";
+        html += "<select name='product[]' class='form-control  select2-product' tabindex='2'>";
         html += productOptions;
         html += "</select>";
         html += "</td>";
@@ -264,10 +332,13 @@ $(document).ready(function(){
         html += "<td>";
         html += "<input type='number' name='pdt_qty[]' class='form-control form-control-sm' tabindex='14'>";
         html += "</td>";
+        html += "<td><select name='unit[]'  tabindex='2' class='form-control'>";
+        html += quantityOptions;
+        html += "</select></td>";
         html += "<td>";
-        html += "<textarea rows='4' cols='20' name='desc[]' id='desc" + i + "' ";
+        html += "<textarea rows='4' name='desc[]' id='desc" + i + "' ";
         html += "class='form-control form-control-sm' ";
-        html += "style='font-size:11px;font-weight:bold;' ";
+        //html += "style='font-size:11px;font-weight:bold;' ";
         html += "placeholder='Description'></textarea>";
         html += "</td>";
         html += "<td>";
@@ -284,6 +355,12 @@ $(document).ready(function(){
 
         $("#addr" + i).html(html);
 
+        $("#addr" + i).find('.select2-product').select2({
+            placeholder: '-- Select Product --',
+            allowClear: true,
+            width: '100%'
+        });
+
         $("#mytbbody tr:last").after('<tr id="addr' + (i + 1) + '"></tr>');
 
         i++;
@@ -296,6 +373,7 @@ function remove_row(append_id){
     $('#addr'+append_id+"x").remove();
     calculateTotal();
 }  
+
 
 
 </script>

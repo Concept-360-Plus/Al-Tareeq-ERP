@@ -1125,6 +1125,250 @@ class Company extends CI_Controller
         }
     }
 
+    //// DEPARTMENT CODE START ////
+
+    public function list_department()
+    {
+        $user = $this->session->userdata('user_id');
+
+        if (!has_view_access($user, 'Company/list_department')) {
+
+            $data['title'] = 'Access Denied';
+            $data['main_content'] = 'errors/access_control.php';
+        } else {
+
+            $data['title'] = 'Department List';
+            $data['department_list'] = $this->Company_model->get_all_departments();
+
+            $data['main_content'] = 'company/department_list.php';
+        }
+
+        $this->load->view('includes/template', $data);
+    }
+
+    public function add_department()
+    {
+        $user = $this->session->userdata('user_id');
+
+        if (!has_access($user, 'Company/list_department', 'A')) {
+
+            $data['title'] = 'Access Denied';
+            $data['main_content'] = 'errors/access_control.php';
+        } else {
+
+            $data['title'] = 'Add Department';
+            $data['main_content'] = 'company/department_add.php';
+        }
+
+        $this->load->view('includes/template', $data);
+    }
+
+    public function save_department()
+    {
+        $data = array(
+
+            'dept_name'     => $this->input->post('dept_name', TRUE),
+            'remark'        => $this->input->post('remark', TRUE),
+            'status'        => $this->input->post('status', TRUE),
+            'created_by'    => $this->session->userdata('user_id')
+
+        );
+
+        if ($this->Company_model->add_department_data($data))
+            $this->session->set_flashdata('success', 'Department added successfully.');
+        else
+            $this->session->set_flashdata('error', 'Error while saving.');
+
+        redirect('Company/list_department');
+    }
+
+    public function edit_department()
+    {
+        $user = $this->session->userdata('user_id');
+
+        if (!has_access($user, 'Company/list_department', 'E')) {
+
+            $data['title'] = 'Access Denied';
+            $data['main_content'] = 'errors/access_control.php';
+        } else {
+
+            $department_id   = $this->uri->segment(3);
+
+            $data['title']   = 'Edit Department';
+            $data['records'] = $this->Company_model->get_department_record_by_id($department_id);
+            $data['main_content'] = 'company/department_edit.php';
+        }
+
+        $this->load->view('includes/template', $data);
+    }
+
+    public function update_department()
+    {
+        $department_id = $this->input->post('dept_id');
+
+        $data = array(
+            'dept_name'      => $this->input->post('dept_name', TRUE),
+            'remark'         => $this->input->post('remark', TRUE),
+            'status'         => $this->input->post('status', TRUE),
+
+        );
+
+        if ($this->Company_model->update_department_data($department_id, $data))
+            $this->session->set_flashdata('success', 'Department updated successfully.');
+        else
+            $this->session->set_flashdata('error', 'Update failed.');
+
+        redirect('Company/list_department');
+    }
+
+    //// DEPARTMENT CODE END ////
+
+    //// DESIGNATION CODE START ////
+
+    public function list_designation()
+    {
+        $user = $this->session->userdata('user_id');
+        if (!has_view_access($user, 'Company/list_designation')) {
+            $data['title'] = 'Access Denied';
+            $data['main_content'] = 'errors/access_control.php';
+        } else {
+            $data['title'] = 'List Designation';
+            $raw_input = $this->input->post('filter');
+
+            if (!empty($raw_input)) {
+                $filter_type = '';
+                $filter_value = '';
+
+                if (strpos($raw_input, ':') !== false) {
+                    list($filter_type, $filter_value) = explode(':', $raw_input, 2);
+                    $filter_type = trim($filter_type);
+                    $filter_value = trim($filter_value);
+                    $column_map = [
+                        'Designation Code' => 'designation_code',
+                        'Designation Name' => 'designation_name',
+                        'Department' => 'department',
+                        'Reporting To' => 'reporting_to',
+                        'Level' => 'level',
+                        'Type' => 'employment_type',
+                        'Location' => 'location',
+                        'Status' => 'status'
+                    ];
+                    $column = isset($column_map[$filter_type]) ? $column_map[$filter_type] : null;
+                    $data['designation_list'] = $this->Company_model->get_all_designations($column, $filter_value);
+                } else {
+                    $data['designation_list'] = $this->Company_model->get_all_designations();
+                }
+            } else {
+                $data['designation_list'] = $this->Company_model->get_all_designations();
+            }
+            $data['main_content'] = 'company/list_designation.php';
+            $this->load->view('includes/template', $data);
+        }
+    }
+
+    public function add_designation()
+    {
+        $user = $this->session->userdata('user_id');
+        if (!has_access($user, 'Company/list_designation', 'A')) {
+            $data['title'] = 'Access Denied';
+            $data['main_content'] = 'errors/access_control.php';
+        } else {
+            $data['title'] = 'Add Designation';
+            $data['designation_code'] = $this->Company_model->generate_designation_code();
+            $data['departments'] = $this->Company_model->get_active_department_list();
+            $data['main_content'] = 'company/add_designation.php';
+        }
+        $this->load->view('includes/template', $data);
+    }
+
+    public function save_designation()
+    {
+        // Load form validation library if not auto-loaded
+        // $this->load->library('form_validation');
+
+        // Set validation rules
+        // $this->form_validation->set_rules('designation_code', 'Designation Code', 'required|trim|is_unique[designation_master.designation_code]');
+        // $this->form_validation->set_rules('designation_name', 'Designation Name', 'required|trim');
+
+        // If validation fails, reload form with errors
+        //if ($this->form_validation->run() == FALSE) {
+        // $this->load->view('designation/add_designation'); // adjust to your actual view
+        //} else {
+        // Collect data
+        $data = array(
+            'designation_code'    => $this->input->post('designation_code', TRUE),
+            'designation_name'    => $this->input->post('designation_name', TRUE),
+            'department'          => $this->input->post('department', TRUE),
+            'reporting_to'        => $this->input->post('reporting_to', TRUE),
+            'level'               => $this->input->post('level', TRUE),
+            'employment_type'     => $this->input->post('employment_type', TRUE),
+            'location'            => $this->input->post('location', TRUE),
+            'job_description'     => $this->input->post('job_description', TRUE),
+            'responsibilities'    => $this->input->post('responsibilities', TRUE),
+            'skills'              => $this->input->post('skills', TRUE),
+            'qualification'       => $this->input->post('qualification', TRUE),
+            'experience'          => $this->input->post('experience', TRUE),
+            'status'              => $this->input->post('status', TRUE),
+            'created_on'          => date('Y-m-d H:i:s')
+        );
+        $insert_status = $this->Company_model->insert_designation($data);
+        if ($insert_status) {
+            $this->session->set_flashdata('success', 'Designation saved successfully!');
+        } else {
+            $this->session->set_flashdata('error', 'error occured while saving designation!');
+        }
+        redirect('Company/list_designation');
+        // }
+    }
+
+    public function edit_designation()
+    {
+        $user = $this->session->userdata('user_id');
+        if (!has_access($user, 'Company/list_designation', 'E')) {
+            $data['title'] = 'Access Denied';
+            $data['main_content'] = 'errors/access_control.php';
+        } else {
+            $data['title'] = 'Edit Designation';
+            $designation_id = $this->uri->segment('3');
+            $data['designation'] = $this->Company_model->get_designation_by_id($designation_id);
+            $data['designation_id'] = $designation_id;
+            $data['departments'] = $this->Company_model->get_active_department_list();
+            $data['main_content'] = 'company/edit_designation.php';
+        }
+        $this->load->view('includes/template', $data);
+    }
+
+    public function update_designation()
+    {
+        $designation_id = $this->input->post('designation_id');
+        $data = array(
+            'designation_name'    => $this->input->post('designation_name', TRUE),
+            'department'          => $this->input->post('department', TRUE),
+            'reporting_to'        => $this->input->post('reporting_to', TRUE),
+            'level'               => $this->input->post('level', TRUE),
+            'employment_type'     => $this->input->post('employment_type', TRUE),
+            'location'            => $this->input->post('location', TRUE),
+            'job_description'     => $this->input->post('job_description', TRUE),
+            'responsibilities'    => $this->input->post('responsibilities', TRUE),
+            'skills'              => $this->input->post('skills', TRUE),
+            'qualification'       => $this->input->post('qualification', TRUE),
+            'experience'          => $this->input->post('experience', TRUE),
+            'status'              => $this->input->post('status', TRUE),
+            'updated_on'          => date('Y-m-d H:i:s')
+        );
+
+        $update_status = $this->Company_model->update_designation($designation_id, $data);
+        if ($update_status)
+            $this->session->set_flashdata('success', 'Designation updated successfully.');
+        else
+            $this->session->set_flashdata('error', 'Error occured while updating');
+
+        redirect('Company/list_designation'); // or redirect to wherever you want
+    }
+
+    //// DESIGNATION CODE END ////
+
+
 
     //----------validation-------------------//
     private function validate_branch_data($id = "")
