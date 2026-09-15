@@ -233,14 +233,6 @@ class Dashboard extends CI_Controller
         );
        
     }
-        $data['delayed_project_list'] = $this->dashboard->delayed_projects();
-        $data['due_project_list'] = $this->dashboard->due_projects();
-
-        $data['page_title'] = 'Project Manager Dashboard';
-        $data['module'] = 'Project Management';
-        $data['icon']  = 'fa fa-dashboard';
-        $data['cost_summary'] = $this->dashboard->estimated_cost_per_project();
-        $data['main_content'] = 'project/dashboard.php';
-        $this->load->view('includes/template', $data);;
-    }
+      
+    
 }

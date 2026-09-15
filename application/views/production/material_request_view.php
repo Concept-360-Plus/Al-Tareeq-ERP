@@ -7,7 +7,7 @@
             <div class="x_title">
 
                 <h2>
-                    View Material Request
+                    View Material Requisition
                 </h2>
 
                 <!--<a href="<?= base_url(
@@ -34,7 +34,7 @@
                     <div class="col-md-3">
 
                         <label>
-                            Material Request No
+                            Material Requisition No
                         </label>
 
                         <input type="text"
@@ -82,7 +82,7 @@
                     <div class="col-md-3">
 
                         <label>
-                            Request Date
+                            Requisition Date
                         </label>
 
                         <input type="text"

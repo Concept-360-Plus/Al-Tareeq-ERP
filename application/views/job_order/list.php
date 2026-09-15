@@ -119,197 +119,211 @@
 
                 <?php endif; ?>
 
-                <div class="row filter-row">
+     <div class="row filter-row">
 
-                    <div class="col-md-4">
+    <!-- ================================================= -->
+    <!-- PROJECT FILTER -->
+    <!-- ================================================= -->
 
-                        <div class="form-group">
+    <div class="col-md-4">
 
-                            <label>
-                                Project
-                            </label>
+        <div class="form-group">
 
-                            <select id="projectFilter"  class="form-control select2">
+            <label>Project</label>
 
-                                <option value="">
-                                    All Projects
-                                </option>
+            <select id="projectFilter"
+                    class="form-control select2">
 
+                <option value="">
+                    All Projects
+                </option>
 
-                                <?php
+                <?php
 
-                                /*
-                                 * Build unique project list
-                                 */
+                $projects = [];
 
-                                $projects = [];
+                if (!empty($job_orders)) {
 
-                                if (!empty($job_orders)) {
+                    foreach ($job_orders as $row) {
 
-                                    foreach ($job_orders as $row) {
+                        if (
+                            !empty($row->fk_project_id) &&
+                            !empty($row->project_name)
+                        ) {
 
-                                        if (
-                                            !empty($row->fk_project_id) &&
-                                            !empty($row->project_name)
-                                        ) {
+                            $projects[$row->fk_project_id] =
+                                $row->project_name;
+                        }
+                    }
+                }
 
-                                            $projects[
-                                                $row->fk_project_id
-                                            ] = $row->project_name;
+                asort($projects);
 
-                                        }
+                ?>
 
-                                    }
+                <?php foreach ($projects as $project_id => $project_name): ?>
 
-                                }
+                    <option value="<?= htmlspecialchars($project_id, ENT_QUOTES, 'UTF-8'); ?>">
 
-                                /*
-                                 * Sort project names
-                                 */
+                        <?= htmlspecialchars($project_name, ENT_QUOTES, 'UTF-8'); ?>
 
-                                asort($projects);
+                    </option>
 
-                                ?>
+                <?php endforeach; ?>
 
+            </select>
 
-                                <?php foreach (
-                                    $projects
-                                    as $project_id => $project_name
-                                ): ?>
+        </div>
 
-                                    <option value="<?= htmlspecialchars(
-                                        $project_id
-                                    ); ?>">
+    </div>
 
-                                        <?= htmlspecialchars(
-                                            $project_name
-                                        ); ?>
 
-                                    </option>
+    <!-- ================================================= -->
+    <!-- SALES ORDER FILTER -->
+    <!-- ================================================= -->
 
-                                <?php endforeach; ?>
+    <div class="col-md-4">
 
+        <div class="form-group">
 
-                            </select>
+            <label>Sales Order</label>
 
-                        </div>
+            <select id="salesOrderFilter"
+                    class="form-control select2">
 
-                    </div>
+                <option value="">
+                    All Sales Orders
+                </option>
 
+                <?php
 
+                $sales_orders = [];
 
-                    <!-- ================================================= -->
-                    <!-- STATUS FILTER -->
-                    <!-- ================================================= -->
+                if (!empty($job_orders)) {
 
-                    <div class="col-md-4">
+                    foreach ($job_orders as $row) {
 
-                        <div class="form-group">
+                        /*
+                         * Only normal / single-SO Job Orders
+                         */
 
-                            <label>
-                                Status
-                            </label>
+                        if (
+                            isset($row->job_order_type) &&
+                            (int)$row->job_order_type === 0 &&
+                            !empty($row->fk_sales_order_id) &&
+                            !empty($row->so_code)
+                        ) {
 
+                            $sales_orders[$row->fk_sales_order_id] =
+                                $row->so_code;
+                        }
+                    }
+                }
 
-                            <select id="statusFilter"
-                                    class="form-control">
+                asort($sales_orders);
 
-                                <option value="">
-                                    All Status
-                                </option>
+                ?>
 
+                <?php foreach ($sales_orders as $so_id => $so_code): ?>
 
-                                <?php
+                    <option value="<?= htmlspecialchars($so_id, ENT_QUOTES, 'UTF-8'); ?>">
 
-                                /*
-                                 * Get unique statuses
-                                 */
+                        <?= htmlspecialchars($so_code, ENT_QUOTES, 'UTF-8'); ?>
 
-                                $statuses = [];
+                    </option>
 
-                                if (!empty($job_orders)) {
+                <?php endforeach; ?>
 
-                                    foreach ($job_orders as $row) {
+            </select>
 
-                                        if (
-                                            isset($row->status) &&
-                                            trim($row->status) !== ''
-                                        ) {
+        </div>
 
-                                            $statuses[] =
-                                                trim($row->status);
+    </div>
 
-                                        }
 
-                                    }
+    <!-- ================================================= -->
+    <!-- STATUS FILTER -->
+    <!-- ================================================= -->
 
-                                }
+    <div class="col-md-2">
 
+        <div class="form-group">
 
-                                $statuses =
-                                    array_unique($statuses);
+            <label>Status</label>
 
+            <select id="statusFilter"
+                    class="form-control">
 
-                                sort($statuses);
+                <option value="">
+                    All Status
+                </option>
 
-                                ?>
+                <?php
 
+                $statuses = [];
 
-                                <?php foreach (
-                                    $statuses as $status
-                                ): ?>
+                if (!empty($job_orders)) {
 
-                                    <option value="<?= htmlspecialchars(
-                                        $status
-                                    ); ?>">
+                    foreach ($job_orders as $row) {
 
-                                        <?= htmlspecialchars(
-                                            $status
-                                        ); ?>
+                        if (
+                            isset($row->status) &&
+                            trim($row->status) !== ''
+                        ) {
 
-                                    </option>
+                            $statuses[] =
+                                trim($row->status);
+                        }
+                    }
+                }
 
-                                <?php endforeach; ?>
+                $statuses = array_unique($statuses);
 
+                sort($statuses);
 
-                            </select>
+                ?>
 
-                        </div>
+                <?php foreach ($statuses as $status): ?>
 
-                    </div>
+                    <option value="<?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8'); ?>">
 
+                        <?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8'); ?>
 
+                    </option>
 
-                    <!-- ================================================= -->
-                    <!-- RESET BUTTON -->
-                    <!-- ================================================= -->
+                <?php endforeach; ?>
 
-                    <div class="col-md-2">
+            </select>
 
-                        <div class="form-group">
+        </div>
 
-                            <label>
-                                &nbsp;
-                            </label>
+    </div>
 
 
-                            <button type="button"
-                                    id="resetFilters"
-                                    class="btn btn-default form-control">
+    <!-- ================================================= -->
+    <!-- RESET -->
+    <!-- ================================================= -->
 
-                                <i class="fa fa-refresh"></i>
+    <div class="col-md-2">
 
-                                Reset Filters
+        <div class="form-group">
 
-                            </button>
+            <label>&nbsp;</label>
 
-                        </div>
+            <button type="button"
+                    id="resetFilters"
+                    class="btn btn-default form-control">
 
-                    </div>
+                <i class="fa fa-refresh"></i>
+                Reset Filters
 
+            </button>
 
-                </div>
+        </div>
 
+    </div>
+
+</div>
 
                 <!-- ===================================================== -->
                 <!-- JOB ORDER TABLE -->
@@ -331,7 +345,7 @@
                             </th>
 
                             <th>
-                                Project
+                                Project / Sales Order
                             </th>
 
                             <th>
@@ -400,22 +414,13 @@
 
                                 </td>
 
-
-
-                                <!-- ===================================== -->
-                                <!-- PROJECT -->
-                                <!-- ===================================== -->
-
                                 <td
-                                    data-project-id="<?= htmlspecialchars(
-                                        $row->fk_project_id
-                                    ); ?>"
+                                    data-project-id="<?= htmlspecialchars($row->fk_project_id ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-sales-order-id="<?= htmlspecialchars($row->fk_sales_order_id ?? '', ENT_QUOTES, 'UTF-8'); ?>"
                                 >
-
-                                    <?= htmlspecialchars(
-                                        $row->project_name ?? ''
-                                    ); ?>
-
+                                    <?= !empty($row->order_reference)
+                                        ? htmlspecialchars($row->order_reference, ENT_QUOTES, 'UTF-8')
+                                        : '-' ?>
                                 </td>
 
 
@@ -576,18 +581,16 @@
 
                                     <!-- PRINT -->
 
-                                    <a href="<?= base_url(
+                                    <!--<a href="<?= base_url(
                                         'index.php/Production/print_job_order/' .
                                         $row->job_order_id
                                     ); ?>"
                                        title="Print"
+                                       >-->
+                                       <a href="<?= base_url('index.php/Production/print_project_job_order/' .$row->job_order_id); ?>" title="Print"
                                        >
-
                                         <span class="glyphicon glyphicon-print" aria-hidden="true"></span>
-
-                                  
-
-                                    </a>
+                                        </a>
 
 
 
@@ -651,7 +654,11 @@ $(document).ready(function () {
         allowClear: true,
         width: '100%'
     });
-
+    $('#salesOrderFilter').select2({
+        placeholder: 'Select Sales Order',
+        allowClear: true,
+        width: '100%'
+    });
 
     /* =========================================================
      * INITIALIZE JOB ORDER DATATABLE
@@ -1564,7 +1571,99 @@ $(document).ready(function () {
         }
     );
 
+    /* =========================================================
+ * SALES ORDER FILTER
+ * ========================================================= */
 
+$.fn.dataTable.ext.search.push(function (
+    settings,
+    data,
+    dataIndex
+) {
+
+    /*
+     * Apply only to Job Order table
+     */
+
+    if (
+        settings.nTable.id !== 'jobOrderTable'
+    ) {
+
+        return true;
+
+    }
+
+
+    /*
+     * Selected Sales Order ID
+     */
+
+    var selectedSalesOrder =
+        $('#salesOrderFilter').val();
+
+
+    /*
+     * All Sales Orders
+     */
+
+    if (
+        selectedSalesOrder === '' ||
+        selectedSalesOrder === null ||
+        typeof selectedSalesOrder === 'undefined'
+    ) {
+
+        return true;
+
+    }
+
+
+    /*
+     * Get current DataTable row
+     */
+
+    var rowNode =
+        settings.aoData[dataIndex].nTr;
+
+
+    if (!rowNode) {
+
+        return false;
+
+    }
+
+
+    /*
+     * Get Sales Order ID
+     */
+
+    var rowSalesOrderId =
+        $(rowNode)
+            .find('td[data-sales-order-id]')
+            .attr('data-sales-order-id');
+
+
+    /*
+     * Compare
+     */
+
+    return String(rowSalesOrderId) ===
+           String(selectedSalesOrder);
+
+});
+
+
+/* =========================================================
+ * SALES ORDER FILTER CHANGE
+ * ========================================================= */
+
+$('#salesOrderFilter').on(
+    'change',
+    function () {
+
+        table.draw();
+
+    }
+);
     /* =========================================================
      * RESET FILTERS
      * ========================================================= */
@@ -1589,7 +1688,9 @@ $(document).ready(function () {
             $('#statusFilter')
                 .val('')
                 .trigger('change');
-
+            $('#salesOrderFilter')
+                .val('')
+                .trigger('change');
 
             /*
              * Clear DataTable search

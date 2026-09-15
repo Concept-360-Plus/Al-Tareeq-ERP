@@ -93,7 +93,7 @@
                                 <th>#</th>
 
                                 <th>
-                                    Request No
+                                    Requisition No
                                 </th>
 
                                 <th>
@@ -105,7 +105,7 @@
                                 </th>
 
                                 <th>
-                                    Request Date
+                                    Requisition Date
                                 </th>
 
                                 <th>

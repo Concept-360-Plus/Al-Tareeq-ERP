@@ -278,7 +278,7 @@ function transport_approve_production($id,$approve_id)
     /*
      * Job Order list
      */
-    public function get_job_orders()
+    /*public function get_job_orders()
     {
         return $this->db
             ->select('
@@ -303,8 +303,53 @@ function transport_approve_production($id,$approve_id)
             ->get()
             ->result();
     }
+    */
+  public function get_job_orders()
+{
+    $this->db->select('
+        jo.*,
+        pm.project_name,
+        so.so_code,
+        COUNT(joi.job_order_item_id) AS total_items
+    ');
 
+    $this->db->select("
+        CASE
+            WHEN jo.job_order_type = 1 THEN pm.project_name
+            WHEN jo.job_order_type = 0 THEN so.so_code
+            ELSE NULL
+        END AS order_reference
+    ", FALSE);
 
+    $this->db->from('job_order jo');
+
+    $this->db->join(
+        'project_master pm',
+        'pm.project_id = jo.fk_project_id',
+        'left'
+    );
+
+    $this->db->join(
+        'sales_order_master so',
+        'so.so_id = jo.fk_sales_order_id
+         AND jo.job_order_type = 0',
+        'left'
+    );
+
+    $this->db->join(
+        'job_order_items joi',
+        'joi.job_order_id = jo.job_order_id',
+        'left'
+    );
+
+    $this->db->where('jo.is_deleted', 0);
+
+    $this->db->group_by('jo.job_order_id');
+
+    $this->db->order_by('jo.job_order_id', 'DESC');
+
+    return $this->db->get()->result();
+}
     /*
      * Projects
      */
@@ -429,97 +474,597 @@ function transport_approve_production($id,$approve_id)
     /*
      * Save Job Order + Items + BOM materials
      */
-    public function save_job_order($header, $items)
-    {
-        $this->db->trans_start();
+        public function save_job_order()
+{
+    try {
 
-        $this->db->insert('job_order', $header);
+        // ---------------------------------------------------------
+        // START TRANSACTION
+        // ---------------------------------------------------------
+        $this->db->trans_begin();
 
-        $job_order_id = $this->db->insert_id();
 
-        foreach ($items as $item) {
+        // ---------------------------------------------------------
+        // 1. GET JOB ORDER TYPE
+        // ---------------------------------------------------------
+        $jobOrderType = $this->input->post('job_order_type');
 
-            if (empty($item['selected'])) {
-                continue;
+        $projectId    = null;
+        $salesOrderId = null;
+
+
+        // ---------------------------------------------------------
+        // 2. PROJECT / SALES ORDER
+        // ---------------------------------------------------------
+        if ($jobOrderType == 1) {
+
+            // PROJECT JOB ORDER
+            $projectId = $this->input->post('fk_project_id');
+
+            if (empty($projectId)) {
+                throw new Exception('Please select a project.');
             }
 
-            $item_data = array(
-                'job_order_id'     => $job_order_id,
-                'project_item_id'  => $item['product_table_id'],
-                'item_master_id'   => $item['item_master_id'],
-                'item_code'        => $item['item_code'],
-                'item_description' => $item['item_description'],
-                'quantity'         => $item['quantity'],
-                'unit'             => $item['unit']
+        } else {
+
+            // SALES ORDER JOB ORDER
+            $salesOrderId = $this->input->post('sales_order_id');
+
+            if (empty($salesOrderId)) {
+                throw new Exception('Please select a sales order.');
+            }
+        }
+
+
+        // ---------------------------------------------------------
+        // 3. JOB ORDER HEADER
+        // ---------------------------------------------------------
+        $jobOrderData = array(
+            'job_order_no'      => $this->input->post('job_order_no'),
+            'job_order_type'    => $jobOrderType,
+            'fk_project_id'     => $projectId,
+            'fk_sales_order_id' => $salesOrderId,
+            'order_date'        => $this->input->post('order_date'),
+            'order_no'          => $this->input->post('order_no'),
+            'rep_name'          => $this->input->post('rep_name'),
+            'contact_person'   => $this->input->post('contact_person'),
+            'remarks'           => $this->input->post('remarks'),
+            'start_date'        => $this->input->post('start_date'),
+            'finish_date'       => $this->input->post('finish_date')
+        );
+
+
+        // ---------------------------------------------------------
+        // 4. INSERT JOB ORDER
+        // ---------------------------------------------------------
+        $jobOrderId = $this->Production_model->insert_job_order($jobOrderData);
+
+        if (!$jobOrderId) {
+
+            $dbError = $this->db->error();
+
+            throw new Exception(
+                'Failed to create Job Order. ' .
+                (!empty($dbError['message']) ? $dbError['message'] : '')
+            );
+        }
+
+
+        // ---------------------------------------------------------
+        // 5. SALES ORDER MAPPING
+        // ---------------------------------------------------------
+        if ($jobOrderType == 1) {
+
+            // PROJECT TYPE
+            $salesOrderIds = $this->input->post('sales_order_ids');
+
+            if (!empty($salesOrderIds) && is_array($salesOrderIds)) {
+
+                foreach ($salesOrderIds as $soId) {
+
+                    if (empty($soId)) {
+                        continue;
+                    }
+
+                    $mappingData = array(
+                        'job_order_id' => $jobOrderId,
+                        'so_id'        => $soId
+                    );
+
+                    $savedMapping =
+                        $this->Production_model
+                            ->insert_job_order_sales_order($mappingData);
+
+                    if (!$savedMapping) {
+
+                        $dbError = $this->db->error();
+
+                        throw new Exception(
+                            'Failed to save Sales Order mapping. ' .
+                            (!empty($dbError['message'])
+                                ? $dbError['message']
+                                : '')
+                        );
+                    }
+                }
+            }
+
+        } else {
+
+            // SALES ORDER TYPE
+            $mappingData = array(
+                'job_order_id' => $jobOrderId,
+                'so_id'        => $salesOrderId
             );
 
-            $this->db->insert(
-                'job_order_items',
-                $item_data
-            );
-echo $this->db->last_query();exit;
-            $job_order_item_id =
-                $this->db->insert_id();
+            $savedMapping =
+                $this->Production_model
+                    ->insert_job_order_sales_order($mappingData);
 
+            if (!$savedMapping) {
 
-            /*
-             * Get standard materials
-             */
-            $materials =
-                $this->get_item_materials(
-                    $item['item_master_id']
-                );
+                $dbError = $this->db->error();
 
-
-            /*
-             * Copy BOM to Job Order
-             */
-            foreach ($materials as $material) {
-
-                $sql_unit = $this->db->query("select unit_id from unit_master where unit_abbr='$material->unit'");
-                $qry = $sql_unit->row_array();
-
-                $material_data = array(
-                    'job_order_item_id' =>
-                        $job_order_item_id,
-
-                    'material_id' =>
-                        $material->material_id,
-
-                    'material_code' =>
-                        $material->material_code,
-
-                    'material_name' =>
-                        $material->material_name,
-
-                    'quantity_required' =>
-                        $material->quantity_required *
-                        $item['quantity'],
-
-                    'unit' =>
-                        $qry['unit_id'] ?? $material->unit,
-
-                    'cost' =>
-                        $material->cost,
-
-                    'source' => 'BOM'
-                );
-
-                $this->db->insert(
-                    'job_order_item_materials',
-                    $material_data
+                throw new Exception(
+                    'Failed to save Sales Order mapping. ' .
+                    (!empty($dbError['message'])
+                        ? $dbError['message']
+                        : '')
                 );
             }
         }
 
-        $this->db->trans_complete();
 
-        return $this->db->trans_status()
-            ? $job_order_id
-            : false;
+        // ---------------------------------------------------------
+        // 6. GET ITEMS
+        // ---------------------------------------------------------
+        $items = $this->input->post('items');
+
+        if (empty($items) || !is_array($items)) {
+            throw new Exception('Please select at least one item.');
+        }
+
+
+        // ---------------------------------------------------------
+        // 7. GET POSTED JOB ORDER MATERIALS JSON
+        // ---------------------------------------------------------
+        $materialsJson = $this->input->post('job_order_materials');
+
+        $jobOrderMaterials = array();
+
+        if (!empty($materialsJson)) {
+
+            $jobOrderMaterials = json_decode(
+                $materialsJson,
+                true
+            );
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+
+                throw new Exception(
+                    'Invalid Job Order Materials JSON: ' .
+                    json_last_error_msg()
+                );
+            }
+
+            if (!is_array($jobOrderMaterials)) {
+                $jobOrderMaterials = array();
+            }
+        }
+
+
+        // ---------------------------------------------------------
+        // 8. LOOP ITEMS
+        // ---------------------------------------------------------
+        foreach ($items as $itemIndex => $item) {
+
+            // -----------------------------------------------------
+            // IMPORTANT:
+            // Your POST contains:
+            //
+            // items[0][product_table_id] = 133
+            // items[1][product_table_id] = 134
+            //
+            // So DO NOT use:
+            // $item['project_item_id']
+            // -----------------------------------------------------
+            $projectItemId = !empty($item['product_table_id'])
+                ? $item['product_table_id']
+                : null;
+
+
+            // -----------------------------------------------------
+            // ITEM MASTER ID
+            // -----------------------------------------------------
+            $itemMasterId = !empty($item['item_master_id'])
+                ? $item['item_master_id']
+                : null;
+
+
+            if (empty($itemMasterId)) {
+
+                throw new Exception(
+                    'Item master ID is missing for item ' .
+                    ($itemIndex + 1)
+                );
+            }
+
+
+            // -----------------------------------------------------
+            // ITEM DATA
+            // -----------------------------------------------------
+            $itemData = array(
+                'job_order_id'    => $jobOrderId,
+
+                // Your POST product_table_id is being stored here
+                'project_item_id' => $projectItemId,
+
+                'item_master_id'  => $itemMasterId,
+
+                'item_description' =>
+                    isset($item['item_description'])
+                        ? $item['item_description']
+                        : '',
+
+                'item_code' =>
+                    isset($item['item_code'])
+                        ? $item['item_code']
+                        : '',
+
+                'quantity' =>
+                    isset($item['quantity'])
+                        ? $item['quantity']
+                        : 0,
+
+                'unit' =>
+                    isset($item['unit'])
+                        ? $item['unit']
+                        : '',
+
+                'cost' =>
+                    isset($item['retail_price'])
+                        ? $item['retail_price']
+                        : 0
+            );
+
+
+            // -----------------------------------------------------
+            // INSERT JOB ORDER ITEM
+            // -----------------------------------------------------
+            $jobOrderItemId =
+                $this->Production_model
+                    ->insert_job_order_item($itemData);
+
+
+            if (!$jobOrderItemId) {
+
+                $dbError = $this->db->error();
+
+                throw new Exception(
+                    'Failed to save job order item ' .
+                    ($itemIndex + 1) . '. ' .
+                    (!empty($dbError['message'])
+                        ? $dbError['message']
+                        : '')
+                );
+            }
+
+
+            // -----------------------------------------------------
+            // 9. FIND MATERIALS FOR THIS ITEM
+            // -----------------------------------------------------
+            $materials = array();
+
+
+            /*
+             * IMPORTANT:
+             *
+             * JSON:
+             *
+             * "133" => materials
+             * "134" => materials
+             *
+             * And product_table_id:
+             *
+             * item 1 = 133
+             * item 2 = 134
+             *
+             * Therefore lookup must use product_table_id.
+             */
+            if (
+                !empty($projectItemId) &&
+                isset($jobOrderMaterials[$projectItemId]) &&
+                is_array($jobOrderMaterials[$projectItemId])
+            ) {
+
+                $materials =
+                    $jobOrderMaterials[$projectItemId];
+
+            }
+
+
+            // -----------------------------------------------------
+            // DEBUG LOG
+            // -----------------------------------------------------
+            log_message(
+                'debug',
+                'JOB ORDER ID: ' . $jobOrderId .
+                ' | JOB ORDER ITEM ID: ' . $jobOrderItemId .
+                ' | PROJECT ITEM ID: ' . $projectItemId .
+                ' | MATERIAL COUNT: ' . count($materials)
+            );
+
+
+            // -----------------------------------------------------
+            // 10. SAVE MATERIALS
+            // -----------------------------------------------------
+            if (!empty($materials)) {
+
+                foreach ($materials as $materialIndex => $material) {
+
+                    // -------------------------------------------------
+                    // MATERIAL ID
+                    // -------------------------------------------------
+                    $materialId =
+                        !empty($material['material_id'])
+                            ? $material['material_id']
+                            : null;
+
+
+                    if (empty($materialId)) {
+
+                        // Skip invalid material
+                        log_message(
+                            'error',
+                            'Skipping material because material_id is empty. ' .
+                            print_r($material, true)
+                        );
+
+                        continue;
+                    }
+
+
+                    // -------------------------------------------------
+                    // SOURCE
+                    // BOM / MANUAL
+                    // -------------------------------------------------
+                    $source = isset($material['source'])
+                        ? strtoupper(trim($material['source']))
+                        : 'BOM';
+
+
+                    if ($source !== 'BOM' && $source !== 'MANUAL') {
+                        $source = 'BOM';
+                    }
+
+
+                    // -------------------------------------------------
+                    // QUANTITY
+                    //
+                    // IMPORTANT:
+                    // Your POST contains:
+                    //
+                    // quantity_required
+                    //
+                    // NOT:
+                    //
+                    // quantity
+                    // -------------------------------------------------
+                    $quantityRequired =
+                        isset($material['quantity_required'])
+                            ? (float)$material['quantity_required']
+                            : 0;
+
+
+                    // -------------------------------------------------
+                    // MATERIAL COST
+                    // -------------------------------------------------
+                    $cost = 0;
+
+
+                    if ($source === 'BOM') {
+
+                        // BOM MATERIAL
+                        $materialRow =
+                            $this->db
+                                ->select('cost')
+                                ->from('amc_product_materials')
+                                ->where(
+                                    'material_id',
+                                    $materialId
+                                )
+                                ->get()
+                                ->row();
+
+                    } else {
+
+                        // MANUAL RAW MATERIAL
+                        $materialRow =
+                            $this->db
+                                ->select('cost')
+                                ->from('amc_raw_materials')
+                                ->where(
+                                    'material_id',
+                                    $materialId
+                                )
+                                ->get()
+                                ->row();
+                    }
+
+
+                    // -------------------------------------------------
+                    // GET DB COST
+                    // -------------------------------------------------
+                    if ($materialRow) {
+
+                        $cost =
+                            isset($materialRow->cost)
+                                ? (float)$materialRow->cost
+                                : 0;
+                    }
+
+
+                    // -------------------------------------------------
+                    // FALLBACK TO POSTED COST
+                    //
+                    // Useful especially for MANUAL materials.
+                    // -------------------------------------------------
+                    if (
+                        $cost == 0 &&
+                        isset($material['cost']) &&
+                        $material['cost'] !== ''
+                    ) {
+
+                        $cost =
+                            (float)$material['cost'];
+                    }
+
+
+                    // -------------------------------------------------
+                    // MATERIAL DATA
+                    // -------------------------------------------------
+                    $materialData = array(
+
+                        'job_order_item_id' =>
+                            $jobOrderItemId,
+
+                        'project_item_id' =>
+                            $projectItemId,
+
+                        'material_id' =>
+                            $materialId,
+
+                        'material_code' =>
+                            isset($material['material_code'])
+                                ? $material['material_code']
+                                : '',
+
+                        'material_name' =>
+                            isset($material['material_name'])
+                                ? $material['material_name']
+                                : '',
+
+                        'quantity_required' =>
+                            $quantityRequired,
+
+                        'unit' =>
+                            isset($material['unit'])
+                                ? $material['unit']
+                                : '',
+
+                        'cost' =>
+                            $cost,
+
+                        'source' =>
+                            $source
+                    );
+
+
+                    // -------------------------------------------------
+                    // INSERT MATERIAL
+                    // -------------------------------------------------
+                    $savedMaterial =
+                        $this->Production_model
+                            ->insert_job_order_material(
+                                $materialData
+                            );
+
+
+                    if (!$savedMaterial) {
+
+                        $dbError = $this->db->error();
+
+                        throw new Exception(
+                            'Failed to save material "' .
+                            (isset($material['material_name'])
+                                ? $material['material_name']
+                                : 'Unknown') .
+                            '" for item ' .
+                            ($itemIndex + 1) .
+                            '. ' .
+                            (!empty($dbError['message'])
+                                ? $dbError['message']
+                                : '')
+                        );
+                    }
+
+
+                    // -------------------------------------------------
+                    // LOG SUCCESS
+                    // -------------------------------------------------
+                    log_message(
+                        'debug',
+                        'Material saved successfully. ' .
+                        'Job Order ID: ' . $jobOrderId .
+                        ' | Job Order Item ID: ' . $jobOrderItemId .
+                        ' | Project Item ID: ' . $projectItemId .
+                        ' | Material ID: ' . $materialId .
+                        ' | Source: ' . $source .
+                        ' | Qty: ' . $quantityRequired
+                    );
+                }
+            }
+        }
+
+
+        // ---------------------------------------------------------
+        // 11. CHECK TRANSACTION
+        // ---------------------------------------------------------
+        if ($this->db->trans_status() === FALSE) {
+
+            $dbError = $this->db->error();
+
+            throw new Exception(
+                'Database transaction failed. ' .
+                (!empty($dbError['message'])
+                    ? $dbError['message']
+                    : '')
+            );
+        }
+
+
+        // ---------------------------------------------------------
+        // 12. COMMIT
+        // ---------------------------------------------------------
+        $this->db->trans_commit();
+
+
+        // ---------------------------------------------------------
+        // 13. SUCCESS RESPONSE
+        // ---------------------------------------------------------
+        echo json_encode(array(
+            'status'       => true,
+            'message'      => 'Job Order created successfully.',
+            'job_order_id' => $jobOrderId
+        ));
+
+    } catch (Exception $e) {
+
+        // ---------------------------------------------------------
+        // ROLLBACK
+        // ---------------------------------------------------------
+        $this->db->trans_rollback();
+
+
+        // ---------------------------------------------------------
+        // ERROR LOG
+        // ---------------------------------------------------------
+        log_message(
+            'error',
+            'Save Job Order Error: ' .
+            $e->getMessage()
+        );
+
+
+        // ---------------------------------------------------------
+        // ERROR RESPONSE
+        // ---------------------------------------------------------
+        echo json_encode(array(
+            'status'  => false,
+            'message' => $e->getMessage()
+        ));
     }
-
-
+}
     /*
      * Get Job Order
      */
@@ -1097,6 +1642,7 @@ public function get_job_ordere($job_order_id)
         ->get('job_order')
         ->row();
 }
+
 public function get_job_order_itemse($job_order_id)
 {
     return $this->db
@@ -1104,32 +1650,77 @@ public function get_job_order_itemse($job_order_id)
             joi.job_order_item_id,
             joi.job_order_id,
             joi.project_item_id,
+            joi.so_id,
+
+            som.so_code AS sales_order_code,
 
             pi.product_id,
             pi.quantity,
-            joi.cost,
-            pi.total,
+            u.unit_abbr AS unit,
+            pi.amount AS total,
 
-            p.product_name
+            joi.cost,
+
+            p.product_id AS item_master_id,
+            p.product_code AS item_code,
+            p.product_name AS product_name
         ')
+
         ->from('job_order_items joi')
+
+        /*
+         * Job Order Item
+         *      ↓
+         * Sales Order Product
+         */
         ->join(
-            'project_items pi',
-            'pi.id = joi.project_item_id',
+            'sales_order_products pi',
+            'pi.product_table_id = joi.project_item_id',
             'left'
         )
+
+        /*
+         * Job Order Item
+         *      ↓
+         * Sales Order
+         */
+        ->join(
+            'sales_order_master som',
+            'som.so_id = joi.so_id',
+            'left'
+        )
+
+        /*
+         * Sales Order Product
+         *      ↓
+         * Item Master
+         */
         ->join(
             'item_master p',
             'p.product_id = pi.product_id',
             'left'
         )
+
+        ->join(
+            'unit_master u',
+            'u.unit_id = pi.unit_id',
+            'left'
+        )
+
         ->where(
             'joi.job_order_id',
             $job_order_id
         )
+
+        ->order_by(
+            'joi.job_order_item_id',
+            'ASC'
+        )
+
         ->get()
         ->result();
 }
+
 public function get_job_order_item_materials(
     $job_order_item_id
 ) {
@@ -1172,18 +1763,33 @@ public function get_job_order_print($job_order_id)
     return $this->db
         ->select('
             jo.*,
-            p.project_name,p.remarks as premarks
+
+            p.project_name,
+            p.remarks as premarks,
+
+            so.so_id,
+            so.so_code,
+            so.so_date
         ')
         ->from('job_order jo')
+
         ->join(
             'project_master p',
             'p.project_id = jo.fk_project_id',
             'left'
         )
+
+        ->join(
+            'sales_order_master so',
+            'so.so_id = jo.fk_sales_order_id',
+            'left'
+        )
+
         ->where(
             'jo.job_order_id',
             $job_order_id
         )
+
         ->get()
         ->row();
 }
@@ -1199,14 +1805,19 @@ public function get_job_order_items_print($job_order_id)
             pi.product_id,
             pi.quantity,
             joi.cost,
-            pi.total,
+            pi.amount as total,
 
             im.product_name
         ')
         ->from('job_order_items joi')
-        ->join(
+        /*->join(
             'project_items pi',
             'pi.id = joi.project_item_id',
+            'left'
+        )*/
+        ->join(
+            'sales_order_products pi',
+            'pi.product_table_id  = joi.project_item_id',
             'left'
         )
         ->join(
@@ -3190,78 +3801,148 @@ public function get_production_material_requests()
 
 public function get_materials_for_material_request($job_order_id)
 {
-    // //joi.item_description,
     $sql = "
-    SELECT 
-        joi.job_order_item_id,
-        joi.item_master_id,
-        im.product_code,
-        im.product_name as item_description,
-       
-        joi.quantity AS item_quantity,
+        SELECT
+            joi.job_order_item_id,
+            joi.item_master_id,
 
-        joim.job_order_material_id,
-        joim.material_id,
-        joim.material_code,
-        joim.material_name,
-        joim.quantity_required,
+            /* Product */
+            im.product_code,
+            im.product_name AS item_description,
 
-        joim.unit AS unit_id,
-        um.unit_abbr AS unit,
+            joi.quantity AS item_quantity,
 
-        joim.cost,
+            /* ============================
+             * SALES ORDER
+             * ============================ */
 
-        COALESCE(
-            (
-                SELECT SUM(pmri.request_quantity)
-                FROM production_material_request_items pmri
+            CASE
+                /* Normal Job Order */
+                WHEN jo.job_order_type = 0
+                    THEN jo.fk_sales_order_id
 
-                INNER JOIN production_material_requests pmr
-                    ON pmr.production_material_request_id =
-                       pmri.production_material_request_id
+                /* Project Job Order */
+                WHEN jo.job_order_type = 1
+                    THEN (
+                        SELECT sop.so_id
+                        FROM job_order_sales_orders jos
+                        INNER JOIN sales_order_products sop
+                            ON sop.so_id = jos.so_id
+                        WHERE jos.job_order_id = jo.job_order_id
+                          AND sop.product_id = joi.item_master_id
+                        ORDER BY sop.product_table_id
+                        LIMIT 1
+                    )
+            END AS sales_order_id,
 
-                WHERE pmri.job_order_material_id =
-                      joim.job_order_material_id
-            ),
-            0
-        ) AS previously_requested
+            CASE
+                /* Normal Job Order */
+                WHEN jo.job_order_type = 0
+                    THEN so_normal.so_code
 
-    FROM job_order_items joi
+                /* Project Job Order */
+                WHEN jo.job_order_type = 1
+                    THEN (
+                        SELECT so_project.so_code
+                        FROM job_order_sales_orders jos
+                        INNER JOIN sales_order_products sop
+                            ON sop.so_id = jos.so_id
+                        INNER JOIN sales_order_master so_project
+                            ON so_project.so_id = sop.so_id
+                        WHERE jos.job_order_id = jo.job_order_id
+                          AND sop.product_id = joi.item_master_id
+                        ORDER BY sop.product_table_id
+                        LIMIT 1
+                    )
+            END AS so_code,
 
-    INNER JOIN item_master im
-        ON im.product_id = joi.item_master_id
+            /* ============================
+             * JOB ORDER MATERIAL
+             * ============================ */
 
-    INNER JOIN job_order_item_materials joim
-        ON joim.job_order_item_id =
-           joi.job_order_item_id
+            joim.job_order_material_id,
+            joim.material_id,
+            joim.material_code,
+            joim.material_name,
+            joim.quantity_required,
 
-    LEFT JOIN unit_master um
-        ON um.unit_id = joim.unit
+            /* Unit */
+            joim.unit AS unit_id,
+            um.unit_abbr AS unit,
 
-    WHERE joi.job_order_id = ?
+            joim.cost,
 
-    ORDER BY
-        joi.job_order_item_id,
-        joim.job_order_material_id
-";
+            /* ============================
+             * PREVIOUSLY REQUESTED
+             * ============================ */
+
+            COALESCE(
+                (
+                    SELECT SUM(pmri.request_quantity)
+                    FROM production_material_request_items pmri
+
+                    INNER JOIN production_material_requests pmr
+                        ON pmr.production_material_request_id =
+                           pmri.production_material_request_id
+
+                    WHERE pmri.job_order_material_id =
+                          joim.job_order_material_id
+                ),
+                0
+            ) AS previously_requested
+
+        FROM job_order_items joi
+
+        INNER JOIN job_order jo
+            ON jo.job_order_id = joi.job_order_id
+
+        INNER JOIN item_master im
+            ON im.product_id = joi.item_master_id
+
+        INNER JOIN job_order_item_materials joim
+            ON joim.job_order_item_id = joi.job_order_item_id
+
+        LEFT JOIN unit_master um
+            ON um.unit_id = joim.unit
+
+        /* Normal SO */
+        LEFT JOIN sales_order_master so_normal
+            ON so_normal.so_id = jo.fk_sales_order_id
+            AND jo.job_order_type = 0
+
+        WHERE joi.job_order_id = ?
+
+        ORDER BY
+            joi.job_order_item_id,
+            joim.job_order_material_id
+    ";
 
     $query = $this->db->query(
         $sql,
         array($job_order_id)
     );
+
     $items = $query->result();
+
     foreach ($items as &$item) {
+
         $required = (float) $item->quantity_required;
-        $previously_requested = (float) $item->previously_requested;
-        $remaining =  $required - $previously_requested;
+
+        $previously_requested =
+            (float) $item->previously_requested;
+
+        $remaining =
+            $required - $previously_requested;
+
         if ($remaining < 0) {
             $remaining = 0;
         }
+
         $item->remaining_quantity = $remaining;
     }
+
     return $items;
 }
-
 public function save_material_request(
     $job_order_id,
     $request_date,
@@ -4713,14 +5394,20 @@ public function get_material_items_print($job_order_id)
             pi.product_id,
             pi.quantity,
             pi.unit_price,
-            pi.total,
+            pi.amount as total,
 
             im.product_name
         ')
         ->from('job_order_items joi')
-        ->join(
+        /*->join(
             'project_items pi',
             'pi.id = joi.project_item_id',
+            'left'
+        )*/
+        ->join(
+           // 'project_items pi',
+            'sales_order_products pi',
+            'pi.product_table_id  = joi.project_item_id',
             'left'
         )
         ->join(
@@ -8052,7 +8739,7 @@ public function get_stock_transfer_report(
                 ) =',
                 $value
             );
-
+            
             $this->db->where(
                 'jo.is_deleted',
                 0
@@ -8555,15 +9242,36 @@ public function get_material_request_items_for_stock_print(
 }
 
     //NEW SALES ORDER CHANGES
-    public function get_sales_orders_job_order()
+   public function get_sales_orders_job_order()
     {
         $this->db->select('
-            so_id, so_code,  so_date, grand_total, project_type
+            so.so_id,
+            so.so_code,
+            so.so_date,
+            so.grand_total,
+            so.project_type
         ');
-        $this->db->from('sales_order_master');
-        $this->db->where('active', 1);
-        $this->db->where('project_type', 0);
-        $this->db->order_by('so_id', 'DESC');
+
+        $this->db->from('sales_order_master so');
+
+        $this->db->where('so.active', 1);
+
+        // Single Sales Order
+        $this->db->where('so.project_type', 0);
+
+        // Sales Order must not already have a Single-SO Job Order
+        $this->db->where("
+            NOT EXISTS (
+                SELECT 1
+                FROM job_order jo
+                WHERE jo.fk_sales_order_id = so.so_id
+                AND jo.job_order_type = 0
+                
+            )
+        ", null, false);
+
+        $this->db->order_by('so.so_id', 'DESC');
+
         return $this->db->get()->result();
     }
 
@@ -8608,5 +9316,4999 @@ public function get_material_request_items_for_stock_print(
 
         return $this->db->insert_id();
     }
+    public function get_sales_orders_job_order_project($project_id)
+    {
+        return $this->db
+            ->select('
+                som.so_id,
+                som.so_code,
+                som.so_date,
+                qm.quotation_customer,
+                cm.customer_id,
+                cm.customer_name
+            ')
+            ->from('sales_order_master som')
+
+            ->join(
+                'quotation_master qm',
+                'qm.qtn_id = som.qtn_id',
+                'left'
+            )
+
+            ->join(
+                'customer_master cm',
+                'cm.customer_id = qm.quotation_customer',
+                'left'
+            )
+
+            ->where(
+                'som.project_id',
+                $project_id
+            )
+
+            ->where(
+                'som.active',
+                1
+            )
+
+            ->order_by(
+                'som.so_id',
+                'DESC'
+            )
+
+            ->get()
+            ->result();
+    }
+   
+    public function get_multiple_sales_order_items($so_ids)
+    {
+        if (empty($so_ids)) {
+            return array();
+        }
+
+        $this->db->select('
+            sop.product_table_id, sop.so_id,som.so_code,
+            sop.product_id,sop.unit_id, sop.quantity,
+            sop.unit_price, sop.amount, im.product_code,
+            im.product_name
+        ');
+
+        $this->db->from('sales_order_products sop');
+
+        $this->db->join(
+            'sales_order_master som',
+            'som.so_id = sop.so_id',
+            'left'
+        );
+
+        $this->db->join(
+            'item_master im',
+            'im.product_id = sop.product_id',
+            'left'
+        );
+
+        $this->db->where_in('sop.so_id', $so_ids);
+
+        $this->db->order_by('sop.so_id', 'DESC');
+        $this->db->order_by('sop.product_table_id', 'ASC');
+
+        return $this->db->get()->result();
+    }
+
+    public function get_sales_order_by_id($so_id)
+    {
+        return $this->db
+            ->where('so_id', $so_id)
+            ->get('sales_order_master')
+            ->row();
+    }
+    public function get_job_order_sales_order_ids($job_order_id)
+    {
+        $this->db->select('so_id');
+        $this->db->from('job_order_sales_orders');
+        $this->db->where('job_order_id', $job_order_id);
+
+        $query = $this->db->get();
+
+        $sales_order_ids = array();
+
+        foreach ($query->result() as $row) {
+            $sales_order_ids[] = (int)$row->so_id;
+        }
+
+        return $sales_order_ids;
+    }
+
+    public function get_project_print($project_id)
+    {
+        $this->db->select('
+            p.project_id,p.project_code, p.project_name,
+            p.location,p.start_date, p.end_date,
+            p.duration, p.subject, p.po_number, p.remarks
+        ');
+        $this->db->from('project p');
+        $this->db->where('p.project_id', $project_id);
+        return $this->db->get()->row();
+    }
+
+    public function get_sales_order_job_items_print($so_id,$project_id) {
+        $this->db->select('
+            joi.job_order_item_id,joi.job_order_id,joi.project_item_id,
+            joi.item_master_id,  joi.item_code,joi.item_description,
+            joi.quantity, joi.unit
+        ');
+
+        $this->db->from('job_order_items joi');
+
+        $this->db->join(
+            'job_order jo',
+            'jo.job_order_id = joi.job_order_id',
+            'left'
+        );
+
+        $this->db->where(
+            'jo.fk_project_id',
+            $project_id
+        );
+
+        $this->db->where(
+            'joi.so_id',
+            $so_id
+        );
+
+        return $this->db->get()->result();
+    }
+
+    public function get_project_job_item_materials_print($job_order_item_id)
+    {
+        $this->db->select('
+            job_order_material_id,job_order_item_id, project_item_id,
+            material_id,material_code, material_name,
+            quantity_required,unit,cost,source
+        ');
+        $this->db->from(
+            'job_order_item_materials'
+        );
+
+        $this->db->where(
+            'job_order_item_id',
+            $job_order_item_id
+        );
+
+        $this->db->order_by(
+            'job_order_material_id',
+            'ASC'
+        );
+
+        return $this->db->get()->result();
+    }
+    public function get_job_order_sales_orders_print($job_order_id)
+{
+    $this->db->select('
+        jo.job_order_id,
+        jo.job_order_type,
+        jo.fk_project_id,
+        jo.fk_sales_order_id
+    ');
+
+    $this->db->from('job_order jo');
+
+    $this->db->where('jo.job_order_id', $job_order_id);
+    $this->db->where('jo.is_deleted', 0);
+
+    $job_order = $this->db->get()->row();
+
+    if (!$job_order) {
+        return array();
+    }
+
+
+    /*
+     * NORMAL / SINGLE SALES ORDER
+     * job_order_type = 0
+     */
+    if ((int)$job_order->job_order_type === 0) {
+
+        if (empty($job_order->fk_sales_order_id)) {
+            return array();
+        }
+
+        $this->db->select('
+            so.so_id,
+            so.so_code,
+            so.so_date,
+            so.grand_total,
+            so.project_type,
+            so.project_id
+        ');
+
+        $this->db->from('sales_order_master so');
+
+        $this->db->where(
+            'so.so_id',
+            $job_order->fk_sales_order_id
+        );
+
+        $this->db->where('so.active', 1);
+
+        return $this->db
+            ->order_by('so.so_id', 'ASC')
+            ->get()
+            ->result();
+    }
+
+
+    /*
+     * PROJECT SALES ORDER
+     * job_order_type = 1
+     *
+     * First use job_order_sales_orders
+     * to identify the Sales Orders assigned
+     * to this Job Order.
+     */
+    $this->db->select('
+        so.so_id,
+        so.so_code,
+        so.so_date,
+        so.grand_total,
+        so.project_type,
+        so.project_id
+    ');
+
+    $this->db->from('job_order_sales_orders joso');
+
+    $this->db->join(
+        'sales_order_master so',
+        'so.so_id = joso.so_id',
+        'inner'
+    );
+
+    $this->db->where(
+        'joso.job_order_id',
+        $job_order_id
+    );
+
+    $this->db->where('so.active', 1);
+
+    $this->db->where('so.project_type', 1);
+
+    $this->db->where(
+        'so.project_id',
+        $job_order->fk_project_id
+    );
+
+    $this->db->order_by('so.so_id', 'ASC');
+
+    return $this->db->get()->result();
+}
+public function get_project_for_job_order_print($job_order_id)
+{
+    $this->db->select('
+        p.*,
+        jo.job_order_id,
+        jo.job_order_no,
+        jo.fk_project_id
+    ');
+
+    $this->db->from('job_order jo');
+
+    $this->db->join(
+        'project_master p',
+        'p.project_id = jo.fk_project_id',
+        'inner'
+    );
+
+    $this->db->where('jo.job_order_id', $job_order_id);
+    $this->db->where('jo.job_order_type', 1);
+    $this->db->where('jo.is_deleted', 0);
+
+    return $this->db->get()->row();
+}
+public function get_project_job_order_items_print($job_order_id, $so_id)
+{
+    $this->db->select('
+        joi.job_order_item_id,
+        joi.job_order_id,
+        joi.item_master_id,
+        joi.item_code,
+        joi.item_description,
+        joi.quantity,
+        joi.cost,
+        joi.unit
+    ');
+
+    $this->db->from('job_order_items joi');
+
+    $this->db->where('joi.job_order_id', $job_order_id);
+    $this->db->where(
+        "EXISTS (
+            SELECT 1
+            FROM sales_order_products sop
+            WHERE sop.so_id = " . (int)$so_id . "
+            AND sop.product_id = joi.item_master_id
+        )",
+        NULL,
+        FALSE
+    );
+
+    $this->db->order_by(
+        'joi.job_order_item_id',
+        'ASC'
+    );
+
+    return $this->db->get()->result();
+}
+//CNC
+  public function get_cnc_job_orders()
+    {
+        $this->db->select('
+            jo.job_order_id,
+            jo.job_order_no,
+            jo.job_order_type,
+            jo.fk_project_id,
+            jo.fk_sales_order_id,
+            jo.order_date,
+            jo.status
+        ');
+
+        $this->db->from('job_order jo');
+
+        $this->db->where('jo.is_deleted', 0);
+
+        /*
+         * Only active production Job Orders.
+         *
+         * We are not restricting to a particular status
+         * because your current Job Order status values may vary.
+         */
+        $this->db->order_by('jo.job_order_id', 'DESC');
+
+        return $this->db->get()->result();
+    }
+
+
+    /**
+     * Get Sales Orders for a Job Order
+     *
+     * Normal Job Order:
+     *     job_order.fk_sales_order_id
+     *
+     * Project Job Order:
+     *     job_order_sales_orders
+     */
+    public function get_job_order_sales_orders($job_order_id)
+    {
+        /*
+         * First get Job Order
+         */
+        $job_order = $this->db
+            ->select('
+                job_order_id,
+                job_order_type,
+                fk_sales_order_id,
+                fk_project_id
+            ')
+            ->from('job_order')
+            ->where('job_order_id', $job_order_id)
+            ->where('is_deleted', 0)
+            ->get()
+            ->row();
+
+        if (!$job_order) {
+            return array();
+        }
+
+        /*
+         * NORMAL JOB ORDER
+         */
+        if ((int) $job_order->job_order_type === 0) {
+
+            if (!$job_order->fk_sales_order_id) {
+                return array();
+            }
+
+            return $this->db
+                ->select('
+                    som.so_id,
+                    som.so_code,
+                    som.so_date,
+                    som.grand_total
+                ')
+                ->from('sales_order_master som')
+                ->where('som.so_id', $job_order->fk_sales_order_id)
+                ->where('som.active', 1)
+                ->get()
+                ->result();
+        }
+
+        /*
+         * PROJECT JOB ORDER
+         */
+        return $this->db
+            ->select('
+                som.so_id,
+                som.so_code,
+                som.so_date,
+                som.grand_total
+            ')
+            ->from('job_order_sales_orders jos')
+            ->join(
+                'sales_order_master som',
+                'som.so_id = jos.so_id',
+                'inner'
+            )
+            ->where('jos.job_order_id', $job_order_id)
+            ->where('som.active', 1)
+            ->order_by('som.so_code', 'ASC')
+            ->get()
+            ->result();
+    }
+
+
+    /**
+     * Get SO Products belonging to selected Job Order + SO
+     *
+     * IMPORTANT:
+     *
+     * We use sales_order_products.product_table_id
+     * as sales_order_product_id.
+     */
+    public function get_cnc_sales_order_products(
+        $job_order_id,
+        $sales_order_id
+    ) {
+
+        /*
+         * Make sure SO belongs to Job Order
+         */
+        if (!$this->validate_job_order_sales_order(
+            $job_order_id,
+            $sales_order_id
+        )) {
+            return array();
+        }
+
+        $this->db->select('
+            sop.product_table_id,
+            sop.so_id,
+            sop.product_id,
+            sop.unit_id,
+            sop.quantity,
+            sop.unit_price,
+            sop.amount
+        ');
+
+        $this->db->from('sales_order_products sop');
+
+        $this->db->where('sop.so_id', $sales_order_id);
+
+        $this->db->order_by('sop.product_table_id', 'ASC');
+
+        return $this->db->get()->result();
+    }
+
+
+    /**
+     * Validate SO Product
+     */
+    public function validate_cnc_sales_order_product(
+        $sales_order_id,
+        $sales_order_product_id
+    ) {
+
+        return $this->db
+            ->select('
+                product_table_id,
+                so_id,
+                product_id,
+                unit_id,
+                quantity
+            ')
+            ->from('sales_order_products')
+            ->where('so_id', $sales_order_id)
+            ->where(
+                'product_table_id',
+                $sales_order_product_id
+            )
+            ->get()
+            ->row();
+    }
+
+
+    /**
+     * Validate that SO belongs to Job Order
+     *
+     * Handles normal and project Job Orders.
+     */
+    public function validate_job_order_sales_order(
+        $job_order_id,
+        $sales_order_id
+    ) {
+
+        $job_order = $this->db
+            ->select('
+                job_order_id,
+                job_order_type,
+                fk_sales_order_id
+            ')
+            ->from('job_order')
+            ->where('job_order_id', $job_order_id)
+            ->where('is_deleted', 0)
+            ->get()
+            ->row();
+
+        if (!$job_order) {
+            return false;
+        }
+
+        /*
+         * NORMAL
+         */
+        if ((int) $job_order->job_order_type === 0) {
+
+            return (
+                (int) $job_order->fk_sales_order_id ===
+                (int) $sales_order_id
+            );
+        }
+
+        /*
+         * PROJECT
+         */
+        $exists = $this->db
+            ->from('job_order_sales_orders')
+            ->where('job_order_id', $job_order_id)
+            ->where('so_id', $sales_order_id)
+            ->count_all_results();
+
+        return $exists > 0;
+    }
+
+
+    /**
+     * Insert Production Task
+     */
+    public function insert_production_task($data)
+    {
+        $this->db->insert(
+            'production_tasks',
+            $data
+        );
+
+        if ($this->db->affected_rows() > 0) {
+            return $this->db->insert_id();
+        }
+
+        return false;
+    }
+
+
+    /**
+     * Insert Status History
+     */
+    public function insert_task_status_history($data)
+    {
+        return $this->db->insert(
+            'production_task_status_history',
+            $data
+        );
+    }
+
+    /**
+     * Get CNC Task List
+     */
+   public function get_cnc_task_list()
+{
+    $this->db->select('
+        pt.task_id, pt.job_order_id, pt.sales_order_id, pt.sales_order_product_id,
+        pt.department_id, pt.task_description, pt.quantity,pt.assigned_employee_id,
+        pt.assigned_by, pt.priority, pt.status, pt.remarks, pt.started_at, pt.completed_at,
+        pt.created_at,jo.job_order_no, som.so_code, dm.dept_name, em.employee_name AS assigned_employee_name,
+        joi.job_order_item_id, joi.item_master_id, joi.item_code, joi.item_description,
+        joi.unit, im.product_name AS product_name
+    ');
+
+    $this->db->from('production_tasks pt');
+
+    // Job Order
+    $this->db->join(
+        'job_order jo',
+        'jo.job_order_id = pt.job_order_id',
+        'left'
+    );
+
+    // Sales Order
+    $this->db->join(
+        'sales_order_master som',
+        'som.so_id = pt.sales_order_id',
+        'left'
+    );
+
+    // Job Order Item
+    // project_item_id contains sales_order_products.product_table_id
+    $this->db->join(
+        'job_order_items joi',
+        'joi.job_order_id = pt.job_order_id
+         AND joi.project_item_id = pt.sales_order_product_id',
+        'left'
+    );
+
+    // Item Master
+    $this->db->join(
+        'item_master im',
+        'im.product_id = joi.item_master_id',
+        'left'
+    );
+
+    // Department
+    $this->db->join(
+        'department_master dm',
+        'dm.dept_id = pt.department_id',
+        'left'
+    );
+
+    // Assigned Employee
+    $this->db->join(
+        'employee_master em',
+        'em.employee_id = pt.assigned_employee_id',
+        'left'
+    );
+
+    // CNC Department
+    $this->db->where(
+        'pt.department_id',
+        8
+    );
+
+    $this->db->order_by(
+        'pt.task_id',
+        'DESC'
+    );
+
+    return $this->db->get()->result();
+}
+    /**
+     * Department:
+     * 8 = CNC * Designation: * 19 = CNC Employee
+     */
+    public function get_cnc_employees()
+    {
+        $this->db->select('
+            em.employee_id AS id,em.employee_name AS name,
+            em.uid_number, em.user_code, em.designation_id,em.department_id
+        ');
+
+        $this->db->from('employee_master em');
+        $this->db->where('em.department_id', 8);
+        $this->db->where('em.designation_id', 19);
+        $this->db->where('em.active', 1);
+        $this->db->order_by(
+            'em.employee_name',
+            'ASC'
+        );
+
+        return $this->db->get()->result();
+    }
+
+
+    /**
+     * Get CNC task by ID
+     */
+    public function get_cnc_task_by_id($task_id)
+    {
+        return $this->db
+            ->select('
+                task_id,
+                job_order_id,
+                sales_order_id,
+                sales_order_product_id,
+                department_id,
+                task_description,
+                quantity,
+                assigned_employee_id,
+                assigned_by,
+                priority,
+                status,
+                remarks,
+                started_at,
+                completed_at,
+                created_at,
+                updated_at
+            ')
+            ->from('production_tasks')
+            ->where('task_id', $task_id)
+            ->where('department_id', 8)
+            ->get()
+            ->row();
+    }
+
+
+    /**
+     * Validate CNC employee
+     */
+    public function validate_cnc_employee($employee_id)
+    {
+        return $this->db
+            ->select('employee_id')
+            ->from('employee_master')
+            ->where('employee_id', $employee_id)
+            ->where('department_id', 8)
+            ->where('designation_id', 19)
+            ->where('active', 1)
+            ->get()
+            ->row();
+    }
+
+
+    /**
+     * Update production task
+     */
+    public function update_production_task($task_id, $data)
+    {
+        $this->db
+            ->where('task_id', $task_id)
+            ->where('department_id', 8)
+            ->update('production_tasks', $data);
+
+        return $this->db->trans_status();
+    }
+
+
+    /**
+     * Insert employee assignment history
+     */
+    public function insert_task_assignment_history($data)
+    {
+        return $this->db
+            ->insert('production_task_assignment_history', $data);
+    }
+
+
+    /**
+     * Get assignment history for a task
+     */
+    public function get_task_assignment_history($task_id)
+    {
+        $this->db->select('
+            h.assignment_history_id,
+            h.task_id,
+            h.old_employee_id,
+            old_emp.employee_name AS old_employee_name,
+            h.new_employee_id,
+            new_emp.employee_name AS new_employee_name,
+            h.changed_by,
+            changed_emp.employee_name AS changed_by_name,
+            h.remarks,
+            h.changed_at
+        ');
+
+        $this->db->from('production_task_assignment_history h');
+
+        $this->db->join(
+            'employee_master old_emp',
+            'old_emp.employee_id = h.old_employee_id',
+            'left'
+        );
+
+        $this->db->join(
+            'employee_master new_emp',
+            'new_emp.employee_id = h.new_employee_id',
+            'left'
+        );
+
+        $this->db->join(
+            'employee_master changed_emp',
+            'changed_emp.employee_id = h.changed_by',
+            'left'
+        );
+
+        $this->db->where('h.task_id', $task_id);
+
+        $this->db->order_by(
+            'h.assignment_history_id',
+            'DESC'
+        );
+
+        return $this->db->get()->result();
+    }
+/*
+      public function get_cnc_employee_tasks($employee_id)
+    {
+        $this->db->select('
+            pt.task_id, pt.job_order_id, pt.sales_order_id, pt.sales_order_product_id,
+            pt.department_id,pt.task_description, pt.quantity, pt.assigned_employee_id,
+            pt.assigned_by, pt.priority,pt.status,pt.remarks, pt.started_at, pt.completed_at,
+            pt.created_at,jo.job_order_no, som.so_code, dm.dept_name,
+            em.employee_name AS assigned_employee_name
+        ');
+
+        $this->db->from('production_tasks pt');
+        $this->db->join(
+            'job_order jo',
+            'jo.job_order_id = pt.job_order_id',
+            'left'
+        );
+        $this->db->join(
+            'sales_order_master som',
+            'som.so_id = pt.sales_order_id',
+            'left'
+        );
+        $this->db->join(
+            'department_master dm',
+            'dm.dept_id = pt.department_id',
+            'left'
+        );
+        $this->db->join(
+            'employee_master em',
+            'em.employee_id = pt.assigned_employee_id',
+            'left'
+        );
+        $this->db->where('pt.department_id', 8);
+        $this->db->where(
+            'pt.assigned_employee_id',
+            $employee_id
+        );
+
+        $this->db->order_by(
+            'pt.task_id',
+            'DESC'
+        );
+
+        return $this->db->get()->result();
+    }*/
+ 
+    /**
+     * ============================================================
+     * CNC EMPLOYEE TASKS
+     * ============================================================
+     */
+
+    /**
+     * Get CNC tasks assigned to a specific employee
+     */
+    public function get_cnc_employee_tasks($employee_id)
+    {
+        $this->db->select('
+            pt.task_id, pt.job_order_id, pt.sales_order_id,
+            pt.sales_order_product_id,pt.department_id,
+            pt.task_description,pt.quantity, pt.assigned_employee_id,
+            pt.assigned_by,pt.priority,pt.status, pt.remarks,
+            pt.started_at,pt.completed_at, pt.created_at,
+            jo.job_order_no,som.so_code,dm.dept_name,
+            em.employee_name AS assigned_employee_name
+        ');
+
+        $this->db->from('production_tasks pt');
+        $this->db->join(
+            'job_order jo',
+            'jo.job_order_id = pt.job_order_id',
+            'left'
+        );
+
+        $this->db->join(
+            'sales_order_master som',
+            'som.so_id = pt.sales_order_id',
+            'left'
+        );
+
+        $this->db->join(
+            'department_master dm',
+            'dm.dept_id = pt.department_id',
+            'left'
+        );
+
+        $this->db->join(
+            'employee_master em',
+            'em.employee_id = pt.assigned_employee_id',
+            'left'
+        );
+
+        /*
+        * CNC department
+        */
+        $this->db->where('pt.department_id', 8);
+
+        /*
+        * Employee can see ONLY his own tasks
+        */
+        $this->db->where(
+            'pt.assigned_employee_id',
+            $employee_id
+        );
+
+        $this->db->order_by(
+            'pt.task_id',
+            'DESC'
+        );
+
+        return $this->db->get()->result();
+    }
+
+
+    /**
+     * Get one CNC task for an employee
+     * - CNC department
+     * - logged-in employee
+     */
+    public function get_cnc_employee_task($task_id, $employee_id ) {
+        return $this->db
+            ->select('
+                task_id, job_order_id,sales_order_id,sales_order_product_id,
+                department_id, task_description, quantity,
+                assigned_employee_id,assigned_by,priority,
+                status, remarks, started_at, completed_at, created_at, updated_at
+            ')
+            ->from('production_tasks')
+            ->where('task_id', $task_id)
+            ->where('department_id', 8)
+            ->where(
+                'assigned_employee_id',
+                $employee_id
+            )
+            ->get()
+            ->row();
+    }
+
+    /**
+     * Update CNC task status
+     */
+    public function update_cnc_task_status($task_id, $employee_id, $status,$data = array() ) {
+        $this->db->where(
+            'task_id',
+            $task_id
+        );
+
+        $this->db->where(
+            'department_id',
+            8
+        );
+        $this->db->where(
+            'assigned_employee_id',
+            $employee_id
+        );
+
+        return $this->db->update(
+            'production_tasks',
+            $data
+        );
+    }
+
+    public function insert_cnc_status_history(
+        $task_id, $old_status, $new_status, $employee_id, $remarks = null
+    ) {
+        $data = array(
+            'task_id'    => $task_id,
+            'old_status' => $old_status,
+            'new_status' => $new_status,
+            'changed_by' => $employee_id,
+            'remarks'    => $remarks,
+            'changed_at' => date('Y-m-d H:i:s')
+        );
+
+        return $this->db->insert(
+            'production_task_status_history',
+            $data
+        );
+    }
     
+    public function get_cnc_task_status_history(
+        $task_id,
+        $employee_id
+    ) {
+        
+        $task = $this->get_cnc_employee_task(
+            $task_id,
+            $employee_id
+        );
+
+        if (!$task) {
+            return array();
+        }
+
+        $this->db->select('
+            h.history_id, h.task_id, h.old_status,
+            h.new_status,h.changed_by, h.remarks,
+            h.changed_at,em.employee_name AS changed_by_name
+        ');
+
+        $this->db->from(
+            'production_task_status_history h'
+        );
+
+        $this->db->join(
+            'employee_master em',
+            'em.employee_id = h.changed_by',
+            'left'
+        );
+
+        $this->db->where(
+            'h.task_id',
+            $task_id
+        );
+
+        $this->db->order_by(
+            'h.history_id',
+            'DESC'
+        );
+
+        return $this->db->get()->result();
+    }
+
+    /**
+     * Get CNC task by ID
+     */
+   /* public function get_cnc_task_by_id($task_id)
+    {
+        return $this->db
+            ->where('task_id', (int) $task_id)
+            ->get('production_tasks')
+            ->row();
+    }
+   */
+
+
+/**
+ * Get CNC task by ID
+ */
+public function get_cnc_task_by_idt($task_id)
+{
+    return $this->db
+        ->where('task_id', (int) $task_id)
+        ->get('production_tasks')
+        ->row();
+}
+
+
+/**
+ * Save CNC task work note
+ */
+public function save_cnc_task_note($data)
+{
+    $this->db->insert('production_task_notes', $data);
+
+    if ($this->db->affected_rows() > 0) {
+        return $this->db->insert_id();
+    }
+
+    return false;
+}
+
+
+/**
+ * Get CNC Task Timeline
+ 
+ */
+
+public function get_cnc_task_timeline($task_id)
+{
+    $timeline = array();
+    $this->db->select('
+        h.history_id,
+        h.task_id, h.old_status,
+        h.new_status,h.changed_by,
+        h.remarks, h.changed_at
+    ');
+
+    $this->db->from('production_task_status_history h');
+
+    $this->db->where(
+        'h.task_id',
+        (int) $task_id
+    );
+
+    $status_history = $this->db
+        ->order_by('h.changed_at', 'ASC')
+        ->get()
+        ->result_array();
+
+
+    foreach ($status_history as $row) {
+
+        $timeline[] = array(
+            'entry_type'    => 'status',
+            'entry_id'      => $row['history_id'],
+            'task_id'       => $row['task_id'],
+
+            // Status history user
+            'employee_id'   => $row['changed_by'],
+
+            // Kept empty because your existing table
+            // does not contain employee/user name.
+            'employee_name' => '',
+
+            // Role can be added later if needed
+            // from your existing user/session structure.
+            'added_by_role' => '',
+
+            'note_type'     => 'Status Change',
+
+            'note'          => !empty($row['remarks'])
+                ? $row['remarks']
+                : '',
+
+            'from_status'   => !empty($row['old_status'])
+                ? $row['old_status']
+                : '',
+
+            'to_status'     => $row['new_status'],
+
+            'status'        => $row['new_status'],
+
+            'created_at'    => $row['changed_at']
+        );
+    }
+
+    $this->db->select('
+        n.note_id,
+        n.task_id,
+        n.employee_id,
+        n.added_by_role,
+        n.note_type,
+        n.note,
+        n.created_at
+    ');
+
+    $this->db->from('production_task_notes n');
+
+    $this->db->where(
+        'n.task_id',
+        (int) $task_id
+    );
+
+    $notes = $this->db
+        ->order_by('n.created_at', 'ASC')
+        ->get()
+        ->result_array();
+
+
+    foreach ($notes as $row) {
+
+        $timeline[] = array(
+            'entry_type'    => 'note',
+            'entry_id'      => $row['note_id'],
+            'task_id'       => $row['task_id'],
+
+            'employee_id'   => $row['employee_id'],
+
+            /*
+             * Supervisor / Employee
+             */
+            'added_by_role' => !empty($row['added_by_role'])
+                ? $row['added_by_role']
+                : 'Employee',
+
+            'employee_name' => '',
+
+            'note_type'     => $row['note_type'],
+
+            'note'          => $row['note'],
+
+            'from_status'   => '',
+
+            'to_status'     => '',
+
+            'status'        => '',
+
+            'created_at'    => $row['created_at']
+        );
+    }
+
+    usort(
+        $timeline,
+        function ($a, $b) {
+
+            $time_a = strtotime($a['created_at']);
+            $time_b = strtotime($b['created_at']);
+
+            if ($time_a == $time_b) {
+                return 0;
+            }
+
+            return ($time_a < $time_b) ? -1 : 1;
+        }
+    );
+
+
+    return $timeline;
+}
+
+public function get_task_handover_by_task_id($task_id)
+{
+    $task_id = (int)$task_id;
+    if (!$task_id) {
+        return null;
+    }
+    return $this->db
+        ->where('from_task_id', $task_id)
+        ->order_by('handover_id', 'DESC')
+        ->limit(1)
+        ->get('production_task_handover')
+        ->row();
+}
+public function get_cnc_task_for_approval($task_id)
+{
+    $task_id = (int)$task_id;
+
+    if (!$task_id) {
+        return null;
+    }
+
+    $this->db->select('
+        pt.task_id, pt.job_order_id, pt.sales_order_id,
+        pt.sales_order_product_id, pt.department_id, pt.task_description,
+        pt.quantity, pt.assigned_employee_id, pt.assigned_by, pt.priority,
+        pt.status, pt.remarks,pt.started_at,pt.completed_at,pt.created_at,
+        pt.updated_at,jo.job_order_no, so.so_code,sop.product_id,sop.product_table_id,
+        sop.quantity AS sales_order_quantity, sop.unit_id, sop.unit_price, sop.amount,
+        im.product_code, im.product_name, emp.employee_id, emp.employee_name,
+        emp.uid_number, emp.mobile, emp.designation_id,emp.department_id AS employee_department_id
+    ');
+
+    $this->db->from('production_tasks pt');
+    $this->db->join(
+        'job_order jo',
+        'jo.job_order_id = pt.job_order_id',
+        'left'
+    );
+
+    $this->db->join(
+        'sales_order_master so',
+        'so.so_id = pt.sales_order_id',
+        'left'
+    );
+    $this->db->join(
+        'sales_order_products sop',
+        'sop.product_table_id = pt.sales_order_product_id',
+        'left'
+    );
+
+    $this->db->join(
+        'item_master im',
+        'im.product_id = sop.product_id',
+        'left'
+    );
+
+    $this->db->join(
+        'employee_master emp',
+        'emp.employee_id = pt.assigned_employee_id',
+        'left'
+    );
+
+    $this->db->where(
+        'pt.task_id',
+        $task_id
+    );
+
+    $this->db->where(
+        'pt.department_id',
+        8
+    );
+
+    return $this->db
+        ->get()
+        ->row();
+}
+public function update_cnc_task_supervisor_status($task_id, $status)
+{
+    $task_id = (int)$task_id;
+
+    if (!$task_id || !$status) {
+        return false;
+    }
+
+    $this->db->where('task_id', $task_id);
+    $this->db->where('department_id', 8);
+
+    return $this->db->update('production_tasks', array(
+        'status'     => $status,
+        'updated_at' => date('Y-m-d H:i:s')
+    ));
+}
+
+public function insert_task_handover($data)
+{
+    if (empty($data)) {
+        return false;
+    }
+
+    $insert_data = array(
+        'from_task_id'      => isset($data['from_task_id']) ? (int)$data['from_task_id'] : 0,
+        'from_department_id'=> isset($data['from_department_id']) ? (int)$data['from_department_id'] : 0,
+        'to_department_id'  => isset($data['to_department_id']) ? (int)$data['to_department_id'] : 0,
+        'approved_by'       => isset($data['approved_by']) ? (int)$data['approved_by'] : 0,
+        'approval_status'   => isset($data['approval_status']) && $data['approval_status'] !== ''
+                                ? $data['approval_status']
+                                : 'Approved',
+        'remarks'           => isset($data['remarks']) ? $data['remarks'] : null
+    );
+
+    // Basic validation
+    if (
+        !$insert_data['from_task_id'] ||
+        !$insert_data['from_department_id'] ||
+        !$insert_data['to_department_id'] ||
+        !$insert_data['approved_by']
+    ) {
+        return false;
+    }
+
+    $this->db->insert('production_task_handover', $insert_data);
+
+    if ($this->db->affected_rows() > 0) {
+        return $this->db->insert_id();
+    }
+
+    return false;
+}
+
+public function get_approved_task_handover($task_id, $to_department_id)
+{
+    $task_id = (int)$task_id;
+    $to_department_id = (int)$to_department_id;
+
+    if (!$task_id || !$to_department_id) {
+        return null;
+    }
+
+    $this->db->where('from_task_id', $task_id);
+    $this->db->where('to_department_id', $to_department_id);
+    $this->db->where('approval_status', 'Approved');
+
+    return $this->db
+        ->order_by('handover_id', 'DESC')
+        ->limit(1)
+        ->get('production_task_handover')
+        ->row();
+}
+public function create_production_task($data)
+{
+    if (empty($data) || !is_array($data)) {
+        return false;
+    }
+
+    $insert_data = array(
+        'job_order_id'           => isset($data['job_order_id']) ? (int)$data['job_order_id'] : 0,
+        'sales_order_id'         => isset($data['sales_order_id']) ? (int)$data['sales_order_id'] : 0,
+        'sales_order_product_id' => isset($data['sales_order_product_id']) ? (int)$data['sales_order_product_id'] : 0,
+        'department_id'          => isset($data['department_id']) ? (int)$data['department_id'] : 0,
+        'task_description'       => isset($data['task_description']) ? $data['task_description'] : null,
+        'quantity'               => isset($data['quantity']) ? $data['quantity'] : 0,
+        'assigned_employee_id'   => isset($data['assigned_employee_id']) && $data['assigned_employee_id'] !== ''
+                                    ? (int)$data['assigned_employee_id']
+                                    : null,
+        'assigned_by'            => isset($data['assigned_by']) ? (int)$data['assigned_by'] : 0,
+        'priority'               => isset($data['priority']) ? $data['priority'] : 'Medium',
+        'status'                 => isset($data['status']) ? $data['status'] : 'Pending',
+        'remarks'                => isset($data['remarks']) ? $data['remarks'] : null,
+        'created_at'             => isset($data['created_at'])
+                                    ? $data['created_at']
+                                    : date('Y-m-d H:i:s')
+    );
+
+    if (
+        !$insert_data['job_order_id'] ||
+        !$insert_data['department_id']
+    ) {
+        return false;
+    }
+
+    $this->db->insert('production_tasks', $insert_data);
+
+    if ($this->db->affected_rows() > 0) {
+        return $this->db->insert_id();
+    }
+
+    return false;
+}
+
+/* =========================================================
+ * BENDING SUPERVISOR
+ * Department ID = 9
+ * ========================================================= */
+
+
+/**
+ * Get all tasks belonging to Bending department
+ *
+ * IMPORTANT:
+ * CNC handover creates the task with:
+ *
+ * department_id = 9
+ * assigned_employee_id = NULL
+ *
+ * Bending supervisor then assigns employee.
+ */
+public function get_bending_supervisor_tasks()
+{
+    $this->db->select('
+        pt.*,
+        jo.job_order_no,
+        so.so_code,
+        imp.product_name AS product_name,
+        em.employee_name AS assigned_employee_name,
+        em.uid_number AS assigned_employee_uid
+    ');
+
+    $this->db->from('production_tasks pt');
+
+    // Job Order
+    $this->db->join(
+        'job_order jo',
+        'jo.job_order_id = pt.job_order_id',
+        'left'
+    );
+
+    // Sales Order
+    $this->db->join(
+        'sales_order_master so',
+        'so.so_id = pt.sales_order_id',
+        'left'
+    );
+
+    // Sales Order Product -> Item Master
+    $this->db->join(
+        'sales_order_products sop',
+        'sop.product_table_id = pt.sales_order_product_id',
+        'left'
+    );
+
+    $this->db->join(
+        'item_master imp',
+        'imp.product_id = sop.product_id',
+        'left'
+    );
+
+    // Assigned Employee
+    $this->db->join(
+        'employee_master em',
+        'em.employee_id = pt.assigned_employee_id',
+        'left'
+    );
+
+    // Bending Department
+    $this->db->where('pt.department_id', 10);
+
+    // Only active tasks
+    //$this->db->where('pt.is_deleted', 0);
+
+    $this->db->order_by('pt.task_id', 'DESC');
+
+    return $this->db->get()->result_array();
+}
+
+/**
+ * Get one Bending task
+ */
+public function get_bending_task_by_id($task_id)
+{
+    $this->db->select('
+        pt.*,
+        jo.job_order_no,
+        so.so_code,
+        imp.product_name AS product_name,
+        em.employee_name AS assigned_employee_name,
+        em.uid_number AS assigned_employee_uid
+    ');
+
+    $this->db->from('production_tasks pt');
+
+    $this->db->join(
+        'job_order jo',
+        'jo.job_order_id = pt.job_order_id',
+        'left'
+    );
+
+    $this->db->join(
+        'sales_order_master so',
+        'so.so_id = pt.sales_order_id',
+        'left'
+    );
+
+    $this->db->join(
+        'sales_order_products sop',
+        'sop.product_table_id = pt.sales_order_product_id',
+        'left'
+    );
+
+    $this->db->join(
+        'item_master imp',
+        'imp.product_id = sop.product_id',
+        'left'
+    );
+
+    $this->db->join(
+        'employee_master em',
+        'em.employee_id = pt.assigned_employee_id',
+        'left'
+    );
+
+    $this->db->where('pt.task_id', (int)$task_id);
+    $this->db->where('pt.department_id', 10);
+
+    return $this->db->get()->row_array();
+}
+
+
+/**
+ * Get active Bending employees
+ */
+public function get_bending_employees()
+{
+    $this->db->select('
+        employee_id,
+        employee_name,
+        uid_number,
+        department_id,
+        designation_id
+    ');
+
+    $this->db->from('employee_master');
+
+    $this->db->where('department_id', 10);
+    $this->db->where('designation_id', 21);
+    $this->db->where('active', 1);
+
+    $this->db->order_by('employee_name', 'ASC');
+
+    return $this->db->get()->result_array();
+}
+
+/**
+ * Get one Bending employee
+ */
+public function get_bending_employee($employee_id)
+{
+    return $this->db
+        ->select("
+            employee_id,
+            employee_name,
+            uid_number,
+            department_id,
+            active
+        ")
+        ->from('employee_master')
+        ->where(
+            'employee_id',
+            (int)$employee_id
+        )
+        ->where(
+            'department_id',
+            10
+        )
+        ->where(
+            'active',
+            1
+        )
+        ->get()
+        ->row();
+}
+
+
+/**
+ * Assign task to Bending employee
+ */
+public function assign_bending_employee(
+    $task_id,
+    $employee_id
+) {
+    /*
+     * Only Bending tasks can be assigned.
+     */
+    $this->db
+        ->where(
+            'task_id',
+            (int)$task_id
+        )
+        ->where(
+            'department_id',
+            10
+        );
+
+
+    return $this->db->update(
+        'production_tasks',
+        array(
+            'assigned_employee_id' =>
+                (int)$employee_id
+        )
+    );
+}
+
+
+/**
+ * Insert Bending supervisor note
+ */
+public function insert_bending_supervisor_note($data)
+{
+    return $this->db->insert(
+        'production_task_notes',
+        $data
+    );
+}
+
+
+/**
+ * Get Bending task status history
+ */
+public function get_bending_task_status_history($task_id)
+{
+    $this->db->select('*');
+
+    $this->db->from(
+        'production_task_status_history'
+    );
+
+    $this->db->where(
+        'task_id',
+        (int)$task_id
+    );
+
+    $this->db->order_by(
+        'changed_at',
+        'ASC'
+    );
+
+    return $this->db
+        ->get()
+        ->result();
+}
+
+
+/**
+ * Get Bending task timeline
+ *
+ * Combines status history + notes.
+ */
+public function get_bending_task_timeline($task_id)
+{
+    $timeline = array();
+
+    $task_id = (int) $task_id;
+
+    if (!$task_id) {
+        return $timeline;
+    }
+
+    /*
+     * -----------------------------------------------------
+     * STATUS HISTORY
+     * -----------------------------------------------------
+     */
+
+    $this->db->select("
+        'status' AS entry_type,
+        h.task_id,
+        h.old_status,
+        h.new_status,
+        h.remarks AS note,
+        h.changed_at AS created_at,
+        CAST(NULL AS CHAR) AS note_type,
+        CAST(NULL AS CHAR) AS employee_name
+    ", false);
+
+    $this->db->from('production_task_status_history h');
+
+    $this->db->where('h.task_id', $task_id);
+
+    $history = $this->db->get()->result();
+
+    foreach ($history as $row) {
+        $timeline[] = $row;
+    }
+
+
+    /*
+     * -----------------------------------------------------
+     * NOTES
+     * -----------------------------------------------------
+     */
+
+    $this->db->select("
+        'note' AS entry_type,
+        n.task_id,
+        CAST(NULL AS CHAR) AS old_status,
+        CAST(NULL AS CHAR) AS new_status,
+        n.note,n.added_by_role,
+        n.created_at,
+        n.note_type,
+        em.employee_name
+    ", false);
+
+    $this->db->from('production_task_notes n');
+
+    $this->db->join(
+        'employee_master em',
+        'em.employee_id = n.employee_id',
+        'left'
+    );
+
+    $this->db->where('n.task_id', $task_id);
+
+    $notes = $this->db->get()->result();
+
+    foreach ($notes as $row) {
+        $timeline[] = $row;
+    }
+
+
+    /*
+     * -----------------------------------------------------
+     * SORT BY DATE
+     * -----------------------------------------------------
+     */
+
+    usort(
+        $timeline,
+        function ($a, $b) {
+
+            $timeA = !empty($a->created_at)
+                ? strtotime($a->created_at)
+                : 0;
+
+            $timeB = !empty($b->created_at)
+                ? strtotime($b->created_at)
+                : 0;
+
+            return $timeA - $timeB;
+        }
+    );
+
+
+    return $timeline;
+}
+/* =========================================================
+ * GET BENDING EMPLOYEE
+ * ========================================================= */
+/*public function get_bending_employee($employee_id)
+{
+    $employee_id = (int) $employee_id;
+
+    if (!$employee_id) {
+        return null;
+    }
+
+    $this->db->select('
+        employee_id,
+        uid_number,
+        employee_name,
+        branch_id,
+        designation_id,
+        department_id,
+        user_code,
+        active
+    ');
+
+    $this->db->from('employee_master');
+
+    $this->db->where('employee_id', $employee_id);
+    $this->db->where('department_id', 10);
+    $this->db->where('designation_id', 21);
+    $this->db->where('active', 1);
+
+    return $this->db->get()->row();
+}
+
+*/
+/* =========================================================
+ * GET BENDING EMPLOYEE TASKS
+ * ========================================================= */
+public function get_bending_employee_tasks($employee_id)
+{
+    $employee_id = (int) $employee_id;
+
+    if (!$employee_id) {
+        return array();
+    }
+
+    $this->db->select("
+        pt.task_id,
+        pt.job_order_id,
+        pt.sales_order_id,
+        pt.sales_order_product_id,
+        pt.department_id,
+        pt.task_description,
+        pt.quantity,
+        pt.assigned_employee_id,
+        pt.assigned_by,
+        pt.priority,
+        pt.status,
+        pt.remarks,
+        pt.started_at,
+        pt.completed_at,
+        pt.created_at,
+        pt.updated_at,
+        jo.job_order_no,
+        jo.order_no,
+        som.so_code,
+        sp.product_id,
+        sp.quantity AS ordered_quantity,
+        im.product_name AS product_name,
+        im.product_code,
+        em.employee_name,
+        em.uid_number
+    ", false);
+
+    $this->db->from('production_tasks pt');
+
+    $this->db->join(
+        'job_order jo',
+        'jo.job_order_id = pt.job_order_id',
+        'left'
+    );
+
+    $this->db->join(
+        'sales_order_master som',
+        'som.so_id = pt.sales_order_id',
+        'left'
+    );
+
+    $this->db->join(
+        'sales_order_products sp',
+        'sp.product_table_id = pt.sales_order_product_id',
+        'left'
+    );
+
+    $this->db->join(
+        'item_master im',
+        'im.product_id = sp.product_id',
+        'left'
+    );
+
+    $this->db->join(
+        'employee_master em',
+        'em.employee_id = pt.assigned_employee_id',
+        'left'
+    );
+
+    /*
+     * BENDING = 10
+     */
+    $this->db->where('pt.department_id', 10);
+
+    /*
+     * Only logged-in employee's tasks.
+     */
+    $this->db->where(
+        'pt.assigned_employee_id',
+        $employee_id
+    );
+
+    /*
+     * Do not show handed-over tasks.
+     */
+    $this->db->where_not_in(
+        'LOWER(pt.status)',
+        array(
+            'handed over',
+            'handover'
+        )
+    );
+
+    $this->db->order_by(
+        'pt.created_at',
+        'DESC'
+    );
+
+    return $this->db->get()->result_array();
+}
+
+
+/* =========================================================
+ * GET ONE BENDING TASK FOR EMPLOYEE
+ * ========================================================= */
+public function get_bending_task_for_employee(
+    $task_id,
+    $employee_id
+) {
+    $task_id     = (int) $task_id;
+    $employee_id = (int) $employee_id;
+
+    if (!$task_id || !$employee_id) {
+        return null;
+    }
+
+    $this->db->select("
+        pt.*,
+
+        jo.job_order_no,
+        jo.order_no,
+
+        som.so_code,
+
+        sp.quantity AS ordered_quantity,
+
+        im.product_name AS product_name,
+        im.product_code,
+
+        em.employee_name,
+        em.uid_number
+    ", false);
+
+    $this->db->from('production_tasks pt');
+
+    $this->db->join(
+        'job_order jo',
+        'jo.job_order_id = pt.job_order_id',
+        'left'
+    );
+
+    $this->db->join(
+        'sales_order_master som',
+        'som.so_id = pt.sales_order_id',
+        'left'
+    );
+
+    $this->db->join(
+        'sales_order_products sp',
+        'sp.product_table_id = pt.sales_order_product_id',
+        'left'
+    );
+
+    $this->db->join(
+        'item_master im',
+        'im.product_id = sp.product_id',
+        'left'
+    );
+
+    $this->db->join(
+        'employee_master em',
+        'em.employee_id = pt.assigned_employee_id',
+        'left'
+    );
+
+    $this->db->where(
+        'pt.task_id',
+        $task_id
+    );
+
+    $this->db->where(
+        'pt.department_id',
+        10
+    );
+
+    $this->db->where(
+        'pt.assigned_employee_id',
+        $employee_id
+    );
+
+    return $this->db->get()->row();
+}
+
+
+/* =========================================================
+ * UPDATE BENDING EMPLOYEE TASK STATUS
+ * ========================================================= */
+public function update_bending_employee_task_status(
+    $task_id,
+    $employee_id,
+    $old_status,
+    $new_status,
+    $remarks = ''
+) {
+    $task_id     = (int) $task_id;
+    $employee_id = (int) $employee_id;
+
+    if (!$task_id || !$employee_id) {
+        return array(
+            'status'  => false,
+            'message' => 'Invalid task or employee.'
+        );
+    }
+
+    /*
+     * Get current task.
+     */
+    $task = $this->get_bending_task_for_employee(
+        $task_id,
+        $employee_id
+    );
+
+    if (!$task) {
+        return array(
+            'status'  => false,
+            'message' => 'Task not found or not assigned to you.'
+        );
+    }
+
+    /*
+     * Always use actual DB status.
+     */
+    $old_status = trim($task->status);
+
+    $now = date('Y-m-d H:i:s');
+
+    $this->db->trans_start();
+
+    $update = array(
+        'status'     => $new_status,
+        'updated_at' => $now
+    );
+
+    /*
+     * Started timestamp.
+     */
+    if (
+        strtolower(trim($new_status)) == 'in progress' &&
+        empty($task->started_at)
+    ) {
+        $update['started_at'] = $now;
+    }
+
+    /*
+     * Completion timestamp.
+     */
+    if (
+        strtolower(trim($new_status)) == 'completed'
+    ) {
+        $update['completed_at'] = $now;
+    }
+
+    /*
+     * Update only own task.
+     */
+    $this->db->where(
+        'task_id',
+        $task_id
+    );
+
+    $this->db->where(
+        'department_id',
+        10
+    );
+
+    $this->db->where(
+        'assigned_employee_id',
+        $employee_id
+    );
+
+    $this->db->update(
+        'production_tasks',
+        $update
+    );
+
+    /*
+     * Status history.
+     */
+    $this->db->insert(
+        'production_task_status_history',
+        array(
+            'task_id'    => $task_id,
+            'old_status' => $old_status,
+            'new_status' => $new_status,
+            'remarks'    => $remarks,
+            'changed_at' => $now
+        )
+    );
+
+    /*
+     * If a status action contains a note,
+     * save it as an employee note.
+     */
+    if ($remarks != '') {
+
+        $note_type = 'General';
+
+        if (strtolower($new_status) == 'hold') {
+            $note_type = 'Hold Reason';
+        } elseif (strtolower($new_status) == 'completed') {
+            $note_type = 'Completion';
+        } elseif (
+            strtolower($new_status) == 'in progress' &&
+            (
+                strtolower($old_status) == 'rework' ||
+                strtolower($old_status) == 'qc rework' ||
+                strtolower($old_status) == 'rejected'
+            )
+        ) {
+            $note_type = 'Rework';
+        }
+
+        $this->db->insert(
+            'production_task_notes',
+            array(
+                'task_id'     => $task_id,
+                'employee_id' => $employee_id,
+                'note_type'   => $note_type,
+                'note'        => $remarks,
+                'created_at'  => $now
+            )
+        );
+    }
+
+    $this->db->trans_complete();
+
+    if ($this->db->trans_status() === false) {
+        return array(
+            'status'  => false,
+            'message' => 'Database error while updating task.'
+        );
+    }
+
+    return array(
+        'status'  => true,
+        'message' => 'Task status updated successfully.'
+    );
+}
+
+
+/* =========================================================
+ * INSERT BENDING EMPLOYEE NOTE
+ * ========================================================= */
+public function insert_bending_employee_note($data)
+{
+    if (
+        empty($data['task_id']) ||
+        empty($data['employee_id']) ||
+        empty($data['note'])
+    ) {
+        return array(
+            'status'  => false,
+            'message' => 'Invalid note data.'
+        );
+    }
+
+    /*
+     * Verify employee is actually Bending Employee.
+     */
+    $employee = $this->get_bending_employee(
+        (int) $data['employee_id']
+    );
+
+    if (!$employee) {
+        return array(
+            'status'  => false,
+            'message' => 'Invalid Bending employee.'
+        );
+    }
+
+    /*
+     * Verify task belongs to employee.
+     */
+    $task = $this->get_bending_task_for_employee(
+        (int) $data['task_id'],
+        (int) $data['employee_id']
+    );
+
+    if (!$task) {
+        return array(
+            'status'  => false,
+            'message' => 'Task is not assigned to this employee.'
+        );
+    }
+
+    $this->db->insert(
+        'production_task_notes',
+        $data
+    );
+
+    if ($this->db->affected_rows() <= 0) {
+        return array(
+            'status'  => false,
+            'message' => 'Unable to save note.'
+        );
+    }
+
+    return array(
+        'status'  => true,
+        'message' => 'Work note saved successfully.'
+    );
+}
+
+
+/* =========================================================
+ * GET BENDING EMPLOYEE STATUS HISTORY
+ * ========================================================= */
+public function get_bending_employee_status_history($task_id)
+{
+    $this->db->select("
+        h.task_id,
+        h.old_status,
+        h.new_status,
+        h.remarks,
+        h.changed_at
+    ", false);
+
+    $this->db->from(
+        'production_task_status_history h'
+    );
+
+    $this->db->where(
+        'h.task_id',
+        (int) $task_id
+    );
+
+    $this->db->order_by(
+        'h.changed_at',
+        'DESC'
+    );
+
+    return $this->db->get()->result_array();
+}
+
+
+/* =========================================================
+ * GET BENDING EMPLOYEE TIMELINE
+ * ========================================================= */
+public function get_bending_employee_timeline($task_id)
+{
+    $timeline = array();
+
+    $task_id = (int) $task_id;
+
+    if (!$task_id) {
+        return $timeline;
+    }
+
+    /*
+     * -----------------------------------------------------
+     * STATUS HISTORY
+     * -----------------------------------------------------
+     */
+    $this->db->select("
+        'status' AS entry_type,
+        h.task_id,
+        h.old_status AS from_status,
+        h.new_status AS to_status,
+        h.remarks AS note,
+        h.changed_at AS created_at,
+        CAST(NULL AS CHAR) AS note_type,
+        CAST(NULL AS CHAR) AS employee_name,
+        CAST(NULL AS CHAR) AS added_by_role
+    ", false);
+
+    $this->db->from(
+        'production_task_status_history h'
+    );
+
+    $this->db->where(
+        'h.task_id',
+        $task_id
+    );
+
+    $history = $this->db->get()->result();
+
+    foreach ($history as $row) {
+        $timeline[] = $row;
+    }
+
+
+    /*
+     * -----------------------------------------------------
+     * WORK NOTES
+     * -----------------------------------------------------
+     */
+    $this->db->select("
+        'note' AS entry_type,
+        n.task_id,
+        CAST(NULL AS CHAR) AS from_status,
+        CAST(NULL AS CHAR) AS to_status,
+        n.note,
+        n.created_at,
+        n.note_type,
+        em.employee_name,
+
+        CASE
+            WHEN em.designation_id = 20 THEN 'Supervisor'
+            WHEN em.designation_id = 21 THEN 'Employee'
+            ELSE 'Employee'
+        END AS added_by_role
+    ", false);
+
+    $this->db->from(
+        'production_task_notes n'
+    );
+
+    $this->db->join(
+        'employee_master em',
+        'em.employee_id = n.employee_id',
+        'left'
+    );
+
+    $this->db->where(
+        'n.task_id',
+        $task_id
+    );
+
+    $notes = $this->db->get()->result();
+
+    foreach ($notes as $row) {
+        $timeline[] = $row;
+    }
+
+
+    /*
+     * -----------------------------------------------------
+     * SORT CHRONOLOGICALLY
+     * -----------------------------------------------------
+     */
+    usort(
+        $timeline,
+        function ($a, $b) {
+
+            $timeA = !empty($a->created_at)
+                ? strtotime($a->created_at)
+                : 0;
+
+            $timeB = !empty($b->created_at)
+                ? strtotime($b->created_at)
+                : 0;
+
+            if ($timeA == $timeB) {
+                return 0;
+            }
+
+            return ($timeA < $timeB) ? -1 : 1;
+        }
+    );
+
+    return $timeline;
+}
+/*
+public function get_bending_supervisor_tasks()
+{
+    $this->db->select("
+        pt.task_id,
+        pt.job_order_id,
+        pt.sales_order_id,
+        pt.sales_order_product_id,
+        pt.department_id,
+        pt.task_description,
+        pt.quantity,
+        pt.assigned_employee_id,
+        pt.assigned_by,
+        pt.priority,
+        pt.status,
+        pt.remarks,
+        pt.started_at,
+        pt.completed_at,
+        pt.created_at,
+        pt.updated_at,
+
+        jo.job_order_no,
+        jo.order_no,
+
+        som.so_code,
+
+        sp.product_id,
+        sp.quantity AS ordered_quantity,
+
+        im.item_name AS product_name,
+        im.item_code,
+
+        em.employee_name,
+        em.uid_number
+
+    ", false);
+
+    $this->db->from('production_tasks pt');
+
+    $this->db->join(
+        'job_order jo',
+        'jo.job_order_id = pt.job_order_id',
+        'left'
+    );
+
+    $this->db->join(
+        'sales_order_master som',
+        'som.so_id = pt.sales_order_id',
+        'left'
+    );
+
+    $this->db->join(
+        'sales_order_products sp',
+        'sp.product_table_id = pt.sales_order_product_id',
+        'left'
+    );
+
+    $this->db->join(
+        'item_master im',
+        'im.item_id = sp.product_id',
+        'left'
+    );
+
+    $this->db->join(
+        'employee_master em',
+        'em.employee_id = pt.assigned_employee_id',
+        'left'
+    );
+
+   
+    $this->db->where('pt.department_id', 10);
+
+    $this->db->order_by('pt.created_at', 'DESC');
+
+    return $this->db->get()->result_array();
+}
+ */
+
+/* =========================================================
+ * BENDING SUPERVISOR V2
+ * NEW FUNCTIONS ONLY
+ *
+ * Existing Bending functions are NOT modified.
+ *
+ * Bending Department = 10
+ * Polishing Department = 11
+ * ========================================================= */
+
+
+/**
+ * Get Bending Supervisor task list
+ *
+ * Gets tasks currently belonging to Bending.
+ *
+ * CNC creates these tasks with:
+ * department_id = 10
+ * assigned_employee_id = NULL
+ */
+public function get_bending_supervisor_tasks_v2()
+{
+    $this->db->select("
+        pt.task_id,
+        pt.job_order_id,
+        pt.sales_order_id,
+        pt.sales_order_product_id,
+        pt.department_id,
+        pt.task_description,
+        pt.quantity,
+        pt.assigned_employee_id,
+        pt.assigned_by,
+        pt.priority,
+        pt.status,
+        pt.remarks,
+        pt.started_at,
+        pt.completed_at,
+        pt.created_at,
+        pt.updated_at,
+
+        jo.job_order_no,
+        jo.order_no,
+
+        som.so_code,
+
+        sp.product_id,
+        sp.quantity AS ordered_quantity,
+
+        im.product_name AS product_name,
+        im.product_code,
+
+        em.employee_name AS assigned_employee_name,
+        em.uid_number AS assigned_employee_uid
+
+    ", false);
+
+    $this->db->from('production_tasks pt');
+
+    $this->db->join(
+        'job_order jo',
+        'jo.job_order_id = pt.job_order_id',
+        'left'
+    );
+
+    $this->db->join(
+        'sales_order_master som',
+        'som.so_id = pt.sales_order_id',
+        'left'
+    );
+
+    $this->db->join(
+        'sales_order_products sp',
+        'sp.product_table_id = pt.sales_order_product_id',
+        'left'
+    );
+
+    $this->db->join(
+        'item_master im',
+        'im.product_id = sp.product_id',
+        'left'
+    );
+
+    $this->db->join(
+        'employee_master em',
+        'em.employee_id = pt.assigned_employee_id',
+        'left'
+    );
+
+    /*
+     * Bending department.
+     */
+    $this->db->where(
+        'pt.department_id',
+        10
+    );
+
+    $this->db->order_by(
+        'pt.task_id',
+        'DESC'
+    );
+
+    return $this->db
+        ->get()
+        ->result_array();
+}
+
+
+/**
+ * Get Bending employees V2
+ *
+ * Only active Bending Employees.
+ *
+ * Department = 10
+ * Designation = 21
+ */
+public function get_bending_employees_v2()
+{
+    $this->db->select("
+        employee_id,
+        employee_name,
+        uid_number,
+        department_id,
+        designation_id
+    ");
+
+    $this->db->from('employee_master');
+
+    $this->db->where(
+        'department_id',
+        10
+    );
+
+    $this->db->where(
+        'designation_id',
+        21
+    );
+
+    $this->db->where(
+        'active',
+        1
+    );
+
+    $this->db->order_by(
+        'employee_name',
+        'ASC'
+    );
+
+    return $this->db
+        ->get()
+        ->result_array();
+}
+
+
+/**
+ * Get one Bending task V2
+ */
+public function get_bending_task_v2($task_id)
+{
+    $task_id = (int) $task_id;
+
+    if (!$task_id) {
+        return null;
+    }
+
+    $this->db->select("
+        pt.*,
+
+        jo.job_order_no,
+        jo.order_no,
+
+        som.so_code,
+
+        sp.product_id,
+        sp.quantity AS ordered_quantity,
+
+        im.product_name AS product_name,
+        im.product_code,
+
+        em.employee_name AS assigned_employee_name,
+        em.uid_number AS assigned_employee_uid
+
+    ", false);
+
+    $this->db->from('production_tasks pt');
+
+    $this->db->join(
+        'job_order jo',
+        'jo.job_order_id = pt.job_order_id',
+        'left'
+    );
+
+    $this->db->join(
+        'sales_order_master som',
+        'som.so_id = pt.sales_order_id',
+        'left'
+    );
+
+    $this->db->join(
+        'sales_order_products sp',
+        'sp.product_table_id = pt.sales_order_product_id',
+        'left'
+    );
+
+    $this->db->join(
+        'item_master im',
+        'im.product_id = sp.product_id',
+        'left'
+    );
+
+    $this->db->join(
+        'employee_master em',
+        'em.employee_id = pt.assigned_employee_id',
+        'left'
+    );
+
+    $this->db->where(
+        'pt.task_id',
+        $task_id
+    );
+
+    $this->db->where(
+        'pt.department_id',
+        10
+    );
+
+    return $this->db
+        ->get()
+        ->row();
+}
+
+
+/**
+ * Assign / Reassign Bending employee V2
+ *
+ */
+public function assign_bending_employee_v2(
+    $task_id,
+    $employee_id,
+    $supervisor_employee_id
+) {
+    $task_id               = (int) $task_id;
+    $employee_id           = (int) $employee_id;
+    $supervisor_employee_id = (int) $supervisor_employee_id;
+
+    if (
+        !$task_id ||
+        !$employee_id ||
+        !$supervisor_employee_id
+    ) {
+        return array(
+            'status'  => false,
+            'message' => 'Invalid assignment data.'
+        );
+    }
+
+    /*
+     * Verify employee.
+     */
+    $employee = $this->db
+        ->select("
+            employee_id,
+            employee_name,
+            uid_number,
+            department_id,
+            designation_id,
+            active
+        ")
+        ->from('employee_master')
+        ->where(
+            'employee_id',
+            $employee_id
+        )
+        ->where(
+            'department_id',
+            10
+        )
+        ->where(
+            'designation_id',
+            21
+        )
+        ->where(
+            'active',
+            1
+        )
+        ->get()
+        ->row();
+
+    if (!$employee) {
+        return array(
+            'status'  => false,
+            'message' => 'Invalid Bending employee.'
+        );
+    }
+
+    /*
+     * Verify task belongs to Bending.
+     */
+    $task = $this->db
+        ->select('*')
+        ->from('production_tasks')
+        ->where(
+            'task_id',
+            $task_id
+        )
+        ->where(
+            'department_id',
+            10
+        )
+        ->get()
+        ->row();
+
+    if (!$task) {
+        return array(
+            'status'  => false,
+            'message' => 'Bending task not found.'
+        );
+    }
+
+    $old_employee_id = (int) $task->assigned_employee_id;
+
+    $this->db->trans_begin();
+
+    /*
+     * Assign employee.
+     */
+    $this->db
+        ->where(
+            'task_id',
+            $task_id
+        )
+        ->where(
+            'department_id',
+            10
+        )
+        ->update(
+            'production_tasks',
+            array(
+                'assigned_employee_id' => $employee_id,
+                'updated_at'           => date('Y-m-d H:i:s')
+            )
+        );
+
+    if ($this->db->trans_status() === false) {
+
+        $this->db->trans_rollback();
+
+        return array(
+            'status'  => false,
+            'message' => 'Unable to assign employee.'
+        );
+    }
+
+    /*
+     * Save supervisor note.
+     */
+    $note = ($old_employee_id > 0)
+        ? 'Task reassigned to ' . $employee->employee_name . '.'
+        : 'Task assigned to ' . $employee->employee_name . '.';
+
+    $this->db->insert(
+        'production_task_notes',
+        array(
+            'task_id'       => $task_id,
+            'employee_id'   => $supervisor_employee_id,
+            'note_type'     => 'Assignment',
+            'note'          => $note,
+            'added_by_role' => 'Supervisor',
+            'created_at'    => date('Y-m-d H:i:s')
+        )
+    );
+
+    if ($this->db->trans_status() === false) {
+
+        $this->db->trans_rollback();
+
+        return array(
+            'status'  => false,
+            'message' => 'Employee assigned but note could not be saved.'
+        );
+    }
+
+    $this->db->trans_commit();
+
+    return array(
+        'status'  => true,
+        'message' => (
+            $old_employee_id > 0
+                ? 'Bending task reassigned successfully.'
+                : 'Bending task assigned successfully.'
+        )
+    );
+}
+
+
+/**
+ * Approve Bending task and hand over to Polishing.
+ *
+ * Bending = 10
+ * Polishing = 11
+ *
+ * IMPORTANT:
+ * No employee is assigned in Polishing.
+ */
+public function bending_supervisor_approve_and_handover_v2(
+    $task_id,
+    $supervisor_employee_id,
+    $next_department_id,
+    $remarks
+) {
+    $task_id               = (int) $task_id;
+    $supervisor_employee_id = (int) $supervisor_employee_id;
+    $next_department_id    = (int) $next_department_id;
+
+    $remarks = trim($remarks);
+
+    if (
+        !$task_id ||
+        !$supervisor_employee_id
+    ) {
+        return array(
+            'status'  => false,
+            'message' => 'Invalid approval data.'
+        );
+    }
+
+    if ($next_department_id !== 11) {
+        return array(
+            'status'  => false,
+            'message' => 'Bending must hand over to Polishing.'
+        );
+    }
+
+    if ($remarks === '') {
+        return array(
+            'status'  => false,
+            'message' => 'Handover remarks are required.'
+        );
+    }
+
+    /*
+     * Get current Bending task.
+     */
+    $task = $this->db
+        ->select('*')
+        ->from('production_tasks')
+        ->where(
+            'task_id',
+            $task_id
+        )
+        ->where(
+            'department_id',
+            10
+        )
+        ->get()
+        ->row();
+
+    if (!$task) {
+        return array(
+            'status'  => false,
+            'message' => 'Bending task not found.'
+        );
+    }
+
+    $current_status = strtolower(
+        trim($task->status)
+    );
+
+    /*
+     * Supervisor can approve only completed/review task.
+     */
+    if (
+        $current_status !== 'completed' &&
+        $current_status !== 'supervisor review' &&
+        $current_status !== 'review'
+    ) {
+        return array(
+            'status'  => false,
+            'message' => 'Only completed/review tasks can be handed over.'
+        );
+    }
+
+    /*
+     * Prevent duplicate handover.
+     */
+    $existing = $this->db
+        ->where(
+            'from_task_id',
+            $task_id
+        )
+        ->where(
+            'to_department_id',
+            11
+        )
+        ->where(
+            'approval_status',
+            'Approved'
+        )
+        ->get(
+            'production_task_handover'
+        )
+        ->row();
+
+    if ($existing) {
+        return array(
+            'status'  => false,
+            'message' => 'This task has already been handed over to Polishing.'
+        );
+    }
+
+    $now = date('Y-m-d H:i:s');
+
+    $this->db->trans_begin();
+
+    /*
+     * Mark current Bending task approved.
+     */
+    $this->db
+        ->where(
+            'task_id',
+            $task_id
+        )
+        ->where(
+            'department_id',
+            10
+        )
+        ->update(
+            'production_tasks',
+            array(
+                'status'     => 'Approved',
+                'updated_at' => $now
+            )
+        );
+
+    /*
+     * Status history.
+     */
+    $this->db->insert(
+        'production_task_status_history',
+        array(
+            'task_id'    => $task_id,
+            'old_status' => $task->status,
+            'new_status' => 'Approved',
+            'remarks'    => $remarks,
+            'changed_by' => $supervisor_employee_id,
+            'changed_at' => $now
+        )
+    );
+
+    /*
+     * Create new Polishing task.
+     *
+     * assigned_employee_id MUST remain NULL.
+     */
+    $polishing_task = array(
+        'job_order_id'           => $task->job_order_id,
+        'sales_order_id'         => $task->sales_order_id,
+        'sales_order_product_id' => $task->sales_order_product_id,
+        'department_id'          => 11,
+        'task_description'       => $task->task_description,
+        'quantity'               => $task->quantity,
+        'assigned_employee_id'   => null,
+        'assigned_by'            => $supervisor_employee_id,
+        'priority'               => $task->priority,
+        'status'                 => 'Pending',
+        'remarks'                => $remarks,
+        'created_at'             => $now
+    );
+
+    $this->db->insert(
+        'production_tasks',
+        $polishing_task
+    );
+
+    $polishing_task_id =
+        $this->db->insert_id();
+
+    if (
+        !$polishing_task_id ||
+        $this->db->trans_status() === false
+    ) {
+        $this->db->trans_rollback();
+
+        return array(
+            'status'  => false,
+            'message' => 'Unable to create Polishing task.'
+        );
+    }
+
+    /*
+     * Polishing initial status.
+     */
+    $this->db->insert(
+        'production_task_status_history',
+        array(
+            'task_id'    => $polishing_task_id,
+            'old_status' => null,
+            'new_status' => 'Pending',
+            'remarks'    => 'Task received from Bending.',
+            'changed_by' => $supervisor_employee_id,
+            'changed_at' => $now
+        )
+    );
+
+    /*
+     * Handover record.
+     */
+    $this->db->insert(
+        'production_task_handover',
+        array(
+            'from_task_id'       => $task_id,
+            'from_department_id' => 10,
+            'to_department_id'   => 11,
+            'approved_by'        => $supervisor_employee_id,
+            'approval_status'    => 'Approved',
+            'remarks'            => $remarks,
+            'handed_over_at'     => $now
+        )
+    );
+
+    /*
+     * Supervisor note.
+     */
+    $this->db->insert(
+        'production_task_notes',
+        array(
+            'task_id'       => $task_id,
+            'employee_id'   => $supervisor_employee_id,
+            'note_type'     => 'Handover',
+            'note'          => $remarks,
+            'added_by_role' => 'Supervisor',
+            'created_at'    => $now
+        )
+    );
+
+    if ($this->db->trans_status() === false) {
+
+        $this->db->trans_rollback();
+
+        return array(
+            'status'  => false,
+            'message' => 'Unable to complete Bending handover.'
+        );
+    }
+
+    $this->db->trans_commit();
+
+    return array(
+        'status'            => true,
+        'message'           => 'Bending task approved and handed over to Polishing successfully.',
+        'polishing_task_id' => $polishing_task_id
+    );
+}
+
+
+/**
+ * Send Bending task for rework.
+ *
+ * department_id = 10
+ *
+ * Assigned employee remains unchanged.
+ */
+public function bending_supervisor_rework_v2(
+    $task_id,
+    $supervisor_employee_id,
+    $remarks
+) {
+    $task_id                = (int) $task_id;
+    $supervisor_employee_id = (int) $supervisor_employee_id;
+
+    $remarks = trim($remarks);
+
+    if (
+        !$task_id ||
+        !$supervisor_employee_id
+    ) {
+        return array(
+            'status'  => false,
+            'message' => 'Invalid rework data.'
+        );
+    }
+
+    if ($remarks === '') {
+        return array(
+            'status'  => false,
+            'message' => 'Rework reason is required.'
+        );
+    }
+
+    $task = $this->db
+        ->select('*')
+        ->from('production_tasks')
+        ->where(
+            'task_id',
+            $task_id
+        )
+        ->where(
+            'department_id',
+            10
+        )
+        ->get()
+        ->row();
+
+    if (!$task) {
+        return array(
+            'status'  => false,
+            'message' => 'Bending task not found.'
+        );
+    }
+
+    $current_status = strtolower(
+        trim($task->status)
+    );
+
+    if (
+        $current_status !== 'completed' &&
+        $current_status !== 'supervisor review' &&
+        $current_status !== 'review'
+    ) {
+        return array(
+            'status'  => false,
+            'message' => 'Only completed/review tasks can be sent for rework.'
+        );
+    }
+
+    $now = date('Y-m-d H:i:s');
+
+    $this->db->trans_begin();
+
+    /*
+     * Keep department and employee unchanged.
+     */
+    $this->db
+        ->where(
+            'task_id',
+            $task_id
+        )
+        ->where(
+            'department_id',
+            10
+        )
+        ->update(
+            'production_tasks',
+            array(
+                'status'     => 'Rework',
+                'updated_at' => $now
+            )
+        );
+
+    /*
+     * Status history.
+     */
+    $this->db->insert(
+        'production_task_status_history',
+        array(
+            'task_id'    => $task_id,
+            'old_status' => $task->status,
+            'new_status' => 'Rework',
+            'remarks'    => $remarks,
+            'changed_by' => $supervisor_employee_id,
+            'changed_at' => $now
+        )
+    );
+
+    /*
+     * Rework handover record.
+     *
+     * Bending -> Bending
+     */
+    $this->db->insert(
+        'production_task_handover',
+        array(
+            'from_task_id'       => $task_id,
+            'from_department_id' => 10,
+            'to_department_id'   => 10,
+            'approved_by'        => $supervisor_employee_id,
+            'approval_status'    => 'Rework',
+            'remarks'            => $remarks,
+            'handed_over_at'     => $now
+        )
+    );
+
+    /*
+     * Supervisor rework note.
+     */
+    $this->db->insert(
+        'production_task_notes',
+        array(
+            'task_id'       => $task_id,
+            'employee_id'   => $supervisor_employee_id,
+            'note_type'     => 'Rework',
+            'note'          => $remarks,
+            'added_by_role' => 'Supervisor',
+            'created_at'    => $now
+        )
+    );
+
+    if ($this->db->trans_status() === false) {
+
+        $this->db->trans_rollback();
+
+        return array(
+            'status'  => false,
+            'message' => 'Unable to send task for rework.'
+        );
+    }
+
+    $this->db->trans_commit();
+
+    return array(
+        'status'  => true,
+        'message' => 'Bending task has been sent for rework.'
+    );
+}
+
+
+/**
+ * Insert Bending Supervisor note V2
+ */
+public function insert_bending_supervisor_note_v2(
+    $task_id,
+    $employee_id,
+    $note_type,
+    $note
+) {
+    $task_id     = (int) $task_id;
+    $employee_id = (int) $employee_id;
+
+    $note_type = trim($note_type);
+    $note      = trim($note);
+
+    if (
+        !$task_id ||
+        !$employee_id ||
+        $note === ''
+    ) {
+        return array(
+            'status'  => false,
+            'message' => 'Invalid note data.'
+        );
+    }
+
+    /*
+     * Verify supervisor employee.
+     */
+    $supervisor = $this->db
+        ->select("
+            employee_id, employee_name, department_id,
+            designation_id, active
+        ")
+        ->from('employee_master')
+        ->where(
+            'employee_id',
+            $employee_id
+        )
+        ->where(
+            'department_id',
+            10
+        )
+        ->where(
+            'designation_id',
+            20
+        )
+        ->where(
+            'active',
+            1
+        )
+        ->get()
+        ->row();
+
+    if (!$supervisor) {
+        return array(
+            'status'  => false,
+            'message' => 'Invalid Bending Supervisor.'
+        );
+    }
+
+    /*
+     * Verify Bending task.
+     */
+    $task = $this->db
+        ->where(
+            'task_id',
+            $task_id
+        )
+        ->where(
+            'department_id',
+            10
+        )
+        ->get(
+            'production_tasks'
+        )
+        ->row();
+
+    if (!$task) {
+        return array(
+            'status'  => false,
+            'message' => 'Bending task not found.'
+        );
+    }
+
+    $insert = array(
+        'task_id'       => $task_id,
+        'employee_id'   => $employee_id,
+        'note_type'     => ($note_type !== '' ? $note_type : 'General'),
+        'note'          => $note,
+        'added_by_role' => 'Supervisor',
+        'created_at'    => date('Y-m-d H:i:s')
+    );
+
+    $this->db->insert(
+        'production_task_notes',
+        $insert
+    );
+
+    if ($this->db->affected_rows() <= 0) {
+        return array(
+            'status'  => false,
+            'message' => 'Unable to save supervisor note.'
+        );
+    }
+
+    return array(
+        'status'  => true,
+        'message' => 'Supervisor note saved successfully.'
+    );
+}
+
+
+/**
+ * Get Bending Supervisor timeline V2
+ */
+public function get_bending_supervisor_timeline_v2(
+    $task_id
+) {
+    $task_id = (int) $task_id;
+
+    if (!$task_id) {
+        return array();
+    }
+
+    $timeline = array();
+
+    /*
+     * Status history
+     */
+    $this->db->select("
+        'status' AS entry_type,
+        h.task_id,  h.old_status AS from_status,  h.new_status AS to_status,
+        h.remarks AS note, h.changed_at AS created_at,
+        CAST(NULL AS CHAR) AS note_type, CAST(NULL AS CHAR) AS employee_name,
+        CAST(NULL AS CHAR) AS added_by_role", false);
+
+    $this->db->from(
+        'production_task_status_history h'
+    );
+
+    $this->db->where(
+        'h.task_id',
+        $task_id
+    );
+
+    $history = $this->db
+        ->get()
+        ->result();
+
+    foreach ($history as $row) {
+        $timeline[] = $row;
+    }
+
+    /*
+     * Notes
+     */
+    $this->db->select("
+        'note' AS entry_type,
+        n.task_id,
+        CAST(NULL AS CHAR) AS from_status,
+        CAST(NULL AS CHAR) AS to_status,
+        n.note,
+        n.created_at,
+        n.note_type,
+        em.employee_name,
+
+        CASE
+            WHEN em.designation_id = 20
+                THEN 'Supervisor'
+            WHEN em.designation_id = 21
+                THEN 'Employee'
+            ELSE
+                COALESCE(n.added_by_role, 'Employee')
+        END AS added_by_role
+
+    ", false);
+
+    $this->db->from(
+        'production_task_notes n'
+    );
+
+    $this->db->join(
+        'employee_master em',
+        'em.employee_id = n.employee_id',
+        'left'
+    );
+
+    $this->db->where(
+        'n.task_id',
+        $task_id
+    );
+
+    $notes = $this->db
+        ->get()
+        ->result();
+
+    foreach ($notes as $row) {
+        $timeline[] = $row;
+    }
+
+    /*
+     * Sort chronologically.
+     */
+    usort(
+        $timeline,
+        function ($a, $b) {
+
+            $timeA = !empty($a->created_at)
+                ? strtotime($a->created_at)
+                : 0;
+
+            $timeB = !empty($b->created_at)
+                ? strtotime($b->created_at)
+                : 0;
+
+            if ($timeA == $timeB) {
+                return 0;
+            }
+
+            return ($timeA < $timeB)
+                ? -1
+                : 1;
+        }
+    );
+
+    return $timeline;
+}
+
+
+/**
+ * Get latest handover for Bending task V2
+ */
+public function get_bending_task_handover_v2(
+    $task_id
+) {
+    $task_id = (int) $task_id;
+
+    if (!$task_id) {
+        return null;
+    }
+
+    return $this->db
+        ->where(
+            'from_task_id',
+            $task_id
+        )
+        ->order_by(
+            'handover_id',
+            'DESC'
+        )
+        ->limit(1)
+        ->get(
+            'production_task_handover'
+        )
+        ->row();
+}
+/**
+ * POLISHING
+ */
+public function get_polishing_supervisor_tasks_v2()
+{
+    $this->db->select("
+        pt.task_id, pt.job_order_id, pt.sales_order_id, pt.sales_order_product_id,
+        pt.department_id,pt.task_description, pt.quantity,pt.assigned_employee_id,
+        pt.assigned_by, pt.priority, pt.status, pt.remarks, pt.started_at,pt.completed_at,
+        pt.created_at,pt.updated_at,jo.job_order_no, jo.order_no,
+        som.so_code, sp.product_id, sp.quantity AS ordered_quantity,
+        im.product_name AS product_name,
+        im.product_code,
+
+        em.employee_name AS assigned_employee_name,
+        em.uid_number AS assigned_employee_uid
+
+    ", false);
+
+    $this->db->from('production_tasks pt');
+
+    $this->db->join(
+        'job_order jo',
+        'jo.job_order_id = pt.job_order_id',
+        'left'
+    );
+
+    $this->db->join(
+        'sales_order_master som',
+        'som.so_id = pt.sales_order_id',
+        'left'
+    );
+
+    $this->db->join(
+        'sales_order_products sp',
+        'sp.product_table_id = pt.sales_order_product_id',
+        'left'
+    );
+
+    $this->db->join(
+        'item_master im',
+        'im.product_id = sp.product_id',
+        'left'
+    );
+
+    $this->db->join(
+        'employee_master em',
+        'em.employee_id = pt.assigned_employee_id',
+        'left'
+    );
+
+    /*
+     * Polishing department.
+     */
+    $this->db->where(
+        'pt.department_id',
+        11
+    );
+
+    $this->db->order_by(
+        'pt.task_id',
+        'DESC'
+    );
+
+    return $this->db
+        ->get()
+        ->result_array();
+}
+
+
+/**
+ * Get Polishing employees V2
+ *
+ * Only active Polishing Employees.
+ *
+ * Department = 11
+ * Designation = 23
+ */
+public function get_polishing_employees_v2()
+{
+    $this->db->select("
+        employee_id,
+        employee_name,
+        uid_number,
+        department_id,
+        designation_id
+    ");
+
+    $this->db->from('employee_master');
+
+    $this->db->where(
+        'department_id',
+        11
+    );
+
+    $this->db->where(
+        'designation_id',
+        23
+    );
+
+    $this->db->where(
+        'active',
+        1
+    );
+
+    $this->db->order_by(
+        'employee_name',
+        'ASC'
+    );
+
+    return $this->db
+        ->get()
+        ->result_array();
+}
+
+
+/**
+ * Get one Polishing task V2
+ */
+public function get_polishing_task_v2($task_id)
+{
+    $task_id = (int) $task_id;
+
+    if (!$task_id) {
+        return null;
+    }
+
+    $this->db->select("
+        pt.*,
+
+        jo.job_order_no, jo.order_no,
+        som.so_code,
+        sp.product_id, sp.quantity AS ordered_quantity,
+
+        im.product_name AS product_name,
+        im.product_code,
+
+        em.employee_name AS assigned_employee_name,
+        em.uid_number AS assigned_employee_uid
+
+    ", false);
+
+    $this->db->from('production_tasks pt');
+
+    $this->db->join(
+        'job_order jo',
+        'jo.job_order_id = pt.job_order_id',
+        'left'
+    );
+
+    $this->db->join(
+        'sales_order_master som',
+        'som.so_id = pt.sales_order_id',
+        'left'
+    );
+
+    $this->db->join(
+        'sales_order_products sp',
+        'sp.product_table_id = pt.sales_order_product_id',
+        'left'
+    );
+
+    $this->db->join(
+        'item_master im',
+        'im.product_id = sp.product_id',
+        'left'
+    );
+
+    $this->db->join(
+        'employee_master em',
+        'em.employee_id = pt.assigned_employee_id',
+        'left'
+    );
+
+    $this->db->where(
+        'pt.task_id',
+        $task_id
+    );
+
+    $this->db->where(
+        'pt.department_id',
+        11
+    );
+
+    return $this->db
+        ->get()
+        ->row();
+}
+
+
+/**
+ * Assign / Reassign Polishing employee V2
+ *
+ */
+public function assign_polishing_employee_v2(
+    $task_id,
+    $employee_id,
+    $supervisor_employee_id
+) {
+    $task_id               = (int) $task_id;
+    $employee_id           = (int) $employee_id;
+    $supervisor_employee_id = (int) $supervisor_employee_id;
+
+    if (
+        !$task_id ||
+        !$employee_id ||
+        !$supervisor_employee_id
+    ) {
+        return array(
+            'status'  => false,
+            'message' => 'Invalid assignment data.'
+        );
+    }
+
+    /*
+     * Verify employee.
+     */
+    $employee = $this->db
+        ->select("
+            employee_id,
+            employee_name,
+            uid_number,
+            department_id,
+            designation_id,
+            active
+        ")
+        ->from('employee_master')
+        ->where(
+            'employee_id',
+            $employee_id
+        )
+        ->where(
+            'department_id',
+            11
+        )
+        ->where(
+            'designation_id',
+            23
+        )
+        ->where(
+            'active',
+            1
+        )
+        ->get()
+        ->row();
+
+    if (!$employee) {
+        return array(
+            'status'  => false,
+            'message' => 'Invalid Polishing employee.'
+        );
+    }
+
+    /*
+     * Verify task belongs to Polishing.
+     */
+    $task = $this->db
+        ->select('*')
+        ->from('production_tasks')
+        ->where(
+            'task_id',
+            $task_id
+        )
+        ->where(
+            'department_id',
+            11
+        )
+        ->get()
+        ->row();
+
+    if (!$task) {
+        return array(
+            'status'  => false,
+            'message' => 'Polishing task not found.'
+        );
+    }
+
+    $old_employee_id = (int) $task->assigned_employee_id;
+
+    $this->db->trans_begin();
+
+    /*
+     * Assign employee.
+     */
+    $this->db
+        ->where(
+            'task_id',
+            $task_id
+        )
+        ->where(
+            'department_id',
+            11
+        )
+        ->update(
+            'production_tasks',
+            array(
+                'assigned_employee_id' => $employee_id,
+                'updated_at'           => date('Y-m-d H:i:s')
+            )
+        );
+
+    if ($this->db->trans_status() === false) {
+
+        $this->db->trans_rollback();
+
+        return array(
+            'status'  => false,
+            'message' => 'Unable to assign employee.'
+        );
+    }
+
+    /*
+     * Save supervisor note.
+     */
+    $note = ($old_employee_id > 0)
+        ? 'Task reassigned to ' . $employee->employee_name . '.'
+        : 'Task assigned to ' . $employee->employee_name . '.';
+
+    $this->db->insert(
+        'production_task_notes',
+        array(
+            'task_id'       => $task_id,
+            'employee_id'   => $supervisor_employee_id,
+            'note_type'     => 'Assignment',
+            'note'          => $note,
+            'added_by_role' => 'Supervisor',
+            'created_at'    => date('Y-m-d H:i:s')
+        )
+    );
+
+    if ($this->db->trans_status() === false) {
+
+        $this->db->trans_rollback();
+
+        return array(
+            'status'  => false,
+            'message' => 'Employee assigned but note could not be saved.'
+        );
+    }
+
+    $this->db->trans_commit();
+
+    return array(
+        'status'  => true,
+        'message' => (
+            $old_employee_id > 0
+                ? 'Polishing task reassigned successfully.'
+                : 'Polishing task assigned successfully.'
+        )
+    );
+}
+
+
+/**
+ * Approve Polishing task and hand over to Joining/Fixing
+ *
+ * Polishing = 11
+ * Joining/Fixing = 12
+ *
+ * IMPORTANT:
+ * No employee is assigned in Polishing.
+ */
+public function polishing_supervisor_approve_and_handover_v2(
+    $task_id,
+    $supervisor_employee_id,
+    $next_department_id,
+    $remarks
+) {
+    $task_id               = (int) $task_id;
+    $supervisor_employee_id = (int) $supervisor_employee_id;
+    $next_department_id    = (int) $next_department_id;
+
+    $remarks = trim($remarks);
+
+    if (
+        !$task_id ||
+        !$supervisor_employee_id
+    ) {
+        return array(
+            'status'  => false,
+            'message' => 'Invalid approval data.'
+        );
+    }
+
+    if ($next_department_id !== 12) {
+        return array(
+            'status'  => false,
+            'message' => 'Polishing must hand over to Joining/Fixing.'
+        );
+    }
+
+    if ($remarks === '') {
+        return array(
+            'status'  => false,
+            'message' => 'Handover remarks are required.'
+        );
+    }
+
+    /*
+     * Get current Polishing task.
+     */
+    $task = $this->db
+        ->select('*')
+        ->from('production_tasks')
+        ->where(
+            'task_id',
+            $task_id
+        )
+        ->where(
+            'department_id',
+            11
+        )
+        ->get()
+        ->row();
+
+    if (!$task) {
+        return array(
+            'status'  => false,
+            'message' => 'Polishing task not found.'
+        );
+    }
+
+    $current_status = strtolower(
+        trim($task->status)
+    );
+
+    /*
+     * Supervisor can approve only completed/review task.
+     */
+    if (
+        $current_status !== 'completed' &&
+        $current_status !== 'supervisor review' &&
+        $current_status !== 'review'
+    ) {
+        return array(
+            'status'  => false,
+            'message' => 'Only completed/review tasks can be handed over.'
+        );
+    }
+
+    /*
+     * Prevent duplicate handover.
+     */
+    $existing = $this->db
+        ->where(
+            'from_task_id',
+            $task_id
+        )
+        ->where(
+            'to_department_id',
+            12
+        )
+        ->where(
+            'approval_status',
+            'Approved'
+        )
+        ->get(
+            'production_task_handover'
+        )
+        ->row();
+
+    if ($existing) {
+        return array(
+            'status'  => false,
+            'message' => 'This task has already been handed over to Polishing.'
+        );
+    }
+
+    $now = date('Y-m-d H:i:s');
+
+    $this->db->trans_begin();
+
+    /*
+     * Mark current Polishing task approved.
+     */
+    $this->db
+        ->where(
+            'task_id',
+            $task_id
+        )
+        ->where(
+            'department_id',
+            11
+        )
+        ->update(
+            'production_tasks',
+            array(
+                'status'     => 'Approved',
+                'updated_at' => $now
+            )
+        );
+
+    /*
+     * Status history.
+     */
+    $this->db->insert(
+        'production_task_status_history',
+        array(
+            'task_id'    => $task_id,
+            'old_status' => $task->status,
+            'new_status' => 'Approved',
+            'remarks'    => $remarks,
+            'changed_by' => $supervisor_employee_id,
+            'changed_at' => $now
+        )
+    );
+
+    /*
+     * Create new Polishing task.
+     *
+     * assigned_employee_id MUST remain NULL.
+     */
+    $polishing_task = array(
+        'job_order_id'           => $task->job_order_id,
+        'sales_order_id'         => $task->sales_order_id,
+        'sales_order_product_id' => $task->sales_order_product_id,
+        'department_id'          => 12,
+        'task_description'       => $task->task_description,
+        'quantity'               => $task->quantity,
+        'assigned_employee_id'   => null,
+        'assigned_by'            => $supervisor_employee_id,
+        'priority'               => $task->priority,
+        'status'                 => 'Pending',
+        'remarks'                => $remarks,
+        'created_at'             => $now
+    );
+
+    $this->db->insert(
+        'production_tasks',
+        $polishing_task
+    );
+
+    $polishing_task_id =
+        $this->db->insert_id();
+
+    if (
+        !$polishing_task_id ||
+        $this->db->trans_status() === false
+    ) {
+        $this->db->trans_rollback();
+
+        return array(
+            'status'  => false,
+            'message' => 'Unable to create Polishing task.'
+        );
+    }
+
+    /*
+     * Polishing initial status.
+     */
+    $this->db->insert(
+        'production_task_status_history',
+        array(
+            'task_id'    => $polishing_task_id,
+            'old_status' => null,
+            'new_status' => 'Pending',
+            'remarks'    => 'Task received from Polishing.',
+            'changed_by' => $supervisor_employee_id,
+            'changed_at' => $now
+        )
+    );
+
+    /*
+     * Handover record.
+     */
+    $this->db->insert(
+        'production_task_handover',
+        array(
+            'from_task_id'       => $task_id,
+            'from_department_id' => 11,
+            'to_department_id'   => 12,
+            'approved_by'        => $supervisor_employee_id,
+            'approval_status'    => 'Approved',
+            'remarks'            => $remarks,
+            'handed_over_at'     => $now
+        )
+    );
+
+    /*
+     * Supervisor note.
+     */
+    $this->db->insert(
+        'production_task_notes',
+        array(
+            'task_id'       => $task_id,
+            'employee_id'   => $supervisor_employee_id,
+            'note_type'     => 'Handover',
+            'note'          => $remarks,
+            'added_by_role' => 'Supervisor',
+            'created_at'    => $now
+        )
+    );
+
+    if ($this->db->trans_status() === false) {
+
+        $this->db->trans_rollback();
+
+        return array(
+            'status'  => false,
+            'message' => 'Unable to complete Polishing handover.'
+        );
+    }
+
+    $this->db->trans_commit();
+
+    return array(
+        'status'            => true,
+        'message'           => 'Polishing task approved and handed over to Polishing successfully.',
+        'polishing_task_id' => $polishing_task_id
+    );
+}
+
+
+/**
+ * Send Polishing task for rework.
+ *
+ * department_id = 11
+ *
+ * Assigned employee remains unchanged.
+ */
+public function polishing_supervisor_rework_v2(
+    $task_id,
+    $supervisor_employee_id,
+    $remarks
+) {
+    $task_id                = (int) $task_id;
+    $supervisor_employee_id = (int) $supervisor_employee_id;
+
+    $remarks = trim($remarks);
+
+    if (
+        !$task_id ||
+        !$supervisor_employee_id
+    ) {
+        return array(
+            'status'  => false,
+            'message' => 'Invalid rework data.'
+        );
+    }
+
+    if ($remarks === '') {
+        return array(
+            'status'  => false,
+            'message' => 'Rework reason is required.'
+        );
+    }
+
+    $task = $this->db
+        ->select('*')
+        ->from('production_tasks')
+        ->where(
+            'task_id',
+            $task_id
+        )
+        ->where(
+            'department_id',
+            11
+        )
+        ->get()
+        ->row();
+
+    if (!$task) {
+        return array(
+            'status'  => false,
+            'message' => 'Polishing task not found.'
+        );
+    }
+
+    $current_status = strtolower(
+        trim($task->status)
+    );
+
+    if (
+        $current_status !== 'completed' &&
+        $current_status !== 'supervisor review' &&
+        $current_status !== 'review'
+    ) {
+        return array(
+            'status'  => false,
+            'message' => 'Only completed/review tasks can be sent for rework.'
+        );
+    }
+
+    $now = date('Y-m-d H:i:s');
+
+    $this->db->trans_begin();
+
+    /*
+     * Keep department and employee unchanged.
+     */
+    $this->db
+        ->where(
+            'task_id',
+            $task_id
+        )
+        ->where(
+            'department_id',
+            11
+        )
+        ->update(
+            'production_tasks',
+            array(
+                'status'     => 'Rework',
+                'updated_at' => $now
+            )
+        );
+
+    /*
+     * Status history.
+     */
+    $this->db->insert(
+        'production_task_status_history',
+        array(
+            'task_id'    => $task_id,
+            'old_status' => $task->status,
+            'new_status' => 'Rework',
+            'remarks'    => $remarks,
+            'changed_by' => $supervisor_employee_id,
+            'changed_at' => $now
+        )
+    );
+
+    /*
+     * Rework handover record.
+     *
+     * Polishing -> Polishing
+     */
+    $this->db->insert(
+        'production_task_handover',
+        array(
+            'from_task_id'       => $task_id,
+            'from_department_id' => 11,
+            'to_department_id'   => 11,
+            'approved_by'        => $supervisor_employee_id,
+            'approval_status'    => 'Rework',
+            'remarks'            => $remarks,
+            'handed_over_at'     => $now
+        )
+    );
+
+    /*
+     * Supervisor rework note.
+     */
+    $this->db->insert(
+        'production_task_notes',
+        array(
+            'task_id'       => $task_id,
+            'employee_id'   => $supervisor_employee_id,
+            'note_type'     => 'Rework',
+            'note'          => $remarks,
+            'added_by_role' => 'Supervisor',
+            'created_at'    => $now
+        )
+    );
+
+    if ($this->db->trans_status() === false) {
+
+        $this->db->trans_rollback();
+
+        return array(
+            'status'  => false,
+            'message' => 'Unable to send task for rework.'
+        );
+    }
+
+    $this->db->trans_commit();
+
+    return array(
+        'status'  => true,
+        'message' => 'Polishing task has been sent for rework.'
+    );
+}
+
+
+/**
+ * Insert Polishing Supervisor note V2
+ */
+public function insert_polishing_supervisor_note_v2(
+    $task_id,
+    $employee_id,
+    $note_type,
+    $note
+) {
+    $task_id     = (int) $task_id;
+    $employee_id = (int) $employee_id;
+
+    $note_type = trim($note_type);
+    $note      = trim($note);
+
+    if (
+        !$task_id ||
+        !$employee_id ||
+        $note === ''
+    ) {
+        return array(
+            'status'  => false,
+            'message' => 'Invalid note data.'
+        );
+    }
+
+    /*
+     * Verify supervisor employee.
+     */
+    $supervisor = $this->db
+        ->select("
+            employee_id, employee_name, department_id,
+            designation_id, active
+        ")
+        ->from('employee_master')
+        ->where(
+            'employee_id',
+            $employee_id
+        )
+        ->where(
+            'department_id',
+            11
+        )
+        ->where(
+            'designation_id',
+            22
+        )
+        ->where(
+            'active',
+            1
+        )
+        ->get()
+        ->row();
+
+    if (!$supervisor) {
+        return array(
+            'status'  => false,
+            'message' => 'Invalid Polishing Supervisor.'
+        );
+    }
+
+    /*
+     * Verify Polishing task.
+     */
+    $task = $this->db
+        ->where(
+            'task_id',
+            $task_id
+        )
+        ->where(
+            'department_id',
+            11
+        )
+        ->get(
+            'production_tasks'
+        )
+        ->row();
+
+    if (!$task) {
+        return array(
+            'status'  => false,
+            'message' => 'Polishing task not found.'
+        );
+    }
+
+    $insert = array(
+        'task_id'       => $task_id,
+        'employee_id'   => $employee_id,
+        'note_type'     => ($note_type !== '' ? $note_type : 'General'),
+        'note'          => $note,
+        'added_by_role' => 'Supervisor',
+        'created_at'    => date('Y-m-d H:i:s')
+    );
+
+    $this->db->insert(
+        'production_task_notes',
+        $insert
+    );
+
+    if ($this->db->affected_rows() <= 0) {
+        return array(
+            'status'  => false,
+            'message' => 'Unable to save supervisor note.'
+        );
+    }
+
+    return array(
+        'status'  => true,
+        'message' => 'Supervisor note saved successfully.'
+    );
+}
+
+
+/**
+ * Get Polishing Supervisor timeline V2
+ */
+public function get_polishing_supervisor_timeline_v2(
+    $task_id
+) {
+    $task_id = (int) $task_id;
+
+    if (!$task_id) {
+        return array();
+    }
+
+    $timeline = array();
+
+    /*
+     * Status history
+     */
+    $this->db->select("
+        'status' AS entry_type,
+        h.task_id,  h.old_status AS from_status,  h.new_status AS to_status,
+        h.remarks AS note, h.changed_at AS created_at,
+        CAST(NULL AS CHAR) AS note_type, CAST(NULL AS CHAR) AS employee_name,
+        CAST(NULL AS CHAR) AS added_by_role", false);
+
+    $this->db->from(
+        'production_task_status_history h'
+    );
+
+    $this->db->where(
+        'h.task_id',
+        $task_id
+    );
+
+    $history = $this->db
+        ->get()
+        ->result();
+
+    foreach ($history as $row) {
+        $timeline[] = $row;
+    }
+
+    /*
+     * Notes
+     */
+    $this->db->select("
+        'note' AS entry_type,
+        n.task_id,
+        CAST(NULL AS CHAR) AS from_status,
+        CAST(NULL AS CHAR) AS to_status,
+        n.note,
+        n.created_at,
+        n.note_type,
+        em.employee_name,
+
+        CASE
+            WHEN em.designation_id = 22
+                THEN 'Supervisor'
+            WHEN em.designation_id = 23
+                THEN 'Employee'
+            ELSE
+                COALESCE(n.added_by_role, 'Employee')
+        END AS added_by_role
+
+    ", false);
+
+    $this->db->from(
+        'production_task_notes n'
+    );
+
+    $this->db->join(
+        'employee_master em',
+        'em.employee_id = n.employee_id',
+        'left'
+    );
+
+    $this->db->where(
+        'n.task_id',
+        $task_id
+    );
+
+    $notes = $this->db
+        ->get()
+        ->result();
+
+    foreach ($notes as $row) {
+        $timeline[] = $row;
+    }
+
+    /*
+     * Sort chronologically.
+     */
+    usort(
+        $timeline,
+        function ($a, $b) {
+
+            $timeA = !empty($a->created_at)
+                ? strtotime($a->created_at)
+                : 0;
+
+            $timeB = !empty($b->created_at)
+                ? strtotime($b->created_at)
+                : 0;
+
+            if ($timeA == $timeB) {
+                return 0;
+            }
+
+            return ($timeA < $timeB)
+                ? -1
+                : 1;
+        }
+    );
+
+    return $timeline;
+}
+
+
+/**
+ * Get latest handover for Polishing task V2
+ */
+public function get_polishing_task_handover_v2(
+    $task_id
+) {
+    $task_id = (int) $task_id;
+
+    if (!$task_id) {
+        return null;
+    }
+
+    return $this->db
+        ->where(
+            'from_task_id',
+            $task_id
+        )
+        ->order_by(
+            'handover_id',
+            'DESC'
+        )
+        ->limit(1)
+        ->get(
+            'production_task_handover'
+        )
+        ->row();
+}
+
+/* =========================================================
+ * POLISHING EMPLOYEE - V2
+ * ========================================================= */
+
+public function get_polishing_employee_v2($employee_id)
+{
+    return $this->db
+        ->select("employee_id, employee_name, uid_number, department_id, designation_id, active")
+        ->from("employee_master")
+        ->where("employee_id", (int)$employee_id)
+        ->where("department_id", 11)
+        ->where("designation_id", 23)
+        ->where("active", 1)
+        ->get()
+        ->row();
+}
+
+
+public function get_polishing_employee_tasks_v2($employee_id)
+{
+    $employee_id = (int) $employee_id;
+
+    if (!$employee_id) {
+        return array();
+    }
+
+    $this->db->select("
+        pt.task_id, pt.job_order_id, pt.sales_order_id,
+        pt.sales_order_product_id,pt.department_id, pt.task_description,
+        pt.quantity, pt.assigned_employee_id, pt.assigned_by,
+        pt.priority, pt.status, pt.remarks,pt.started_at, pt.completed_at,
+        pt.created_at,pt.updated_at,jo.job_order_no,jo.order_no,
+        som.so_code,sp.product_id,sp.quantity AS ordered_quantity,
+        im.product_name AS product_name,im.product_code, em.employee_name, em.uid_number
+    ", false);
+
+    $this->db->from('production_tasks pt');
+
+    $this->db->join(
+        'job_order jo',
+        'jo.job_order_id = pt.job_order_id',
+        'left'
+    );
+
+    $this->db->join(
+        'sales_order_master som',
+        'som.so_id = pt.sales_order_id',
+        'left'
+    );
+
+    $this->db->join(
+        'sales_order_products sp',
+        'sp.product_table_id = pt.sales_order_product_id',
+        'left'
+    );
+
+    $this->db->join(
+        'item_master im',
+        'im.product_id = sp.product_id',
+        'left'
+    );
+
+    $this->db->join(
+        'employee_master em',
+        'em.employee_id = pt.assigned_employee_id',
+        'left'
+    );
+
+    /*
+     * BENDING = 11
+     */
+    $this->db->where('pt.department_id', 11);
+
+    /*
+     * Only logged-in employee's tasks.
+     */
+    $this->db->where(
+        'pt.assigned_employee_id',
+        $employee_id
+    );
+
+    /*
+     * Do not show handed-over tasks.
+     */
+    $this->db->where_not_in(
+        'LOWER(pt.status)',
+        array(
+            'handed over',
+            'handover'
+        )
+    );
+
+    $this->db->order_by(
+        'pt.created_at',
+        'DESC'
+    );
+
+    return $this->db->get()->result_array();
+}
+
+
+/* =========================================================
+ * GET ONE BENDING TASK FOR EMPLOYEE
+ * ========================================================= */
+public function get_polishing_task_for_employee_v2(
+    $task_id,
+    $employee_id
+) {
+    $task_id     = (int) $task_id;
+    $employee_id = (int) $employee_id;
+
+    if (!$task_id || !$employee_id) {
+        return null;
+    }
+
+    $this->db->select("
+        pt.*,
+
+        jo.job_order_no,
+        jo.order_no,
+
+        som.so_code, sp.quantity AS ordered_quantity,
+        im.product_name AS product_name,
+        im.product_code,em.employee_name,
+        em.uid_number
+    ", false);
+
+    $this->db->from('production_tasks pt');
+    $this->db->join(
+        'job_order jo',
+        'jo.job_order_id = pt.job_order_id',
+        'left'
+    );
+    $this->db->join(
+        'sales_order_master som',
+        'som.so_id = pt.sales_order_id',
+        'left'
+    );
+    $this->db->join(
+        'sales_order_products sp',
+        'sp.product_table_id = pt.sales_order_product_id',
+        'left'
+    );
+    $this->db->join(
+        'item_master im',
+        'im.product_id = sp.product_id',
+        'left'
+    );
+    $this->db->join(
+        'employee_master em',
+        'em.employee_id = pt.assigned_employee_id',
+        'left'
+    );
+
+    $this->db->where(
+        'pt.task_id',
+        $task_id
+    );
+
+    $this->db->where(
+        'pt.department_id',
+        11
+    );
+
+    $this->db->where(
+        'pt.assigned_employee_id',
+        $employee_id
+    );
+
+    return $this->db->get()->row();
+}
+
+
+/* =========================================================
+ * UPDATE BENDING EMPLOYEE TASK STATUS
+ * ========================================================= */
+public function update_polishing_employee_task_status_v2(
+    $task_id,
+    $employee_id,
+    $new_status,
+    $remarks = ''
+) {
+    $task_id = (int)$task_id;
+    $employee_id = (int)$employee_id;
+    $new_status = trim($new_status);
+    $remarks = trim($remarks);
+
+    if (!$task_id || !$employee_id || $new_status === '') {
+        return array(
+            'status' => false,
+            'message' => 'Invalid task or employee.'
+        );
+    }
+
+    $task = $this->get_polishing_task_for_employee_v2(
+        $task_id,
+        $employee_id
+    );
+
+    if (!$task) {
+        return array(
+            'status' => false,
+            'message' => 'Task not found or not assigned to you.'
+        );
+    }
+
+    $old_status = trim($task->status);
+    $old = strtolower($old_status);
+    $new = strtolower($new_status);
+
+    $allowed = array(
+        'pending' => array('in progress'),
+        'in progress' => array('hold', 'completed'),
+        'hold' => array('in progress'),
+        'rework' => array('in progress'),
+        'qc rework' => array('in progress'),
+        'rejected' => array('in progress')
+    );
+
+    if (!isset($allowed[$old]) || !in_array($new, $allowed[$old])) {
+        return array(
+            'status' => false,
+            'message' => 'Invalid status transition from ' .
+                         $old_status . ' to ' . $new_status . '.'
+        );
+    }
+
+    if (($new === 'hold' || $new === 'completed') && $remarks === '') {
+        return array(
+            'status' => false,
+            'message' => 'Note is required for Hold/Complete.'
+        );
+    }
+
+    $now = date('Y-m-d H:i:s');
+
+    $update = array(
+        'status' => $new_status,
+        'updated_at' => $now
+    );
+
+    if ($new === 'in progress' && empty($task->started_at)) {
+        $update['started_at'] = $now;
+    }
+
+    if ($new === 'completed') {
+        $update['completed_at'] = $now;
+    }
+
+    $this->db->trans_begin();
+
+    $this->db
+        ->where('task_id', $task_id)
+        ->where('department_id', 11)
+        ->where('assigned_employee_id', $employee_id)
+        ->update('production_tasks', $update);
+
+    $this->db->insert('production_task_status_history', array(
+        'task_id' => $task_id,
+        'old_status' => $old_status,
+        'new_status' => $new_status,
+        'remarks' => $remarks,
+        'changed_by' => $employee_id,
+        'changed_at' => $now
+    ));
+
+    if ($remarks !== '') {
+        $note_type = 'General';
+
+        if ($new === 'hold') {
+            $note_type = 'Hold Reason';
+        } elseif ($new === 'completed') {
+            $note_type = 'Completion';
+        } elseif (
+            $new === 'in progress' &&
+            in_array($old, array('rework', 'qc rework', 'rejected'))
+        ) {
+            $note_type = 'Rework';
+        }
+
+        $this->db->insert('production_task_notes', array(
+            'task_id' => $task_id,
+            'employee_id' => $employee_id,
+            'note_type' => $note_type,
+            'note' => $remarks,
+            'added_by_role' => 'Employee',
+            'created_at' => $now
+        ));
+    }
+
+    if ($this->db->trans_status() === false) {
+        $this->db->trans_rollback();
+
+        return array(
+            'status' => false,
+            'message' => 'Database error while updating task.'
+        );
+    }
+
+    $this->db->trans_commit();
+
+    return array(
+        'status' => true,
+        'message' => 'Task status updated successfully.'
+    );
+}
+
+public function insert_polishing_employee_note_v2(
+    $task_id,
+    $employee_id,
+    $note_type,
+    $note
+) {
+    $task_id = (int)$task_id;
+    $employee_id = (int)$employee_id;
+    $note_type = trim($note_type);
+    $note = trim($note);
+
+    if (!$task_id || !$employee_id || $note === '') {
+        return array(
+            'status' => false,
+            'message' => 'Invalid note data.'
+        );
+    }
+
+    $employee = $this->get_polishing_employee_v2($employee_id);
+
+    if (!$employee) {
+        return array(
+            'status' => false,
+            'message' => 'Invalid Polishing employee.'
+        );
+    }
+
+    $task = $this->get_polishing_task_for_employee_v2(
+        $task_id,
+        $employee_id
+    );
+
+    if (!$task) {
+        return array(
+            'status' => false,
+            'message' => 'Task is not assigned to this employee.'
+        );
+    }
+
+    $insert = $this->db->insert('production_task_notes', array(
+        'task_id' => $task_id,
+        'employee_id' => $employee_id,
+        'note_type' => $note_type ?: 'General',
+        'note' => $note,
+        'added_by_role' => 'Employee',
+        'created_at' => date('Y-m-d H:i:s')
+    ));
+
+    return $insert
+        ? array('status' => true, 'message' => 'Work note saved successfully.')
+        : array('status' => false, 'message' => 'Unable to save note.');
+}
+
+public function get_polishing_employee_status_history_v2($task_id)
+{
+    $this->db->select("
+        h.task_id,
+        h.old_status,
+        h.new_status,
+        h.remarks,
+        h.changed_at
+    ", false);
+
+    $this->db->from(
+        'production_task_status_history h'
+    );
+
+    $this->db->where(
+        'h.task_id',
+        (int) $task_id
+    );
+
+    $this->db->order_by(
+        'h.changed_at',
+        'DESC'
+    );
+
+    return $this->db->get()->result_array();
+}
+
+
+public function get_polishing_employee_timeline_v2($task_id)
+{
+    $timeline = array();
+
+    $task_id = (int) $task_id;
+
+    if (!$task_id) {
+        return $timeline;
+    }
+
+   $this->db->select("
+        'status' AS entry_type,
+        h.task_id,
+        h.old_status AS from_status,
+        h.new_status AS to_status,
+        h.remarks AS note,
+        h.changed_at AS created_at,
+        CAST(NULL AS CHAR) AS note_type,
+        CAST(NULL AS CHAR) AS employee_name,
+        CAST(NULL AS CHAR) AS added_by_role
+    ", false);
+
+    $this->db->from(
+        'production_task_status_history h'
+    );
+
+    $this->db->where(
+        'h.task_id',
+        $task_id
+    );
+
+    $history = $this->db->get()->result();
+
+    foreach ($history as $row) {
+        $timeline[] = $row;
+    }
+
+    $this->db->select("
+        'note' AS entry_type,
+        n.task_id,
+        CAST(NULL AS CHAR) AS from_status,
+        CAST(NULL AS CHAR) AS to_status,
+        n.note,
+        n.created_at,
+        n.note_type,
+        em.employee_name,
+
+        CASE
+            WHEN em.designation_id = 22 THEN 'Supervisor'
+            WHEN em.designation_id = 23 THEN 'Employee'
+            ELSE 'Employee'
+        END AS added_by_role
+    ", false);
+
+    $this->db->from(
+        'production_task_notes n'
+    );
+
+    $this->db->join(
+        'employee_master em',
+        'em.employee_id = n.employee_id',
+        'left'
+    );
+
+    $this->db->where(
+        'n.task_id',
+        $task_id
+    );
+
+    $notes = $this->db->get()->result();
+
+    foreach ($notes as $row) {
+        $timeline[] = $row;
+    }
+
+    usort(
+        $timeline,
+        function ($a, $b) {
+
+            $timeA = !empty($a->created_at)
+                ? strtotime($a->created_at)
+                : 0;
+
+            $timeB = !empty($b->created_at)
+                ? strtotime($b->created_at)
+                : 0;
+
+            if ($timeA == $timeB) {
+                return 0;
+            }
+
+            return ($timeA < $timeB) ? -1 : 1;
+        }
+    );
+
+    return $timeline;
+}
+
 }

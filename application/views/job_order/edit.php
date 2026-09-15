@@ -1,353 +1,732 @@
-<link href="<?php echo base_url()."public/build/css/popup.css"; ?>" rel="stylesheet">
-<style>
-.center {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-#materialTable{
-    width:100% !important;
-}
-</style>
-<div class="row">
-    <div class="col-md-12 col-sm-12">
-        <div class="x_panel">
+<div class="container-fluid">
 
+    <div class="row">
+        <div class="col-md-12">
 
-                <form id="jobOrderEditForm">
+            <div class="x_panel">
 
-                    <input type="hidden" id="job_order_id" name="job_order_id" value="<?= $job_order->job_order_id ?>">
-                    <div class="box-body">
-                        <div class="row">
-                            <div class="col-md-2">
-                                <div class="form-group">
-                                   <label>
-                                        Job Order No
-                                    </label>
-                                    <input type="text" class="form-control" value="<?= $job_order->job_order_no ?>" readonly>
+               
+
+                <div class="x_content">
+
+                    <form id="jobOrderEditForm">
+
+                        <!-- Hidden Job Order ID -->
+                        <input type="hidden"
+                               name="job_order_id"
+                               id="job_order_id"
+                               value="<?= (int)$job_order->job_order_id ?>">
+
+                        <!-- ===================================================== -->
+                        <!-- JOB ORDER HEADER -->
+                        <!-- ===================================================== -->
+
+                        <div class="panel panel-default">
+
+                            <div class="panel-heading">
+                                <strong>Job Order Information</strong>
+                            </div>
+
+                            <div class="panel-body">
+
+                                <div class="row">
+
+                                    <!-- Job Order No -->
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+
+                                            <label>Job Order No</label>
+
+                                            <input type="text"
+                                                   class="form-control"
+                                                   value="<?= htmlspecialchars($job_order->job_order_no) ?>"
+                                                   readonly>
+
+                                        </div>
+                                    </div>
+
+                                    <!-- Order No -->
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+
+                                            <label>Order No</label>
+
+                                            <input type="text"
+                                                   class="form-control"
+                                                   name="order_no"
+                                                   id="order_no"
+                                                   value="<?= htmlspecialchars($job_order->order_no) ?>">
+
+                                        </div>
+                                    </div>
+
+                                    <!-- Order Date -->
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+
+                                            <label>Order Date</label>
+
+                                            <input type="date"
+                                                   class="form-control"
+                                                   name="order_date"
+                                                   id="order_date"
+                                                   value="<?= !empty($job_order->created_at) ? date('Y-m-d',  strtotime($job_order->created_at))  : '' ?>"
+                                                   readonly>
+
+                                        </div>
+                                    </div>
 
                                 </div>
 
-                            </div>
-                            <div class="col-md-3">
-                                <div class="form-group">
-                                   <label>
-                                        Order No
-                                    </label>
-                                    <input type="text" class="form-control" value="<?= $job_order->order_no ?>" readonly>
+                                <?php if (isset($job_order->job_order_type) && (int)$job_order->job_order_type === 0) : ?>
 
-                                </div>
+                                    <div class="row">
 
-                            </div>
-                            <div class="col-md-3">
+                                        <div class="col-md-4">
 
-                                <div class="form-group">
+                                            <div class="form-group">
 
-                                    <label>
-                                       Job Order Date
-                                    </label>
+                                                <label>Sales Order</label>
 
-                                    <input type="text"
-                                           class="form-control" id="order_date"
-                                           value="<?= date('Y-m-d', strtotime($job_order->order_date)) ?>"
-                                           readonly>
+                                                <input type="text"
+                                                    class="form-control"
+                                                    value="<?= !empty($sales_order->so_code)
+                                                        ? htmlspecialchars($sales_order->so_code)
+                                                        : '' ?>"
+                                                    readonly>
 
-                                </div>
+                                                <input type="hidden"
+                                                    name="sales_order_id"
+                                                    value="<?= !empty($job_order->fk_sales_order_id)
+                                                        ? (int)$job_order->fk_sales_order_id
+                                                        : '' ?>">
 
-                            </div>
-                            <div class="col-md-3">
-                                <a href="<?= base_url('index.php/Production/print_job_order/' .$job_order->job_order_id) ?>" target="_blank" class="btn btn-default center">
-                                <i class="fa fa-print"></i> Print</a>
-                            </div>
+                                            </div>
 
-<div class="col-md-8">
-<div class="project-info-card">
+                                        </div>
 
-    <div class="project-info-header">
-        <i class="fa fa-folder-open"></i>
-        <span>Project Information</span><br>
-    </div>
+                                    </div>
 
-    <div class="project-info-body">
+                                <?php endif; ?>
+                                <!-- ================================================= -->
+                                <!-- PROJECT INFORMATION -->
+                                <!-- ================================================= -->
 
-        <div class="row">
+                               <?php if (isset($job_order->job_order_type) && (int)$job_order->job_order_type === 1
+                                    && !empty($job_order->fk_project_id)
+                                ) : ?>
 
-            <div class="col-md-3">
-                <div class="project-info-item"> 
-                    <label>Project Name</label>
-                    <div id="manager_id" class="project-info-value"><?php echo $project[0]['project_name'] ?? ''; ?> <?php echo $project['project_code'] ??'';?></div>
-                </div></div>
-            <div class="col-md-3">
-                <div class="project-info-item">
-                    <label>Project Start Date</label>
-                    <div id="sdate" class="project-info-value"><?=$project[0]['start_date']?? ''?></div>
-                </div>
-            </div>
+                                    <div class="row">
 
-            <div class="col-md-3">
-                <div class="project-info-item">
-                    <label>Project End Date</label>
-                    <div id="edate" class="project-info-value"><?=$project[0]['end_date']?? '';?></div>
-                </div>
-            </div>
+                                        <div class="col-md-12">
 
-            
-            
-                <div class="col-md-3">
-                <div class="project-info-item">
-                    <label>Customer</label>
-                    <div id="customer_id" class="project-info-value"><?=$project[0]['customer_name']?? '';?></div>
-                </div>
-            </div>
+                                            <div class="alert alert-info">
 
-        </div>
+                                                <strong>Project Job Order</strong>
 
-        </div>
-</div>
+                                            </div>
 
-</div><div class="col-md-4"></div>
-                            <div class="col-md-4">
+                                        </div>
 
-                                <div class="form-group">
+                                    </div>
 
-                                    <label>
-                                        Contact Person
-                                    </label>
+                                    <div class="row">
 
-                                    <input type="text"class="form-control" value="<?= htmlspecialchars($job_order->contact_person) ?>" id="conatct_person"  name="conatct_person">
+                                        <!-- Project -->
+                                        <div class="col-md-4">
 
-                                </div>
+                                            <div class="form-group">
 
-                            </div>
+                                                <label>Project</label>
 
+                                                <?php
+                                                if (is_array($project) && isset($project[0])) {
+                                                    $projectData = $project[0];
+                                                } elseif (is_object($project)) {
+                                                    $projectData = $project;
+                                                } else {
+                                                    $projectData = array();
+                                                }
+                                                ?>
 
-                            <div class="col-md-4">
+                                                <input type="text"
+                                                       class="form-control"
+                                                       value="<?= isset($projectData->project_name)
+                                                           ? htmlspecialchars($projectData->project_name)
+                                                           : (isset($projectData['project_name'])
+                                                               ? htmlspecialchars($projectData['project_name'])
+                                                               : '') ?>"
+                                                       readonly>
 
-                                <div class="form-group">
+                                                <input type="hidden"
+                                                       name="fk_project_id"
+                                                       value="<?= (int)$job_order->fk_project_id ?>">
 
-                                    <label>
-                                        Representative
-                                    </label>
+                                            </div>
 
-                                    <input type="text"  class="form-control" id="rep_name"  value="<?= htmlspecialchars($job_order->rep_name) ?>">
+                                        </div>
 
-                                </div>
 
-                            </div>
-                            <div class="col-md-4"></div>
-                             <div class="col-md-4">
+                                        <!-- Project Code -->
+                                        <div class="col-md-4">
 
-                        <label>Start Date</label>
+                                            <div class="form-group">
 
-                        <input type="date" name="start_date" id="start_date" class="form-control" value="<?= date('Y-m-d', strtotime($job_order->start_date)) ?>" required>
+                                                <label>Project Code</label>
 
-                    </div>
+                                                <input type="text"
+                                                       class="form-control"
+                                                       value="<?= isset($projectData->project_code)
+                                                           ? htmlspecialchars($projectData->project_code)
+                                                           : (isset($projectData['project_code'])
+                                                               ? htmlspecialchars($projectData['project_code'])
+                                                               : '') ?>"
+                                                       readonly>
 
+                                            </div>
 
-                    <div class="col-md-4">
+                                        </div>
 
-                        <label>Finish Date</label>
 
-                        <input type="date" name="finish_date" id="finish_date" class="form-control"  value="<?= date('Y-m-d', strtotime($job_order->finish_date)) ?>" required>
+                                        <!-- Customer -->
+                                        <div class="col-md-4">
 
-                    </div><div class="col-md-4"></div>
-                    <div class="col-md-8">
-                        <label>Remarks</label>
-                        <textarea name="remarks" class="form-control" id="remarks" rows="3"><?= htmlspecialchars($job_order->remarks) ?></textarea>
-                    </div>
-                        </div>
+                                            <div class="form-group">
 
+                                                <label>Customer</label>
 
-                        <hr>
+                                                <input type="text"
+                                                       class="form-control"
+                                                       value="<?= isset($projectData->customer_name)
+                                                           ? htmlspecialchars($projectData->customer_name)
+                                                           : (isset($projectData['customer_name'])
+                                                               ? htmlspecialchars($projectData['customer_name'])
+                                                               : '') ?>"
+                                                       readonly>
 
+                                            </div>
 
-                        <h5>
-                            Job Order Items
-                        </h5>
+                                        </div>
 
+                                    </div>
 
-                        <div class="table-responsive">
 
-                            <table class="table table-bordered table-hover">
+                                    <!-- ================================================= -->
+                                    <!-- SALES ORDERS -->
+                                    <!-- ================================================= -->
 
-                                <thead>
+                                    <div class="row">
 
-                                    <tr>
+                                        <div class="col-md-12">
 
-                                        <th width="50">
-                                            #
-                                        </th>
+                                            <div class="form-group">
 
-                                        <th width="200">
-                                            Item
-                                        </th>
+                                                <label>
+                                                    Sales Orders
+                                                </label>
 
-                                        <th width="100">
-                                            Quantity
-                                        </th>
+                                                <div class="well"
+                                                     style="max-height:180px; overflow-y:auto; margin-bottom:10px;">
 
-                                        <th width="120">
-                                            Unit Price
-                                        </th>
+                                                    <?php if (!empty($sales_orders)) : ?>
 
-                                        <th width="120">
-                                            Total
-                                        </th>
+                                                        <?php foreach ($sales_orders as $so) : ?>
 
-                                        <th width="130">
-                                            Materials
-                                        </th>
+                                                            <div class="checkbox">
 
-                                    </tr>
+                                                                <label>
+                                                                    <?php
+                                                                        $selected = false;
 
-                                </thead>
+                                                                        if (!empty($job_order_sales_orders)) {
+                                                                            $selected = in_array(
+                                                                                (int)$so->so_id,
+                                                                                array_map('intval', $job_order_sales_orders),
+                                                                                true
+                                                                            );
+                                                                        }
+                                                                        ?>
+                                                                    <input type="checkbox"
+                                                                           class="sales-order-checkbox"
+                                                                           name="sales_order_ids[]"
+                                                                           value="<?= (int)$so->so_id ?>"
+                                                                           <?= $selected ? 'checked' : '' ?>>
 
+                                                                    <?= htmlspecialchars($so->so_code) ?>
 
-                                <tbody>
+                                                                    <?php if (!empty($so->order_date)) : ?>
 
-                                <?php if (!empty($job_order_items)): ?>
+                                                                        <small class="text-muted">
+                                                                            (<?= htmlspecialchars($so->order_date) ?>)
+                                                                        </small>
 
-                                    <?php foreach (
-                                        $job_order_items
-                                        as $index => $item
-                                    ): ?>
+                                                                    <?php endif; ?>
 
-                                        <tr>
+                                                                </label>
 
-                                            <td>
-                                                <?= $index + 1 ?>
-                                            </td>
+                                                            </div>
 
+                                                        <?php endforeach; ?>
 
-                                            <td>
+                                                    <?php else : ?>
 
-                                                <?= htmlspecialchars(
-                                                    $item->product_name
-                                                ) ?>
+                                                        <span class="text-muted">
+                                                            No Sales Orders found.
+                                                        </span>
 
-                                            </td>
+                                                    <?php endif; ?>
 
+                                                </div>
 
-                                            <td>
+                                            </div>
 
-                                                <?= (int)$item->quantity ?>
+                                        </div>
 
-                                            </td>
-
-
-                                            <td>
-
-                                                <?= $item->cost ?>
-
-                                            </td>
-
-
-                                            <td>
-
-                                                <?php echo $item->cost*(int)$item->quantity; ?>
-
-                                            </td>
-
-
-                                            <td>
-
-                                                <button
-                                                    type="button"
-                                                    class="btn btn-xs btn-info material-btn"
-
-                                                    data-job-order-item-id="<?= $item->job_order_item_id ?>"
-
-                                                    data-project-item-id="<?= $item->project_item_id ?>"
-
-                                                    data-item-master="<?= $item->product_id ?>"
-
-                                                    data-item-name="<?= htmlspecialchars($item->product_name) ?>">
-
-                                                    <i class="fa fa-cubes"></i>
-
-                                                    Materials
-
-                                                </button>
-
-                                            </td>
-
-                                        </tr>
-
-                                    <?php endforeach; ?>
-
-                                <?php else: ?>
-
-                                    <tr>
-
-                                        <td colspan="6"
-                                            class="text-center">
-
-                                            No items found.
-
-                                        </td>
-
-                                    </tr>
+                                    </div>
 
                                 <?php endif; ?>
 
-                                </tbody>
 
-                            </table>
+                                <!-- ================================================= -->
+                                <!-- CONTACT / REPRESENTATIVE -->
+                                <!-- ================================================= -->
+
+                                <div class="row">
+
+                                    <!-- Contact Person -->
+                                    <div class="col-md-4">
+
+                                        <div class="form-group">
+
+                                            <label>
+                                                Contact Person
+                                            </label>
+
+                                            <select class="form-control"
+                                                    id="contact_person"
+                                                    name="contact_person">
+
+                                                <option value="">
+                                                    Select Contact Person
+                                                </option>
+
+                                                <?php if (!empty($user_records)) : ?>
+
+                                                    <?php foreach ($user_records as $s) : ?>
+
+                                                        <option value="<?= (int)$s['user_id'] ?>"
+                                                            <?= (
+                                                                isset($job_order->contact_person)
+                                                                && $job_order->contact_person == $s['user_id']
+                                                            )
+                                                                ? 'selected'
+                                                                : '' ?>>
+
+                                                            <?= htmlspecialchars($s['user_name']) ?>
+
+                                                        </option>
+
+                                                    <?php endforeach; ?>
+
+                                                <?php endif; ?>
+
+                                            </select>
+
+                                        </div>
+
+                                    </div>
+
+
+                                    <!-- Representative -->
+                                    <div class="col-md-4">
+
+                                        <div class="form-group">
+
+                                            <label>
+                                                Representative
+                                            </label>
+
+                                            <select class="form-control"
+                                                    id="rep_name"
+                                                    name="rep_name">
+
+                                                <option value="">
+                                                    Select Representative
+                                                </option>
+
+                                                <?php if (!empty($user_records)) : ?>
+
+                                                    <?php foreach ($user_records as $s) : ?>
+
+                                                        <option value="<?= (int)$s['user_id'] ?>"
+                                                            <?= (
+                                                                isset($job_order->rep_name)
+                                                                && $job_order->rep_name == $s['user_id']
+                                                            )
+                                                                ? 'selected'
+                                                                : '' ?>>
+
+                                                            <?= htmlspecialchars($s['user_name']) ?>
+
+                                                        </option>
+
+                                                    <?php endforeach; ?>
+
+                                                <?php endif; ?>
+
+                                            </select>
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+
+                                <!-- ================================================= -->
+                                <!-- DATES -->
+                                <!-- ================================================= -->
+
+                                <div class="row">
+
+                                    <div class="col-md-4">
+
+                                        <div class="form-group">
+
+                                            <label>
+                                                Start Date
+                                            </label>
+
+                                            <input type="date"
+                                                   class="form-control"
+                                                   name="start_date"
+                                                   id="start_date"
+                                                   value="<?= !empty($job_order->start_date) ? date('Y-m-d',  strtotime($job_order->start_date))  : '' ?>">
+
+                                        </div>
+
+                                    </div>
+
+
+                                    <div class="col-md-4">
+
+                                        <div class="form-group">
+
+                                            <label>
+                                                Finish Date
+                                            </label>
+
+                                            <input type="date"
+                                                   class="form-control"
+                                                   name="finish_date"
+                                                   id="finish_date"
+                                                   value="<?= !empty($job_order->finish_date) ? date('Y-m-d',  strtotime($job_order->finish_date))  : '' ?>">
+
+                                        </div>
+
+                                    </div>
+
+
+                                    <div class="col-md-4">
+
+                                        <div class="form-group">
+
+                                            <label>
+                                                Status
+                                            </label>
+
+                                            <input type="text"
+                                                   class="form-control"
+                                                   value="<?= htmlspecialchars(
+                                                       isset($job_order->status)
+                                                           ? $job_order->status
+                                                           : ''
+                                                   ) ?>"
+                                                   readonly>
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+
+                                <!-- ================================================= -->
+                                <!-- REMARKS -->
+                                <!-- ================================================= -->
+
+                                <div class="row">
+
+                                    <div class="col-md-12">
+
+                                        <div class="form-group">
+
+                                            <label>
+                                                Remarks
+                                            </label>
+
+                                            <textarea class="form-control"
+                                                      name="remarks"
+                                                      id="remarks"
+                                                      rows="3"><?= htmlspecialchars($job_order->remarks) ?></textarea>
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
 
                         </div>
 
-                    </div>
+
+                        <!-- ========================================================= -->
+                        <!-- JOB ORDER ITEMS -->
+                        <!-- ========================================================= -->
+
+                        <div class="panel panel-default">
+
+                            <div class="panel-heading">
+
+                                <strong>
+                                    Job Order Items
+                                </strong>
+
+                            </div>
+
+                            <div class="panel-body">
+
+                                <div class="table-responsive">
+
+                                    <table id="jobOrderItemsTable"
+                                           class="table table-bordered table-striped">
+
+                                        <thead>
+
+                                            <tr>
+
+                                                <th width="30">
+                                                    #
+                                                </th>
+                                                <th>SO Code</th>
+                                                <th>
+                                                    Item Name
+                                                </th>
+
+                                                <th width="70">
+                                                    Quantity
+                                                </th>
+
+                                                <th width="70">
+                                                    Unit
+                                                </th>
+
+                                                <th>
+                                                    Cost
+                                                </th>
+
+                                                <th width="130">
+                                                    Materials
+                                                </th>
+
+                                            </tr>
+
+                                        </thead>
+
+                                        <tbody>
+
+                                            <?php  if (!empty($job_order_items)) : ?>
+
+                                                <?php $sl = 1; ?>
+
+                                                <?php foreach ($job_order_items as $item) : ?>
+
+                                                   <tr data-so-id="<?= (int)$item->so_id ?>" data-project-item-id="<?= (int)$item->project_item_id ?>">
+                                                        <td>
+                                                            <?= $sl++ ?>
+                                                        </td>
+                                                        <td>
+                                                            
+                                                            <?= htmlspecialchars(
+                                                                isset($item->sales_order_code)
+                                                                    ? $item->sales_order_code
+                                                                    : ''
+                                                            ) ?>
+
+                                                        </td>
+                                                        <!-- Item Description -->
+                                                        <td>
+
+                                                            <?= htmlspecialchars(
+                                                                isset($item->product_name)
+                                                                    ? $item->product_name
+                                                                    : (
+                                                                        isset($item->item_description)
+                                                                            ? $item->item_description
+                                                                            : ''
+                                                                    )
+                                                            ) ?>  - <?= htmlspecialchars(
+                                                                isset($item->item_code)
+                                                                    ? $item->item_code
+                                                                    : ''
+                                                            ) ?>
+
+                                                        </td>
 
 
-                    <div class="box-footer">
+                                                        <!-- Quantity -->
+                                                        <td>
 
-                        <button type="button"
-                                class="btn btn-primary"
-                                id="saveJobOrder">
+                                                            <?= number_format(
+                                                                (float)$item->quantity,
+                                                                2
+                                                            ) ?>
 
-                            <i class="fa fa-save"></i>
+                                                        </td>
 
-                            Save Job Order
 
-                        </button>
+                                                        <!-- Unit -->
+                                                        <td>
+                                                            
+                                                            <?= htmlspecialchars(
+                                                                isset($item->unit)
+                                                                    ? $item->unit
+                                                                    : ''
+                                                            ) ?>
 
-                        <a href="<?= base_url('index.php/Production/job_order') ?>"
-                           class="btn btn-default">
+                                                        </td>
 
-                            Cancel
 
-                        </a>
+                                                        <!-- Cost -->
+                                                        <td>
 
-                    </div>
+                                                            <?= number_format(
+                                                                (float)$item->cost,
+                                                                2
+                                                            ) ?>
 
-                </form>
+                                                        </td>
 
-          </div>
 
+                                                        <!-- Materials -->
+                                                        <td class="text-center">
+
+                                                            <button type="button"
+                                                                    class="btn btn-xs btn-info material-btn"
+                                                                    data-job-order-item-id="<?= (int)$item->job_order_item_id ?>"
+                                                                    data-project-item-id="<?= (int)$item->project_item_id ?>"
+                                                                    data-item-master="<?= (int)$item->item_master_id ?>"
+                                                                    data-item-name="<?= htmlspecialchars(
+                                                                        isset($item->product_name)
+                                                                            ? $item->product_name
+                                                                            : $item->item_description,
+                                                                        ENT_QUOTES
+                                                                    ) ?>">
+
+                                                                <i class="fa fa-cubes"></i>
+                                                                Materials
+
+                                                            </button>
+
+                                                        </td>
+
+                                                    </tr>
+
+                                                <?php endforeach; ?>
+
+                                            <?php else : ?>
+
+                                                <tr>
+
+                                                    <td colspan="7" class="text-center">
+
+                                                        No items found.
+
+                                                    </td>
+
+                                                </tr>
+
+                                            <?php endif; ?>
+
+                                        </tbody>
+
+                                    </table>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- ========================================================= -->
+                        <!-- FORM BUTTONS -->
+                        <!-- ========================================================= -->
+
+                        <div class="row">
+
+                            <div class="col-md-12 text-right">
+
+                                <a href="<?= base_url('index.php/Production/job_order') ?>"
+                                   class="btn btn-default">
+
+                                    Cancel
+
+                                </a>
+
+                                <button type="submit"
+                                        class="btn btn-success">
+
+                                    <i class="fa fa-save"></i>
+                                    Update Job Order
+
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        </div>
     </div>
 
 </div>
 
-<div class="modal fade" id="materialModal">
+
+<!-- ================================================================ -->
+<!-- MATERIAL MODAL -->
+<!-- ================================================================ -->
+
+<div class="modal fade"
+     id="materialsModal"
+     tabindex="-1"
+     role="dialog"
+     aria-hidden="true">
 
     <div class="modal-dialog modal-lg">
 
         <div class="modal-content">
 
             <div class="modal-header">
-    
 
                 <h4 class="modal-title">
 
-                    Raw Materials -
-                    <span id="selectedItemName"></span>
+                    <strong>
+                        Item Materials
+                    </strong>
 
                 </h4>
                 <button type="button"
                         class="close"
                         data-dismiss="modal">
 
-                    &times;
+                    <span>&times;</span>
 
                 </button>
 
@@ -356,45 +735,58 @@
 
             <div class="modal-body">
 
+                <!-- Hidden IDs -->
                 <input type="hidden"
                        id="currentJobOrderItemId">
 
                 <input type="hidden"
                        id="currentProjectItemId">
 
-
-                <button type="button"
-                        class="btn btn-primary btn-sm"
-                        id="addMaterialBtn">
-
-                    <i class="fa fa-plus"></i>
-
-                    Add Raw Material
-
-                </button>
+                <input type="hidden"
+                       id="currentItemMasterId">
 
 
-                <br><br>
+                <!-- Item name -->
+                <div class="row">
+
+                    <div class="col-md-12">
+
+                        <div class="alert alert-info">
+
+                            <strong>Item:</strong>
+
+                            <span id="currentItemName"></span>
+
+                        </div>
+
+                    </div>
+
+                </div>
 
 
+                <!-- Material table -->
                 <div class="table-responsive">
 
-                    <table class="table table-bordered"
-                           id="materialTable">
+                    <table class="table table-bordered table-striped"
+                           id="itemMaterialsTable">
 
                         <thead>
 
                             <tr>
+
+                                <th width="40">
+                                    #
+                                </th>
 
                                 <th>
                                     Material Code
                                 </th>
 
                                 <th>
-                                    Material
+                                    Material Name
                                 </th>
 
-                                <th width="100">
+                                <th width="120">
                                     Quantity
                                 </th>
 
@@ -403,10 +795,14 @@
                                 </th>
 
                                 <th width="100">
+                                    Cost
+                                </th>
+
+                                <th width="100">
                                     Source
                                 </th>
 
-                                <th width="80">
+                                <th width="70">
                                     Action
                                 </th>
 
@@ -414,10 +810,30 @@
 
                         </thead>
 
+                        <tbody id="itemMaterialsBody">
 
-                        <tbody></tbody>
+                        </tbody>
 
                     </table>
+
+                </div>
+
+
+                <!-- Add Raw Material -->
+                <div class="row">
+
+                    <div class="col-md-12">
+
+                        <button type="button"
+                                class="btn btn-warning"
+                                id="addRawMaterialBtn">
+
+                            <i class="fa fa-plus"></i>
+                            Add Raw Material
+
+                        </button>
+
+                    </div>
 
                 </div>
 
@@ -434,13 +850,11 @@
 
                 </button>
 
-
                 <button type="button"
-                        class="btn btn-primary"
-                        id="saveItemMaterialsBtn">
+                        class="btn btn-success"
+                        id="saveMaterialsBtn">
 
                     <i class="fa fa-save"></i>
-
                     Save Materials
 
                 </button>
@@ -453,7 +867,16 @@
 
 </div>
 
-<div class="modal fade" id="addRawMaterialModal">
+
+<!-- ================================================================ -->
+<!-- ADD RAW MATERIAL MODAL -->
+<!-- ================================================================ -->
+
+<div class="modal fade"
+     id="rawMaterialModal"
+     tabindex="-1"
+     role="dialog"
+     aria-hidden="true">
 
     <div class="modal-dialog">
 
@@ -461,14 +884,16 @@
 
             <div class="modal-header">
 
-               <h4 class="modal-title">
+                <h4 class="modal-title">
+
                     Add Raw Material
+
                 </h4>
                 <button type="button"
                         class="close"
                         data-dismiss="modal">
 
-                    &times;
+                    <span>&times;</span>
 
                 </button>
 
@@ -477,102 +902,135 @@
 
             <div class="modal-body">
 
-                <form id="addRawMaterialForm">
+                <div class="form-group">
 
+                    <label>
+                        Raw Material
+                        <span class="text-danger">*</span>
+                    </label>
 
-                    <div class="form-group">
+                    <select class="form-control"
+                            id="raw_material_id">
 
-                        <label>
-                            Raw Material
-                        </label>
+                        <option value="">
+                            Select Raw Material
+                        </option>
 
-                        <select
-                            id="new_material_id"
-                            class="form-control">
+                        <?php if (!empty($raw_materials)) : ?>
 
-                            <option value="">
-                                Select Material
-                            </option>
+                            <?php foreach ($raw_materials as $material) : ?>
 
-                            <?php foreach (
-                                $raw_materials
-                                as $material
-                            ): ?>
+                                <?php
+                                $materialId = isset($material->material_id)
+                                    ? $material->material_id
+                                    : (
+                                        isset($material->id)
+                                            ? $material->id
+                                            : ''
+                                    );
 
-                                <option
-                                    value="<?= $material->material_id ?>"
-                                    data-code="<?= htmlspecialchars($material->material_code) ?>"
-                                    data-name="<?= htmlspecialchars($material->material_name) ?>">
+                                $materialCode = isset($material->material_code)
+                                    ? $material->material_code
+                                    : '';
 
-                                    <?= htmlspecialchars(
-                                        $material->material_name
-                                    ) ?>
+                                $materialName = isset($material->material_name)
+                                    ? $material->material_name
+                                    : (
+                                        isset($material->name)
+                                            ? $material->name
+                                            : ''
+                                    );
+                                ?>
 
-                                </option>
+                                <option value="<?= htmlspecialchars($materialId) ?>"
+                                        data-code="<?= htmlspecialchars($materialCode) ?>"
+                                        data-name="<?= htmlspecialchars($materialName) ?>">
 
-                            <?php endforeach; ?>
-
-                        </select>
-
-                    </div>
-
-
-                    <div class="form-group">
-
-                        <label>
-                            Unit
-                        </label>
-
-                        <select
-                            id="new_material_unit"
-                            class="form-control">
-
-                            <option value="">
-                                Select Unit
-                            </option>
-
-                            <?php foreach (
-                                $units
-                                as $unit
-                            ): ?>
-
-                                <option
-                                    value="<?= $unit->unit_id ?>"
-                                    data-abbr="<?= htmlspecialchars($unit->unit_abbr) ?>">
-
-                                    <?= htmlspecialchars(
-                                        $unit->unit_name
-                                    ) ?>
-
-                                    (<?= htmlspecialchars(
-                                        $unit->unit_abbr
-                                    ) ?>)
+                                    <?= htmlspecialchars($materialCode) ?>
+                                    -
+                                    <?= htmlspecialchars($materialName) ?>
 
                                 </option>
 
                             <?php endforeach; ?>
 
-                        </select>
+                        <?php endif; ?>
 
-                    </div>
+                    </select>
 
-
-                    <div class="form-group">
-
-                        <label>
-                            Quantity
-                        </label>
-
-                        <input type="number"
-                               step="0.01"
-                               min="0"
-                               id="new_material_qty"
-                               class="form-control">
-
-                    </div>
+                </div>
 
 
-                </form>
+                <div class="form-group">
+
+                    <label>
+                        Unit
+                        <span class="text-danger">*</span>
+                    </label>
+
+                    <select class="form-control"
+                            id="raw_material_unit">
+
+                        <option value="">
+                            Select Unit
+                        </option>
+
+                        <?php if (!empty($units)) : ?>
+
+                            <?php foreach ($units as $unit) : ?>
+
+                                <?php
+                                $unitId = isset($unit->unit_id)
+                                    ? $unit->unit_id
+                                    : (
+                                        isset($unit->id)
+                                            ? $unit->id
+                                            : ''
+                                    );
+
+                                $unitName = isset($unit->unit)
+                                    ? $unit->unit
+                                    : (
+                                        isset($unit->unit_name)
+                                            ? $unit->unit_name
+                                            : (
+                                                isset($unit->name)
+                                                    ? $unit->name
+                                                    : ''
+                                            )
+                                    );
+                                ?>
+
+                                <option value="<?= htmlspecialchars($unitId) ?>">
+
+                                    <?= htmlspecialchars($unitName) ?>
+
+                                </option>
+
+                            <?php endforeach; ?>
+
+                        <?php endif; ?>
+
+                    </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>
+                        Quantity Required
+                        <span class="text-danger">*</span>
+                    </label>
+
+                    <input type="number"
+                           class="form-control"
+                           id="raw_material_quantity"
+                           min="0"
+                           step="0.01"
+                           value="1">
+
+                </div>
 
             </div>
 
@@ -587,14 +1045,12 @@
 
                 </button>
 
-
                 <button type="button"
                         class="btn btn-primary"
-                        id="saveRawMaterialBtn">
+                        id="addRawMaterialConfirmBtn">
 
                     <i class="fa fa-plus"></i>
-
-                    Add
+                    Add Material
 
                 </button>
 
@@ -605,205 +1061,432 @@
     </div>
 
 </div>
+
+
 <script>
-var base_url = "<?= base_url(); ?>";
-var jobOrderMaterials = {};
+/* ============================================================
+ * PROJECT SALES ORDER CHECKBOX
+ * ============================================================ */
+var base_url = "<?= base_url() ?>";
+$(document).on('change', '.sales-order-checkbox', function () {
 
-var currentJobOrderItemId = null;
+    var salesOrderId = $(this).val();
 
-var currentProjectItemId = null;
-
-var currentItemMasterId = null;
-
-
-<?php foreach ($job_order_items as $item): ?>
-
-jobOrderMaterials[
-    <?= $item->project_item_id ?>
-] = <?= json_encode($item->materials) ?>;
-
-<?php endforeach; ?>
-$(document).on( 'click', '.material-btn',function () {
-
-        currentJobOrderItemId =
-            $(this).attr(
-                'data-job-order-item-id'
-            );
-
-        currentProjectItemId =
-            $(this).attr(
-                'data-project-item-id'
-            );
-
-        currentItemMasterId =
-            $(this).attr(
-                'data-item-master'
-            );
-
-
-        var itemName =
-            $(this).attr(
-                'data-item-name'
-            );
-
-
-        console.log(
-            'Job Order Item:',
-            currentJobOrderItemId
-        );
-
-        console.log(
-            'Project Item:',
-            currentProjectItemId
-        );
-
-
-        $('#selectedItemName')
-            .text(itemName);
-
-
-        $('#currentJobOrderItemId')
-            .val(currentJobOrderItemId);
-
-
-        $('#currentProjectItemId')
-            .val(currentProjectItemId);
-
-
-        renderItemMaterials();
-
-
-        $('#materialModal')
-            .modal('show');
-
+    if (!salesOrderId) {
+        return;
     }
-);
 
-function renderItemMaterials()
-{
-    var tbody =
-        $('#materialTable tbody');
+    if (!$(this).is(':checked')) {
 
-    tbody.empty();
-
-
-    var materials =
-        jobOrderMaterials[
-            currentProjectItemId
-        ] || [];
+        /*
+         * Remove rows belonging to this Sales Order
+         */
+        $('#jobOrderItemsTable tbody tr[data-so-id="' + salesOrderId + '"]')
+            .remove();
 
 
-    if (materials.length === 0) {
-
-        tbody.html(
-
-            '<tr>' +
-
-                '<td colspan="6" ' +
-                    'class="text-center">' +
-
-                    'No raw materials found.' +
-
-                '</td>' +
-
-            '</tr>'
-
-        );
+        /*
+         * Re-number rows
+         */
+        renumberJobOrderItems();
 
         return;
     }
 
 
-    $.each(
-        materials,
-        function(index, material) {
+    /*
+     * =========================================================
+     * SALES ORDER CHECKED
+     * Load its items
+     * =========================================================
+     */
+
+    $.ajax({
+
+        url:
+            base_url +
+            'index.php/Production/get_sales_order_items',
+
+        type: 'POST',
+
+        dataType: 'json',
+
+        data: {
+            so_id: salesOrderId
+        },
+
+        success: function (response) {
+
+            if (!response || !response.length) {
+
+                alert(
+                    'No items found for this Sales Order.'
+                );
+
+                return;
+            }
+
+
+            $.each(response, function (index, item) {
+
+                /*
+                 * Prevent duplicate item
+                 */
+                if (
+                    $('#jobOrderItemsTable tbody')
+                        .find(
+                            'tr[data-so-id="' +
+                            salesOrderId +
+                            '"][data-project-item-id="' +
+                            item.product_table_id +
+                            '"]'
+                        )
+                        .length
+                ) {
+                    return;
+                }
+
+
+                var row =
+                    '<tr ' +
+                        'data-so-id="' +
+                            salesOrderId +
+                        '" ' +
+                        'data-project-item-id="' +
+                            item.product_table_id +
+                        '">' +
+
+                        '<td></td>' +
+
+                        '<td>' +
+                            $('<div>')
+                                .text(item.so_code || item.sales_order_code || '')
+                                .html() +
+                        '</td>' +
+
+                        '<td>' +
+                            $('<div>')
+                                .text(
+                                    (item.product_name || '') +
+                                    ' - ' +
+                                    (item.product_code || '')
+                                )
+                                .html() +
+                        '</td>' +
+
+                        '<td>' +
+                            parseFloat(
+                                item.quantity || 0
+                            ).toFixed(2) +
+                        '</td>' +
+
+                        '<td>' +
+                            $('<div>')
+                                .text(item.unit || item.unit_abbr || '')
+                                .html() +
+                        '</td>' +
+
+                        '<td>' +
+                            parseFloat(
+                                item.amount || 0
+                            ).toFixed(2) +
+                        '</td>' +
+
+                        '<td class="text-center">' +
+
+                            '<span class="text-muted">' +
+                                'Save first to add materials' +
+                            '</span>' +
+
+                        '</td>' +
+
+                    '</tr>';
+
+
+                $('#jobOrderItemsTable tbody')
+                    .append(row);
+
+            });
+
+
+            renumberJobOrderItems();
+        },
+
+        error: function (xhr) {
+
+            console.log(
+                xhr.responseText
+            );
+
+            alert(
+                'Unable to load Sales Order items.'
+            );
+
+            /*
+             * If loading fails, restore checkbox
+             */
+            $('.sales-order-checkbox[value="' +
+                salesOrderId +
+            '"]').prop(
+                'checked',
+                false
+            );
+        }
+
+    });
+
+});
+
+
+/* ============================================================
+ * RE-NUMBER JOB ORDER ITEMS
+ * ============================================================ */
+
+function renumberJobOrderItems() {
+
+    $('#jobOrderItemsTable tbody tr').each(
+        function (index) {
+
+            $(this)
+                .find('td:first')
+                .text(index + 1);
+
+        }
+    );
+
+}
+$(document).ready(function () {
+
+    /*
+     * ============================================================
+     * VARIABLES
+     * ============================================================
+     */
+
+    var base_url = "<?= base_url() ?>";
+
+    var currentJobOrderItemId = null;
+    var currentProjectItemId = null;
+    var currentItemMasterId = null;
+
+    /*
+     * IMPORTANT:
+     * Materials are stored using job_order_item_id.
+     *
+     * This is safer than using project_item_id because
+     * job_order_item_id is unique for every Job Order item.
+     */
+
+    var jobOrderMaterials = {};
+
+
+    /*
+     * ============================================================
+     * LOAD EXISTING MATERIALS FROM PHP
+     * ============================================================
+     */
+
+    <?php if (!empty($job_order_items)) : ?>
+
+        <?php foreach ($job_order_items as $item) : ?>
+
+            jobOrderMaterials[
+                <?= (int)$item->job_order_item_id ?>
+            ] = <?= json_encode(
+                !empty($item->materials)
+                    ? $item->materials
+                    : array()
+            ) ?>;
+
+        <?php endforeach; ?>
+
+    <?php endif; ?>
+
+
+    /*
+     * ============================================================
+     * JOB ORDER ITEMS DATATABLE
+     * ============================================================
+     */
+
+    if ($('#jobOrderItemsTable').length) {
+
+        $('#jobOrderItemsTable').DataTable({
+
+            destroy: true,
+
+            responsive: true,
+
+            pageLength: 25,
+
+            order: [
+                [0, 'asc']
+            ]
+
+        });
+
+    }
+
+
+    /*
+     * ============================================================
+     * OPEN MATERIAL MODAL
+     * ============================================================
+     */
+
+    $(document).on('click', '.material-btn', function () {
+
+        currentJobOrderItemId =
+            $(this).data('job-order-item-id');
+
+        currentProjectItemId =
+            $(this).data('project-item-id');
+
+        currentItemMasterId =
+            $(this).data('item-master');
+
+        var itemName =
+            $(this).data('item-name');
+
+
+        /*
+         * Store hidden values
+         */
+
+        $('#currentJobOrderItemId')
+            .val(currentJobOrderItemId);
+
+        $('#currentProjectItemId')
+            .val(currentProjectItemId);
+
+        $('#currentItemMasterId')
+            .val(currentItemMasterId);
+
+        $('#currentItemName')
+            .text(itemName);
+
+
+        /*
+         * Render materials
+         */
+
+        renderItemMaterials();
+
+
+        /*
+         * Open modal
+         */
+
+        $('#materialsModal').modal('show');
+
+    });
+
+
+    /*
+     * ============================================================
+     * RENDER MATERIALS
+     * ============================================================
+     */
+
+    function renderItemMaterials() {
+
+        var materials =
+            jobOrderMaterials[currentJobOrderItemId] || [];
+
+        var tbody =
+            $('#itemMaterialsBody');
+
+        tbody.empty();
+
+
+        if (!materials.length) {
 
             tbody.append(
+                '<tr>' +
+                    '<td colspan="8" class="text-center text-muted">' +
+                        'No materials added.' +
+                    '</td>' +
+                '</tr>'
+            );
 
+            return;
+        }
+
+
+        $.each(materials, function (index, material) {
+
+            var materialCode =
+                material.material_code || '';
+
+            var materialName =
+                material.material_name || '';
+
+            var quantity =
+                parseFloat(material.quantity_required || 0);
+
+            var unit =
+                material.unit || '';
+
+            var cost =
+                parseFloat(material.cost || 0);
+
+            var source =
+                material.source || 'BOM';
+
+
+            var row =
                 '<tr>' +
 
                     '<td>' +
-
-                        $('<div>')
-                            .text(
-                                material.material_code || ''
-                            )
-                            .html() +
-
+                        (index + 1) +
                     '</td>' +
 
+                    '<td>' +
+                        $('<div>').text(materialCode).html() +
+                    '</td>' +
+
+                    '<td>' +
+                        $('<div>').text(materialName).html() +
+                    '</td>' +
 
                     '<td>' +
 
-                        $('<div>')
-                            .text(
-                                material.material_name || ''
-                            )
-                            .html() +
+                        '<input type="number"' +
+                               ' class="form-control input-sm material-qty"' +
+                               ' data-index="' + index + '"' +
+                               ' min="0"' +
+                               ' step="0.01"' +
+                               ' value="' + quantity + '">' +
 
                     '</td>' +
-
 
                     '<td>' +
-
-                        '<input type="number" ' +
-
-                        'class="form-control input-sm material-qty" ' +
-
-                        'data-index="' +
-                        index +
-                        '" ' +
-
-                        'value="' +
-                        (
-                            material.quantity_required || 0
-                        ) +
-                        '">' +
-
+                        $('<div>').text(unit).html() +
                     '</td>' +
-
 
                     '<td>' +
-
-                        $('<div>')
-                            .text(
-                                material.unit || ''
-                            )
-                            .html() +
-
+                        cost.toFixed(2) +
                     '</td>' +
-
 
                     '<td>' +
 
                         '<span class="label ' +
-
-                        (
-                            material.source === 'BOM'
-                                ? 'label-info'
-                                : 'label-warning'
-                        ) +
-
+                            (source === 'MANUAL'
+                                ? 'label-warning'
+                                : 'label-info') +
                         '">' +
 
-                            (
-                                material.source || 'BOM'
-                            ) +
+                            $('<div>').text(source).html() +
 
                         '</span>' +
 
                     '</td>' +
 
+                    '<td class="text-center">' +
 
-                    '<td>' +
-
-                        '<button type="button" ' +
-
-                        'class="btn btn-xs btn-danger delete-material" ' +
-
-                        'data-index="' +
-                        index +
-                        '">' +
+                        '<button type="button"' +
+                                ' class="btn btn-xs btn-danger delete-material"' +
+                                ' data-index="' + index + '">' +
 
                             '<i class="fa fa-trash"></i>' +
 
@@ -811,82 +1494,197 @@ function renderItemMaterials()
 
                     '</td>' +
 
-                '</tr>'
+                '</tr>';
 
-            );
 
-        }
-    );
-}
-$(document).on('click','#addMaterialBtn', function () {
+            tbody.append(row);
 
-        $('#addRawMaterialForm')[0]
-            .reset();
-
-        $('#addRawMaterialModal')
-            .modal('show');
+        });
 
     }
-);
-
-$(document).on('click', '#saveRawMaterialBtn',function () {
-
-        var materialOption =
-            $('#new_material_id')
-                .find(':selected');
-
-        var unitOption =
-            $('#new_material_unit')
-                .find(':selected');
 
 
-        var materialId =
-            $('#new_material_id').val();
+    /*
+     * ============================================================
+     * MATERIAL QUANTITY CHANGE
+     * ============================================================
+     */
 
-        var unitId =
-            $('#new_material_unit').val();
+    $(document).on('input', '.material-qty', function () {
+
+        var index =
+            parseInt($(this).data('index'), 10);
 
         var quantity =
-            $('#new_material_qty').val();
+            parseFloat($(this).val());
 
+        if (isNaN(quantity) || quantity < 0) {
+
+            quantity = 0;
+
+            $(this).val(0);
+        }
+
+
+        if (!jobOrderMaterials[currentJobOrderItemId]) {
+
+            jobOrderMaterials[currentJobOrderItemId] = [];
+
+        }
+
+
+        jobOrderMaterials[
+            currentJobOrderItemId
+        ][index].quantity_required = quantity;
+
+    });
+
+
+    /*
+     * ============================================================
+     * DELETE MATERIAL
+     * ============================================================
+     */
+
+    $(document).on('click', '.delete-material', function () {
+
+        var index =
+            parseInt($(this).data('index'), 10);
+
+
+        if (!jobOrderMaterials[currentJobOrderItemId]) {
+
+            return;
+
+        }
+
+
+        if (!confirm('Are you sure you want to remove this material?')) {
+
+            return;
+
+        }
+
+
+        jobOrderMaterials[
+            currentJobOrderItemId
+        ].splice(index, 1);
+
+
+        renderItemMaterials();
+
+    });
+
+
+    /*
+     * ============================================================
+     * OPEN ADD RAW MATERIAL MODAL
+     * ============================================================
+     */
+
+    $('#addRawMaterialBtn').on('click', function () {
+
+        $('#raw_material_id').val('');
+
+        $('#raw_material_unit').val('');
+
+        $('#raw_material_quantity').val('1');
+
+
+        $('#rawMaterialModal').modal('show');
+
+    });
+
+
+    /*
+     * ============================================================
+     * ADD RAW MATERIAL
+     * ============================================================
+     */
+
+    $('#addRawMaterialConfirmBtn').on('click', function () {
+
+        var materialSelect =
+            $('#raw_material_id');
+
+        var materialId =
+            materialSelect.val();
+
+        var selectedOption =
+            materialSelect.find('option:selected');
+
+
+        var materialCode =
+            selectedOption.data('code') || '';
+
+        var materialName =
+            selectedOption.data('name') || '';
+
+
+        var unitId =
+            $('#raw_material_unit').val();
+
+        var unitName =
+            $('#raw_material_unit option:selected').text().trim();
+
+
+        var quantity =
+            parseFloat(
+                $('#raw_material_quantity').val()
+            );
+
+
+        /*
+         * Validation
+         */
 
         if (!materialId) {
 
-            alert(
-                'Please select raw material.'
-            );
+            alert('Please select a raw material.');
 
             return;
+
         }
 
 
         if (!unitId) {
 
-            alert(
-                'Please select unit.'
-            );
+            alert('Please select a unit.');
 
             return;
+
         }
 
 
-        if (
-            !quantity ||
-            parseFloat(quantity) <= 0
-        ) {
+        if (isNaN(quantity) || quantity <= 0) {
 
-            alert(
-                'Please enter quantity.'
-            );
+            alert('Please enter a valid quantity.');
 
             return;
+
         }
 
 
-        var material = {
+        /*
+         * Initialize array
+         */
 
-            job_order_material_id:
-                null,
+        if (!jobOrderMaterials[currentJobOrderItemId]) {
+
+            jobOrderMaterials[currentJobOrderItemId] = [];
+
+        }
+
+
+        /*
+         * Add MANUAL material
+         */
+
+        jobOrderMaterials[
+            currentJobOrderItemId
+        ].push({
+
+            job_order_material_id: null,
 
             job_order_item_id:
                 currentJobOrderItemId,
@@ -898,16 +1696,19 @@ $(document).on('click', '#saveRawMaterialBtn',function () {
                 materialId,
 
             material_code:
-                materialOption.data('code'),
+                materialCode,
 
             material_name:
-                materialOption.data('name'),
+                materialName,
 
             quantity_required:
                 quantity,
 
             unit:
-                unitOption.data('abbr'),
+                unitName,
+
+            unit_id:
+                unitId,
 
             cost:
                 0,
@@ -915,155 +1716,62 @@ $(document).on('click', '#saveRawMaterialBtn',function () {
             source:
                 'MANUAL'
 
-        };
+        });
 
 
         /*
-         * Append new material
+         * Close raw material modal
          */
 
-        if (
-            !jobOrderMaterials[
-                currentProjectItemId
-            ]
-        ) {
-
-            jobOrderMaterials[
-                currentProjectItemId
-            ] = [];
-
-        }
-
-
-        jobOrderMaterials[
-            currentProjectItemId
-        ].push(material);
+        $('#rawMaterialModal').modal('hide');
 
 
         /*
-         * Close second popup
-         */
-
-        $('#addRawMaterialModal')
-            .modal('hide');
-
-
-        /*
-         * Refresh first popup
+         * Refresh materials table
          */
 
         renderItemMaterials();
 
-    }
-);
-$(document).on('change','.material-qty',function () {
-
-        var index =
-            $(this).data('index');
-
-        var quantity =
-            $(this).val();
+    });
 
 
-        jobOrderMaterials[
-            currentProjectItemId
-        ][index].quantity_required =
-            quantity;
+    /*
+     * ============================================================
+     * SAVE MATERIALS
+     * ============================================================
+     */
 
-    }
-);
-$(document).on( 'click','.delete-material',function () {
+    $('#saveMaterialsBtn').on('click', function () {
 
-        var index =
-            $(this).data('index');
+        if (!currentJobOrderItemId) {
 
-
-        if (
-            !confirm(
-                'Remove this raw material?'
-            )
-        ) {
+            alert('Job Order item not selected.');
 
             return;
-        }
 
-
-        jobOrderMaterials[
-            currentProjectItemId
-        ].splice(index, 1);
-
-
-        renderItemMaterials();
-
-    }
-);
-
-$(document).on('click', '.delete-material', function () {
-
-        var index =
-            $(this).data('index');
-
-
-        if (
-            !confirm(
-                'Remove this raw material?'
-            )
-        ) {
-
-            return;
-        }
-
-
-        jobOrderMaterials[
-            currentProjectItemId
-        ].splice(index, 1);
-
-
-        renderItemMaterials();
-
-    }
-);
-
-$(document).on('click', '#saveItemMaterialsBtn',function () {
-
-        var projectItemId =
-            currentProjectItemId;
-
-        var jobOrderItemId =
-            currentJobOrderItemId;
-
-
-        if (!projectItemId) {
-
-            alert(
-                'Project Item ID is missing.'
-            );
-
-            return;
         }
 
 
         var materials =
-            jobOrderMaterials[
-                projectItemId
-            ] || [];
+            jobOrderMaterials[currentJobOrderItemId] || [];
 
 
-        if (materials.length === 0) {
+        var $button =
+            $(this);
 
-            alert(
-                'Please add at least one raw material.'
-            );
 
-            return;
-        }
+        $button.prop('disabled', true);
+
+        $button.html(
+            '<i class="fa fa-spinner fa-spin"></i> Saving...'
+        );
 
 
         $.ajax({
 
             url:
                 base_url +
-                'index.php/Production/save_job_order_item_materialse',
+                'index.php/Production/save_job_order_item_materials',
 
             type: 'POST',
 
@@ -1071,27 +1779,18 @@ $(document).on('click', '#saveItemMaterialsBtn',function () {
 
             data: {
 
-                job_order_item_id:
-                    jobOrderItemId,
+                job_order_id: $('#job_order_id').val(),
+
+                job_order_item_id: currentJobOrderItemId,
 
                 project_item_id:
-                    projectItemId,
+                    currentProjectItemId,
+
+                item_master_id:
+                    currentItemMasterId,
 
                 materials:
                     JSON.stringify(materials)
-
-            },
-
-            beforeSend: function () {
-
-                $('#saveItemMaterialsBtn')
-                    .prop(
-                        'disabled',
-                        true
-                    )
-                    .html(
-                        '<i class="fa fa-spinner fa-spin"></i> Saving...'
-                    );
 
             },
 
@@ -1100,17 +1799,17 @@ $(document).on('click', '#saveItemMaterialsBtn',function () {
                 if (response.status) {
 
                     alert(
-                        'Raw materials saved successfully.'
+                        response.message ||
+                        'Materials saved successfully.'
                     );
 
-                    $('#materialModal')
-                        .modal('hide');
+                    $('#materialsModal').modal('hide');
 
-                }
-                else {
+                } else {
 
                     alert(
-                        response.message
+                        response.message ||
+                        'Unable to save materials.'
                     );
 
                 }
@@ -1119,83 +1818,136 @@ $(document).on('click', '#saveItemMaterialsBtn',function () {
 
             error: function (xhr) {
 
-                console.log(
-                    xhr.responseText
-                );
+                console.log(xhr.responseText);
 
                 alert(
-                    'Unable to save raw materials.'
+                    'Error while saving materials.'
                 );
 
             },
 
             complete: function () {
 
-                $('#saveItemMaterialsBtn')
-                    .prop(
-                        'disabled',
-                        false
-                    )
-                    .html(
-                        '<i class="fa fa-save"></i> Save Materials'
-                    );
+                $button.prop('disabled', false);
+
+                $button.html(
+                    '<i class="fa fa-save"></i> Save Materials'
+                );
 
             }
 
         });
 
+    });
+
+
+    /*
+     * ============================================================
+     * UPDATE JOB ORDER
+     * ============================================================
+     */
+
+   $('#jobOrderEditForm').on('submit', function (e) {
+
+    e.preventDefault();
+
+    var form = $(this);
+
+    var $button = form.find('button[type="submit"]');
+
+    /*
+     * =========================================================
+     * VALIDATION
+     * =========================================================
+     */
+
+    var projectId =
+        $('input[name="fk_project_id"]').val();
+
+    /*
+     * PROJECT JOB ORDER
+     * At least one Sales Order must be selected
+     */
+    if (projectId) {
+
+        var selectedSalesOrders =
+            $('.sales-order-checkbox:checked')
+                .map(function () {
+                    return $(this).val();
+                })
+                .get();
+
+        if (selectedSalesOrders.length === 0) {
+
+            alert(
+                'Please select at least one Sales Order before updating the Job Order.'
+            );
+
+            return false;
+        }
+
     }
-);
 
-$(document).on('click', '#saveJobOrder', function () {
 
-    var jobOrderId = $('#job_order_id').val();
+    /*
+     * =========================================================
+     * START UPDATE
+     * =========================================================
+     */
 
-    if (!jobOrderId) {
-        alert('Job Order ID is missing.');
-        return;
-    }
+    $button.prop('disabled', true);
 
-    var data = {
-
-        job_order_id: jobOrderId,
-
-        order_date:
-            $('#order_date').val(),
-
-        rep_name:
-            $('#rep_name').val(),
-
-        contact_person:$('#conatct_person').val(),
-
-        start_date:
-            $('#start_date').val(),
-
-        finish_date:
-            $('#finish_date').val(),
-
-        remarks:
-            $('#remarks').val()
-    };
+    $button.html(
+        '<i class="fa fa-spinner fa-spin"></i> Updating...'
+    );
 
 
     $.ajax({
 
-        url: base_url +'index.php/Production/update',
+        url:
+            base_url +
+            'index.php/Production/update',
 
         type: 'POST',
 
         dataType: 'json',
 
-        data: data,
+        data: {
 
-        beforeSend: function () {
+            job_order_id:
+                $('#job_order_id').val(),
 
-            $('#saveJobOrder')
-                .prop('disabled', true)
-                .html(
-                    '<i class="fa fa-spinner fa-spin"></i> Saving...'
-                );
+            sales_order_ids:
+                $('.sales-order-checkbox:checked')
+                    .map(function () {
+                        return $(this).val();
+                    })
+                    .get(),
+
+            order_no:
+                $('#order_no').val(),
+
+            order_date:
+                $('#order_date').val(),
+
+            fk_project_id:
+                $('input[name="fk_project_id"]').val(),
+
+            contact_person:
+                $('#contact_person').val(),
+
+            rep_name:
+                $('#rep_name').val(),
+
+            start_date:
+                $('#start_date').val(),
+
+            finish_date:
+                $('#finish_date').val(),
+
+            remarks:
+                $('#remarks').val()
+
         },
 
         success: function (response) {
@@ -1207,11 +1959,6 @@ $(document).on('click', '#saveJobOrder', function () {
                     'Job Order updated successfully.'
                 );
 
-                /*
-                 * Optional:
-                 * redirect to listing
-                 */
-
                 window.location.href =
                     base_url +
                     'index.php/Production/job_order';
@@ -1222,7 +1969,9 @@ $(document).on('click', '#saveJobOrder', function () {
                     response.message ||
                     'Unable to update Job Order.'
                 );
+
             }
+
         },
 
         error: function (xhr) {
@@ -1230,20 +1979,146 @@ $(document).on('click', '#saveJobOrder', function () {
             console.log(xhr.responseText);
 
             alert(
-                'Unable to update Job Order.'
+                'Error while updating Job Order.'
             );
+
         },
 
         complete: function () {
 
-            $('#saveJobOrder')
-                .prop('disabled', false)
-                .html(
-                    '<i class="fa fa-save"></i> Save Job Order'
-                );
+            $button.prop('disabled', false);
+
+            $button.html(
+                '<i class="fa fa-save"></i> Update Job Order'
+            );
+
         }
 
     });
 
 });
+
+    /*
+     * ============================================================
+     * SELECT2
+     * ============================================================
+     */
+
+    if ($.fn.select2) {
+
+        $('#contact_person').select2({
+
+            width: '100%',
+
+            placeholder: 'Select Contact Person',
+
+            allowClear: true
+
+        });
+
+
+        $('#rep_name').select2({
+
+            width: '100%',
+
+            placeholder: 'Select Representative',
+
+            allowClear: true
+
+        });
+
+
+        $('#raw_material_id').select2({
+
+            width: '100%',
+
+            dropdownParent: $('#rawMaterialModal'),
+
+            placeholder: 'Select Raw Material',
+
+            allowClear: true
+
+        });
+
+
+        $('#raw_material_unit').select2({
+
+            width: '100%',
+
+            dropdownParent: $('#rawMaterialModal'),
+
+            placeholder: 'Select Unit',
+
+            allowClear: true
+
+        });
+
+    }
+
+});
+
 </script>
+
+
+<style>
+
+    /*
+     * Job Order Edit
+     */
+
+    #jobOrderItemsTable th,
+    #jobOrderItemsTable td {
+
+        vertical-align: middle;
+
+    }
+
+
+    #itemMaterialsTable th,
+    #itemMaterialsTable td {
+
+        vertical-align: middle;
+
+    }
+
+
+    .material-btn {
+
+        min-width: 90px;
+
+    }
+
+
+    .material-qty {
+
+        width: 100px;
+
+    }
+
+
+    .well {
+
+        background: #f7f7f7;
+
+        border: 1px solid #ddd;
+
+    }
+
+
+    .modal-lg {
+
+        width: 90%;
+
+        max-width: 1200px;
+
+    }
+
+
+    .alert {
+
+        margin-bottom: 15px;
+
+    }
+
+</style>
+

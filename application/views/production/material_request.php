@@ -11,7 +11,7 @@
 
             <div class="col-md-4">
 
-                <label>Material Request No.</label>
+                <label>Material Requisition No.</label>
 
                 <input
                     type="text"
@@ -99,14 +99,14 @@
 
                         <table
                             class="table table-bordered table-striped"
-                            id="materialRequestTable">
+                            id="materialRequestTable" width="100%">
 
                             <thead>
 
                                 <tr>
 
                                     <th>#</th>
-
+                                    <th>Sales Order</th>
                                     <th>Product</th>
 
                                     <th>Material</th>
@@ -126,11 +126,7 @@
                             </thead>
 
                             <tbody>
-                                <tr>
-                                    <td colspan="7" class="text-center">
-                                       Select a Job Order.
-                                    </td>
-                                </tr>
+                               
                             </tbody>
                         </table>
 
@@ -159,7 +155,7 @@
                     class="btn btn-primary">
 
                     <i class="fa fa-save"></i>
-                    Submit Material Request
+                    Submit Material Requisition
 
                 </button>
 
@@ -958,6 +954,12 @@ function renderMaterialRequestItems()
 
                 '<td>' +
                 escapeHtml(
+                    item.so_code || ''
+                ) +
+                '</td>' +
+
+                '<td>' +
+                escapeHtml(
                     item.item_description || ''
                 ) +
                 '</td>' +
@@ -1022,7 +1024,7 @@ function renderMaterialRequestItems()
                 '<td>' +
 
                 escapeHtml(
-                    item.unit_id || ''
+                   item.unit || item.unit_id || ''
                 ) +
 
                 '</td>' +

@@ -324,8 +324,8 @@
             <th width="150">Job Order No</th>
             <td><?= htmlspecialchars($job_order->job_order_no ?? "") ?></td>
 
-            <th width="150">Order Date</th>
-            <td><?= htmlspecialchars(date('m-d-Y', strtotime($job_order->order_date))) ?>
+            <th width="150">So Code</th>
+            <td><?= htmlspecialchars($job_order->so_code) ?>
 </td>
         </tr>
 
@@ -351,9 +351,9 @@
             <td><?= htmlspecialchars(date('m-d-Y', strtotime($job_order->finish_date))) ?>
             </td>
 
-            <th>Project</th>
+            <th>Order Date</th>
             <td>
-                <?= htmlspecialchars($job_order->project_name ?? '') ?>
+                <?= htmlspecialchars(date('m-d-Y', strtotime($job_order->order_date))) ?>
             </td>
         </tr>
 

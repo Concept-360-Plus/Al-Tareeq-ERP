@@ -15,92 +15,73 @@
                 <strong>Job Order Information</strong>
             </div>
 
-            <div class="panel-body">
+    <div class="panel-body">
 
-               
+        <!-- ROW 1 -->
+        <div class="row">
 
-                    <div class="col-md-4">
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label>
+                        Job Order Type
+                        <span class="text-danger">*</span>
+                    </label>
 
-                       
-                        <label>
-                            Job Order Type
-                            <span class="text-danger">*</span>
-                        </label>
+                    <select name="job_order_type"
+                            id="job_order_type"
+                            class="form-control"
+                            required>
 
-                        <select name="job_order_type" id="job_order_type" class="form-control " required>
-                            <option value="">
-                                -- Select Type --
+                        <option value="">-- Select Type --</option>
+
+                        <option value="0">
+                            Normal Sales Order
+                        </option>
+
+                        <option value="1">
+                            Project
+                        </option>
+
+                    </select>
+                </div>
+            </div>
+
+
+            <div class="col-md-4" id="normalSalesOrderSection" style="display:none;">
+
+                <div class="form-group">
+
+                    <label>
+                        Sales Order
+                        <span class="text-danger">*</span>
+                    </label>
+
+                    <select name="sales_order_id"
+                            id="sales_order_id"
+                            class="form-control select2">
+
+                        <option value="">
+                            -- Select Sales Order --
+                        </option>
+
+                        <?php foreach ($sales_orders as $so): ?>
+
+                            <option value="<?= $so->so_id ?>">
+                                <?= htmlspecialchars($so->so_code) ?>
                             </option>
-                            <option value="0">
-                                Normal Sales Order
-                            </option>
-                            <option value="1">
-                                Project
-                            </option>
 
-                        </select>
+                        <?php endforeach; ?>
 
-                    </div>
-                    
-                    <div class="col-md-4" id="normalSalesOrderSection"  style="display:none;">
-                        <label>
-                            Sales Order
-                            <span class="text-danger">*</span>
-                        </label>
+                    </select>
 
-                        <select name="sales_order_id"  id="sales_order_id"  class="form-control select2">
-                            <option value="">
-                                -- Select Sales Order --
-                            </option>
-                            <?php foreach ($sales_orders as $so): ?>
+                </div>
 
-                                <option value="<?= $so->so_id ?>">
-                                    <?= htmlspecialchars($so->so_code) ?>
-                                </option>
-
-                            <?php endforeach; ?>
-
-                        </select>
-
-                    </div>
-
-                    <div class="col-md-4">
-
-                        <label>Job Order No</label>
-
-                        <input type="text"
-                               name="job_order_no"
-                               class="form-control"
-                               value="<?= $job_order_no; ?>"
-                               readonly>
-
-                    </div>
-                    
-                    <div class="col-md-4">
-
-                        <label>Order Date</label>
-
-                        <input type="date"
-                               name="order_date"
-                               class="form-control"
-                               value="<?= date('Y-m-d'); ?>"  required>
-
-                    </div>
+            </div>
 
 
-                    <div class="col-md-4">
+            <div class="col-md-4" id="projectSection" style="display:none;">
 
-                        <label>Order No</label>
-
-                        <input type="text"
-                               name="order_no"
-                               class="form-control"  required>
-
-                    </div>
-
-             
-
-                <div class="col-md-4"  id="projectSection"  style="display:none;">
+                <div class="form-group">
 
                     <label>
                         Project
@@ -126,62 +107,205 @@
                     </select>
 
                 </div>
-         
-                    <div class="col-md-4">
 
-                        <label>Contact Person</label>
-
-                        <input type="text"
-                               name="contact_person"
-                               class="form-control"  required>
-
-                    </div>
+            </div>
 
 
-                    <div class="col-md-4">
+            <div class="col-md-4">
 
-                        <label>Representative</label>
+                <div class="form-group">
 
-                        <input type="text"
-                               name="rep_name"
-                               class="form-control">
+                    <label>Job Order No</label>
 
-                    </div>
-                 
+                    <input type="text"
+                           name="job_order_no"
+                           class="form-control"
+                           value="<?= $job_order_no; ?>"
+                           readonly>
 
-                    <div class="col-md-4">
-
-                        <label>Start Date</label>
-
-                        <input type="date"
-                               name="start_date"
-                               class="form-control"  required>
-
-                    </div>
-
-
-                    <div class="col-md-4">
-
-                        <label>Finish Date</label>
-
-                        <input type="date"
-                               name="finish_date"
-                               class="form-control"  required>
-
-                    </div>
-                   
- <div class="col-md-4">
-
-                <label>Remarks</label>
-
-                <textarea name="remarks"
-                          class="form-control"
-                          rows="3"></textarea>
-
-                            </div>
                 </div>
- </div>
 
+            </div>
+
+        </div>
+
+
+        <!-- ROW 2 -->
+        <div class="row">
+
+            <div class="col-md-4">
+
+                <div class="form-group">
+
+                    <label>Order Date</label>
+
+                    <input type="date"
+                           name="order_date"
+                           class="form-control"
+                           value="<?= date('Y-m-d'); ?>"
+                           required>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <div class="form-group">
+
+                    <label>Order No</label>
+
+                    <input type="text"
+                           name="order_no"
+                           class="form-control"
+                           required>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <div class="form-group">
+
+                    <label>Contact Person</label>
+                
+                    <select tabindex="10" class="form-select form-control"
+                    id="contact_person" name="contact_person" required>
+                             <option value="">
+                                Select
+                             </option>
+                             <?php foreach ($user_records as $s) { ?>
+                                    <option value="<?php echo $s['user_id']; ?>">
+                                      <?php echo $s['user_name']; ?>
+                                    </option>
+                              <?php } ?>
+                    </select>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ROW 3 -->
+        <div class="row">
+
+            <div class="col-md-4">
+
+                <div class="form-group">
+
+                    <label>Representative</label>
+
+                <select tabindex="10" class="form-select form-control"
+                    id="rep_name" name="rep_name" required>
+                             <option value="">
+                                Select
+                             </option>
+                             <?php foreach ($user_records as $s) { ?>
+                                    <option value="<?php echo $s['user_id']; ?>">
+                                      <?php echo $s['user_name']; ?>
+                                    </option>
+                              <?php } ?>
+                    </select>
+                </div>
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <div class="form-group">
+
+                    <label>Start Date</label>
+
+                    <input type="date"
+                           name="start_date"
+                           class="form-control"
+                           required>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <div class="form-group">
+
+                    <label>Finish Date</label>
+
+                    <input type="date"
+                           name="finish_date"
+                           class="form-control"
+                           required>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ROW 4 -->
+        <div class="row">
+
+            <div class="col-md-8">
+
+                <div class="form-group">
+
+                    <label>Remarks</label>
+
+                    <textarea name="remarks"
+                              class="form-control"
+                              rows="3"></textarea>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+</div>
+        
+        <!-- PROJECT SALES ORDERS -->
+        <div class="panel panel-default" id="projectSalesOrderPanel" style="display:none;">
+
+            <div class="panel-heading">
+                <strong>Project Sales Orders</strong>
+            </div>
+
+            <div class="panel-body">
+
+                <table class="table table-bordered"
+                    id="projectSalesOrdersTable">
+
+                    <thead>
+                        <tr>
+                            <th width="50">Select</th>
+                            <th>Sales Order</th>
+                            <th>SO Date</th>
+                            <th>Customer</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr>
+                            <td colspan="4" class="text-center">
+                                Select a Project
+                            </td>
+                        </tr>
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
 
 
         <!-- PROJECT ITEMS -->
@@ -248,10 +372,10 @@
 
     </form>
 
-</div></div></div></div
+</div></div></div></div>
 
 
-<!-- MATERIAL MODAL -->
+
 
 <div class="modal fade" id="materialModal">
 
@@ -437,61 +561,69 @@
 
 var base_url = "<?= base_url(); ?>";
 
+var currentProjectItemId = null;
 var currentItemMasterId = null;
+
+var jobOrderMaterials = {};
+var jobOrderMaterialsSaved = {};
+
+
+/* =========================================================
+   DOCUMENT READY
+========================================================= */
+
 $(document).ready(function () {
 
-        $('.select2').select2({
-            placeholder: '-- Select Project --',
-            allowClear: true,
-            width: '100%'
-        });
+    /* -----------------------------------------------------
+       SELECT2
+    ----------------------------------------------------- */
 
-  
+    $('.select2').select2({
+        placeholder: '-- Select --',
+        allowClear: true,
+        width: '100%'
+    });
 
-    /*
-    * Load project items
-    */
-   $('#job_order_type').on('change', function () {
+
+    /* -----------------------------------------------------
+       JOB ORDER TYPE CHANGE
+    ----------------------------------------------------- */
+
+    $('#job_order_type').on('change', function () {
 
         var type = $(this).val();
 
-        $('#normalSalesOrderSection').hide();
-        $('#projectSection').hide();
-        $('#projectSalesOrderPanel').hide();
+        if (type == '1') {
 
-        $('#sales_order_id').val('').trigger('change');
-        $('#project_id').val('').trigger('change');
-
-        $('#projectItemsTable tbody').html(
-            '<tr>' +
-            '<td colspan="9" class="text-center">' +
-            'Select Sales Order' +
-            '</td>' +
-            '</tr>'
-        );
-
-        if (type == '0') {
-
-            // NORMAL SALES ORDER
-            $('#normalSalesOrderSection').show();
-
-            $('#itemsPanelTitle').text(
-                'Sales Order Items'
-            );
-
-        } else if (type == '1') {
-
-            // PROJECT
+            $('#normalSalesOrderSection').hide();
             $('#projectSection').show();
 
-            $('#itemsPanelTitle').text(
-                'Project Sales Order Items'
+            $('#sales_order_id').val(null).trigger('change');
+
+        } else {
+
+            $('#projectSection').hide();
+            $('#normalSalesOrderSection').show();
+
+            $('#project_id').val(null).trigger('change');
+
+            $('#projectSalesOrderPanel').hide();
+
+            $('#projectItemsTable tbody').html(
+                '<tr>' +
+                    '<td colspan="9" class="text-center">' +
+                        'Select Sales Order' +
+                    '</td>' +
+                '</tr>'
             );
         }
-
     });
 
-    //normal sales order change
+
+    /* -----------------------------------------------------
+       NORMAL SALES ORDER CHANGE
+    ----------------------------------------------------- */
+
     $('#sales_order_id').on('change', function () {
 
         var salesOrderId = $(this).val();
@@ -500,9 +632,9 @@ $(document).ready(function () {
 
             $('#projectItemsTable tbody').html(
                 '<tr>' +
-                '<td colspan="9" class="text-center">' +
-                'Select a Sales Order' +
-                '</td>' +
+                    '<td colspan="9" class="text-center">' +
+                        'Select Sales Order' +
+                    '</td>' +
                 '</tr>'
             );
 
@@ -510,743 +642,183 @@ $(document).ready(function () {
         }
 
         loadSalesOrderItems(salesOrderId);
-
     });
 
-  });
 
-  function loadSalesOrderItems(salesOrderId)
-{
-    var tbody =
-        $('#projectItemsTable tbody');
+    /* -----------------------------------------------------
+       PROJECT CHANGE
+    ----------------------------------------------------- */
 
-    $('#itemsLoading').show();
+    $(document).on('change', '#project_id', function () {
 
-    $.ajax({
+        var projectId = $(this).val();
 
-        url:
-            base_url +
-            'index.php/Production/get_sales_order_items',
+        console.log('Selected Project ID:', projectId);
 
-        type: 'POST',
+        if (!projectId) {
 
-        dataType: 'json',
+            $('#projectSalesOrderPanel').hide();
 
-        data: {
-            sales_order_id: salesOrderId
-        },
-
-        success: function(res) {
-
-            tbody.empty();
-
-            if (!res || !res.length) {
-
-                tbody.html(
-                    '<tr>' +
+            $('#projectItemsTable tbody').html(
+                '<tr>' +
                     '<td colspan="9" class="text-center">' +
-                    'No items found.' +
+                        'Select a Project' +
                     '</td>' +
-                    '</tr>'
-                );
-
-                return;
-            }
-
-            $.each(res, function(index, item) {
-
-                appendJobOrderItem(
-                    index,
-                    item
-                );
-
-            });
-        },
-
-        error: function(xhr) {
-
-            console.log(xhr.responseText);
-
-            tbody.html(
-                '<tr>' +
-                '<td colspan="9" class="text-center text-danger">' +
-                'Unable to load items.' +
-                '</td>' +
                 '</tr>'
             );
-        },
 
-        complete: function() {
-            $('#itemsLoading').hide();
+            return;
         }
 
+        loadProjectSalesOrders(projectId);
     });
-}
 
-$('#project_id').on('change', function () {
 
-    var projectId = $(this).val();
+    /* -----------------------------------------------------
+       SELECT ALL PROJECT SALES ORDERS
+    ----------------------------------------------------- */
 
-    if (!projectId) {
+    $(document).on('change', '#selectAllProjectSO', function () {
 
-        $('#projectSalesOrderPanel').hide();
+        var checked = $(this).is(':checked');
 
-        return;
-    }
-
-    loadProjectSalesOrders(projectId);
-
-});
-
-function loadProjectSalesOrders(projectId)
-{
-    $('#projectSalesOrderPanel').show();
-
-    var tbody =
-        $('#projectSalesOrdersTable tbody');
-
-    tbody.html(
-        '<tr>' +
-        '<td colspan="6" class="text-center">' +
-        'Loading...' +
-        '</td>' +
-        '</tr>'
-    );
-
-    $.ajax({
-
-        url:
-            base_url +
-            'index.php/Production/get_project_sales_orders',
-
-        type: 'POST',
-
-        dataType: 'json',
-
-        data: {
-            project_id: projectId
-        },
-
-        success: function(res) {
-
-            tbody.empty();
-
-            if (!res || !res.length) {
-
-                tbody.html(
-                    '<tr>' +
-                    '<td colspan="6" class="text-center">' +
-                    'No Sales Orders found for this project.' +
-                    '</td>' +
-                    '</tr>'
-                );
-
-                return;
-            }
-
-            $.each(res, function(index, so) {
-
-                tbody.append(
-
-                    '<tr>' +
-
-                    '<td>' +
-                    '<input type="checkbox" ' +
-                    'class="project-so-checkbox" ' +
-                    'name="sales_order_ids[]" ' +
-                    'value="' +
-                    so.sales_order_id +
-                    '">' +
-                    '</td>' +
-
-                    '<td>' +
-                    (index + 1) +
-                    '</td>' +
-
-                    '<td>' +
-                    (so.sales_order_no || '') +
-                    '</td>' +
-
-                    '<td>' +
-                    (so.customer_name || '') +
-                    '</td>' +
-
-                    '<td>' +
-                    (so.order_date || '') +
-                    '</td>' +
-
-                    '<td>' +
-                    (so.status || '') +
-                    '</td>' +
-
-                    '</tr>'
-                );
-
-            });
-
-        },
-
-        error: function(xhr) {
-
-            console.log(xhr.responseText);
-
-            tbody.html(
-                '<tr>' +
-                '<td colspan="6" class="text-center text-danger">' +
-                'Unable to load Sales Orders.' +
-                '</td>' +
-                '</tr>'
-            );
-        }
-
-    });
-}
-
-$(document).on('change','#selectAllSalesOrders',function() {
-
-        $('.project-so-checkbox')
-            .prop(
-                'checked',
-                $(this).prop('checked')
-            );
+        $('.project-so-checkbox').prop('checked', checked);
 
         loadSelectedProjectSalesOrderItems();
-    }
-);
+    });
 
-$(document).on( 'change',
-    '.project-so-checkbox',
-    function() {
+
+    /* -----------------------------------------------------
+       INDIVIDUAL PROJECT SALES ORDER
+    ----------------------------------------------------- */
+
+    $(document).on('change', '.project-so-checkbox', function () {
+
+        var total = $('.project-so-checkbox').length;
+
+        var checked = $('.project-so-checkbox:checked').length;
+
+        $('#selectAllProjectSO').prop(
+            'checked',
+            total > 0 && total === checked
+        );
 
         loadSelectedProjectSalesOrderItems();
-
-    }
-);
-
-function loadSelectedProjectSalesOrderItems()
-{
-    var salesOrderIds = [];
-
-    $('.project-so-checkbox:checked')
-        .each(function() {
-
-            salesOrderIds.push(
-                $(this).val()
-            );
-
-        });
-
-    if (salesOrderIds.length === 0) {
-
-        $('#projectItemsTable tbody').html(
-            '<tr>' +
-            '<td colspan="9" class="text-center">' +
-            'Select at least one Sales Order' +
-            '</td>' +
-            '</tr>'
-        );
-
-        return;
-    }
-
-    $.ajax({
-
-        url:
-            base_url +
-            'index.php/Production/get_multiple_sales_order_items',
-
-        type: 'POST',
-
-        dataType: 'json',
-
-        data: {
-            sales_order_ids: salesOrderIds
-        },
-
-        success: function(res) {
-
-            var tbody =
-                $('#projectItemsTable tbody');
-
-            tbody.empty();
-
-            $.each(res, function(index, item) {
-
-                appendJobOrderItem(
-                    index,
-                    item
-                );
-
-            });
-
-        },
-
-        error: function(xhr) {
-
-            console.log(xhr.responseText);
-
-        }
-
-    });
-}
-
-function appendJobOrderItem(index, item)
-{
-    var tbody =
-        $('#projectItemsTable tbody');
-
-    var projectItemId =
-        item.product_table_id || '';
-
-    var salesOrderId =
-        item.sales_order_id || '';
-
-    var salesOrderNo =
-        item.sales_order_code || '';
-
-    var itemMasterId =
-        item.item_master_id ||
-        item.product_id ||
-        '';
-
-    var itemCode =
-        item.item_code ||
-        item.product_code ||
-        '';
-
-    var description =
-        item.item_description ||
-        item.product_name ||
-        '';
-
-    var qty =
-        parseFloat(
-            item.quantity || 0
-        );
-
-    var unit =
-        item.unit_name ||
-        item.unit_abbr ||
-        '';
-
-    var price =
-        item.retail_price || 0;
-
-    var row =
-        '<tr>' +
-
-        '<td>' +
-
-        '<input type="checkbox" ' +
-        'name="items[' + index + '][selected]" ' +
-        'value="1">' +
-
-        '<input type="hidden" ' +
-        'name="items[' + index + '][product_table_id]" ' +
-        'value="' + projectItemId + '">' +
-
-        '<input type="hidden" ' +
-        'name="items[' + index + '][so_id]" ' +
-        'value="' + salesOrderId + '">' +
-
-        '<input type="hidden" ' +
-        'name="items[' + index + '][item_master_id]" ' +
-        'value="' + itemMasterId + '">' +
-
-        '<input type="hidden" ' +
-        'name="items[' + index + '][item_code]" ' +
-        'value="' + itemCode + '">' +
-
-        '<input type="hidden" ' +
-        'name="items[' + index + '][item_description]" ' +
-        'value="' + description + '">' +
-
-        '<input type="hidden" ' +
-        'name="items[' + index + '][retail_price]" ' +
-        'value="' + price + '">' +
-
-        '<input type="hidden" ' +
-        'name="items[' + index + '][unit]" ' +
-        'value="' + unit + '">' +
-
-        '</td>' +
-
-        '<td>' +
-        (index + 1) +
-        '</td>' +
-
-        '<td>' +
-        salesOrderNo +
-        '</td>' +
-
-        '<td>' +
-        itemCode +
-        '</td>' +
-
-        '<td>' +
-        description +
-        '</td>' +
-
-        '<td>' +
-        qty +
-        '</td>' +
-
-        '<td>' +
-
-        '<input type="number" ' +
-        'step="1" ' +
-        'min="0" ' +
-        'class="form-control" ' +
-        'name="items[' + index + '][quantity]" ' +
-        'value="' + qty + '">' +
-
-        '</td>' +
-
-        '<td>' +
-        unit +
-        '</td>' +
- '<td>' +
-
-                    '<button type="button" ' +
-                    'class="btn btn-xs btn-info material-btn" ' +
-
-                    'data-project-item-id="' +
-                    (item.product_table_id || '') +
-                    '" ' +
-
-                    'data-item-master="' +
-                    (item.product_id || '') +
-                    '" ' +
-
-                    'data-item-name="' +
-                    (item.product_name || '') +
-                    '">' +
-
-                    '<i class="fa fa-cubes"></i> Materials' +
-
-                    '</button>' +'</td>' +
-
-        '</tr>';
-
-    tbody.append(row);
-}
-
-/*
- * Open materials
- */
-$(document).on(
-    'click',
-    '.material-btn',
-    function () {
-
-        currentItemMasterId =
-            $(this).data('item-master');
-
-        var itemName =
-            $(this).data('item-name');
-
-
-        $('#selectedItemName').text(
-            itemName
-        );
-
-
-        $('#materialTable tbody').html(
-            '<tr>' +
-            '<td colspan="5" class="text-center">' +
-            'Loading...' +
-            '</td>' +
-            '</tr>'
-        );
-
-
-        $('#materialModal').modal('show');
-
-
-        $.ajax({
-            url: base_url +'index.php/Production/get_item_materials',
-            type: 'POST',
-            dataType: 'json',
-            data: {
-                item_master_id:
-                    currentItemMasterId
-            },
-
-            success: function (materials) {
-                var tbody = $('#materialTable tbody');
-                tbody.empty();
-                if (!materials.length) {
-
-                    tbody.html(
-                        '<tr>' +
-                        '<td colspan="5" class="text-center">' +
-                        'No standard raw materials found.' +
-                        '</td>' +
-                        '</tr>'
-                    );
-
-                    return;
-                }
-                $.each(materials, function (i, material) {
-                    tbody.append(
-                        '<tr>' +
-
-                        '<td>' +
-                        (material.material_code || '') +
-                        '</td>' +
-
-                        '<td>' +
-                        material.material_name +
-                        '</td>' +
-
-                        '<td>' +
-                        material.quantity_required +
-                        '</td>' +
-
-                        '<td>' +
-                        (material.unit_abbr || '') +
-                        '</td>' +
-
-                        '<td>' +
-                        '<span class="label label-info">' +
-                        'BOM' +
-                        '</span>' +
-                        '</td>' +
-
-                        '</tr>'
-                    );
-
-                });
-
-            }
-
-        });
-
-    }
-);
-
-
-$(document).on('click', '#addMaterialBtn', function () {
-
-    if (!currentItemMasterId) {
-        alert('Please select an item first.');
-        return;
-    }
-
-    $('#addRawMaterialForm')[0].reset();
-
-    $('#new_material_id').html(
-        '<option value="">Loading...</option>'
-    );
-
-    $('#new_material_unit').html(
-        '<option value="">Loading...</option>'
-    );
-
-    $('#addRawMaterialModal').modal('show');
-
-
-    // Load Raw Materials
-    $.ajax({
-
-        url: base_url + 'index.php/Production/get_raw_materials',
-
-        type: 'GET',
-
-        dataType: 'json',
-
-        success: function (materials) {
-
-            var html =
-                '<option value="">Select Raw Material</option>';
-
-            $.each(materials, function (i, material) {
-
-                html +=
-                    '<option value="' +
-                    material.material_id +
-                    '" ' +
-                    'data-code="' +
-                    (material.material_code || '') +
-                    '">' +
-
-                    (material.material_code
-                        ? material.material_code + ' - '
-                        : '') +
-
-                    material.material_name +
-
-                    '</option>';
-            });
-
-            $('#new_material_id').html(html);
-        }
-
     });
 
 
-    // Load Units from unit_master
-    $.ajax({
+    /* -----------------------------------------------------
+       MATERIAL BUTTON
+    ----------------------------------------------------- */
 
-        url: base_url + 'index.php/Production/get_units',
-
-        type: 'GET',
-
-        dataType: 'json',
-
-        success: function (units) {
-
-            var html =
-                '<option value="">Select Unit</option>';
-
-            $.each(units, function (i, unit) {
-
-                html +=
-                    '<option value="' +
-                    unit.unit_abbr +
-                    '">' +
-                    unit.unit_abbr +
-                    
-                    '</option>';
-            });
-
-            $('#new_material_unit').html(html);
-        }
-
-    });
-
-});
-
-var jobOrderMaterials = {};
-var jobOrderMaterialsSaved = {};
-var currentProjectItemId = null;
-var currentItemMasterId = null;
 
 $(document).on('click', '.material-btn', function () {
 
-    currentProjectItemId =
-        $(this).attr('data-project-item-id');
+    currentProjectItemId = $(this).data('project-item-id');
+    currentItemMasterId = $(this).data('item-master');
 
-    currentItemMasterId =
-        $(this).attr('data-item-master');
-
-    var itemName =
-        $(this).attr('data-item-name');
-
-
-    console.log(
-        'Project Item ID:',
-        currentProjectItemId
-    );
-
-    console.log(
-        'Item Master ID:',
-        currentItemMasterId
-    );
-
+    console.log('Project Item ID:', currentProjectItemId);
+    console.log('Item Master ID:', currentItemMasterId);
 
     if (!currentProjectItemId) {
-
         alert('Project Item ID is missing.');
-
         return;
     }
 
+    if (!currentItemMasterId) {
+        alert('Item Master ID is missing.');
+        return;
+    }
 
-    $('#selectedItemName').text(itemName);
-
-    $('#materialModal').modal('show');
-
+    $('#selectedItemName').text(
+        $(this).data('item-name') || ''
+    );
 
     /*
-     * Initialize material array for this
-     * project_items.id
+     * IMPORTANT:
+     * Your actual modal ID is #materialModal
      */
+    $('#materialModal').modal('show');
 
-    if (
-        !jobOrderMaterials[currentProjectItemId]
-    ) {
+    /*
+     * Load existing/BOM materials for this item
+     */
+    if (!jobOrderMaterials[currentProjectItemId]) {
 
         jobOrderMaterials[currentProjectItemId] = [];
 
         loadExistingMaterials();
 
-    }
-    else {
+    } else {
 
         renderItemMaterials();
 
     }
 
 });
-var jobOrderMaterials = {};
-var currentProjectItemId = null;
-var currentItemMasterId = null;
+
+
+
+
+    /* -----------------------------------------------------
+       ADD MANUAL MATERIAL
+    ----------------------------------------------------- */
+
+$(document).on('click', '#addMaterialBtn', function () {
+
+    loadRawMaterials();
+    loadUnits();
+
+    $('#addRawMaterialModal').modal('show');
+
+});
+
+
+
+    /* -----------------------------------------------------
+       SAVE MANUAL MATERIAL
+    ----------------------------------------------------- */
+
 $(document).on('click', '#saveRawMaterialBtn', function () {
 
-    var materialSelect =
-        $('#new_material_id');
-
-    var unitSelect =  $('#new_material_unit');
-    var materialOption =
-        materialSelect.find(':selected');
-
-    var unitOption =
-        unitSelect.find(':selected');
-
-
     var materialId =
-        materialSelect.val();
+        $('#new_material_id').val();
 
     var materialName =
-        materialOption.data('name') ||
-        materialOption.text();
+        $('#new_material_id option:selected').text();
 
     var materialCode =
-        materialOption.data('code') || '';
-
-    var unitId =
-        unitSelect.val();
-
-    var unit =
-        unitOption.data('abbr') ||
-        unitOption.text();
+        $('#new_material_id option:selected').data('code') || '';
 
     var quantity =
-        $('#new_material_qty').val();
+        parseFloat($('#new_material_qty').val()) || 0;
 
+    var unit =
+        $('#new_material_unit').val();
 
     if (!materialId) {
-        alert('Please select raw material.');
+        alert('Please select a material.');
         return;
     }
 
-    if (!unitId) {
-        alert('Please select unit.');
+    if (quantity <= 0) {
+        alert('Please enter a valid quantity.');
         return;
     }
 
-    if (!quantity || parseFloat(quantity) <= 0) {
-        alert('Please enter quantity.');
+    if (!unit) {
+        alert('Please select a unit.');
         return;
     }
 
-
-    /*
-     * DO NOT EMPTY THE FIRST POPUP TABLE
-     *
-     * DO NOT reload BOM here.
-     *
-     * Just append the new material
-     * to the existing array.
-     */
+    if (!currentProjectItemId) {
+        alert('Project item is missing.');
+        return;
+    }
 
     if (!jobOrderMaterials[currentProjectItemId]) {
-
         jobOrderMaterials[currentProjectItemId] = [];
-
     }
-
 
     jobOrderMaterials[currentProjectItemId].push({
 
@@ -1256,11 +828,9 @@ $(document).on('click', '#saveRawMaterialBtn', function () {
 
         material_name: materialName,
 
-        unit_id: unitId,
-
-        unit: unitId,
-
         quantity_required: quantity,
+
+        unit: unit,
 
         cost: 0,
 
@@ -1268,299 +838,164 @@ $(document).on('click', '#saveRawMaterialBtn', function () {
 
     });
 
+    /*
+     * Refresh material table
+     */
+    renderItemMaterials();
 
     /*
-     * Close second popup
+     * Close Add Raw Material popup
      */
-
     $('#addRawMaterialModal').modal('hide');
 
-
     /*
-     * Clear second popup form only
+     * Clear fields
      */
-
-    $('#addRawMaterialForm')[0].reset();
-
-
-    /*
-     * Re-render first popup.
-     *
-     * This renders:
-     * Existing BOM + Newly Added Material
-     */
-
-    renderItemMaterials();
+    $('#new_material_id').val('');
+    $('#new_material_unit').val('');
+    $('#new_material_qty').val('');
 
 });
 
-function renderManualMaterials()
-{
-    var tbody = $('#materialTable tbody');
-
-    var materials = jobOrderMaterials[currentProjectItemId] || [];
 
 
-    /*
-     * Remove previously rendered MANUAL rows
-     */
-    tbody.find('tr.manual-material-row').remove();
+    /* -----------------------------------------------------
+       SAVE ITEM MATERIALS
+    ----------------------------------------------------- */
 
+    $('#saveItemMaterialsBtn').on('click', function () {
 
-    /*
-     * Add saved manual materials
-     */
-    $.each(materials, function (index, material) {
+        if (!currentProjectItemId) {
 
-        var row =
-            '<tr class="manual-material-row">' +
+            alert('Project item is missing.');
 
-                '<td>' +
-                    $('<div>')
-                        .text(material.material_code || '')
-                        .html() +
-                '</td>' +
-
-                '<td>' +
-                    $('<div>')
-                        .text(material.material_name || '')
-                        .html() +
-                '</td>' +
-
-                '<td>' +
-                    material.quantity_required +
-                '</td>' +
-
-                '<td>' +
-                    $('<div>')
-                        .text(material.unit || '')
-                        .html() +
-                '</td>' +
-
-                '<td>' +
-                    '<span class="label label-warning">' +
-                        'MANUAL' +
-                    '</span>' +
-                '</td>' +
-
-            '</tr>';
-
-
-        tbody.append(row);
-
-    });
-}
-
-function loadUnits() {
-
-    $.ajax({
-        url: base_url + 'index.php/Production/get_units',
-        type: 'GET',
-        dataType: 'json',
-
-        success: function (units) {
-
-            var html = '<option value="">Select Unit</option>';
-
-            $.each(units, function (i, unit) {
-
-                html += '<option value="' + unit.unit_abbr + '">' +
-                            unit.unit_name +
-                            ' (' + unit.unit_abbr + ')' +
-                        '</option>';
-            });
-
-            $('#new_material_unit').html(html);
-
+            return;
         }
+
+
+        renderItemMaterials();
+
+        $('#materialModal').modal('hide');
     });
 
-}
-function loadJobOrderMaterials() {
 
-    var tbody = $('#materialTable tbody');
+    /* -----------------------------------------------------
+       SAVE JOB ORDER
+    ----------------------------------------------------- */
 
-    tbody.html(
-        '<tr>' +
-        '<td colspan="5" class="text-center">' +
-        'Loading...' +
-        '</td>' +
-        '</tr>'
-    );
+    $('#saveJobOrderBtn').on('click', function (e) {
+
+        e.preventDefault();
 
 
-    // First load BOM materials
+        var formData = $('#jobOrderForm').serializeArray();
+
+
+        formData.push({
+
+            name: 'job_order_materials',
+
+            value: JSON.stringify(jobOrderMaterials)
+
+        });
+
+
+        $.ajax({
+
+            url: base_url + 'index.php/Production/save_job_order',
+
+            type: 'POST',
+
+            data: formData,
+
+            dataType: 'json',
+
+            success: function (response) {
+
+                console.log(response);
+
+
+                if (response.status) {
+
+                    alert(response.message);
+
+                    window.location.href = base_url + 'index.php/Production/job_order';
+
+                } else {
+
+                    alert(
+                        response.message ||
+                        'Failed to save Job Order.'
+                    );
+                }
+
+            },
+
+            error: function (xhr) {
+
+                console.log(xhr.responseText);
+
+                alert(
+                    'Something went wrong while saving Job Order.'
+                );
+            }
+
+        });
+
+    });
+
+});
+
+
+/* =========================================================
+   LOAD NORMAL SALES ORDER ITEMS
+========================================================= */
+
+function loadSalesOrderItems(salesOrderId) {
+
     $.ajax({
 
-        url: base_url + 'index.php/Production/get_item_materials',
+        url: base_url + 'index.php/Production/get_sales_order_items',
 
         type: 'POST',
 
-        dataType: 'json',
-
         data: {
-            item_master_id: currentItemMasterId
+
+            so_id: salesOrderId
+
         },
 
-        success: function (materials) {
+        dataType: 'json',
+
+        success: function (response) {
+
+            var tbody = $('#projectItemsTable tbody');
 
             tbody.empty();
 
 
-            // BOM materials
-            if (materials && materials.length) {
+            if (!response || response.length === 0) {
 
-                $.each(materials, function (i, material) {
-
-                    appendMaterialRow(
-                        material,
-                        'BOM'
-                    );
-
-                });
-
-            }
-
-
-            // Manually added materials
-            var manualMaterials =
-                jobOrderMaterials[currentProjectItemId] || [];
-
-
-            $.each(
-                manualMaterials,
-                function (i, material) {
-
-                    appendMaterialRow(
-                        material,
-                        'MANUAL'
-                    );
-
-                }
-            );
-
-
-            // Nothing found
-            if (
-                (!materials || !materials.length) &&
-                !manualMaterials.length
-            ) {
-
-                tbody.html(
+                tbody.append(
                     '<tr>' +
-                    '<td colspan="5" class="text-center">' +
-                    'No raw materials added.' +
-                    '</td>' +
+                        '<td colspan="9" class="text-center">' +
+                            'No items found.' +
+                        '</td>' +
                     '</tr>'
                 );
 
+                return;
             }
 
-        }
 
-    });
+            $.each(response, function (index, item) {
 
-}
-function appendMaterialRow(material, source) {
-
-    var tbody = $('#materialTable tbody');
-
-    var labelClass =
-        source === 'BOM'
-            ? 'label-info'
-            : 'label-warning';
-
-
-    tbody.append(
-
-        '<tr>' +
-
-        '<td>' +
-        $('<div>')
-            .text(material.material_code || '')
-            .html() +
-        '</td>' +
-
-        '<td>' +
-        $('<div>')
-            .text(material.material_name || '')
-            .html() +
-        '</td>' +
-
-        '<td>' +
-        (material.quantity_required || 0) +
-        '</td>' +
-
-        '<td>' +
-        $('<div>')
-            .text(material.unit_abbr || '')
-            .html() +
-        '</td>' +
-
-        '<td>' +
-
-        '<span class="label ' +
-        labelClass +
-        '">' +
-
-        source +
-
-        '</span>' +
-
-        '</td>' +
-
-        '</tr>'
-
-    );
-
-}
-$(document).on('click', '#saveJobOrderBtn', function () {
-
-    var form = $('#jobOrderForm');
-
-    var formData = form.serializeArray();
-
-    // Add all project-item/material data
-    formData.push({
-        name: 'job_order_materials',
-        value: JSON.stringify(jobOrderMaterials)
-    });
-
-    $.ajax({
-
-        url: base_url + 'index.php/Production/save_job_order',
-
-        type: 'POST',
-
-        data: $.param(formData),
-
-        dataType: 'json',
-
-        beforeSend: function () {
-
-            $('#saveJobOrderBtn')
-                .prop('disabled', true)
-                .html(
-                    '<i class="fa fa-spinner fa-spin"></i> Saving...'
+                appendJobOrderItem(
+                    index,
+                    item
                 );
 
-        },
-
-        success: function (response) {
-
-            if (response.status) {
-
-                alert(response.message);
-
-                window.location.href =
-                    base_url +
-                    'index.php/Production/job_order';
-
-            } else {
-
-                alert(response.message);
-
-            }
+            });
 
         },
 
@@ -1568,38 +1003,559 @@ $(document).on('click', '#saveJobOrderBtn', function () {
 
             console.log(xhr.responseText);
 
-            alert('Unable to save Job Order.');
+            alert(
+                'Unable to load Sales Order items.'
+            );
+        }
+
+    });
+
+}
+
+
+/* =========================================================
+   LOAD PROJECT SALES ORDERS
+========================================================= */
+
+function loadProjectSalesOrders(projectId) {
+
+    $('#projectSalesOrderPanel').show();
+
+
+    $.ajax({
+
+        url: base_url + 'index.php/Production/get_project_sales_orders',
+
+        type: 'POST',
+
+        data: {
+
+            project_id: projectId
 
         },
 
-        complete: function () {
+        dataType: 'json',
 
-            $('#saveJobOrderBtn')
-                .prop('disabled', false)
-                .html(
-                    '<i class="fa fa-save"></i> Save Job Order'
+        success: function (response) {
+
+            var tbody =
+                $('#projectSalesOrdersTable tbody');
+
+
+            tbody.empty();
+
+
+            if (!response || response.length === 0) {
+
+                tbody.append(
+                    '<tr>' +
+                        '<td colspan="4" class="text-center">' +
+                            'No Sales Orders found.' +
+                        '</td>' +
+                    '</tr>'
                 );
+
+                return;
+            }
+
+
+            tbody.append(
+
+                '<tr>' +
+
+                    '<td colspan="5">' +
+
+                        '<label>' +
+
+                            '<input type="checkbox" ' +
+                            'id="selectAllProjectSO">' +
+
+                            ' Select All Sales Orders' +
+
+                        '</label>' +
+
+                    '</td>' +
+
+                '</tr>'
+
+            );
+
+
+            $.each(response, function (index, so) {
+
+                tbody.append(
+
+                    '<tr>' +
+
+                        '<td>' +
+
+                            '<input type="checkbox" ' +
+                            'class="project-so-checkbox" '  +
+'name="sales_order_ids[]" ' +
+                            'value="' +
+                            so.so_id +
+                            '">' +
+
+                        '</td>' +
+
+                        '<td>' +
+
+                            (so.so_code || '') +
+
+                        '</td>' +
+
+                        '<td>' +
+
+                            (so.so_date || '') +
+
+                        '</td>' +
+
+                        '<td>' +
+
+                            (so.customer_name || '') +
+
+                        '</td>' +
+
+                    '</tr>'
+
+                );
+
+            });
+
+        },
+
+        error: function (xhr) {
+
+            console.log(xhr.responseText);
+
+            alert(
+                'Unable to load Project Sales Orders.'
+            );
+        }
+
+    });
+
+}
+
+
+/* =========================================================
+   LOAD SELECTED PROJECT SALES ORDER ITEMS
+========================================================= */
+
+function loadSelectedProjectSalesOrderItems() {
+
+    var selectedSalesOrders = [];
+
+
+    $('.project-so-checkbox:checked').each(
+        function () {
+
+            selectedSalesOrders.push(
+                $(this).val()
+            );
+
+        }
+    );
+
+
+    if (selectedSalesOrders.length === 0) {
+
+        $('#projectItemsTable tbody').html(
+
+            '<tr>' +
+
+                '<td colspan="9" class="text-center">' +
+
+                    'Select Sales Order' +
+
+                '</td>' +
+
+            '</tr>'
+
+        );
+
+        return;
+    }
+
+
+    $.ajax({
+
+        url: base_url +'index.php/Production/get_multiple_sales_order_items',
+
+        type: 'POST',
+
+        data: {
+
+            so_ids: selectedSalesOrders
+
+        },
+
+        dataType: 'json',
+
+        success: function (response) {
+
+            var tbody =
+                $('#projectItemsTable tbody');
+
+
+            tbody.empty();
+
+
+            if (!response || response.length === 0) {
+
+                tbody.append(
+
+                    '<tr>' +
+
+                        '<td colspan="9" class="text-center">' +
+
+                            'No items found.' +
+
+                        '</td>' +
+
+                    '</tr>'
+
+                );
+
+                return;
+            }
+
+
+            $.each(response, function (index, item) {
+
+                appendJobOrderItem(
+                    index,
+                    item
+                );
+
+            });
+
+        },
+
+        error: function (xhr) {
+
+            console.log(xhr.responseText);
+
+            alert(
+                'Unable to load Sales Order items.'
+            );
+        }
+
+    });
+
+}
+
+
+/* =========================================================
+   APPEND JOB ORDER ITEM
+========================================================= */
+
+
+function appendJobOrderItem(index, item) {
+
+    var productTableId = item.product_table_id || '';
+    var soId           = item.so_id || '';
+    var soCode         = item.sales_order_code || item.so_code || '';
+
+    var itemMasterId   = item.item_master_id || item.product_id || '';
+    var itemCode       = item.item_code || item.product_code || '';
+    var itemName       = item.item_description || item.product_name || '';
+
+    var soQty          = parseFloat(item.quantity || 0);
+    var jobQty         = '';
+    var unit           = item.unit || '';
+    var unitId         = item.unit_id || '';
+
+    var price           = item.unit_price || 0;
+
+    var row = '<tr>';
+
+    // SELECT
+    row += '<td class="text-center">';
+
+    row += '<input type="checkbox" ' +
+        'class="job-item-checkbox" ' +
+        'name="selected_items[]" ' +
+        'value="' + productTableId + '">';
+
+    row += '</td>';
+
+    // #
+    row += '<td>' + (index + 1) + '</td>';
+
+    // SALES ORDER
+    row += '<td>';
+
+    row += '<strong>' + escapeHtml(soCode) + '</strong>';
+
+    row += '<input type="hidden" ' +
+        'name="items[' + index + '][product_table_id]" ' +
+        'value="' + productTableId + '">';
+
+    row += '<input type="hidden" ' +
+        'name="items[' + index + '][so_id]" ' +
+        'value="' + soId + '">';
+
+    row += '</td>';
+
+    // ITEM CODE
+    row += '<td>';
+
+    row += escapeHtml(itemCode);
+
+    row += '<input type="hidden" ' +
+        'name="items[' + index + '][item_master_id]" ' +
+        'value="' + itemMasterId + '">';
+
+    row += '<input type="hidden" ' +
+        'name="items[' + index + '][item_code]" ' +
+        'value="' + escapeHtml(itemCode) + '">';
+
+    row += '</td>';
+
+    // DESCRIPTION
+    row += '<td>';
+
+    row += escapeHtml(itemName);
+
+    row += '<input type="hidden" ' +
+        'name="items[' + index + '][item_description]" ' +
+        'value="' + escapeHtml(itemName) + '">';
+
+    row += '</td>';
+
+    // SO QTY
+    row += '<td class="text-right">';
+
+    row += soQty;
+
+    row += '</td>';
+
+    // JOB QTY
+    row += '<td>';
+
+    row += '<input type="number" ' +
+        'class="form-control input-sm job-qty" ' +
+        'name="items[' + index + '][job_quantity]" ' +
+        'value="' + jobQty + '" ' +
+        'min="0" ' +
+        'max="' + soQty + '" ' +
+        'step="0.01">';
+
+    row += '</td>';
+
+    // UNIT
+    row += '<td>';
+
+    row += escapeHtml(unit);
+
+    row += '<input type="hidden" ' +
+        'name="items[' + index + '][unit_id]" ' +
+        'value="' + unitId + '">';
+
+    row += '<input type="hidden" ' +
+        'name="items[' + index + '][unit]" ' +
+        'value="' + escapeHtml(unit) + '">';
+
+    row += '</td>';
+
+    // MATERIALS
+    row += '<td>';
+
+    row += '<button type="button" ' +
+        'class="btn btn-info btn-sm material-btn" ' +
+        'data-project-item-id="' + productTableId + '" ' +
+        'data-item-master="' + itemMasterId + '" ' +
+        'data-item-name="' + escapeHtml(itemName) + '">' +
+        '<i class="fa fa-cubes"></i>'+' Materials' +
+        '</button>';
+
+    row += '</td>';
+
+    row += '</tr>';
+
+    $('#projectItemsTable tbody').append(row);
+}
+
+
+/**
+ * Prevent special characters from breaking the HTML.
+ */
+function escapeHtml(value) {
+
+    if (value === null || value === undefined) {
+        return '';
+    }
+
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+
+/* =========================================================
+   LOAD RAW MATERIALS
+========================================================= */
+
+
+function loadRawMaterials() {
+
+    $.ajax({
+
+        url: base_url + 'index.php/Production/get_raw_materials',
+
+        type: 'GET',
+
+        dataType: 'json',
+
+        success: function (response) {
+
+            var select = $('#new_material_id');
+
+            select.empty();
+
+            select.append(
+                '<option value="">-- Select Material --</option>'
+            );
+
+            $.each(response, function (index, material) {
+
+                select.append(
+                    '<option value="' +
+                    material.material_id +
+                    '" data-code="' +
+                    (material.material_code || '') +
+                    '">' +
+                    escapeHtml(material.material_name) +
+                    '</option>'
+                );
+
+            });
+
+        },
+
+        error: function (xhr) {
+
+            console.log(xhr.responseText);
+
+            alert('Unable to load raw materials.');
 
         }
 
     });
 
-});
-function loadBOMMaterials()
-{
+}
+
+
+
+
+/* =========================================================
+   LOAD UNITS
+========================================================= */
+
+function loadUnits() {
+
     $.ajax({
 
-        url: base_url + 'index.php/Production/get_item_materials',
+        url: base_url + 'index.php/Production/get_units',
+
+        type: 'GET',
+
+        dataType: 'json',
+
+        success: function (response) {
+
+            console.log('UNIT RESPONSE:', response);
+
+            var select = $('#new_material_unit');
+
+            select.empty();
+
+            select.append(
+                '<option value="">-- Select Unit --</option>'
+            );
+
+            $.each(response, function (index, unit) {
+
+                select.append(
+                    '<option value="' + unit.unit_name + '">' +
+                        escapeHtml(unit.unit_name) +
+                    '</option>'
+                );
+
+            });
+
+        },
+
+        error: function (xhr) {
+
+            console.log('GET UNITS ERROR:', xhr.responseText);
+
+            alert('Unable to load units.');
+
+        }
+
+    });
+
+}
+
+
+
+
+/* =========================================================
+   LOAD EXISTING MATERIALS
+========================================================= */
+
+function loadExistingMaterials() {
+
+    if (!currentProjectItemId) {
+
+        return;
+    }
+
+
+    loadBOMMaterials();
+
+}
+
+
+/* =========================================================
+   LOAD BOM MATERIALS
+========================================================= */
+
+function loadBOMMaterials() {
+
+    if (!currentProjectItemId) {
+
+        return;
+    }
+
+
+    if (!currentItemMasterId) {
+
+        return;
+    }
+
+
+    $.ajax({
+
+        url: base_url +
+            'index.php/Production/get_item_materials',
 
         type: 'POST',
 
         data: {
+
             item_master_id: currentItemMasterId
+
         },
 
         dataType: 'json',
 
-        success: function(materials) {
+        success: function (response) {
 
             if (!jobOrderMaterials[currentProjectItemId]) {
 
@@ -1608,323 +1564,214 @@ function loadBOMMaterials()
             }
 
 
-            $.each(materials, function(i, material) {
+            if (response && response.length > 0) {
 
-                jobOrderMaterials[currentProjectItemId].push({
+                $.each(response, function (index, material) {
 
-                    material_id:
-                        material.material_id,
+                    var exists =
+                        jobOrderMaterials[
+                            currentProjectItemId
+                        ].some(function (existing) {
 
-                    material_code:
-                        material.material_code,
+                            return (
+                                existing.material_id ==
+                                material.material_id
+                            );
 
-                    material_name:
-                        material.material_name,
+                        });
 
-                    unit_id:
-                        material.unit_id || null,
 
-                    unit:
-                        material.unit || '',
+                    if (!exists) {
 
-                    quantity_required:
-                        material.quantity_required,
+                        jobOrderMaterials[
+                            currentProjectItemId
+                        ].push({
 
-                    cost:
-                        material.cost || 0,
+                            material_id:
+                                material.material_id,
 
-                    source:
-                        'BOM'
+                            material_code:
+                                material.material_code || '',
+
+                            material_name:
+                                material.material_name,
+
+                            quantity_required:
+                                parseFloat(
+                                    material.quantity_required
+                                ) || 0,
+
+                            unit:
+                                material.unit || '',
+
+                            cost:
+                                parseFloat(
+                                    material.cost
+                                ) || 0,
+
+                            source:
+                                'BOM'
+
+                        });
+
+                    }
 
                 });
 
-            });
-
-        }
-
-    });
-}
-if (!jobOrderMaterials[currentProjectItemId]) {
-
-    jobOrderMaterials[currentProjectItemId] = [];
-
-    loadBOMMaterials();
-
-}
-function renderItemMaterials()
-{
-    var tbody = $('#materialTable tbody');
-
-    tbody.empty();
-
-    var materials =
-        jobOrderMaterials[currentProjectItemId] || [];
-
-
-    if (materials.length === 0) {
-
-        tbody.html(
-            '<tr>' +
-            '<td colspan="5" class="text-center">' +
-            'No raw materials found' +
-            '</td>' +
-            '</tr>'
-        );
-
-        return;
-    }
-
-
-    $.each(materials, function(index, material) {
-
-        tbody.append(
-
-            '<tr>' +
-
-                '<td>' +
-                    $('<div>')
-                        .text(material.material_code || '')
-                        .html() +
-                '</td>' +
-
-                '<td>' +
-                    $('<div>')
-                        .text(material.material_name || '')
-                        .html() +
-                '</td>' +
-
-                '<td>' +
-                    material.quantity_required +
-                '</td>' +
-
-                '<td>' +
-                    $('<div>')
-                        .text(material.unit || '')
-                        .html() +
-                '</td>' +
-
-                '<td>' +
-
-                    '<span class="label ' +
-                    (
-                        material.source === 'BOM'
-                        ? 'label-info'
-                        : 'label-warning'
-                    ) +
-                    '">' +
-
-                    material.source +
-
-                    '</span>' +
-
-                '</td>' +
-
-            '</tr>'
-
-        );
-
-    });
-}
-$(document).on('click', '#saveItemMaterialsBtn', function () {
-
-    /*
-     * Get project_item_id from popup
-     */
-
-var projectItemId = window.activeProjectItemId || currentProjectItemId;
-
-if (!projectItemId) {
-    alert('Project Item ID is missing.2');
-    return;
-}
-
-                                /*
-    if (!projectItemId) {
-
-        alert('Project Item ID is missing.2');
-
-        return;
-    }
-
-                                */
-    /*
-     * Make sure global variable is also updated
-     */
-
-    currentProjectItemId =  projectItemId;
-    var materials = jobOrderMaterials[projectItemId] || [];
-    if (materials.length === 0) {
-
-        alert(
-            'Please add at least one raw material.'
-        );
-
-        return;
-    }
-     $('#materialModal').modal('hide');
-
-    /*$.ajax({
-
-        url:
-            base_url +
-            'index.php/Production/save_job_order_item_materials',
-
-        type: 'POST',
-
-        dataType: 'json',
-
-        data: {
-
-            project_item_id:
-                projectItemId,
-
-            job_order_id:
-                $('#job_order_id').val(),
-
-            materials:
-                JSON.stringify(materials)
-
-        },
-
-        beforeSend: function() {
-
-            $('#saveItemMaterialsBtn')
-                .prop('disabled', true)
-                .html(
-                    '<i class="fa fa-spinner fa-spin"></i> Saving...'
-                );
-
-        },
-
-        success: function(response) {
-
-            console.log(
-                'Save response:',
-                response
-            );
-
-
-            if (response.status) {
-
-                alert(
-                    'Raw materials saved successfully.'
-                );
-
-
-                jobOrderMaterialsSaved[
-                    projectItemId
-                ] = true;
-
-
-                $('#materialModal').modal('hide');
-
             }
-            else {
-
-                alert(
-                    response.message ||
-                    'Unable to save materials.'
-                );
-
-            }
-
-        },
-
-        error: function(xhr) {
-
-            console.log(
-                'AJAX ERROR:',
-                xhr.responseText
-            );
-
-            alert(
-                'Unable to save raw materials.'
-            );
-
-        },
-
-        complete: function() {
-
-            $('#saveItemMaterialsBtn')
-                .prop('disabled', false)
-                .html(
-                    '<i class="fa fa-save"></i> Save Materials'
-                );
-
-        }
-
-    });*/
-
-});
-
-function loadExistingMaterials()
-{
-    $.ajax({
-
-        url:
-            base_url +
-            'index.php/Production/get_item_materials',
-
-        type: 'POST',
-
-        dataType: 'json',
-
-        data: {
-            item_master_id:
-                currentItemMasterId
-        },
-
-        success: function(materials) {
-
-            var list =
-                jobOrderMaterials[currentProjectItemId];
-
-
-            $.each(materials, function(i, material) {
-
-                list.push({
-
-                    material_id:
-                        material.material_id,
-
-                    material_code:
-                        material.material_code || '',
-
-                    material_name:
-                        material.material_name || '',
-
-                    unit_id:
-                        material.unit || null,
-
-                    unit:
-                        material.unit_abbr || '',
-
-                    quantity_required:
-                        material.quantity_required || 0,
-
-                    cost:
-                        material.cost || 0,
-
-                    source: 'BOM'
-
-                });
-
-            });
 
 
             renderItemMaterials();
 
         },
 
-        error: function(xhr) {
+        error: function (xhr) {
 
-            console.log(
-                xhr.responseText
-            );
+            console.log(xhr.responseText);
+
+            renderItemMaterials();
 
         }
 
     });
+
+}
+
+
+/* =========================================================
+   RENDER ITEM MATERIALS
+========================================================= */
+
+
+function renderItemMaterials() {
+
+    var materials = jobOrderMaterials[currentProjectItemId] || [];
+
+    var tbody =
+        $('#materialTable tbody');
+
+    tbody.empty();
+
+    if (materials.length === 0) {
+
+        tbody.append(
+            '<tr>' +
+                '<td colspan="5" class="text-center">' +
+                    'No materials added.' +
+                '</td>' +
+            '</tr>'
+        );
+
+        return;
+    }
+
+    $.each(materials, function (index, material) {
+
+        tbody.append(
+
+            '<tr>' +
+
+                '<td>' +
+                    escapeHtml(material.material_code || '') +
+                '</td>' +
+
+                '<td>' +
+                    escapeHtml(material.material_name || '') +
+                '</td>' +
+
+                '<td>' +
+                    (material.quantity_required || 0) +
+                '</td>' +
+
+                '<td>' +
+                    escapeHtml(material.unit || '') +
+                '</td>' +
+
+                '<td>' +
+                    escapeHtml(material.source || 'BOM') +
+                '</td>' +
+
+            '</tr>'
+
+        );
+
+    });
+
+}
+
+
+
+/* =========================================================
+   RENDER MANUAL MATERIALS
+========================================================= */
+
+function renderManualMaterials() {
+
+    renderItemMaterials();
+
+}
+
+
+/* =========================================================
+   APPEND MATERIAL ROW
+========================================================= */
+
+function appendMaterialRow(
+    tbody,
+    material,
+    index
+) {
+
+    tbody.append(
+
+        '<tr>' +
+
+            '<td>' +
+
+                (index + 1) +
+
+            '</td>' +
+
+            '<td>' +
+
+                (material.material_code || '') +
+
+            '</td>' +
+
+            '<td>' +
+
+                (material.material_name || '') +
+
+            '</td>' +
+
+            '<td>' +
+
+                (material.quantity_required || 0) +
+
+            '</td>' +
+
+            '<td>' +
+
+                (material.unit || '') +
+
+            '</td>' +
+
+            '<td>' +
+
+                (material.cost || 0) +
+
+            '</td>' +
+
+            '<td>' +
+
+                (material.source || 'BOM') +
+
+            '</td>' +
+
+        '</tr>'
+
+    );
+
 }
 
 </script>

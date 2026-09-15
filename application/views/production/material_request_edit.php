@@ -486,7 +486,7 @@
 
                         <i class="fa fa-save"></i>
 
-                        Update Material Request
+                        Update Material Requisition
 
                     </button>
 
