@@ -2062,27 +2062,27 @@ class Hr_model extends CI_Model
 			}
 
 			// --- Insert Incentive Rows ---
-			$case               = $this->input->post('case');
-			$salary             = $this->input->post('salary');
-			$target_1           = $this->input->post('target_1');
-			$incentive_3_percent = $this->input->post('incentive_3_percent');
-			$target_2           = $this->input->post('target_2');
+			// $case               = $this->input->post('case');
+			// $salary             = $this->input->post('salary');
+			// $target_1           = $this->input->post('target_1');
+			// $incentive_3_percent = $this->input->post('incentive_3_percent');
+			// $target_2           = $this->input->post('target_2');
 
-			if (!empty($salary) && count($salary) > 0) {
-				for ($i = 0; $i < count($salary); $i++) {
-					if (empty($case[$i]) && empty($salary[$i]) && empty($target_1[$i]) && empty($incentive_3_percent[$i]) && empty($target_2[$i])) {
-						continue; // Skip empty row
-					}
-					$this->db->insert('employee_offer_incentive', [
-						'offer_id'          => $insert_id,
-						'sal_case'          => $case[$i],
-						'salary'            => $salary[$i],
-						'target_1'          => $target_1[$i],
-						'incentive_3_percent' => $incentive_3_percent[$i],
-						'target_2'          => $target_2[$i]
-					]);
-				}
-			}
+			// if (!empty($salary) && count($salary) > 0) {
+			// 	for ($i = 0; $i < count($salary); $i++) {
+			// 		if (empty($case[$i]) && empty($salary[$i]) && empty($target_1[$i]) && empty($incentive_3_percent[$i]) && empty($target_2[$i])) {
+			// 			continue; // Skip empty row
+			// 		}
+			// 		$this->db->insert('employee_offer_incentive', [
+			// 			'offer_id'          => $insert_id,
+			// 			'sal_case'          => $case[$i],
+			// 			'salary'            => $salary[$i],
+			// 			'target_1'          => $target_1[$i],
+			// 			'incentive_3_percent' => $incentive_3_percent[$i],
+			// 			'target_2'          => $target_2[$i]
+			// 		]);
+			// 	}
+			// }
 
 			// --- Add log entry ---
 			$user_se_id = $this->session->userdata('user_id');
@@ -2100,10 +2100,10 @@ class Hr_model extends CI_Model
 	function get_all_offer_letter_details()
 	{
 		$this->db->select('
-        ol.*,
-        em.employee_name,
-        dm.designation_name
-    ');
+			ol.*,
+			ol.user_name AS employee_name,
+			dm.designation_name
+		');
 
 		$this->db->from('employee_offer_letter AS ol');
 
@@ -2120,13 +2120,22 @@ class Hr_model extends CI_Model
 
 	function get_offer_letter_by_id($id)
 	{
-		$this->db->select('ol.*,u.user_name AS manager_name,u.middle_name,u.last_name,u.user_code,u.address,ds.designation_name,d.dept_name AS department_name,b.branch_name');
+		$this->db->select('ol.*, u.user_name AS manager_name,ds.designation_name,d.dept_name AS department_name,b.branch_name');
 
 		$this->db->from('employee_offer_letter AS ol');
+
+		// Reporting Manager
 		$this->db->join('users AS u','ol.manager_id = u.user_id','LEFT');
+
+		// Designation
 		$this->db->join('designation_master AS ds','ds.id = ol.designation_id','LEFT');
+
+		// Department
 		$this->db->join('department_master AS d','d.dept_id = ol.department_id','LEFT');
+
+		// Branch
 		$this->db->join('branch_master AS b','b.branch_id = ol.branch_id','LEFT');
+
 		$this->db->where('ol.offer_id', $id);
 
 		return $this->db->get()->row();
@@ -2144,7 +2153,7 @@ class Hr_model extends CI_Model
 		return $query->result();
 	}
 
-	function update_offer_letter_data()
+	function update_offer_letter_data_old()
 	{
 
 		$id = $this->input->post('offer_id');

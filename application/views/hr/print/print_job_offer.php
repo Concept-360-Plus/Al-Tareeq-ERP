@@ -171,18 +171,24 @@
                             <h5>Employment Offer Letter</h5>
                         </div>
                         <?php if (!empty($records)) {
-                            $manager_name = $records->manager_name . '' . $records->middle_name . '' . $records->last_name;
-                            //$record = $records[0];//print_r($record);
+                            $manager_name = $records->manager_name;
                         ?>
                             <div class="mb-3 mt-3">
                                 <p><strong><?php echo $records->offer_code; ?></strong></p>
-                                <p><strong>Date: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</strong> <?php echo date('Y-M-d'); ?></p><br />
-                                <p><?php $gender = '';
-                                    if ($records->user_name == 'Male') $gender = "Mr";
-                                    else $gender = "Ms"; ?><?php echo $gender; ?> <?php echo $records->user_name; ?></p>
+
+                                <p><strong>Date: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</strong> <?php echo date('d-M-Y'); ?></p><br />
+
+                                <?php
+                                $gender = ($records->gender == 'Male') ? 'Mr' : 'Ms';
+                                ?>
+                                <p>
+                                    <?php echo $gender; ?>
+                                    <?php echo htmlspecialchars($records->user_name); ?>
+                                </p>
+
                                 <p><strong>Address:</strong> <?php echo $records->employee_address; ?></p>
                                 <p>Dear <?php echo $gender; ?>. <?php echo $records->user_name; ?>,</p>
-                                <p>We are pleased to offer you the position of <strong>(<?php echo $records->designation_name; ?>)</strong> at <strong>Hundred Media Advertising LLC</strong>, based in Dubai, UAE with effect from <strong><?php echo $records->offer_date; ?></strong>.</p>
+                                <p>We are pleased to offer you the position of <strong>(<?php echo $records->designation_name; ?>)</strong> at <strong>Al Tareeq Kitchen Equipment Industry LLC</strong>, based in Sharjah, UAE with effect from <strong><?php echo date('d-M-Y', strtotime($records->offer_date)); ?></strong>.</p>
                                 <?php //echo $records->offer_body;
                                 ?>
                                 <p>You will be paid gross emoluments as detailed in <strong>Annexure - A</strong>.</p>
@@ -192,13 +198,14 @@
                                 <p><em>“We congratulate you on your appointment and wish you a long and successful career with us. We are confident that your contribution will take us further in our journey towards becoming world leaders. We assure you of our support for your professional development and growth.”</em></p>
                                 <div class="mt-4">
                                     <p>Yours truly,</p>
-                                    <p><strong>Musammil Ghani</strong></p>
+                                    <p><strong>Muhammed Ashraf</strong></p>
                                     <p>CEO & Managing Director</p>
                                 </div>
                             </div>
 
                         <?php } ?>
-                    </div><br /><br /><br /><br /><br /><br />
+                    </div>
+                    <br /><br /><br />
                     <!-- <div class="page-break"></div> -->
                     <div class="container1 page p-6">
 
@@ -223,7 +230,9 @@
                                     <?php endforeach; ?>
                                 </tbody>
                             </table>
-                            <?php if (!empty($incentive) && count($incentive) > 0) { ?>
+
+
+                            <!-- <?php if (!empty($incentive) && count($incentive) > 0) { ?>
                                 <p><b>Incentive Structure</b></p>
                                 <p>Incentives are based on two performance tiers</p>
                                 <ul>
@@ -253,7 +262,9 @@
                                         <?php endforeach; ?>
                                     </tbody>
                                 </table>
-                            <?php } ?>
+                            <?php } ?> -->
+
+
                             <p>Other Benefits
                             <p>
                             <p><?php //echo $records->other_benefits;

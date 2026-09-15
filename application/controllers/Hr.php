@@ -1026,11 +1026,14 @@ class Hr extends CI_Controller
 
 		$data['title'] = "Edit Offer Letter";
 
+		$data['branch_list'] = $this->Setup_model->get_all_branches();
+		$data['user_records'] = $this->Users_model->get_user_list();
+		$data['desig_list'] = $this->Setup_model->get_designation_list();
+		$data['department_list'] = $this->Setup_model->get_active_department_list();
 		$data['user_records'] = $this->Users_model->get_user_list();
 		$data['records'] = $this->Hr_model->get_offer_letter_by_id($id);
 		$data['salary'] = $this->Hr_model->get_offer_salary_by_id($id);
-		$data['incentive'] = $this->Hr_model->get_offer_incentive_by_id($id);
-		$data['desig_list'] = $this->Setup_model->get_designation_list();
+		// $data['incentive'] = $this->Hr_model->get_offer_incentive_by_id($id);
 
 		$data['main_content'] = 'hr/offer_letter_edit.php';
 		$this->load->view('includes/template', $data);
@@ -1052,7 +1055,7 @@ class Hr extends CI_Controller
 		$this->load->model('Hr_model');
 		$data['records'] = $this->Hr_model->get_offer_letter_by_id($id);
 		$data['salary'] = $this->Hr_model->get_offer_salary_by_id($id);
-		$data['incentive'] = $this->Hr_model->get_offer_incentive_by_id($id);
+		// $data['incentive'] = $this->Hr_model->get_offer_incentive_by_id($id);
 		$data['main_content'] = 'hr/print/print_job_offer.php';
 		$this->load->view('hr/print/print_job_offer.php', $data);
 	}

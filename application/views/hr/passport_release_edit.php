@@ -9,7 +9,7 @@
 
     <div class="x_content">
         <form id="main" class="form-horizontal form-label-left" method="post"
-              action="<?php echo base_url('index.php/Hr/update_passport_release'); ?>" autocomplete="off">
+            action="<?php echo base_url('index.php/Hr/update_passport_release'); ?>" autocomplete="off">
 
             <div class="row">
                 <!-- Left Column -->
@@ -20,7 +20,7 @@
                         <label>Select Employee *</label>
                         <select class="form-control" name="employee_id" disabled>
                             <option value="">Select</option>
-                            <?php foreach($records as $emp) { ?>
+                            <?php foreach ($records as $emp) { ?>
                                 <option value="<?= $emp->employee_id ?>"
                                     <?= ($emp->employee_id == $record1->employee_id) ? 'selected' : ''; ?>>
                                     <?= $emp->user_code . ' - ' . $emp->employee_name ?>
@@ -34,14 +34,14 @@
                     <div class="form-group">
                         <label>Passport Issue Date</label>
                         <input type="text" class="form-control" readonly
-                               value="<?= isset($record->passport_issue_date) ? date('d-m-Y', strtotime($record->passport_issue_date)) : ''; ?>">
+                            value="<?= isset($record->passport_issue_date) ? date('d-m-Y', strtotime($record->passport_issue_date)) : ''; ?>">
                     </div>
 
                     <!-- Employee Number -->
                     <div class="form-group">
                         <label>Employee Number</label>
                         <input type="text" class="form-control" readonly
-                               value="<?= $record->user_code ?? ''; ?>">
+                            value="<?= $record->user_code ?? ''; ?>">
                     </div>
 
                     <!-- Passport Keeping Location -->
@@ -63,28 +63,28 @@
                     <div class="form-group">
                         <label>Passport Expiry Date</label>
                         <input type="text" class="form-control" readonly
-                               value="<?= isset($record->passport_expiry_date) ? date('d-m-Y', strtotime($record->passport_expiry_date)) : ''; ?>">
+                            value="<?= isset($record->passport_expiry_date) ? date('d-m-Y', strtotime($record->passport_expiry_date)) : ''; ?>">
                     </div>
 
                     <!-- Passport Number -->
                     <div class="form-group">
                         <label>Passport No</label>
                         <input type="text" class="form-control" readonly
-                               value="<?= $record->passport_number ?? ''; ?>">
+                            value="<?= $record->passport_number ?? ''; ?>">
                     </div>
 
                     <!-- Passport Release Date -->
                     <div class="form-group">
                         <label>Passport Release Date *</label>
-                            <input type="date" class="form-control" name="outdate" required
-                                   value="<?= $record1->outdate ?? ''; ?>">
-                        </div>
+                        <input type="date" class="form-control" name="outdate" required
+                            value="<?= $record1->outdate ?? ''; ?>">
+                    </div>
 
                     <!-- Return Date -->
                     <div class="form-group">
                         <label>Return Date *</label>
-                            <input type="date" class="form-control" name="indate" required
-                                   value="<?= $record1->indate ?? ''; ?>">
+                        <input type="date" class="form-control" name="indate" required
+                            value="<?= $record1->indate ?? ''; ?>">
                     </div>
 
                 </div>
@@ -122,8 +122,13 @@
 
 <!-- Styles -->
 <style>
-    .form-group label { font-weight: 600; }
-    .form-control { font-size: 13px !important; }
+    .form-group label {
+        font-weight: 600;
+    }
+
+    .form-control {
+        font-size: 13px !important;
+    }
 </style>
 
 <!-- JS: only for add mode, disabled in edit -->

@@ -1,5 +1,6 @@
 <style>
-    .form-control-sm, .form-select {
+    .form-control-sm,
+    .form-select {
         font-size: 13px !important;
     }
 
@@ -37,10 +38,10 @@
     </div>
 
     <div class="x_content">
-        <form onsubmit="return check_selected_age();" id="main" 
-              method="post" 
-              action="<?php echo base_url() . 'index.php/Hr/add_emp_passport_release'; ?>" 
-              autocomplete="off" enctype="multipart/form-data">
+        <form onsubmit="return check_selected_age();" id="main"
+            method="post"
+            action="<?php echo base_url() . 'index.php/Hr/add_emp_passport_release'; ?>"
+            autocomplete="off" enctype="multipart/form-data">
 
             <!-- Employee Selection -->
             <div class="form-group row">
@@ -59,14 +60,14 @@
             <div class="form-group row">
                 <label class="col-md-3 col-form-label">Passport Issue Date:</label>
                 <div class="col-md-3">
-                    <input type="date" class="form-control form-control-sm bg-soft-gray" id="issue_date" 
-                           name="issue_date" value="<?php echo date('d-m-Y') ?>" >
+                    <input type="date" class="form-control form-control-sm bg-soft-gray" id="issue_date"
+                        name="issue_date" value="<?php echo date('d-m-Y') ?>">
                 </div>
 
                 <label class="col-md-2 col-form-label">Passport Expiry Date:</label>
                 <div class="col-md-3">
-                    <input type="date" name="exp_date" id="exp_date" 
-                           class="form-control form-control-sm bg-soft-gray" value="<?php echo date('d-m-Y') ?>" >
+                    <input type="date" name="exp_date" id="exp_date"
+                        class="form-control form-control-sm bg-soft-gray" value="<?php echo date('d-m-Y') ?>">
                 </div>
             </div>
 
@@ -97,8 +98,8 @@
                 <label class="col-md-2 col-form-label">Passport Release Date: <span class="text-danger">*</span></label>
                 <div class="col-md-3">
                     <div class="input-group date">
-                        <input type="date" class="form-control form-control-sm" id="outdate" 
-                               name="outdate" value="<?php echo date('Y-m-d') ?>" required>
+                        <input type="date" class="form-control form-control-sm" id="outdate"
+                            name="outdate" value="<?php echo date('Y-m-d') ?>" required>
                     </div>
                 </div>
             </div>
@@ -109,8 +110,8 @@
                 <label class="col-md-3 col-form-label">Return Date: <span class="text-danger">*</span></label>
                 <div class="col-md-3">
                     <div class="input-group date">
-                        <input type="date" name="indate" id="indate" class="form-control form-control-sm" 
-                               value="<?php echo date('Y-m-d') ?>" required>
+                        <input type="date" name="indate" id="indate" class="form-control form-control-sm"
+                            value="<?php echo date('Y-m-d') ?>" required>
                     </div>
                 </div>
             </div>
@@ -119,9 +120,9 @@
             <div class="form-group row">
                 <label class="col-md-3 col-form-label">Passport Release Purpose: <span class="text-danger">*</span></label>
                 <div class="col-md-5">
-                    <textarea id="reason" name="reason" rows="2" 
-                              class="form-control form-control-sm" 
-                              placeholder="Passport release purpose" required></textarea>
+                    <textarea id="reason" name="reason" rows="2"
+                        class="form-control form-control-sm"
+                        placeholder="Passport release purpose" required></textarea>
                 </div>
             </div>
 
@@ -129,9 +130,9 @@
             <div class="form-group row">
                 <label class="col-md-3 col-form-label">Remarks:</label>
                 <div class="col-md-5">
-                    <textarea id="remark" name="remark" rows="1" 
-                              class="form-control form-control-sm" 
-                              placeholder="Additional remarks (optional)"></textarea>
+                    <textarea id="remark" name="remark" rows="1"
+                        class="form-control form-control-sm"
+                        placeholder="Additional remarks (optional)"></textarea>
                 </div>
             </div>
 
@@ -159,19 +160,21 @@
         var user_id = document.getElementById("user_id").value;
         //  alert(user_id);
         if (user_id != '') {
-           $.ajax({
-                    type: "POST",
-                    url: "<?php echo base_url() ?>index.php/Ajax/ajax_get_user_passport_info",
-                    data: { user_id: user_id },
-                    dataType: "json",
-                    success: function(msg) {
-                        $("#issue_date").val(msg.issue_date);
-                        $("#exp_date").val(msg.expiry_date);
-                        $("#doc_no").val(msg.passport_number);
-                        $("#location").val(msg.posession); 
-                        $("#user_code").val(msg.user_code);
-                    }
-                });
+            $.ajax({
+                type: "POST",
+                url: "<?php echo base_url() ?>index.php/Ajax/ajax_get_user_passport_info",
+                data: {
+                    user_id: user_id
+                },
+                dataType: "json",
+                success: function(msg) {
+                    $("#issue_date").val(msg.issue_date);
+                    $("#exp_date").val(msg.expiry_date);
+                    $("#doc_no").val(msg.passport_number);
+                    $("#location").val(msg.posession);
+                    $("#user_code").val(msg.user_code);
+                }
+            });
 
         } else {
             document.getElementById("issue_date").value = '';
@@ -183,11 +186,11 @@
         }
     }
 
-    $(document).ready(function () {
-    $('.select2').select2({
-        placeholder: "Select Employee",
-        allowClear: true,
-        width: '100%'
+    $(document).ready(function() {
+        $('.select2').select2({
+            placeholder: "Select Employee",
+            allowClear: true,
+            width: '100%'
+        });
     });
-});
 </script>
