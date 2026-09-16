@@ -3115,7 +3115,7 @@ class Reports extends CI_Controller
     }
 
     $data['title'] = 'Employee Master Report';
-    $data['main_content'] = 'Reports/employee_report.php';
+    $data['main_content'] = 'Reports/Hr/employee_report.php';
     $this->load->view('includes/template.php', $data);
   }
 
@@ -3124,6 +3124,7 @@ class Reports extends CI_Controller
   {
     $this->load->model('Users_model');
     $this->load->model('Setup_model');
+    $this->load->model('Company_model');
 
     // Fetch filters from POST
     $user_id = $this->input->post('user_id');
@@ -3149,12 +3150,12 @@ class Reports extends CI_Controller
     $data['title'] = 'Employee Master Report';
     $data['filters'] = $filters;
     $data['user_id'] = $user_id;
-    $data['departments'] = $this->Setup_model->get_department_list();
+    $data['departments'] = $this->Company_model->get_department_list();
     $data['designations'] = $this->Setup_model->get_designation_list();
     $data['user_records'] = $this->Users_model->get_active_user_list();
 
     // Load print view
-    $this->load->view('Print/print_employee_report', $data);
+    $this->load->view('Reports/Hr/Print/print_employee_report', $data);
   }
 
   public function export_employee_report()
@@ -3162,6 +3163,7 @@ class Reports extends CI_Controller
 
     $this->load->model('Users_model');
     $this->load->model('Setup_model');
+    $this->load->model('Company_model');
 
     // Fetch filters from POST
     $user_id = $this->input->post('user_id');
@@ -3185,24 +3187,25 @@ class Reports extends CI_Controller
     $data['title'] = 'Employee Master Report';
     $data['filters'] = $filters;
     $data['user_id'] = $user_id;
-    $data['departments'] = $this->Setup_model->get_department_list();
+    $data['departments'] = $this->Company_model->get_department_list();
     $data['designations'] = $this->Setup_model->get_designation_list();
     $data['user_records'] = $this->Users_model->get_active_user_list();
 
-    $this->load->view('excel_reports/export_employee_report', $data);
+    $this->load->view('Reports/Hr/Export/export_employee_report', $data);
   }
 
   public function monthly_leave_report()
   {
     $this->load->model('Hr_model');
     $this->load->model('Setup_model');
+    $this->load->model('Company_model');
 
     // Default filters
     $month = $this->input->post('month') ?? date('Y-m');
     $dept_id = $this->input->post('department_id') ?? '';
 
     // Fetch dropdown data
-    $data['departments'] = $this->Setup_model->get_department_list();
+    $data['departments'] = $this->Company_model->get_department_list();
 
     // Fetch leave report
     $data['records'] = $this->Hr_model->get_monthly_leave_report($month, $dept_id);
@@ -3213,7 +3216,7 @@ class Reports extends CI_Controller
 
     // Page details
     $data['title'] = 'Monthly Leave Report';
-    $data['main_content'] = 'Reports/monthly_leave_report';
+    $data['main_content'] = 'Reports/Hr/monthly_leave_report';
     $this->load->view('includes/template', $data); // Corrected template load
   }
 
@@ -3222,6 +3225,7 @@ class Reports extends CI_Controller
   {
     $this->load->model('Hr_model');
     $this->load->model('Setup_model');
+    $this->load->model('Company_model');
 
     $month = $this->input->post('month');
     $dept_id = $this->input->post('department_id');
@@ -3229,7 +3233,7 @@ class Reports extends CI_Controller
     $data['records'] = $this->Hr_model->get_monthly_leave_report($month, $dept_id);
     $data['selected_month'] = $month;
     $data['selected_dept'] = $dept_id;
-    $data['departments'] = $this->Setup_model->get_department_list();
+    $data['departments'] = $this->Company_model->get_department_list();
 
     $this->load->view('Print/print_monthly_leave_report', $data);
   }
@@ -3259,8 +3263,9 @@ class Reports extends CI_Controller
   {
     $this->load->model('Hr_model');
     $this->load->model('Setup_model');
+    $this->load->model('Company_model');
 
-    $data['departments'] = $this->Setup_model->get_department_list();
+    $data['departments'] = $this->Company_model->get_department_list();
 
     $data['records'] = [];
     $data['from_date'] = '';
@@ -3281,7 +3286,7 @@ class Reports extends CI_Controller
     }
 
     $data['title'] = 'Monthly Attendance Report';
-    $data['main_content'] = 'Reports/monthly_attendance_report.php';
+    $data['main_content'] = 'Reports/Hr/monthly_attendance_report.php';
     $this->load->view('includes/template.php', $data);
   }
 
@@ -3290,6 +3295,7 @@ class Reports extends CI_Controller
   {
     $this->load->model('Hr_model');
     $this->load->model('Setup_model');
+    $this->load->model('Company_model');
 
     // Accept POST or GET
     $from_date = $this->input->post('from_date') ?? $this->input->get('from_date');
@@ -3300,7 +3306,7 @@ class Reports extends CI_Controller
     $data['from_date'] = $from_date;
     $data['to_date'] = $to_date;
     $data['selected_dept'] = $dept_id;
-    $data['departments'] = $this->Setup_model->get_department_list();
+    $data['departments'] = $this->Company_model->get_department_list();
 
     if (!empty($from_date) && !empty($to_date)) {
       $data['records'] = $this->Hr_model->get_monthly_attendance_summary(
@@ -3318,6 +3324,7 @@ class Reports extends CI_Controller
   {
     $this->load->model('Hr_model');
     $this->load->model('Setup_model');
+    $this->load->model('Company_model');
 
     $from_date = $this->input->post('from_date');
     $to_date   = $this->input->post('to_date');
@@ -3327,7 +3334,7 @@ class Reports extends CI_Controller
     $data['from_date'] = $from_date;
     $data['to_date'] = $to_date;
     $data['selected_dept'] = $dept_id;
-    $data['departments'] = $this->Setup_model->get_department_list();
+    $data['departments'] = $this->Company_model->get_department_list();
 
     // Fetch only if month is posted (i.e., report was generated)
     if (!empty($from_date) && !empty($to_date)) {
@@ -3343,6 +3350,7 @@ class Reports extends CI_Controller
     $this->load->model('Hr_model');
     $this->load->model('Users_model');
     $this->load->model('Setup_model');
+    $this->load->model('Company_model');
 
     $selected_month = $this->input->post('month') ?? date('Y-m');
     $selected_dept = $this->input->post('department_id') ?? '';
@@ -3358,14 +3366,14 @@ class Reports extends CI_Controller
       'selected_month' => $selected_month,
       'selected_dept' => $selected_dept,
       'user_id' => $user_id,
-      'departments' => $this->Setup_model->get_department_list(),
+      'departments' => $this->Company_model->get_department_list(),
       'user_records' => $this->Users_model->get_user_list(),
       'records' => null,
       'days_in_month' => null,
       'holiday_count' => null,
       'generate' => $generate,
       'title' => 'Monthly Payroll Report',
-      'main_content' => 'Reports/monthly_payroll_report.php',
+      'main_content' => 'Reports/Hr/monthly_payroll_report.php',
     ];
 
     if ($generate === 1 && !empty($selected_month)) {
@@ -3404,6 +3412,7 @@ class Reports extends CI_Controller
     $this->load->model('Hr_model');
     $this->load->model('Users_model');
     $this->load->model('Setup_model');
+    $this->load->model('Company_model');
 
     // Get filters from session
     $filters = $this->session->userdata('payroll_filters');
@@ -3417,7 +3426,7 @@ class Reports extends CI_Controller
       'selected_month' => $selected_month,
       'selected_dept' => $selected_dept,
       'user_id' => $user_id,
-      'departments' => $this->Setup_model->get_department_list(),
+      'departments' => $this->Company_model->get_department_list(),
       'user_records' => $this->Users_model->get_user_list(),
       'days_in_month' => 0,
       'records' => [],
@@ -3444,6 +3453,7 @@ class Reports extends CI_Controller
     $this->load->model('Hr_model');
     $this->load->model('Users_model');
     $this->load->model('Setup_model');
+    $this->load->model('Company_model');
 
     $filters = $this->session->userdata('payroll_filters') ?? [];
 
@@ -3456,7 +3466,7 @@ class Reports extends CI_Controller
       'selected_month' => $selected_month,
       'selected_dept' => $selected_dept,
       'user_id' => $user_id,
-      'departments' => $this->Setup_model->get_department_list(),
+      'departments' => $this->Company_model->get_department_list(),
       'user_records' => $this->Users_model->get_user_list(),
       'days_in_month' => 0,
       'records' => [],
