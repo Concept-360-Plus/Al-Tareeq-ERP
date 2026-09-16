@@ -169,11 +169,11 @@ class Users_model extends CI_Model
 			//Accounts entry
 			$grp_no = 11;
 			$data1 = array(
-							'account_name' => $this->input->post('first_name') . ' ' . $insert_id,
-							'group_no' => $grp_no,
-							'customer_id' => $insert_id,
-							'opening_bal_type' => 'Dr',
-						);
+				'account_name' => $this->input->post('first_name') . ' ' . $insert_id,
+				'group_no' => $grp_no,
+				'customer_id' => $insert_id,
+				'opening_bal_type' => 'Dr',
+			);
 			$this->db->insert('general_ledger', $data1);
 			$ledger_id = $this->db->insert_id();
 
@@ -530,6 +530,31 @@ class Users_model extends CI_Model
 
 		$query = $this->db->get();
 		return $query->result();
+	}
+
+
+	public function get_filtered_employees($filters = [])
+	{
+		$this->db->select('u.*, d.designation_name, dept.dept_name, ss.basic_salary');
+		$this->db->from('users u');
+		$this->db->join('designation_master d', 'u.desig_id = d.id', 'left');
+		$this->db->join('department_master dept', 'u.dept_id = dept.dept_id', 'left');
+
+		// Join salary_structure
+		$this->db->join('salary_structure ss', 'ss.emp_id = u.user_id', 'left');
+
+		// Apply filters
+		if (!empty($filters['user_id'])) {
+			$this->db->where('u.user_id', $filters['user_id']);
+		}
+		if (!empty($filters['department_id'])) {
+			$this->db->where('u.dept_id', $filters['department_id']);
+		}
+		if (!empty($filters['designation_id'])) {
+			$this->db->where('u.desig_id', $filters['designation_id']);
+		}
+
+		return $this->db->get()->result();
 	}
 
 
@@ -1040,6 +1065,4 @@ class Users_model extends CI_Model
 			echo "No file uploaded or upload error.";
 		}
 	}
-
-	
 }

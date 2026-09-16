@@ -1731,83 +1731,242 @@ class Hr_model extends CI_Model
 	//////////////////////////////////////start attendance/////////////////////////////////////////////
 	function add_emp_attendance_data()
 	{
+		$employee_id = $this->input->post('employee_id');
+		$attendance_date = $this->input->post('Attendance_date');
 		$attendance = $this->input->post('attendance');
 
-		$data = array(
-			'employee_id' => $this->input->post('employee_id'),
-			'Attendance_date' => date('Y-m-d', strtotime($this->input->post('Attendance_date'))),
-			'attendence' => $attendance,
-			'remark' => $this->input->post('remark')
-		);
 
-		// Check if attendance is present, then add in_time and out_time
-		if ($attendance === 'present') {
-			$data['in_time'] = $this->input->post('in_time');
-			$data['out_time'] = $this->input->post('out_time');
+		if (empty($employee_id) || empty($attendance_date) || empty($attendance)) {
+			return false;
 		}
 
-		// Check if a record with the same attendance date and employee ID already exists
-		$this->db->where('employee_id', $data['employee_id']);
-		$this->db->where('Attendance_date', $data['Attendance_date']);
+		$attendance_date = date('Y-m-d', strtotime($attendance_date));
+
+
+		$is_deductible = $this->input->post('is_deductible') ? 1 : 0;
+
+		$deductible_days = 0;
+		$deductible_hours = 0;
+		$deductible_minutes = 0;
+
+		if ($is_deductible == 1) {
+
+			$deductible_days = (float) $this->input->post('deductible_days');
+			$deductible_hours = (int) $this->input->post('deductible_hours');
+			$deductible_minutes = (int) $this->input->post('deductible_minutes');
+
+			// Prevent invalid values
+			if ($deductible_days < 0) {
+				$deductible_days = 0;
+			}
+
+			if ($deductible_hours < 0) {
+				$deductible_hours = 0;
+			}
+
+			if ($deductible_minutes < 0) {
+				$deductible_minutes = 0;
+			}
+
+			// Minutes should remain between 0 and 59
+			if ($deductible_minutes > 59) {
+				$deductible_minutes = 59;
+			}
+		}
+
+
+		$data = array(
+			'employee_id'       => $employee_id,
+			'Attendance_date'   => $attendance_date,
+			'attendence'        => $attendance,
+
+			'is_deductible'     => $is_deductible,
+			'deductible_days'   => $deductible_days,
+			'deductible_hours'  => $deductible_hours,
+			'deductible_minutes' => $deductible_minutes,
+
+			'remark'            => $this->input->post('remark'),
+			'created_by'        => $this->session->userdata('user_id'),
+			'created_date'      => date('Y-m-d H:i:s')
+		);
+
+
+
+		if ($attendance === 'present' || $attendance === 'half_day') {
+
+			$data['in_time'] = !empty($this->input->post('in_time'))
+				? $this->input->post('in_time')
+				: null;
+
+			$data['out_time'] = !empty($this->input->post('out_time'))
+				? $this->input->post('out_time')
+				: null;
+		} else {
+
+			$data['in_time'] = null;
+			$data['out_time'] = null;
+		}
+
+		$this->db->where('employee_id', $employee_id);
+		$this->db->where('Attendance_date', $attendance_date);
+
 		$query = $this->db->get('employee_attendance');
 
 		if ($query->num_rows() > 0) {
-			// Record already exists, display flash message
-			$this->session->set_flashdata('error', 'Employee Attendance record already exists.');
+			$this->session->set_flashdata('error', 'Attendance record already exists for this employee and date.');
 			return false;
-		} else {
-			// Record does not exist, insert into the database
-			$this->db->insert('employee_attendance', $data);
-			$insert_id = $this->db->insert_id();
-
-			if ($insert_id) {
-				$user_se_id = $this->session->userdata('user_id');
-				$page_name = explode('index.php/', $_SERVER['PHP_SELF']);
-				$ci = get_instance();
-				$ci->load->helper('log');
-				$log_msg = add_log_entry($user_se_id, 1, $page_name[1], 'employee_attendance', 'emp_aId', $insert_id);
-			}
-			return $insert_id;
 		}
+
+		$this->db->insert('employee_attendance', $data);
+		$insert_id = $this->db->insert_id();
+
+		if ($insert_id) {
+			$user_se_id = $this->session->userdata('user_id');
+			$page_name = explode('index.php/', $_SERVER['PHP_SELF']);
+			$ci = get_instance();
+			$ci->load->helper('log');
+			add_log_entry($user_se_id, 1, $page_name[1], 'employee_attendance', 'emp_aId', $insert_id);
+		}
+
+		return $insert_id;
 	}
 
 
 	function update_emp_attendance($id)
 	{
+
+		$this->db->where('emp_aId', $id);
+		$existing = $this->db->get('employee_attendance')->row();
+
+		if (empty($existing)) {
+			return false;
+		}
+
+
+
+		$employee_id = $existing->employee_id;
+
+
+
 		$attendance = $this->input->post('attendance');
+		$attendance_date = $this->input->post('attendance_date');
+
+		if (empty($attendance) || empty($attendance_date)) {
+			return false;
+		}
+
+		$attendance_date = date(
+			'Y-m-d',
+			strtotime($attendance_date)
+		);
+
+		$is_deductible = $this->input->post('is_deductible') ? 1 : 0;
+
+		$deductible_days = 0;
+		$deductible_hours = 0;
+		$deductible_minutes = 0;
+
+		if ($is_deductible == 1) {
+
+			$deductible_days = (float) $this->input->post('deductible_days');
+			$deductible_hours = (int) $this->input->post('deductible_hours');
+			$deductible_minutes = (int) $this->input->post('deductible_minutes');
+
+			if ($deductible_days < 0) {
+				$deductible_days = 0;
+			}
+
+			if ($deductible_hours < 0) {
+				$deductible_hours = 0;
+			}
+
+			if ($deductible_minutes < 0) {
+				$deductible_minutes = 0;
+			}
+
+			if ($deductible_minutes > 59) {
+				$deductible_minutes = 59;
+			}
+		}
 
 
 		$data = array(
-			'employee_id' => $this->input->post('employee_id_hidden'),
-			'Attendance_date' => $this->input->post('attendance_date'),
-			'attendence' => $attendance,
-			'remark' => $this->input->post('remark')
+			'Attendance_date'    => $attendance_date,
+			'attendence'         => $attendance,
+
+			'is_deductible'      => $is_deductible,
+			'deductible_days'    => $deductible_days,
+			'deductible_hours'   => $deductible_hours,
+			'deductible_minutes' => $deductible_minutes,
+
+			'remark'             => $this->input->post('remark')
 		);
 
-		// Check if attendance is present, then add in_time and out_time
-		if ($attendance === 'present') {
-			$data['in_time'] = $this->input->post('in_time');
-			$data['out_time'] = $this->input->post('out_time');
+
+
+		if ($attendance === 'present' || $attendance === 'half_day') {
+
+			$data['in_time'] = !empty($this->input->post('in_time'))
+				? $this->input->post('in_time')
+				: null;
+
+			$data['out_time'] = !empty($this->input->post('out_time'))
+				? $this->input->post('out_time')
+				: null;
+		} else {
+
+			$data['in_time'] = null;
+			$data['out_time'] = null;
 		}
 
-		$this->db->where('emp_aId', $id);
-		$res = $this->db->update('employee_attendance', $data);
 
+		$this->db->where('employee_id', $employee_id);
+		$this->db->where('Attendance_date', $attendance_date);
+		$this->db->where('emp_aId !=', $id);
+
+		$duplicate = $this->db
+			->get('employee_attendance')
+			->num_rows();
+
+		if ($duplicate > 0) {
+			return false;
+		}
+
+
+
+		$this->db->where('emp_aId', $id);
+
+		$res = $this->db->update(
+			'employee_attendance',
+			$data
+		);
 
 
 		if ($res) {
-			// Log the update operation
+
 			$user_se_id = $this->session->userdata('user_id');
-			$page_name = explode('index.php/', $_SERVER['PHP_SELF']);
+
+			$page_name = explode(
+				'index.php/',
+				$_SERVER['PHP_SELF']
+			);
+
 			$ci = get_instance();
 			$ci->load->helper('log');
-			$log_msg = add_log_entry($user_se_id, 2, $page_name[1], 'employee_attendance', 'emp_aId', $id);
+
+			add_log_entry(
+				$user_se_id,
+				2,
+				$page_name[1],
+				'employee_attendance',
+				'emp_aId',
+				$id
+			);
 
 			return true;
-		} else {
-			// Handle the case where the update operation fails
-			return false;
 		}
+
+		return false;
 	}
 
 
@@ -2757,7 +2916,7 @@ class Hr_model extends CI_Model
 		return $this->db->trans_status();
 	}
 
-	
+
 	//////////////////////salary structure start///////////////////////////////////////////////////////
 
 	function add_salary_structure()
@@ -4046,7 +4205,7 @@ class Hr_model extends CI_Model
 		$this->db->from('employee_leave j');
 		$this->db->join('users u', 'j.employee_id = u.user_id', 'inner');
 		$this->db->join('department_master d', 'u.dept_id = d.dept_id', 'left');
-		$this->db->join('designation_master des', 'u.desig_id = des.did', 'left');
+		$this->db->join('designation_master des', 'u.desig_id = des.id', 'left');
 		$this->db->join('leave_approval lm', 'j.leave_id = lm.approval_leave_id', 'left');
 
 		// Filter by selected month (on start_date)
