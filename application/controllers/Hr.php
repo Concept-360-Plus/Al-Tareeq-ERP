@@ -1179,36 +1179,72 @@ class Hr extends CI_Controller
 
 	function edit_emp_attendance()
 	{
-		$data['title'] = "Edit Employee Attendance";
-		$id = $this->uri->segment('3');
+		$user = $this->session->userdata('user_id');
 
-		// $this->load->model('Users_model');
-		// $data['records'] = $this->Users_model->get_user_list(); // Employee list for dropdown
-		$this->load->model('Hr_model');
-		$data['records'] = $this->Hr_model->get_employee_list();
-
-		$this->load->model('Hr_model');
-		$data['record1'] = $this->Hr_model->get_emp_attendance_by_id($id);
-
-		// Employee master details for pre-filling passport info
-		if (!empty($data['record1']->employee_id)) {
-			$data['record'] = $this->Hr_model->get_employee_by_id($data['record1']->employee_id);
+		if (!has_access($user, 'Hr/view_emp_attendance_list', 'E')) {
+			$data['title'] = 'Access Denied';
+			$data['main_content'] = 'errors/access_control.php';
+			$this->load->view('includes/template', $data);
+			return;
 		}
+
+		$id = $this->uri->segment(3);
+
+		if (empty($id)) {
+			$this->session->set_flashdata('error', 'Invalid attendance record.');
+			redirect('Hr/view_emp_attendance_list');
+			return;
+		}
+
+		$this->load->model('Hr_model');
+		$record = $this->Hr_model->get_emp_attendance_by_id($id);
+
+		if (empty($record)) {
+			$this->session->set_flashdata('error', 'Attendance record not found.');
+			redirect('Hr/view_emp_attendance_list');
+			return;
+		}
+
+		$data['title'] = "Edit Employee Attendance";
+		$data['records'] = $this->Hr_model->get_employee_list();
+		$data['record1'] = $record;
 		$data['main_content'] = 'hr/employee_attendance_edit.php';
+
 		$this->load->view('includes/template', $data);
 	}
 
 	function update_emp_attendance()
 	{
-		$data['title'] = "Attendance Data";
+		$user = $this->session->userdata('user_id');
+		if (!has_access($user, 'Hr/view_emp_attendance_list', 'E')) {
+			$data['title'] = 'Access Denied';
+			$data['main_content'] = 'errors/access_control.php';
+			$this->load->view('includes/template', $data);
+			return;
+		}
+
 		$id = $this->input->post('emp_aId');
-		$this->load->model('Hr_model');
-		$res = $this->Hr_model->update_emp_attendance($id);
-		if ($res) {
-			$this->session->set_flashdata('success', 'Record Successfully Updated');
+
+		if (empty($id)) {
+
+			$this->session->set_flashdata('error','Invalid attendance record.');
+
 			redirect('Hr/view_emp_attendance_list');
+			return;
+		}
+
+		$this->load->model('Hr_model');
+		$result = $this->Hr_model->update_emp_attendance($id);
+
+		if ($result) {
+			$this->session->set_flashdata('success','Attendance record updated successfully.');
+			redirect('Hr/view_emp_attendance_list');
+		} else {
+			$this->session->set_flashdata('error','Unable to update attendance record. The employee/date combination may already exist.');
+			redirect('Hr/edit_emp_attendance/' . $id);
 		}
 	}
+	
 	function delete_attendance_emp()
 	{
 		$user = $this->session->userdata('user_id');
