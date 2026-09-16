@@ -1656,95 +1656,219 @@ class Hr extends CI_Controller
 
 	///////////////////////////////////////add_corporate_file////////////////////////////////////////////// 
 
-	function add_corporate_file()
+	public function add_corporate_file()
 	{
 		$user = $this->session->userdata('user_id');
+
 		if (!has_access($user, 'Hr/view_corporate_file_list', 'A')) {
 			$data['title'] = 'Access Denied';
 			$data['main_content'] = 'errors/access_control.php';
 			$this->load->view('includes/template', $data);
 			return;
 		}
-		$data['title'] = "Corporate File";
+
+		$data['title'] = 'Add Corporate File';
 		$data['main_content'] = 'hr/corporate_file_add.php';
+
 		$this->load->view('includes/template', $data);
 	}
-	function view_corporate_file_list()
+
+	public function view_corporate_file_list()
 	{
 		$user = $this->session->userdata('user_id');
+
 		if (!has_view_access($user, 'Hr/view_corporate_file_list')) {
 			$data['title'] = 'Access Denied';
 			$data['main_content'] = 'errors/access_control.php';
 			$this->load->view('includes/template', $data);
 			return;
 		}
-		$data['title'] = "Corporate File List";
+
 		$this->load->model('Hr_model');
+
+		$data['title'] = 'Corporate File List';
 		$data['records'] = $this->Hr_model->get_corporate_file_list();
-		$data['main_content'] = 'hr/corporate_file_list.php';
-		$this->load->view('includes/template', $data);
+
+		$this->load->view('includes/template', [
+			'title'       => $data['title'],
+			'records'     => $data['records'],
+			'main_content' => 'hr/corporate_file_list.php'
+		]);
 	}
 
-	function add_corporate_file_data()
+	public function add_corporate_file_data()
 	{
-		$data['title'] = "Corporate File ";
+		$this->load->library('form_validation');
 		$this->load->model('Hr_model');
-		$flag = $this->Hr_model->add_corporate_file_data();
-		if ($flag) {
-			$this->session->set_flashdata('success', 'Record Successfully Saved');
+
+		$this->form_validation->set_rules('doc_name', 'Document Name', 'required|trim');
+		$this->form_validation->set_rules('card_no', 'Licence/Card No', 'required|trim');
+		$this->form_validation->set_rules('exp_date', 'Expiry Date', 'required|trim');
+
+		if ($this->form_validation->run() === FALSE) {
+			$this->session->set_flashdata('error', validation_errors());
+			redirect('Hr/add_corporate_file');
+			return;
+		}
+
+		$result = $this->Hr_model->add_corporate_file_data();
+
+		if ($result['status']) {
+			$this->session->set_flashdata('success', 'Corporate File added successfully.');
+			if (!empty($result['warning'])) {
+				$this->session->set_flashdata('warning', $result['warning']);
+			}
 			redirect('Hr/view_corporate_file_list');
 		} else {
-			$this->session->set_flashdata('warning', 'Name Already Exist');
-			redirect('Hr/view_corporate_file_list');
+			$this->session->set_flashdata('error', $result['message']);
+			redirect('Hr/add_corporate_file');
 		}
 	}
 
-	function edit_corporate_file()
+	public function edit_corporate_file($id)
 	{
 		$user = $this->session->userdata('user_id');
+
 		if (!has_access($user, 'Hr/view_corporate_file_list', 'E')) {
 			$data['title'] = 'Access Denied';
 			$data['main_content'] = 'errors/access_control.php';
 			$this->load->view('includes/template', $data);
 			return;
 		}
-		$data['title'] = "Corporate File Edit";
-		$id = $this->uri->segment('3');
+
+		if (empty($id) || !is_numeric($id)) {
+			$this->session->set_flashdata('error', 'Invalid Corporate File ID.');
+
+			redirect('Hr/view_corporate_file_list');
+			return;
+		}
 
 		$this->load->model('Hr_model');
-		$data['records'] = $this->Hr_model->get_corporate_file_id($id);
+		$record = $this->Hr_model->get_corporate_file_id($id);
+
+		if (empty($record)) {
+			$this->session->set_flashdata('error', 'Corporate File not found.');
+
+			redirect('Hr/view_corporate_file_list');
+			return;
+		}
+
+		$data['title'] = 'Edit Corporate File';
+		$data['records'] = $record;
 		$data['file_records'] = $this->Hr_model->get_employee_corporate_doc_id($id);
+
 		$data['main_content'] = 'hr/corporate_file_edit.php';
+
 		$this->load->view('includes/template', $data);
 	}
 
-	function update_corporate_file()
+	public function update_corporate_file()
 	{
-		$data['title'] = "Update Corporate File";
-		$id = $this->input->post('id');
+		$this->load->library('form_validation');
 		$this->load->model('Hr_model');
-		$res = $this->Hr_model->update_corporate_file_data($id);
-		if ($res) {
-			$this->session->set_flashdata('success', 'Record Successfully Updated');
+
+		$id = $this->input->post('id');
+
+		if (empty($id) || !is_numeric($id)) {
+			$this->session->set_flashdata('error', 'Invalid Corporate File ID.');
+
 			redirect('Hr/view_corporate_file_list');
+			return;
+		}
+
+		$this->form_validation->set_rules('doc_name', 'Document Name', 'required|trim');
+		$this->form_validation->set_rules('card_no', 'Licence/Card No', 'required|trim');
+		$this->form_validation->set_rules('exp_date', 'Expiry Date', 'required|trim');
+
+		if ($this->form_validation->run() === FALSE) {
+			$this->session->set_flashdata('error', validation_errors());
+
+			redirect('Hr/edit_corporate_file/' . $id);
+			return;
+		}
+
+		$result = $this->Hr_model->update_corporate_file_data($id);
+
+		if ($result['status']) {
+			$this->session->set_flashdata('success', 'Corporate File updated successfully.');
+			if (!empty($result['warning'])) {
+				$this->session->set_flashdata('warning', $result['warning']);
+			}
+			redirect('Hr/view_corporate_file_list');
+		} else {
+			$this->session->set_flashdata('error', $result['message']);
+			redirect('Hr/edit_corporate_file/' . $id);
 		}
 	}
 
-	function delete_corporate_file()
+	public function delete_corporate_file($id)
 	{
 		$user = $this->session->userdata('user_id');
+
 		if (!has_access($user, 'Hr/view_corporate_file_list', 'D')) {
 			$data['title'] = 'Access Denied';
 			$data['main_content'] = 'errors/access_control.php';
 			$this->load->view('includes/template', $data);
 			return;
 		}
-		$id = $this->uri->segment('3');
+
+		if (empty($id) || !is_numeric($id)) {
+			$this->session->set_flashdata(
+				'error',
+				'Invalid Corporate File ID.'
+			);
+
+			redirect('Hr/view_corporate_file_list');
+			return;
+		}
 
 		$this->load->model('Hr_model');
-		$data['user_records'] = $this->Hr_model->delete_corporate_file_data($id);
-		$this->session->set_flashdata('success', 'Delete Record Successfully');
+
+		$deleted =
+			$this->Hr_model->delete_corporate_file_data($id);
+
+		if ($deleted) {
+			$this->session->set_flashdata(
+				'success',
+				'Corporate File deleted successfully.'
+			);
+		} else {
+			$this->session->set_flashdata(
+				'error',
+				'Unable to delete Corporate File.'
+			);
+		}
+
 		redirect('Hr/view_corporate_file_list');
+	}
+
+
+	public function delete_corporate_document($doc_id)
+	{
+		$user = $this->session->userdata('user_id');
+
+		if (!has_access($user, 'Hr/view_corporate_file_list', 'D')) {
+			echo json_encode([
+				'status' => 0,
+				'message' => 'Access Denied'
+			]);
+			return;
+		}
+
+		if (empty($doc_id) || !is_numeric($doc_id)) {
+			echo json_encode([
+				'status' => 0,
+				'message' => 'Invalid document ID.'
+			]);
+			return;
+		}
+
+		$this->load->model('Hr_model');
+
+		$result =
+			$this->Hr_model->delete_corporate_document($doc_id);
+
+		echo json_encode($result);
 	}
 	///////////////////////////////////////add_vehicles////////////////////////////////////////////// 
 

@@ -2125,16 +2125,16 @@ class Hr_model extends CI_Model
 		$this->db->from('employee_offer_letter AS ol');
 
 		// Reporting Manager
-		$this->db->join('users AS u','ol.manager_id = u.user_id','LEFT');
+		$this->db->join('users AS u', 'ol.manager_id = u.user_id', 'LEFT');
 
 		// Designation
-		$this->db->join('designation_master AS ds','ds.id = ol.designation_id','LEFT');
+		$this->db->join('designation_master AS ds', 'ds.id = ol.designation_id', 'LEFT');
 
 		// Department
-		$this->db->join('department_master AS d','d.dept_id = ol.department_id','LEFT');
+		$this->db->join('department_master AS d', 'd.dept_id = ol.department_id', 'LEFT');
 
 		// Branch
-		$this->db->join('branch_master AS b','b.branch_id = ol.branch_id','LEFT');
+		$this->db->join('branch_master AS b', 'b.branch_id = ol.branch_id', 'LEFT');
 
 		$this->db->where('ol.offer_id', $id);
 
@@ -2281,199 +2281,483 @@ class Hr_model extends CI_Model
 
 	////////////////////start corporate file models///////////////////////////////////////////////////
 
-	function add_corporate_file_data()
+	////////////////////// CORPORATE FILE //////////////////////
+
+
+	public function add_corporate_file_data()
 	{
-		$data = array(
-			'document_name' => $this->input->post('doc_name'),
-			'card_no' => $this->input->post('card_no'),
-			'expiry_date' => date('Y-m-d', strtotime($this->input->post('exp_date'))),
-			'remark' => $this->input->post('remark'),
-			'created_by' => $this->session->userdata('user_id'),
-		);
+		$doc_name = trim($this->input->post('doc_name', TRUE));
+		$card_no  = trim($this->input->post('card_no', TRUE));
+		$exp_date = trim($this->input->post('exp_date', TRUE));
+		$remark   = trim($this->input->post('remark', TRUE));
+
+		if ($doc_name === '' || $card_no === '' || $exp_date === '') {
+			return [
+				'status'  => false,
+				'message' => 'Please fill all required fields.'
+			];
+		}
+
+		$expiry_timestamp = strtotime($exp_date);
+
+		if ($expiry_timestamp === false) {
+			return [
+				'status'  => false,
+				'message' => 'Invalid expiry date.'
+			];
+		}
+
+		$data = [
+			'document_name' => $doc_name,
+			'card_no'       => $card_no,
+			'expiry_date'   => date('Y-m-d', $expiry_timestamp),
+			'remark'        => $remark,
+			'created_by'    => $this->session->userdata('user_id'),
+		];
+
+		$this->db->trans_start();
+
 		$this->db->insert('corporate_file', $data);
+
 		$insert_id = $this->db->insert_id();
 
-		/////////////////// file upload ////////////////////
-		if ($insert_id) {
-			if (!empty($_FILES["documents"]["name"][0])) {
+		if (!$insert_id) {
+			$this->db->trans_rollback();
 
-				$allowedExts = array("jpeg", "jpg", "png", "doc", "pdf");
-				$upload_path = FCPATH . 'public/uploaded_documents/';
-
-				if (!is_dir($upload_path)) {
-					mkdir($upload_path, 0777, true);
-				}
-
-				for ($i = 0; $i < count($_FILES['documents']["name"]); $i++) {
-
-					if ($_FILES['documents']["name"][$i] != '') {
-
-						$temp = explode(".", $_FILES["documents"]["name"][$i]);
-						$extension = strtolower(end($temp));
-
-						if (
-							$_FILES["documents"]["size"][$i] < 15728640 &&
-							in_array($extension, $allowedExts)
-						) {
-
-							if ($_FILES["documents"]["error"][$i] > 0) {
-
-								$this->session->set_flashdata(
-									'error',
-									'Failed to upload - Please check file size and file format'
-								);
-							} else {
-
-								$file_tmp = $_FILES["documents"]["tmp_name"][$i];
-
-								$other_file = time() . "_" . rand(1000, 9999) . "_" . $_FILES['documents']['name'][$i];
-
-								move_uploaded_file($file_tmp, $upload_path . $other_file);
-
-								$data1 = array(
-									'cop_id' => $insert_id,
-									'employee_id' => $this->session->userdata('user_id'),
-									'document_path' => $other_file,
-								);
-
-								$this->db->insert('employee_corporate_documents', $data1);
-							}
-						}
-					}
-				}
-			}
+			return [
+				'status'  => false,
+				'message' => 'Unable to save Corporate File.'
+			];
 		}
 
-		if ($insert_id) {
-			$user_se_id = $this->session->userdata('user_id');
-			$page_name = explode('index.php/', $_SERVER['PHP_SELF']);
-			$ci = get_instance();
-			$ci->load->helper('log');
-			$log_msg = add_log_entry($user_se_id, 1, $page_name[1], 'corporate_file', 'cop_id', $insert_id);
+		$upload_result = $this->_upload_corporate_documents($insert_id);
+
+		if (!$upload_result['status']) {
+			$this->db->trans_rollback();
+
+			return $upload_result;
 		}
-		return $insert_id;
+
+		$this->db->trans_complete();
+
+		if ($this->db->trans_status() === FALSE) {
+			return [
+				'status'  => false,
+				'message' => 'Database transaction failed.'
+			];
+		}
+
+		// Log
+		$user_id = $this->session->userdata('user_id');
+
+		$page_name = explode(
+			'index.php/',
+			$_SERVER['PHP_SELF']
+		);
+
+		$ci = get_instance();
+		$ci->load->helper('log');
+
+		add_log_entry(
+			$user_id,
+			1,
+			$page_name[1],
+			'corporate_file',
+			'cop_id',
+			$insert_id
+		);
+
+		return [
+			'status'  => true,
+			'message' => 'Corporate File saved successfully.',
+			'warning' => $upload_result['warning']
+		];
 	}
 
-	function update_corporate_file_data($id)
+
+	public function update_corporate_file_data($id)
 	{
-		$data = array(
-			'document_name' => $this->input->post('doc_name'),
-			'card_no' => $this->input->post('card_no'),
-			'expiry_date' => date('Y-m-d', strtotime($this->input->post('exp_date'))),
-			'remark' => $this->input->post('remark'),
+		if (empty($id) || !is_numeric($id)) {
+			return [
+				'status'  => false,
+				'message' => 'Invalid Corporate File ID.'
+			];
+		}
+
+		$existing = $this->db
+			->where('cop_id', $id)
+			->get('corporate_file')
+			->row();
+
+		if (!$existing) {
+			return [
+				'status'  => false,
+				'message' => 'Corporate File not found.'
+			];
+		}
+
+		$doc_name = trim($this->input->post('doc_name', TRUE));
+		$card_no  = trim($this->input->post('card_no', TRUE));
+		$exp_date = trim($this->input->post('exp_date', TRUE));
+		$remark   = trim($this->input->post('remark', TRUE));
+
+		if ($doc_name === '' || $card_no === '' || $exp_date === '') {
+			return [
+				'status'  => false,
+				'message' => 'Please fill all required fields.'
+			];
+		}
+
+		$expiry_timestamp = strtotime($exp_date);
+
+		if ($expiry_timestamp === false) {
+			return [
+				'status'  => false,
+				'message' => 'Invalid expiry date.'
+			];
+		}
+
+		$data = [
+			'document_name' => $doc_name,
+			'card_no'       => $card_no,
+			'expiry_date'   => date('Y-m-d', $expiry_timestamp),
+			'remark'        => $remark,
+			'updated_by'    => $this->session->userdata('user_id'),
+			'updated_date'  => date('Y-m-d H:i:s')
+		];
+
+		$this->db->trans_start();
+
+		$this->db
+			->where('cop_id', $id)
+			->update('corporate_file', $data);
+
+		if ($this->db->error()['code'] != 0) {
+			$this->db->trans_rollback();
+
+			return [
+				'status'  => false,
+				'message' => 'Unable to update Corporate File.'
+			];
+		}
+
+		$upload_result = $this->_upload_corporate_documents($id);
+
+		if (!$upload_result['status']) {
+			$this->db->trans_rollback();
+
+			return $upload_result;
+		}
+
+		$this->db->trans_complete();
+
+		if ($this->db->trans_status() === FALSE) {
+			return [
+				'status'  => false,
+				'message' => 'Database transaction failed.'
+			];
+		}
+
+		// Log
+		$user_id = $this->session->userdata('user_id');
+
+		$page_name = explode(
+			'index.php/',
+			$_SERVER['PHP_SELF']
 		);
-		$this->db->where('cop_id', $id);
-		$res = $this->db->update('corporate_file', $data);
 
-		/////////////////// file upload ////////////////////
-		if ($id) {
-			if (!empty($_FILES["documents"]["name"][0])) {
+		$ci = get_instance();
+		$ci->load->helper('log');
 
-				$allowedExts = array("jpeg", "jpg", "png", "doc", "pdf");
-				$upload_path = FCPATH . 'public/uploaded_documents/';
+		add_log_entry(
+			$user_id,
+			2,
+			$page_name[1],
+			'corporate_file',
+			'cop_id',
+			$id
+		);
 
-				if (!is_dir($upload_path)) {
-					mkdir($upload_path, 0777, true);
-				}
+		return [
+			'status'  => true,
+			'message' => 'Corporate File updated successfully.',
+			'warning' => $upload_result['warning']
+		];
+	}
 
-				for ($i = 0; $i < count($_FILES['documents']["name"]); $i++) {
 
-					if ($_FILES['documents']["name"][$i] != '') {
+	private function _upload_corporate_documents($cop_id)
+	{
+		$warning = '';
 
-						$temp = explode(".", $_FILES["documents"]["name"][$i]);
-						$extension = strtolower(end($temp));
+		if (
+			!isset($_FILES['documents']) ||
+			empty($_FILES['documents']['name'])
+		) {
+			return [
+				'status'  => true,
+				'warning' => ''
+			];
+		}
 
-						if (
-							$_FILES["documents"]["size"][$i] < 15728640 &&
-							in_array($extension, $allowedExts)
-						) {
+		$upload_path =
+			FCPATH . 'public/uploaded_documents/';
 
-							if ($_FILES["documents"]["error"][$i] > 0) {
-
-								$this->session->set_flashdata(
-									'error',
-									'Failed to upload - Please check file size and file format'
-								);
-							} else {
-
-								$file_tmp = $_FILES["documents"]["tmp_name"][$i];
-
-								$other_file = time() . "_" . rand(1000, 9999) . "_" . $_FILES['documents']['name'][$i];
-
-								move_uploaded_file($file_tmp, $upload_path . $other_file);
-
-								$data1 = array(
-									'cop_id' => $id, // EDIT case ID
-									'employee_id' => $this->session->userdata('user_id'),
-									'document_path' => $other_file,
-								);
-
-								$this->db->insert('employee_corporate_documents', $data1);
-							}
-						}
-					}
-				}
+		if (!is_dir($upload_path)) {
+			if (!mkdir($upload_path, 0755, true)) {
+				return [
+					'status'  => false,
+					'message' => 'Unable to create upload directory.'
+				];
 			}
 		}
 
-		if ($res) {
-			// Log the update operation
-			$user_se_id = $this->session->userdata('user_id');
-			$page_name = explode('index.php/', $_SERVER['PHP_SELF']);
-			$ci = get_instance();
-			$ci->load->helper('log');
-			$log_msg = add_log_entry($user_se_id, 2, $page_name[1], 'corporate_file', 'cop_id', $id);
+		$allowed_extensions = [
+			'jpeg',
+			'jpg',
+			'png',
+			'doc',
+			'pdf'
+		];
 
-			return true;
-		} else {
-			// Handle the case where the update operation fails
+		$max_size = 15 * 1024 * 1024;
+
+		$file_count = count($_FILES['documents']['name']);
+
+		for ($i = 0; $i < $file_count; $i++) {
+
+			$original_name =
+				$_FILES['documents']['name'][$i];
+
+			if (empty($original_name)) {
+				continue;
+			}
+
+			$error =
+				$_FILES['documents']['error'][$i];
+
+			if ($error !== UPLOAD_ERR_OK) {
+				$warning .=
+					$original_name .
+					' could not be uploaded. ';
+
+				continue;
+			}
+
+			$file_size =
+				$_FILES['documents']['size'][$i];
+
+			if ($file_size > $max_size) {
+				$warning .=
+					$original_name .
+					' exceeds 15 MB. ';
+
+				continue;
+			}
+
+			$extension =
+				strtolower(
+					pathinfo(
+						$original_name,
+						PATHINFO_EXTENSION
+					)
+				);
+
+			if (!in_array($extension, $allowed_extensions, true)) {
+				$warning .=
+					$original_name .
+					' has an invalid file type. ';
+
+				continue;
+			}
+
+			// Generate safe unique filename
+			$new_filename =
+				uniqid('corp_', true) .
+				'.' .
+				$extension;
+
+			$target =
+				$upload_path . $new_filename;
+
+			if (
+				!move_uploaded_file(
+					$_FILES['documents']['tmp_name'][$i],
+					$target
+				)
+			) {
+				$warning .=
+					$original_name .
+					' could not be saved. ';
+
+				continue;
+			}
+
+			$document_data = [
+				'cop_id'       => $cop_id,
+				'employee_id'  => $this->session->userdata('user_id'),
+				'document_path' => $new_filename
+			];
+
+			$this->db->insert(
+				'employee_corporate_documents',
+				$document_data
+			);
+
+			if ($this->db->error()['code'] != 0) {
+
+				if (file_exists($target)) {
+					unlink($target);
+				}
+
+				$warning .=
+					$original_name .
+					' database record could not be saved. ';
+			}
+		}
+
+		return [
+			'status'  => true,
+			'warning' => trim($warning)
+		];
+	}
+
+
+	public function get_corporate_file_list()
+	{
+		$this->db
+			->select('
+            cf.*,
+            COUNT(ecd.cop_id) AS document_count
+        ');
+
+		$this->db
+			->from('corporate_file cf');
+
+		$this->db
+			->join(
+				'employee_corporate_documents ecd',
+				'ecd.cop_id = cf.cop_id',
+				'left'
+			);
+
+		$this->db
+			->group_by('cf.cop_id');
+
+		$this->db
+			->order_by(
+				'cf.expiry_date',
+				'DESC'
+			);
+
+		return $this->db->get()->result();
+	}
+
+
+	public function get_corporate_file_id($id)
+	{
+		return $this->db
+			->where('cop_id', $id)
+			->get('corporate_file')
+			->result();
+	}
+
+
+	public function get_employee_corporate_doc_id($id)
+	{
+		return $this->db
+			->where('cop_id', $id)
+			->get('employee_corporate_documents')
+			->result();
+	}
+
+
+	public function delete_corporate_document($doc_id)
+	{
+		$document = $this->db
+			->where('doc_id', $doc_id)
+			->get('employee_corporate_documents')
+			->row();
+
+		if (!$document) {
+			return [
+				'status'  => 0,
+				'message' => 'Document not found.'
+			];
+		}
+
+		$file =
+			FCPATH .
+			'public/uploaded_documents/' .
+			$document->document_path;
+
+		if (
+			!empty($document->document_path) &&
+			file_exists($file)
+		) {
+			unlink($file);
+		}
+
+		$this->db
+			->where('doc_id', $doc_id)
+			->delete('employee_corporate_documents');
+
+		if ($this->db->affected_rows() > 0) {
+			return [
+				'status'  => 1,
+				'message' => 'Document deleted successfully.'
+			];
+		}
+
+		return [
+			'status'  => 0,
+			'message' => 'Unable to delete document.'
+		];
+	}
+
+
+	public function delete_corporate_file_data($id)
+	{
+		if (empty($id) || !is_numeric($id)) {
 			return false;
 		}
-	}
 
-	function get_corporate_file_list()
-	{
-		$query = $this->db->query("select * from corporate_file order by expiry_date desc");
-		return $query->result();
-	}
+		$documents = $this->db
+			->where('cop_id', $id)
+			->get('employee_corporate_documents')
+			->result();
 
-	function get_corporate_file_id($id)
-	{
-		$query = $this->db->query("select * from corporate_file where cop_id ='$id' order by expiry_date");
-		return $query->result();
-	}
+		$this->db->trans_start();
 
-	function get_employee_corporate_doc_id($id)
-	{
-		$query = $this->db->query("select  * from employee_corporate_documents  where cop_id='$id' ");
-		return $query->result();
-	}
+		foreach ($documents as $document) {
 
-	function delete_corporate_file_data($id)
-	{
-		$query = $this->db->get_where('employee_corporate_documents', array(
-			'cop_id' => $id
-		));
+			if (!empty($document->document_path)) {
 
-		foreach ($query->result() as $row) {
-			$file = FCPATH . 'public/uploaded_documents/' . $row->document_path;
+				$file =
+					FCPATH .
+					'public/uploaded_documents/' .
+					$document->document_path;
 
-			if (!empty($row->document_path) && file_exists($file)) {
-				unlink($file);
+				if (file_exists($file)) {
+					unlink($file);
+				}
 			}
 		}
 
-		// Delete uploaded document records
-		$this->db->where('cop_id', $id);
-		$this->db->delete('employee_corporate_documents');
+		$this->db
+			->where('cop_id', $id)
+			->delete('employee_corporate_documents');
 
-		// Delete corporate file record
-		$this->db->where('cop_id', $id);
-		$this->db->delete('corporate_file');
+		$this->db
+			->where('cop_id', $id)
+			->delete('corporate_file');
 
-		return true;
+		$this->db->trans_complete();
+
+		return $this->db->trans_status();
 	}
 
+	
 	//////////////////////salary structure start///////////////////////////////////////////////////////
 
 	function add_salary_structure()
@@ -3749,4 +4033,34 @@ class Hr_model extends CI_Model
 
 	///////////////////////////////////////////COMMISSION SETUP ENDS//////////////////////////////////////////
 
+	public function get_monthly_leave_report($month, $dept_id = null)
+	{
+		$this->db->select("
+        j.*, 
+        u.user_name, u.user_code, u.dept_id, u.desig_id, 
+        d.dept_name, 
+        des.designation_name,
+        lm.leave_status,
+        lm.remark AS approve_remark
+    ");
+		$this->db->from('employee_leave j');
+		$this->db->join('users u', 'j.employee_id = u.user_id', 'inner');
+		$this->db->join('department_master d', 'u.dept_id = d.dept_id', 'left');
+		$this->db->join('designation_master des', 'u.desig_id = des.did', 'left');
+		$this->db->join('leave_approval lm', 'j.leave_id = lm.approval_leave_id', 'left');
+
+		// Filter by selected month (on start_date)
+		if (!empty($month)) {
+			$this->db->where("DATE_FORMAT(j.start_date, '%Y-%m') =", $month);
+		}
+
+		// Filter by department if selected
+		if (!empty($dept_id)) {
+			$this->db->where('u.dept_id', $dept_id);
+		}
+
+		$this->db->order_by('j.start_date', 'ASC');
+
+		return $this->db->get()->result();
+	}
 }

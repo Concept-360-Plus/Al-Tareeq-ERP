@@ -24,12 +24,22 @@
                 </div>
             </div>
             <div class="form-group row">
-                <label class="col-xs-12 col-sm-3 col-md-3 col-lg-3 col-form-label">Expiry Date :</label>
-                <div class="col-xs-12 col-sm-9 col-md-4 col-lg-4">
-                    <div class="input-group date datepicker1">
-                        <input type="text" class="form-control form-control-sm datepicker1" id="exp_date" name="exp_date" value="<?php echo date('d-m-Y', strtotime($row->expiry_date) ?? ''); ?>" tabindex=3>
-                        <div class="input-group-addon"><i class="fa fa-calendar"></i></div>
-                    </div>
+                <label class="col-md-3 col-form-label">
+                    Expiry Date <span class="text-danger">*</span>
+                </label>
+
+                <div class="col-md-4">
+                    <input
+                        type="date"
+                        class="form-control form-control-sm"
+                        name="exp_date"
+                        id="exp_date"
+                        value="<?php
+                                echo !empty($row->expiry_date)
+                                    ? date('Y-m-d', strtotime($row->expiry_date))
+                                    : '';
+                                ?>"
+                        required>
                 </div>
             </div>
 
@@ -61,20 +71,17 @@
 
                                         <td>
                                             <?php
-                                                $file = FCPATH.'public/uploaded_documents/'.$k->document_path;
+                                            $file = FCPATH . 'public/uploaded_documents/' . $k->document_path;
 
-                                                if(file_exists($file))
-                                                {
-                                                ?>
-                                                    <a href="<?=base_url('public/uploaded_documents/'.$k->document_path)?>" target="_blank">
-                                                        <?= $k->document_path ?>
-                                                    </a>
-                                                <?php
-                                                }
-                                                else
-                                                {
-                                                    echo "<span style='color:red'>File not found : ".$k->document_path."</span>";
-                                                }
+                                            if (file_exists($file)) {
+                                            ?>
+                                                <a href="<?= base_url('public/uploaded_documents/' . $k->document_path) ?>" target="_blank">
+                                                    <?= $k->document_path ?>
+                                                </a>
+                                            <?php
+                                            } else {
+                                                echo "<span style='color:red'>File not found : " . $k->document_path . "</span>";
+                                            }
                                             ?>
                                         </td>
 
