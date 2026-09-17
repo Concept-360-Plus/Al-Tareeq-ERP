@@ -33,9 +33,7 @@
                         value="<?= $record1->user_code . ' - ' . $record1->employee_name ?>"
                         readonly>
 
-                    <input type="hidden"
-                        name="employee_id"
-                        value="<?= $record1->employee_id ?>">
+                    <input type="hidden" name="employee_id" value="<?= $record1->employee_id ?>">
 
                 </div>
             </div>
@@ -192,8 +190,6 @@
             </div>
 
             <input type="hidden" name="emp_aId" value="<?= $record1->emp_aId ?>">
-            <!-- <input type="hidden" name="employee_id_hidden" value="<?= $record1->employee_id ?>"> -->
-            <input type="hidden" name="employee_id" value="<?= $record1->employee_id ?>">
 
 
             <!-- Submit -->
@@ -210,10 +206,6 @@
 <script>
     $(document).ready(function() {
 
-        $('#employee_id').select2({
-            placeholder: "Select Employee",
-            width: '100%'
-        });
 
         showFields();
 
