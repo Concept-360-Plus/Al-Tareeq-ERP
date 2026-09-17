@@ -10,6 +10,7 @@ class Production extends CI_Controller
         if (!$this->session->userdata('is_logged_in')) {
             redirect('Login/login');
         }
+       
 
         $this->output->set_header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
         $this->output->set_header("Cache-Control: post-check=0, pre-check=0", false);
@@ -24,7 +25,8 @@ class Production extends CI_Controller
         $this->load->model('Setup_model');
         
     }
-
+    const JOINING_FIXING_DEPARTMENT_ID = 12;
+    const JOINING_FIXING_EMPLOYEE_DESIGNATION_ID = 25;
     function production()
 	{
 		$data['title'] = "Production Details";
@@ -4578,17 +4580,17 @@ public function get_sales_order_items()
     {
         $user = $this->session->userdata('user_id');
 
-        /*if (!has_access($user, 'Production/cnc_tasks', 'A')) {
+        if (!has_access($user, 'Production/cnc_tasks', 'A')) {
             $data['title'] = 'Access Denied';
             $data['main_content'] = 'errors/access_control.php';
-        } else {*/
+        } else {
             $data['title'] = 'CNC Production Tasks';
             $data['main_content'] = 'production/cnc_tasks.php';
             $this->load->view(
                 'includes/template',
                 $data
             );
-       // }
+        }
     }
 
     public function get_cnc_job_orders()
@@ -7595,10 +7597,11 @@ public function polishing_employee_v2()
                 ->get_polishing_employee_v2((int)$user->employee_id);
         }
     }
-
-    $this->load->view('production/polishing_employee_v2', array(
-        'employee' => $employee
-    ));
+    $data['title'] = "Polising Tasks";
+    $data['employee'] = $employee;
+    $data['main_content'] = 'production/polishing_employee_v2';
+    $this->load->view('includes/template', $data);
+   
 }
 
 /* =========================================================
@@ -8185,8 +8188,7 @@ public function get_polishing_employee_status_history_v2()
         return;
     }
 
-    $data = $this->Production_model
-        ->get_polishing_employee_status_history_v2($task_id);
+    $data = $this->Production_model->get_polishing_employee_status_history_v2($task_id);
 
     echo json_encode(array(
         'status' => true,
@@ -8211,12 +8213,1086 @@ public function get_polishing_employee_timeline_v2()
         return;
     }
 
-    $data = $this->Production_model
-        ->get_polishing_employee_timeline_v2($task_id);
+    $data = $this->Production_model->get_polishing_employee_timeline_v2($task_id);
 
     echo json_encode(array(
         'status' => true,
         'data'   => $data
     ));
 }
+
+//assign employee
+public function assign_polishing_employee_v2()
+{
+    $task_id     = (int) $this->input->post('task_id');
+    $employee_id = (int) $this->input->post('employee_id');
+
+    if (!$task_id || !$employee_id) {
+        echo json_encode(array(
+            'status'  => false,
+            'message' => 'Task and employee are required.'
+        ));
+        return;
+    }
+
+    /* =========================================
+     * CURRENT LOGGED-IN USER
+     * No supervisor department/designation check
+     * ========================================= */
+    $user_id = (int) $this->session->userdata('user_id');
+
+    if (!$user_id) {
+        echo json_encode(array(
+            'status'  => false,
+            'message' => 'Session expired. Please login again.'
+        ));
+        return;
+    }
+
+    $user = $this->db
+        ->select('employee_id')
+        ->from('users')
+        ->where('user_id', $user_id)
+        ->where('active', 1)
+        ->get()
+        ->row();
+
+    if (!$user) {
+        echo json_encode(array(
+            'status'  => false,
+            'message' => 'Invalid logged-in user.'
+        ));
+        return;
+    }
+
+    /* =========================================
+     * VALIDATE POLISHING EMPLOYEE
+     *
+     * Department 11 = Polishing
+     * Designation 23 = Polishing Employee
+     * ========================================= */
+    $employee = $this->db
+        ->select('employee_id, employee_name, uid_number')
+        ->from('employee_master')
+        ->where('employee_id', $employee_id)
+        ->where('department_id', 11)
+        ->where('designation_id', 23)
+        ->where('active', 1)
+        ->get()
+        ->row();
+
+    if (!$employee) {
+        echo json_encode(array(
+            'status'  => false,
+            'message' => 'Selected employee is not a valid Polishing employee.'
+        ));
+        return;
+    }
+
+    /* =========================================
+     * GET TASK
+     * ========================================= */
+    $task = $this->db
+        ->select('task_id, department_id, status, assigned_employee_id')
+        ->from('production_tasks')
+        ->where('task_id', $task_id)
+        ->get()
+        ->row();
+
+    if (!$task) {
+        echo json_encode(array(
+            'status'  => false,
+            'message' => 'Task not found.'
+        ));
+        return;
+    }
+
+    /* =========================================
+     * VALIDATE TASK DEPARTMENT
+     *
+     * Department 11 = Polishing
+     * ========================================= */
+    if ((int) $task->department_id !== 11) {
+        echo json_encode(array(
+            'status'  => false,
+            'message' => 'This task does not belong to Polishing.'
+        ));
+        return;
+    }
+
+    /* =========================================
+     * UPDATE ASSIGNMENT
+     * ========================================= */
+    $update_data = array(
+        'assigned_employee_id' => $employee_id,
+        'assigned_by'           => (int) $user->employee_id,
+        'updated_at'            => date('Y-m-d H:i:s')
+    );
+
+    $this->db
+        ->where('task_id', $task_id)
+        ->update('production_tasks', $update_data);
+
+    if ($this->db->trans_status() === false) {
+        echo json_encode(array(
+            'status'  => false,
+            'message' => 'Failed to assign employee.'
+        ));
+        return;
+    }
+
+    /* =========================================
+     * STATUS HISTORY
+     * Only record assignment.
+     * Do NOT force status to Pending.
+     * ========================================= */
+    $this->db->insert('production_task_status_history', array(
+        'task_id'    => $task_id,
+        'old_status' => $task->status,
+        'new_status' => $task->status,
+        'remarks'    => 'Assigned to ' . $employee->employee_name .
+                        ' (' . $employee->uid_number . ')',
+        'changed_by' => (int) $user->employee_id,
+        'changed_at' => date('Y-m-d H:i:s')
+    ));
+
+    /* =========================================
+     * ADD TIMELINE NOTE
+     * ========================================= */
+    $this->db->insert('production_task_notes', array(
+        'task_id'       => $task_id,
+        'employee_id'   => (int) $user->employee_id,
+        'note_type'     => 'Instruction',
+        'note'          => 'Task assigned to ' .
+                           $employee->employee_name .
+                           ' (' . $employee->uid_number . ')',
+        'added_by_role' => 'Supervisor',
+        'created_at'    => date('Y-m-d H:i:s')
+    ));
+
+    echo json_encode(array(
+        'status'  => true,
+        'message' => 'Polishing employee assigned successfully.',
+        'data'    => array(
+            'task_id'       => $task_id,
+            'employee_id'   => $employee->employee_id,
+            'employee_name' => $employee->employee_name,
+            'uid_number'    => $employee->uid_number
+        )
+    ));
+}
+
+
+    /* =========================================================
+     * Fixing Department
+     * =========================================================*/
+    //JOINING / FIXING SUPERVISOR PAGE
+    public function joining_fixing_supervisor()
+    {
+        $user = $this->session->userdata('user_id');
+        /*if (!has_view_access($user, 'Production/joining_fixing_supervisor')) {
+            $data['title'] = 'Access Denied';
+            $data['main_content'] = 'errors/access_control.php';
+        } else {
+            */
+            $data = array();
+            $data['title'] = 'Joining / Fixing Supervisor';
+            $data['main_content'] = 'production/joining_fixing_supervisor.php';
+
+            $this->load->view(
+                'includes/template',
+                $data
+            );
+        //}
+    }
+    //GET JOINING / FIXING SUPERVISOR TASKS
+
+    public function get_joining_fixing_supervisor_tasks()
+    {
+        $data =
+            $this->Production_model
+                ->get_joining_fixing_supervisor_tasks();
+
+        echo json_encode(array(
+            'status' => true,
+            'data'   => $data
+        ));
+    }
+
+    // GET JOINING / FIXING EMPLOYEES
+    public function get_joining_fixing_employees()
+    {
+        $data =
+            $this->Production_model
+                ->get_joining_fixing_employees();
+
+        echo json_encode(array(
+            'status' => true,
+            'data'   => $data
+        ));
+    }
+
+    //GET ONE JOINING / FIXING TASK
+
+    public function get_joining_fixing_task()
+    {
+        $task_id =
+            (int)$this->input->post('task_id');
+
+        if (!$task_id) {
+
+            echo json_encode(array(
+                'status'  => false,
+                'message' => 'Invalid task.'
+            ));
+
+            return;
+        }
+
+        $task =
+            $this->Production_model
+                ->get_joining_fixing_task($task_id);
+
+        if (!$task) {
+
+            echo json_encode(array(
+                'status'  => false,
+                'message' => 'Joining / Fixing task not found.'
+            ));
+
+            return;
+        }
+
+        echo json_encode(array(
+            'status' => true,
+            'data'   => $task
+        ));
+    }
+
+
+    /* =========================================================
+     * ASSIGN / REASSIGN JOINING / FIXING EMPLOYEE
+     *
+     * IMPORTANT:
+     * We DO NOT validate supervisor department/designation.
+     *
+     * Only selected employee is validated:
+     *   department = 12
+     *   designation = Joining/Fixing employee designation
+     *   active = 1
+     * ========================================================= */
+
+    public function assign_joining_fixing_employee()
+    {
+        $task_id =
+            (int)$this->input->post('task_id');
+
+        $employee_id =
+            (int)$this->input->post('employee_id');
+
+        if (!$task_id || !$employee_id) {
+
+            echo json_encode(array(
+                'status'  => false,
+                'message' => 'Task and employee are required.'
+            ));
+
+            return;
+        }
+
+        /*
+         * Get logged-in user only to record assigned_by.
+         *
+         * No supervisor department/designation validation.
+         */
+        $user_id =
+            (int)$this->session->userdata('user_id');
+
+        if (!$user_id) {
+
+            echo json_encode(array(
+                'status'  => false,
+                'message' => 'Session expired. Please login again.'
+            ));
+
+            return;
+        }
+
+        $user = $this->db
+            ->select('user_id, employee_id')
+            ->from('users')
+            ->where('user_id', $user_id)
+            ->where('active', 1)
+            ->get()
+            ->row();
+
+        if (!$user) {
+
+            echo json_encode(array(
+                'status'  => false,
+                'message' => 'Invalid user.'
+            ));
+
+            return;
+        }
+
+        $supervisor_employee_id =
+            (int)$user->employee_id;
+
+        if (!$supervisor_employee_id) {
+
+            echo json_encode(array(
+                'status'  => false,
+                'message' => 'Logged-in user is not linked to an employee.'
+            ));
+
+            return;
+        }
+
+        $result =
+            $this->Production_model
+                ->assign_joining_fixing_employee(
+                    $task_id,
+                    $employee_id,
+                    $supervisor_employee_id
+                );
+
+        echo json_encode($result);
+    }
+
+    //SUPERVISOR APPROVE / REWORK
+
+    public function update_joining_fixing_supervisor_status()
+    {
+        $task_id =
+            (int)$this->input->post('task_id');
+
+        $status =
+            trim($this->input->post('status'));
+
+        $remarks =
+            trim($this->input->post('remarks'));
+
+        $next_department_id =
+            (int)$this->input->post('next_department_id');
+
+        if (!$task_id || !$status) {
+
+            echo json_encode(array(
+                'status'  => false,
+                'message' => 'Task ID and status are required.'
+            ));
+
+            return;
+        }
+
+        $user_id =
+            (int)$this->session->userdata('user_id');
+
+        if (!$user_id) {
+
+            echo json_encode(array(
+                'status'  => false,
+                'message' => 'Session expired. Please login again.'
+            ));
+
+            return;
+        }
+
+        $user = $this->db
+            ->select('user_id, employee_id, dept_id, desig_id')
+            ->from('users')
+            ->where('user_id', $user_id)
+            ->where('active', 1)
+            ->get()
+            ->row();
+
+        if (!$user) {
+
+            echo json_encode(array(
+                'status'  => false,
+                'message' => 'Invalid user.'
+            ));
+
+            return;
+        }
+
+        /*
+         * Supervisor approval DOES require the logged-in
+         * user to be the Joining/Fixing supervisor.
+         *
+         * Supervisor designation is not known yet, therefore
+         * keep this validation based on your existing login
+         * structure when the designation is confirmed.
+         *
+         * For now we only require a linked employee.
+         */
+        $supervisor_employee_id =
+            (int)$user->employee_id;
+
+        if (!$supervisor_employee_id) {
+
+            echo json_encode(array(
+                'status'  => false,
+                'message' => 'Supervisor employee link not found.'
+            ));
+
+            return;
+        }
+
+        $task =
+            $this->Production_model
+                ->get_joining_fixing_task($task_id);
+
+        if (!$task) {
+
+            echo json_encode(array(
+                'status'  => false,
+                'message' => 'Joining / Fixing task not found.'
+            ));
+
+            return;
+        }
+
+        if (
+            (int)$task->department_id !==
+            self::JOINING_FIXING_DEPARTMENT_ID
+        ) {
+
+            echo json_encode(array(
+                'status'  => false,
+                'message' => 'This task does not belong to Joining / Fixing.'
+            ));
+
+            return;
+        }
+
+        if (strtolower($status) === 'approved') {
+
+            if (!$next_department_id) {
+
+                echo json_encode(array(
+                    'status'  => false,
+                    'message' => 'Next department is required.'
+                ));
+
+                return;
+            }
+
+            if (
+                self::JOINING_FIXING_NEXT_DEPARTMENT_ID > 0 &&
+                $next_department_id !==
+                self::JOINING_FIXING_NEXT_DEPARTMENT_ID
+            ) {
+
+                echo json_encode(array(
+                    'status'  => false,
+                    'message' => 'Invalid next department for Joining / Fixing.'
+                ));
+
+                return;
+            }
+
+            if ($remarks === '') {
+
+                echo json_encode(array(
+                    'status'  => false,
+                    'message' => 'Handover remarks are required.'
+                ));
+
+                return;
+            }
+
+            $allowed_statuses = array(
+                'completed',
+                'supervisor review',
+                'review'
+            );
+
+            if (!in_array(
+                strtolower(trim($task->status)),
+                $allowed_statuses
+            )) {
+
+                echo json_encode(array(
+                    'status'  => false,
+                    'message' =>
+                        'Only completed/review tasks can be approved.'
+                ));
+
+                return;
+            }
+
+            $result =
+                $this->Production_model
+                    ->joining_fixing_supervisor_approve_and_handover(
+                        $task_id,
+                        $supervisor_employee_id,
+                        $next_department_id,
+                        $remarks
+                    );
+
+            echo json_encode($result);
+
+            return;
+        }
+
+        if (strtolower($status) === 'rework') {
+
+            if ($remarks === '') {
+
+                echo json_encode(array(
+                    'status'  => false,
+                    'message' => 'Rework reason is required.'
+                ));
+
+                return;
+            }
+
+            $result =
+                $this->Production_model
+                    ->joining_fixing_supervisor_rework(
+                        $task_id,
+                        $supervisor_employee_id,
+                        $remarks
+                    );
+
+            echo json_encode($result);
+
+            return;
+        }
+
+
+        echo json_encode(array(
+            'status'  => false,
+            'message' => 'Invalid supervisor status.'
+        ));
+    }
+
+    public function save_joining_fixing_supervisor_note()
+    {
+        $task_id =
+            (int)$this->input->post('task_id');
+
+        $note_type =
+            trim($this->input->post('note_type'));
+
+        $note =
+            trim($this->input->post('note'));
+
+        if (!$task_id || $note === '') {
+
+            echo json_encode(array(
+                'status'  => false,
+                'message' => 'Task and note are required.'
+            ));
+
+            return;
+        }
+
+        $user_id =
+            (int)$this->session->userdata('user_id');
+
+        if (!$user_id) {
+
+            echo json_encode(array(
+                'status'  => false,
+                'message' => 'Session expired.'
+            ));
+
+            return;
+        }
+
+        $user = $this->db
+            ->select('employee_id')
+            ->from('users')
+            ->where('user_id', $user_id)
+            ->where('active', 1)
+            ->get()
+            ->row();
+
+        if (!$user || !(int)$user->employee_id) {
+
+            echo json_encode(array(
+                'status'  => false,
+                'message' => 'Invalid supervisor employee.'
+            ));
+
+            return;
+        }
+
+        $result =
+            $this->Production_model
+                ->insert_joining_fixing_supervisor_note(
+                    $task_id,
+                    (int)$user->employee_id,
+                    $note_type,
+                    $note
+                );
+
+        echo json_encode($result);
+    }
+
+    public function get_joining_fixing_supervisor_timeline()
+    {
+        $task_id =
+            (int)$this->input->post('task_id');
+
+        if (!$task_id) {
+
+            echo json_encode(array(
+                'status'  => false,
+                'message' => 'Invalid task.'
+            ));
+
+            return;
+        }
+
+        $data =
+            $this->Production_model
+                ->get_joining_fixing_supervisor_timeline(
+                    $task_id
+                );
+
+        echo json_encode(array(
+            'status' => true,
+            'data'   => $data
+        ));
+    }
+
+    public function get_joining_fixing_task_handover()
+    {
+        $task_id =
+            (int)$this->input->post('task_id');
+
+        if (!$task_id) {
+
+            echo json_encode(array(
+                'status'  => false,
+                'message' => 'Invalid task.'
+            ));
+
+            return;
+        }
+
+        $data =
+            $this->Production_model
+                ->get_joining_fixing_task_handover(
+                    $task_id
+                );
+
+        echo json_encode(array(
+            'status' => true,
+            'data'   => $data
+        ));
+    }
+
+
+    public function joining_fixing_employee()
+    {
+        $user_id =  (int)$this->session->userdata('user_id');
+        $employee = null;
+
+        if ($user_id) {
+
+            $user = $this->db
+                ->select('employee_id, dept_id, desig_id')
+                ->from('users')
+                ->where('user_id', $user_id)
+                ->where('active', 1)
+                ->get()
+                ->row();
+
+            if (
+                $user &&
+                (int)$user->dept_id ===
+                    self::JOINING_FIXING_DEPARTMENT_ID &&
+                self::JOINING_FIXING_EMPLOYEE_DESIGNATION_ID > 0 &&
+                (int)$user->desig_id ===
+                    self::JOINING_FIXING_EMPLOYEE_DESIGNATION_ID
+            ) {
+
+                $employee =
+                    $this->Production_model
+                        ->get_joining_fixing_employee(
+                            (int)$user->employee_id
+                        );
+            }
+        }
+        $data['title'] = "";
+        $data['employee'] = $employee;
+        $data['main_content'] = 'production/joining_fixing_employee';
+        $this->load->view('includes/template', $data);
+
+    }
+
+    public function get_joining_fixing_employee_tasks()
+    {
+        $user_id =
+            (int)$this->session->userdata('user_id');
+
+        if (!$user_id) {
+
+            echo json_encode(array(
+                'status'  => false,
+                'message' => 'Session expired.'
+            ));
+
+            return;
+        }
+
+        $user = $this->db
+            ->select('employee_id, dept_id, desig_id')
+            ->from('users')
+            ->where('user_id', $user_id)
+            ->where('active', 1)
+            ->get()
+            ->row();
+
+        if (!$user) {
+
+            echo json_encode(array(
+                'status'  => false,
+                'message' => 'Invalid user.'
+            ));
+
+            return;
+        }
+
+        if (
+            (int)$user->dept_id !==
+                self::JOINING_FIXING_DEPARTMENT_ID ||
+            (
+                self::JOINING_FIXING_EMPLOYEE_DESIGNATION_ID > 0 &&
+                (int)$user->desig_id !==
+                    self::JOINING_FIXING_EMPLOYEE_DESIGNATION_ID
+            )
+        ) {
+
+            echo json_encode(array(
+                'status'  => false,
+                'message' =>
+                    'Only Joining / Fixing Employee can access these tasks.'
+            ));
+
+            return;
+        }
+
+        $employee_id =
+            (int)$user->employee_id;
+
+        if (!$employee_id) {
+
+            echo json_encode(array(
+                'status'  => false,
+                'message' => 'Employee link not found.'
+            ));
+
+            return;
+        }
+
+        $data =
+            $this->Production_model
+                ->get_joining_fixing_employee_tasks(
+                    $employee_id
+                );
+
+        echo json_encode(array(
+            'status' => true,
+            'data'   => $data
+        ));
+    }
+
+    public function get_joining_fixing_employee_task()
+    {
+        $task_id =
+            (int)$this->input->post('task_id');
+
+        $user_id =
+            (int)$this->session->userdata('user_id');
+
+        if (!$user_id || !$task_id) {
+
+            echo json_encode(array(
+                'status'  => false,
+                'message' => 'Invalid request.'
+            ));
+
+            return;
+        }
+
+        $user = $this->db
+            ->select('employee_id, dept_id, desig_id')
+            ->from('users')
+            ->where('user_id', $user_id)
+            ->where('active', 1)
+            ->get()
+            ->row();
+
+        if (
+            !$user ||
+            (int)$user->dept_id !==
+                self::JOINING_FIXING_DEPARTMENT_ID ||
+            (
+                self::JOINING_FIXING_EMPLOYEE_DESIGNATION_ID > 0 &&
+                (int)$user->desig_id !==
+                    self::JOINING_FIXING_EMPLOYEE_DESIGNATION_ID
+            )
+        ) {
+
+            echo json_encode(array(
+                'status'  => false,
+                'message' => 'Invalid Joining / Fixing employee.'
+            ));
+
+            return;
+        }
+
+        $task =
+            $this->Production_model
+                ->get_joining_fixing_task_for_employee(
+                    $task_id,
+                    (int)$user->employee_id
+                );
+
+        if (!$task) {
+
+            echo json_encode(array(
+                'status'  => false,
+                'message' => 'Task is not assigned to you.'
+            ));
+
+            return;
+        }
+
+        echo json_encode(array(
+            'status' => true,
+            'data'   => $task
+        ));
+    }
+
+    public function update_joining_fixing_employee_task_status()
+    {
+        $task_id =
+            (int)$this->input->post('task_id');
+
+        $status =
+            trim($this->input->post('status'));
+
+        $remarks =
+            trim($this->input->post('remarks'));
+
+        if (!$task_id || !$status) {
+
+            echo json_encode(array(
+                'status'  => false,
+                'message' => 'Task ID and status are required.'
+            ));
+
+            return;
+        }
+
+        $user_id =
+            (int)$this->session->userdata('user_id');
+
+        if (!$user_id) {
+
+            echo json_encode(array(
+                'status'  => false,
+                'message' => 'Session expired.'
+            ));
+
+            return;
+        }
+
+        $user = $this->db
+            ->select('employee_id, dept_id, desig_id')
+            ->from('users')
+            ->where('user_id', $user_id)
+            ->where('active', 1)
+            ->get()
+            ->row();
+
+        if (!$user) {
+
+            echo json_encode(array(
+                'status'  => false,
+                'message' => 'Invalid user.'
+            ));
+
+            return;
+        }
+
+        if (
+            (int)$user->dept_id !==
+                self::JOINING_FIXING_DEPARTMENT_ID ||
+            (
+                self::JOINING_FIXING_EMPLOYEE_DESIGNATION_ID > 0 &&
+                (int)$user->desig_id !==
+                    self::JOINING_FIXING_EMPLOYEE_DESIGNATION_ID
+            )
+        ) {
+
+            echo json_encode(array(
+                'status'  => false,
+                'message' =>
+                    'Only Joining / Fixing Employee can update this task.'
+            ));
+
+            return;
+        }
+
+        $employee_id =
+            (int)$user->employee_id;
+
+        if (!$employee_id) {
+
+            echo json_encode(array(
+                'status'  => false,
+                'message' => 'Employee link not found.'
+            ));
+
+            return;
+        }
+
+        $result =
+            $this->Production_model
+                ->update_joining_fixing_employee_task_status(
+                    $task_id,
+                    $employee_id,
+                    $status,
+                    $remarks
+                );
+
+        echo json_encode($result);
+    }
+
+    public function save_joining_fixing_employee_note()
+    {
+        $task_id =
+            (int)$this->input->post('task_id');
+
+        $note_type =
+            trim($this->input->post('note_type'));
+
+        $note =
+            trim($this->input->post('note'));
+
+        if (!$task_id || $note === '') {
+
+            echo json_encode(array(
+                'status'  => false,
+                'message' => 'Task and note are required.'
+            ));
+
+            return;
+        }
+
+        $user_id =
+            (int)$this->session->userdata('user_id');
+
+        if (!$user_id) {
+
+            echo json_encode(array(
+                'status'  => false,
+                'message' => 'Session expired.'
+            ));
+
+            return;
+        }
+
+        $user = $this->db
+            ->select('employee_id, dept_id, desig_id')
+            ->from('users')
+            ->where('user_id', $user_id)
+            ->where('active', 1)
+            ->get()
+            ->row();
+
+        if (
+            !$user ||
+            (int)$user->dept_id !==
+                self::JOINING_FIXING_DEPARTMENT_ID ||
+            (
+                self::JOINING_FIXING_EMPLOYEE_DESIGNATION_ID > 0 &&
+                (int)$user->desig_id !==
+                    self::JOINING_FIXING_EMPLOYEE_DESIGNATION_ID
+            )
+        ) {
+
+            echo json_encode(array(
+                'status'  => false,
+                'message' =>
+                    'Only Joining / Fixing Employee can add work notes.'
+            ));
+
+            return;
+        }
+
+        $result =
+            $this->Production_model
+                ->insert_joining_fixing_employee_note(
+                    $task_id,
+                    (int)$user->employee_id,
+                    $note_type,
+                    $note
+                );
+
+        echo json_encode($result);
+    }
+  
+
+    public function get_joining_fixing_employee_status_history()
+    {
+        $task_id =
+            (int)$this->input->post('task_id');
+
+        if (!$task_id) {
+
+            echo json_encode(array(
+                'status'  => false,
+                'message' => 'Invalid task.'
+            ));
+
+            return;
+        }
+
+        $data =
+            $this->Production_model
+                ->get_joining_fixing_employee_status_history(
+                    $task_id
+                );
+
+        echo json_encode(array(
+            'status' => true,
+            'data'   => $data
+        ));
+    }
+
+    public function get_joining_fixing_employee_timeline()
+    {
+        $task_id =
+            (int)$this->input->post('task_id');
+
+        if (!$task_id) {
+
+            echo json_encode(array(
+                'status'  => false,
+                'message' => 'Invalid task.'
+            ));
+
+            return;
+        }
+
+        $data =
+            $this->Production_model
+                ->get_joining_fixing_employee_timeline(
+                    $task_id
+                );
+
+        echo json_encode(array(
+            'status' => true,
+            'data'   => $data
+        ));
+    }
 }

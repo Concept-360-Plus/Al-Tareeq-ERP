@@ -88,3 +88,654 @@
     background: #d9534f;
     color: #fff;
 }
+ .polishing-action-buttons .btn {
+        margin-bottom: 3px;
+    }
+
+    .polishing-status-completed {
+        background: #5cb85c;
+        color: #fff;
+    }
+
+    .polishing-status-rework {
+        background: #d9534f;
+        color: #fff;
+    }
+
+    .polishing-status-pending {
+        background: #f0ad4e;
+        color: #fff;
+    }
+
+    .polishing-status-progress {
+        background: #337ab7;
+        color: #fff;
+    }
+
+    .polishing-status-hold {
+        background: #777;
+        color: #fff;
+    }
+
+    .polishing-status-review {
+        background: #5bc0de;
+        color: #fff;
+    }
+
+    .polishing-status-handover {
+        background: #5cb85c;
+        color: #fff;
+    }
+
+    .handover-info-box {
+        padding: 12px;
+        border: 1px solid #ddd;
+        background: #f8f8f8;
+        border-radius: 4px;
+        margin-bottom: 15px;
+    }
+
+    .handover-next-department {
+        font-size: 16px;
+        font-weight: bold;
+    }
+    .joining-fixing-action-buttons .btn {
+    margin-bottom: 3px;
+}
+
+.joining-fixing-status-completed {
+    background: #5cb85c;
+    color: #fff;
+}
+
+.joining-fixing-status-rework {
+    background: #d9534f;
+    color: #fff;
+}
+
+.joining-fixing-status-pending {
+    background: #f0ad4e;
+    color: #fff;
+}
+
+.joining-fixing-status-progress {
+    background: #337ab7;
+    color: #fff;
+}
+
+.joining-fixing-status-hold {
+    background: #777;
+    color: #fff;
+}
+
+.joining-fixing-status-review {
+    background: #5bc0de;
+    color: #fff;
+}
+
+.joining-fixing-status-handover {
+    background: #5cb85c;
+    color: #fff;
+}
+
+.handover-info-box {
+    padding: 12px;
+    border: 1px solid #ddd;
+    background: #f8f8f8;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+.handover-next-department {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.jf-timeline-item {
+    border-left: 3px solid #337ab7;
+    padding: 10px 15px;
+    margin-bottom: 12px;
+    background: #f8f8f8;
+}
+
+.jf-timeline-date {
+    font-size: 12px;
+    color: #777;
+}
+
+.jf-timeline-title {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.task-timeline {
+    position: relative;
+    margin: 15px 0 10px 0;
+    padding: 5px 0 5px 0;
+}
+
+/* Vertical line */
+.task-timeline:before {
+    content: '';
+    position: absolute;
+    left: 23px;
+    top: 8px;
+    bottom: 8px;
+    width: 2px;
+    background: #e1e5e8;
+}
+
+/* Timeline item */
+.timeline-item {
+    position: relative;
+    display: flex;
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+/* Last item */
+.timeline-item:last-child {
+    margin-bottom: 0;
+}
+
+/* Icon area */
+.timeline-icon {
+    position: relative;
+    z-index: 2;
+
+    width: 48px;
+    min-width: 48px;
+    height: 48px;
+
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid #dfe3e6;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 16px;
+    color: #73879c;
+}
+
+/* Status icon */
+.timeline-item.status .timeline-icon {
+    border-color: #3498db;
+    color: #3498db;
+}
+
+/* Note icon */
+.timeline-item.note .timeline-icon {
+    border-color: #f39c12;
+    color: #f39c12;
+}
+
+/* Handover icon */
+.timeline-item.handover .timeline-icon {
+    border-color: #26b99a;
+    color: #26b99a;
+}
+
+/* Rework icon */
+.timeline-item.rework .timeline-icon {
+    border-color: #e74c3c;
+    color: #e74c3c;
+}
+
+/* Completion icon */
+.timeline-item.completed .timeline-icon {
+    border-color: #2ecc71;
+    color: #2ecc71;
+}
+
+/* Hold icon */
+.timeline-item.hold .timeline-icon {
+    border-color: #f39c12;
+    color: #f39c12;
+}
+
+/* Timeline content */
+.timeline-content {
+    margin-left: 15px;
+    width: calc(100% - 63px);
+
+    background: #fff;
+    border: 1px solid #e6e9ed;
+    border-radius: 5px;
+
+    padding: 12px 15px;
+
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+/* Header */
+.timeline-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+/* Title */
+.timeline-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #34495e;
+}
+
+/* Date */
+.timeline-date {
+    font-size: 11px;
+    color: #999;
+    white-space: nowrap;
+}
+
+/* Description */
+.timeline-description {
+    font-size: 13px;
+    line-height: 1.5;
+    color: #666;
+    margin-top: 5px;
+}
+
+/* User */
+.timeline-user {
+    font-size: 11px;
+    color: #888;
+    margin-top: 7px;
+}
+
+.timeline-user i {
+    margin-right: 4px;
+}
+
+/* Note text */
+.timeline-note {
+    background: #fafafa;
+    border-left: 3px solid #f39c12;
+    padding: 8px 10px;
+    margin-top: 8px;
+
+    font-size: 13px;
+    color: #555;
+    line-height: 1.5;
+}
+
+/* Status badge */
+.timeline-status {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 12px;
+
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+
+    margin-left: 5px;
+}
+
+/* Pending */
+.timeline-status.pending {
+    background: #f1f2f3;
+    color: #7f8c8d;
+}
+
+/* In Progress */
+.timeline-status.in-progress {
+    background: #e8f4fd;
+    color: #3498db;
+}
+
+/* Hold */
+.timeline-status.hold {
+    background: #fff4e5;
+    color: #f39c12;
+}
+
+/* Completed */
+.timeline-status.completed {
+    background: #eafaf1;
+    color: #27ae60;
+}
+
+/* Rework */
+.timeline-status.rework {
+    background: #fdecea;
+    color: #e74c3c;
+}
+
+/* Approved */
+.timeline-status.approved {
+    background: #eafaf1;
+    color: #27ae60;
+}
+
+/* Rejected */
+.timeline-status.rejected {
+    background: #fdecea;
+    color: #e74c3c;
+}
+
+/* Note type */
+.timeline-note-type {
+    display: inline-block;
+
+    padding: 2px 7px;
+    border-radius: 10px;
+
+    font-size: 10px;
+    background: #f5f5f5;
+    color: #777;
+
+    margin-left: 5px;
+}
+
+/* Department */
+.timeline-department {
+    font-size: 11px;
+    color: #999;
+    margin-top: 5px;
+}
+
+/* Empty timeline */
+.timeline-empty {
+    text-align: center;
+    padding: 35px 15px;
+    color: #999;
+}
+
+.timeline-empty i {
+    display: block;
+    font-size: 30px;
+    margin-bottom: 10px;
+    color: #ccc;
+}
+
+/* Loading */
+.timeline-loading {
+    text-align: center;
+    padding: 25px;
+    color: #999;
+}
+
+.timeline-loading i {
+    margin-right: 5px;
+}
+
+
+@media (max-width: 767px) {
+
+    .task-timeline:before {
+        left: 18px;
+    }
+
+    .timeline-icon {
+        width: 38px;
+        min-width: 38px;
+        height: 38px;
+        font-size: 13px;
+    }
+
+    .timeline-content {
+        margin-left: 12px;
+        width: calc(100% - 50px);
+        padding: 10px;
+    }
+
+    .timeline-header {
+        display: block;
+    }
+
+    .timeline-date {
+        display: block;
+        margin-top: 3px;
+    }
+
+    .timeline-title {
+        font-size: 13px;
+    }
+
+    .timeline-description,
+    .timeline-note {
+        font-size: 12px;
+    }
+}
+
+
+
+/* =========================================================
+   JOINING / FIXING STATUS BADGES
+   Same style as working CNC timeline
+   ========================================================= */
+
+.jf-status-badge {
+    display: inline-block;
+    padding: 3px 7px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: bold;
+    line-height: 1.4;
+    white-space: nowrap;
+}
+
+.jf-status-pending {
+    background: #f0ad4e;
+    color: #fff;
+}
+
+.jf-status-progress {
+    background: #337ab7;
+    color: #fff;
+}
+
+.jf-status-hold {
+    background: #777;
+    color: #fff;
+}
+
+.jf-status-completed {
+    background: #5cb85c;
+    color: #fff;
+}
+
+.jf-status-rework {
+    background: #d9534f;
+    color: #fff;
+}
+
+.jf-status-review {
+    background: #5bc0de;
+    color: #fff;
+}
+
+.jf-status-approved {
+    background: #5cb85c;
+    color: #fff;
+}
+
+.jf-status-handover {
+    background: #5cb85c;
+    color: #fff;
+}
+
+
+/* =========================================================
+   TIMELINE
+   ========================================================= */
+
+.jf-timeline-item {
+    position: relative;
+    margin-bottom: 15px;
+    padding: 12px 15px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-left: 4px solid #337ab7;
+    border-radius: 3px;
+}
+
+.jf-timeline-title {
+    font-weight: bold;
+    margin-bottom: 7px;
+    color: #333;
+}
+
+.jf-timeline-title .fa {
+    margin-right: 4px;
+}
+
+.jf-timeline-date {
+    margin-top: 7px;
+    font-size: 11px;
+    color: #999;
+}
+
+.jf-timeline-content {
+    line-height: 1.6;
+}
+
+.jf-timeline-content .jf-status-badge {
+    margin: 0 3px;
+}
+
+.jf-timeline-content .fa-arrow-right {
+    margin: 0 3px;
+    color: #999;
+}
+
+
+/* =========================================================
+   SUPERVISOR ACTION BUTTONS
+   ========================================================= */
+
+.joining-fixing-action-column {
+    text-align: center;
+    vertical-align: middle !important;
+    white-space: nowrap;
+}
+
+.joining-fixing-action-column .btn {
+    margin: 1px 2px;
+    vertical-align: middle;
+}
+
+.joining-fixing-action-column .btn-xs {
+    padding: 3px 7px;
+    font-size: 11px;
+    line-height: 1.4;
+    border-radius: 3px;
+}
+
+
+/* Assign */
+.joining-fixing-assign-btn {
+    background: #337ab7;
+    border-color: #2e6da4;
+    color: #fff;
+}
+
+.joining-fixing-assign-btn:hover,
+.joining-fixing-assign-btn:focus {
+    background: #286090;
+    border-color: #204d74;
+    color: #fff;
+}
+
+
+/* View */
+.joining-fixing-view-btn {
+    background: #5bc0de;
+    border-color: #46b8da;
+    color: #fff;
+}
+
+.joining-fixing-view-btn:hover,
+.joining-fixing-view-btn:focus {
+    background: #31b0d5;
+    border-color: #269abc;
+    color: #fff;
+}
+
+
+/* Note */
+.joining-fixing-note-btn {
+    background: #5bc0de;
+    border-color: #46b8da;
+    color: #fff;
+}
+
+.joining-fixing-note-btn:hover,
+.joining-fixing-note-btn:focus {
+    background: #31b0d5;
+    border-color: #269abc;
+    color: #fff;
+}
+
+
+/* Timeline */
+.joining-fixing-timeline-btn {
+    background: #fff;
+    border-color: #ccc;
+    color: #333;
+}
+
+.joining-fixing-timeline-btn:hover,
+.joining-fixing-timeline-btn:focus {
+    background: #e6e6e6;
+    border-color: #adadad;
+    color: #333;
+}
+
+
+/* Approve */
+.joining-fixing-approve-btn {
+    background: #5cb85c;
+    border-color: #4cae4c;
+    color: #fff;
+}
+
+.joining-fixing-approve-btn:hover,
+.joining-fixing-approve-btn:focus {
+    background: #449d44;
+    border-color: #398439;
+    color: #fff;
+}
+
+
+/* Rework */
+.joining-fixing-rework-btn {
+    background: #d9534f;
+    border-color: #d43f3a;
+    color: #fff;
+}
+
+.joining-fixing-rework-btn:hover,
+.joining-fixing-rework-btn:focus {
+    background: #c9302c;
+    border-color: #ac2925;
+    color: #fff;
+}
+
+
+/* Status column */
+#joiningFixingSupervisorTaskTable td.jf-status-column {
+    text-align: center;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+
+/* Timeline status transition */
+.jf-timeline-status-transition {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 3px;
+}
+
+.jf-timeline-status-transition .fa-arrow-right {
+    color: #999;
+    margin: 0 3px;
+}
+
+

@@ -96,12 +96,6 @@
     </div>
 
 </div>
-
-
-<!-- =====================================================
-     TASK DETAILS MODAL
-===================================================== -->
-
 <div
     class="modal fade"
     id="polishingEmployeeTaskDetailsModal"
@@ -224,11 +218,6 @@
 
 </div>
 
-
-<!-- =====================================================
-     STATUS NOTE MODAL
-===================================================== -->
-
 <div
     class="modal fade"
     id="polishingEmployeeStatusModal"
@@ -315,11 +304,6 @@
     </div>
 
 </div>
-
-
-<!-- =====================================================
-     WORK NOTE MODAL
-===================================================== -->
 
 <div
     class="modal fade"
@@ -433,11 +417,6 @@
 
 </div>
 
-
-<!-- =====================================================
-     STATUS HISTORY MODAL
-===================================================== -->
-
 <div
     class="modal fade"
     id="polishingEmployeeHistoryModal"
@@ -504,11 +483,6 @@
     </div>
 
 </div>
-
-
-<!-- =====================================================
-     TIMELINE MODAL
-===================================================== -->
 
 <div
     class="modal fade"
@@ -598,16 +572,7 @@
 
 <script>
 
-/* =========================================================
-   GLOBAL
-========================================================= */
-
 var polishingEmployeeTaskTable = null;
-
-
-/* =========================================================
-   DOCUMENT READY
-========================================================= */
 
 $(document).ready(function () {
 
@@ -671,11 +636,6 @@ $(document).ready(function () {
 
 });
 
-
-/* =========================================================
-   PRIORITY BADGE
-========================================================= */
-
 function getPriorityBadge(priority)
 {
     priority = $.trim(priority || '').toLowerCase();
@@ -720,11 +680,6 @@ function getPriorityBadge(priority)
            escapeHtml(text) +
            '</span>';
 }
-
-
-/* =========================================================
-   STATUS BADGE
-========================================================= */
 
 function getPolishingEmployeeStatusBadge(status)
 {
@@ -794,11 +749,6 @@ function getPolishingEmployeeStatusBadge(status)
            '</span>';
 }
 
-
-/* =========================================================
-   TASK ACTION BUTTONS
-========================================================= */
-
 function getPolishingEmployeeActions(row)
 {
     var taskId = parseInt(row.task_id || 0, 10);
@@ -816,11 +766,6 @@ function getPolishingEmployeeActions(row)
 
     var html = '';
 
-
-    /* -----------------------------------------------------
-       PENDING
-    ----------------------------------------------------- */
-
     if (status === 'pending') {
 
         html +=
@@ -836,11 +781,6 @@ function getPolishingEmployeeActions(row)
             '</button> ';
 
     }
-
-
-    /* -----------------------------------------------------
-       IN PROGRESS
-    ----------------------------------------------------- */
 
     else if (
         status === 'in progress' ||
@@ -874,11 +814,6 @@ function getPolishingEmployeeActions(row)
             '</button> ';
     }
 
-
-    /* -----------------------------------------------------
-       HOLD
-    ----------------------------------------------------- */
-
     else if (
         status === 'hold' ||
         status === 'on hold'
@@ -896,11 +831,6 @@ function getPolishingEmployeeActions(row)
 
             '</button> ';
     }
-
-
-    /* -----------------------------------------------------
-       REWORK
-    ----------------------------------------------------- */
 
     else if (
         status === 'rework' ||
@@ -921,11 +851,6 @@ function getPolishingEmployeeActions(row)
             '</button> ';
     }
 
-
-    /* -----------------------------------------------------
-       VIEW
-    ----------------------------------------------------- */
-
     html +=
         '<button type="button" ' +
         'class="btn btn-xs btn-info ' +
@@ -937,14 +862,9 @@ function getPolishingEmployeeActions(row)
 
         '</button> ';
 
-
-    /* -----------------------------------------------------
-       NOTE
-    ----------------------------------------------------- */
-
     html +=
         '<button type="button" ' +
-        'class="btn btn-xs btn-default ' +
+        'class="btn btn-xs btn-success ' +
         'polishing-employee-note-btn" ' +
         'data-task-id="' + taskId + '" ' +
         'title="Add Work Note">' +
@@ -952,11 +872,6 @@ function getPolishingEmployeeActions(row)
         '<i class="fa fa-sticky-note"></i>' +
 
         '</button> ';
-
-
-    /* -----------------------------------------------------
-       TIMELINE
-    ----------------------------------------------------- */
 
     html +=
         '<button type="button" ' +
@@ -972,11 +887,6 @@ function getPolishingEmployeeActions(row)
 
     return html;
 }
-
-
-/* =========================================================
-   LOAD EMPLOYEE TASKS
-========================================================= */
 
 function loadPolishingEmployeeTasks()
 {
@@ -1031,10 +941,6 @@ function loadPolishingEmployeeTasks()
                 return;
             }
 
-
-            /*
-             * If PHP returned status=false
-             */
 
             if (
                 response.status === false ||
@@ -1293,11 +1199,6 @@ function loadPolishingEmployeeTasks()
 
             });
 
-
-            /*
-             * Draw DataTable
-             */
-
             if (polishingEmployeeTaskTable) {
 
                 polishingEmployeeTaskTable.draw();
@@ -1354,11 +1255,6 @@ function loadPolishingEmployeeTasks()
     });
 }
 
-
-/* =========================================================
-   SHOW TASK ERROR
-========================================================= */
-
 function showPolishingTaskError(message)
 {
     if (polishingEmployeeTaskTable) {
@@ -1398,11 +1294,6 @@ function showPolishingTaskError(message)
             );
     }
 }
-
-
-/* =========================================================
-   STATUS BUTTON
-========================================================= */
 
 $(document).on(
     'click',
@@ -1466,11 +1357,6 @@ $(document).on(
 
     }
 );
-
-
-/* =========================================================
-   CONFIRM STATUS
-========================================================= */
 
 $(document).on(
     'click',
@@ -1581,11 +1467,6 @@ $(document).on(
     }
 );
 
-
-/* =========================================================
-   UPDATE STATUS AJAX
-========================================================= */
-
 function updatePolishingEmployeeTaskStatus(
     taskId,
     newStatus,
@@ -1681,11 +1562,6 @@ function updatePolishingEmployeeTaskStatus(
 
     });
 }
-
-
-/* =========================================================
-   VIEW TASK
-========================================================= */
 
 $(document).on(
     'click',
@@ -1840,11 +1716,6 @@ $(document).on(
     }
 );
 
-
-/* =========================================================
-   OPEN NOTE
-========================================================= */
-
 $(document).on(
     'click',
     '.polishing-employee-note-btn',
@@ -1879,11 +1750,6 @@ $(document).on(
 
     }
 );
-
-
-/* =========================================================
-   SAVE NOTE
-========================================================= */
 
 $(document).on(
     'click',
@@ -2037,11 +1903,6 @@ $(document).on(
     }
 );
 
-
-/* =========================================================
-   OPEN TIMELINE
-========================================================= */
-
 $(document).on(
     'click',
     '.polishing-employee-timeline-btn',
@@ -2088,11 +1949,6 @@ $(document).on(
 
     }
 );
-
-
-/* =========================================================
-   LOAD TIMELINE
-========================================================= */
 
 function loadPolishingEmployeeTimeline(taskId)
 {
@@ -2327,11 +2183,6 @@ function loadPolishingEmployeeTimeline(taskId)
 
     });
 }
-
-
-/* =========================================================
-   ESCAPE HTML
-========================================================= */
 
 function escapeHtml(value)
 {

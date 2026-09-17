@@ -1,60 +1,4 @@
 <link href="<?php echo base_url()."public/assets/production.css"; ?>" rel="stylesheet"/>
-
-<style>
-    .polishing-action-buttons .btn {
-        margin-bottom: 3px;
-    }
-
-    .polishing-status-completed {
-        background: #5cb85c;
-        color: #fff;
-    }
-
-    .polishing-status-rework {
-        background: #d9534f;
-        color: #fff;
-    }
-
-    .polishing-status-pending {
-        background: #f0ad4e;
-        color: #fff;
-    }
-
-    .polishing-status-progress {
-        background: #337ab7;
-        color: #fff;
-    }
-
-    .polishing-status-hold {
-        background: #777;
-        color: #fff;
-    }
-
-    .polishing-status-review {
-        background: #5bc0de;
-        color: #fff;
-    }
-
-    .polishing-status-handover {
-        background: #5cb85c;
-        color: #fff;
-    }
-
-    .handover-info-box {
-        padding: 12px;
-        border: 1px solid #ddd;
-        background: #f8f8f8;
-        border-radius: 4px;
-        margin-bottom: 15px;
-    }
-
-    .handover-next-department {
-        font-size: 16px;
-        font-weight: bold;
-    }
-</style>
-
-
 <div class="container-fluid">
 
     <div class="row">
@@ -150,11 +94,6 @@
     </div>
 
 </div>
-
-
-<!-- =========================================================
-     ASSIGN / REASSIGN EMPLOYEE MODAL
-========================================================= -->
 
 <div
     class="modal fade"
@@ -256,11 +195,6 @@
     </div>
 
 </div>
-
-
-<!-- =========================================================
-     TASK DETAILS MODAL
-========================================================= -->
 
 <div
     class="modal fade"
@@ -449,11 +383,6 @@
 
 </div>
 
-
-<!-- =========================================================
-     APPROVE & HANDOVER MODAL
-========================================================= -->
-
 <div
     class="modal fade"
     id="polishingHandoverModal"
@@ -602,11 +531,6 @@
 
 </div>
 
-
-<!-- =========================================================
-     REWORK MODAL
-========================================================= -->
-
 <div
     class="modal fade"
     id="polishingReworkModal"
@@ -714,11 +638,6 @@
     </div>
 
 </div>
-
-
-<!-- =========================================================
-     SUPERVISOR NOTE MODAL
-========================================================= -->
 
 <div
     class="modal fade"
@@ -840,11 +759,6 @@
 
 </div>
 
-
-<!-- =========================================================
-     TIMELINE MODAL
-========================================================= -->
-
 <div
     class="modal fade"
     id="polishingSupervisorTimelineModal"
@@ -942,11 +856,6 @@
 <script>
 
 var polishingSupervisorDataTable = null;
-
-
-/* =========================================================
-   DOCUMENT READY
-========================================================= */
 
 $(document).ready(function () {
 
@@ -1490,11 +1399,6 @@ $(document).ready(function () {
 
 });
 
-
-/* =========================================================
-   LOAD BENDING EMPLOYEES
-========================================================= */
-
 function loadPolishingEmployees()
 {
     $.ajax({
@@ -1567,10 +1471,6 @@ function loadPolishingEmployees()
 }
 
 
-/* =========================================================
-   LOAD BENDING SUPERVISOR TASKS
-========================================================= */
-
 function loadPolishingSupervisorTasks()
 {
     $.ajax({
@@ -1642,13 +1542,6 @@ function loadPolishingSupervisorTasks()
                               'Not Assigned' +
                               '</span>';
 
-
-                    /*
-                     * -------------------------------------------------
-                     * ASSIGN / REASSIGN
-                     * -------------------------------------------------
-                     */
-
                     var assignButton = '';
 
 
@@ -1689,14 +1582,7 @@ function loadPolishingSupervisorTasks()
 
                     }
 
-
-                    /*
-                     * -------------------------------------------------
-                     * VIEW
-                     * -------------------------------------------------
-                     */
-
-                    var detailButton =
+                   var detailButton =
 
                         '<button ' +
                             'type="button" ' +
@@ -1709,13 +1595,6 @@ function loadPolishingSupervisorTasks()
                             'View' +
 
                         '</button> ';
-
-
-                    /*
-                     * -------------------------------------------------
-                     * NOTE
-                     * -------------------------------------------------
-                     */
 
                     var noteButton =
 
@@ -1731,13 +1610,6 @@ function loadPolishingSupervisorTasks()
 
                         '</button> ';
 
-
-                    /*
-                     * -------------------------------------------------
-                     * TIMELINE
-                     * -------------------------------------------------
-                     */
-
                     var timelineButton =
 
                         '<button ' +
@@ -1751,13 +1623,6 @@ function loadPolishingSupervisorTasks()
                             'Timeline' +
 
                         '</button> ';
-
-
-                    /*
-                     * -------------------------------------------------
-                     * APPROVE & HANDOVER
-                     * -------------------------------------------------
-                     */
 
                     var handoverButton = '';
 
@@ -1784,13 +1649,6 @@ function loadPolishingSupervisorTasks()
 
                     }
 
-
-                    /*
-                     * -------------------------------------------------
-                     * REWORK
-                     * -------------------------------------------------
-                     */
-
                     var reworkButton = '';
 
 
@@ -1816,13 +1674,7 @@ function loadPolishingSupervisorTasks()
 
                     }
 
-
-                    /*
-                     * -------------------------------------------------
-                     * ACTIONS
-                     * -------------------------------------------------
-                     */
-
+                 
                     var actions =
 
                         '<div class="polishing-action-buttons">' +
@@ -2000,11 +1852,6 @@ function loadPolishingSupervisorTasks()
     });
 }
 
-
-/* =========================================================
-   OPEN ASSIGN / REASSIGN
-========================================================= */
-
 function openPolishingAssignEmployee(taskId)
 {
     $('#polishing_assign_task_id')
@@ -2147,11 +1994,6 @@ function openPolishingAssignEmployee(taskId)
     });
 }
 
-
-/* =========================================================
-   VIEW TASK
-========================================================= */
-
 function viewPolishingTask(taskId)
 {
     $.ajax({
@@ -2257,11 +2099,6 @@ function viewPolishingTask(taskId)
 
     });
 }
-
-
-/* =========================================================
-   OPEN APPROVE & HANDOVER
-========================================================= */
 
 function openPolishingHandover(taskId)
 {
@@ -2384,11 +2221,6 @@ function openPolishingHandover(taskId)
     });
 }
 
-
-/* =========================================================
-   OPEN REWORK
-========================================================= */
-
 function openPolishingRework(taskId)
 {
     $('#polishing_rework_task_id')
@@ -2503,11 +2335,6 @@ function openPolishingRework(taskId)
     });
 }
 
-
-/* =========================================================
-   OPEN NOTE
-========================================================= */
-
 function openPolishingSupervisorNote(taskId)
 {
     $('#polishing_note_task_id')
@@ -2525,11 +2352,6 @@ function openPolishingSupervisorNote(taskId)
     $('#polishingSupervisorNoteModal')
         .modal('show');
 }
-
-
-/* =========================================================
-   OPEN TIMELINE
-========================================================= */
 
 function openPolishingSupervisorTimeline(taskId)
 {
@@ -2688,12 +2510,12 @@ function openPolishingSupervisorTimeline(taskId)
 
                                     '<span class="cnc-status-badge ' +
                                         getPolishingStatusClass(
-                                            row.old_status
+                                            row.from_status
                                         ) +
                                     '">' +
 
                                         escapeHtml(
-                                            row.old_status || '-'
+                                            row.from_status || '-'
                                         ) +
 
                                     '</span>' +
@@ -2704,12 +2526,12 @@ function openPolishingSupervisorTimeline(taskId)
 
                                     '<span class="cnc-status-badge ' +
                                         getPolishingStatusClass(
-                                            row.new_status
+                                            row.to_status
                                         ) +
                                     '">' +
 
                                         escapeHtml(
-                                            row.new_status || '-'
+                                            row.to_status || '-'
                                         ) +
 
                                     '</span>' +
@@ -2787,11 +2609,6 @@ function openPolishingSupervisorTimeline(taskId)
 
     });
 }
-
-
-/* =========================================================
-   PRIORITY BADGE
-========================================================= */
 
 function getPolishingPriorityBadge(priority)
 {
@@ -2875,11 +2692,6 @@ function getPolishingPriorityBadge(priority)
 
     );
 }
-
-
-/* =========================================================
-   STATUS BADGE
-========================================================= */
 
 function getPolishingStatusBadge(status)
 {
@@ -3026,11 +2838,6 @@ function getPolishingStatusBadge(status)
     );
 }
 
-
-/* =========================================================
-   STATUS CLASS FOR TIMELINE
-========================================================= */
-
 function getPolishingStatusClass(status)
 {
     status =
@@ -3086,11 +2893,6 @@ function getPolishingStatusClass(status)
 
     }
 }
-
-
-/* =========================================================
-   HTML ESCAPE
-========================================================= */
 
 function escapeHtml(value)
 {

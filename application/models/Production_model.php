@@ -1,6 +1,9 @@
 <?php
 class Production_model extends CI_Model
 {
+    const JOINING_FIXING_DEPARTMENT_ID = 12;
+    const JOINING_FIXING_EMPLOYEE_DESIGNATION_ID = 25;
+
     function get_wo_details()
     {
         $query=$this->db->query("select * from project_work_order order by created_date desc");
@@ -13400,7 +13403,7 @@ public function polishing_supervisor_approve_and_handover_v2(
 
     return array(
         'status'            => true,
-        'message'           => 'Polishing task approved and handed over to Polishing successfully.',
+        'message'           => 'Polishing task approved and handed over to Fixing/Joining successfully.',
         'polishing_task_id' => $polishing_task_id
     );
 }
@@ -14310,5 +14313,1998 @@ public function get_polishing_employee_timeline_v2($task_id)
 
     return $timeline;
 }
+
+/* =========================================================
+     * SUPERVISOR TASK LIST
+     * ========================================================= */
+
+    public function get_joining_fixing_supervisor_tasks()
+    {
+        $this->db->select("
+            pt.task_id,
+            pt.job_order_id,
+            pt.sales_order_id,
+            pt.sales_order_product_id,
+            pt.department_id,
+            pt.task_description,
+            pt.quantity,
+            pt.assigned_employee_id,
+            pt.assigned_by,
+            pt.priority,
+            pt.status,
+            pt.remarks,
+            pt.started_at,
+            pt.completed_at,
+            pt.created_at,
+            pt.updated_at,
+
+            jo.job_order_no,
+            jo.order_no,
+
+            som.so_code,
+
+            sp.product_id,
+            sp.quantity AS ordered_quantity,
+
+            im.product_name AS product_name,
+            im.product_code,
+
+            em.employee_name AS assigned_employee_name,
+            em.uid_number AS assigned_employee_uid
+        ", false);
+
+        $this->db->from('production_tasks pt');
+
+        $this->db->join(
+            'job_order jo',
+            'jo.job_order_id = pt.job_order_id',
+            'left'
+        );
+
+        $this->db->join(
+            'sales_order_master som',
+            'som.so_id = pt.sales_order_id',
+            'left'
+        );
+
+        $this->db->join(
+            'sales_order_products sp',
+            'sp.product_table_id = pt.sales_order_product_id',
+            'left'
+        );
+
+        $this->db->join(
+            'item_master im',
+            'im.product_id = sp.product_id',
+            'left'
+        );
+
+        $this->db->join(
+            'employee_master em',
+            'em.employee_id = pt.assigned_employee_id',
+            'left'
+        );
+
+        $this->db->where(
+            'pt.department_id',
+            self::JOINING_FIXING_DEPARTMENT_ID
+        );
+
+        $this->db->order_by(
+            'pt.task_id',
+            'DESC'
+        );
+
+        return $this->db
+            ->get()
+            ->result_array();
+    }
+
+
+    /* =========================================================
+     * GET JOINING / FIXING EMPLOYEES
+     * ========================================================= */
+
+    public function get_joining_fixing_employees()
+    {
+        $this->db->select("
+            employee_id,
+            employee_name,
+            uid_number,
+            department_id,
+            designation_id
+        ");
+
+        $this->db->from('employee_master');
+
+        $this->db->where(
+            'department_id',
+            self::JOINING_FIXING_DEPARTMENT_ID
+        );
+
+        /*
+         * Employee designation filter.
+         *
+         * 0 means it has not yet been configured.
+         */
+        if (
+            self::JOINING_FIXING_EMPLOYEE_DESIGNATION_ID > 0
+        ) {
+            $this->db->where(
+                'designation_id',
+                self::JOINING_FIXING_EMPLOYEE_DESIGNATION_ID
+            );
+        }
+
+        $this->db->where(
+            'active',
+            1
+        );
+
+        $this->db->order_by(
+            'employee_name',
+            'ASC'
+        );
+
+        return $this->db
+            ->get()
+            ->result_array();
+    }
+
+
+    /* =========================================================
+     * GET ONE JOINING / FIXING TASK
+     * ========================================================= */
+
+    public function get_joining_fixing_task($task_id)
+    {
+        $task_id = (int)$task_id;
+
+        if (!$task_id) {
+            return null;
+        }
+
+        $this->db->select("
+            pt.*,
+
+            jo.job_order_no,
+            jo.order_no,
+
+            som.so_code,
+
+            sp.product_id,
+            sp.quantity AS ordered_quantity,
+
+            im.product_name AS product_name,
+            im.product_code,
+
+            em.employee_name AS assigned_employee_name,
+            em.uid_number AS assigned_employee_uid
+        ", false);
+
+        $this->db->from('production_tasks pt');
+
+        $this->db->join(
+            'job_order jo',
+            'jo.job_order_id = pt.job_order_id',
+            'left'
+        );
+
+        $this->db->join(
+            'sales_order_master som',
+            'som.so_id = pt.sales_order_id',
+            'left'
+        );
+
+        $this->db->join(
+            'sales_order_products sp',
+            'sp.product_table_id = pt.sales_order_product_id',
+            'left'
+        );
+
+        $this->db->join(
+            'item_master im',
+            'im.product_id = sp.product_id',
+            'left'
+        );
+
+        $this->db->join(
+            'employee_master em',
+            'em.employee_id = pt.assigned_employee_id',
+            'left'
+        );
+
+        $this->db->where(
+            'pt.task_id',
+            $task_id
+        );
+
+        $this->db->where(
+            'pt.department_id',
+            self::JOINING_FIXING_DEPARTMENT_ID
+        );
+
+        return $this->db
+            ->get()
+            ->row();
+    }
+
+
+    /* =========================================================
+     * ASSIGN / REASSIGN EMPLOYEE
+     * ========================================================= */
+
+    public function assign_joining_fixing_employee(
+        $task_id,
+        $employee_id,
+        $supervisor_employee_id
+    ) {
+        $task_id =
+            (int)$task_id;
+
+        $employee_id =
+            (int)$employee_id;
+
+        $supervisor_employee_id =
+            (int)$supervisor_employee_id;
+
+        if (
+            !$task_id ||
+            !$employee_id ||
+            !$supervisor_employee_id
+        ) {
+
+            return array(
+                'status'  => false,
+                'message' => 'Invalid assignment data.'
+            );
+        }
+
+
+        /*
+         * Verify selected employee.
+         *
+         * Department + designation + active.
+         */
+        $this->db->select("
+            employee_id,
+            employee_name,
+            uid_number,
+            department_id,
+            designation_id,
+            active
+        ");
+
+        $this->db->from(
+            'employee_master'
+        );
+
+        $this->db->where(
+            'employee_id',
+            $employee_id
+        );
+
+        $this->db->where(
+            'department_id',
+            self::JOINING_FIXING_DEPARTMENT_ID
+        );
+
+        if (
+            self::JOINING_FIXING_EMPLOYEE_DESIGNATION_ID > 0
+        ) {
+            $this->db->where(
+                'designation_id',
+                self::JOINING_FIXING_EMPLOYEE_DESIGNATION_ID
+            );
+        }
+
+        $this->db->where(
+            'active',
+            1
+        );
+
+        $employee =
+            $this->db->get()->row();
+
+        if (!$employee) {
+
+            return array(
+                'status'  => false,
+                'message' =>
+                    'Invalid Joining / Fixing employee.'
+            );
+        }
+
+
+        /*
+         * Verify task.
+         */
+        $task = $this->db
+            ->select('*')
+            ->from('production_tasks')
+            ->where(
+                'task_id',
+                $task_id
+            )
+            ->where(
+                'department_id',
+                self::JOINING_FIXING_DEPARTMENT_ID
+            )
+            ->get()
+            ->row();
+
+        if (!$task) {
+
+            return array(
+                'status'  => false,
+                'message' =>
+                    'Joining / Fixing task not found.'
+            );
+        }
+
+        $old_employee_id =
+            (int)$task->assigned_employee_id;
+
+        $now =
+            date('Y-m-d H:i:s');
+
+        $this->db->trans_begin();
+
+
+        /*
+         * Assign employee.
+         */
+        $this->db
+            ->where(
+                'task_id',
+                $task_id
+            )
+            ->where(
+                'department_id',
+                self::JOINING_FIXING_DEPARTMENT_ID
+            )
+            ->update(
+                'production_tasks',
+                array(
+                    'assigned_employee_id' =>
+                        $employee_id,
+
+                    'assigned_by' =>
+                        $supervisor_employee_id,
+
+                    'updated_at' =>
+                        $now
+                )
+            );
+
+
+        if (
+            $this->db->trans_status() === false
+        ) {
+
+            $this->db->trans_rollback();
+
+            return array(
+                'status'  => false,
+                'message' =>
+                    'Unable to assign employee.'
+            );
+        }
+
+
+        /*
+         * Assignment note.
+         */
+        $note =
+            ($old_employee_id > 0)
+                ? 'Task reassigned to ' .
+                  $employee->employee_name . '.'
+                : 'Task assigned to ' .
+                  $employee->employee_name . '.';
+
+
+        $this->db->insert(
+            'production_task_notes',
+            array(
+                'task_id' =>
+                    $task_id,
+
+                'employee_id' =>
+                    $supervisor_employee_id,
+
+                'note_type' =>
+                    'Assignment',
+
+                'note' =>
+                    $note,
+
+                'added_by_role' =>
+                    'Supervisor',
+
+                'created_at' =>
+                    $now
+            )
+        );
+
+
+        if (
+            $this->db->trans_status() === false
+        ) {
+
+            $this->db->trans_rollback();
+
+            return array(
+                'status'  => false,
+                'message' =>
+                    'Employee assigned but note could not be saved.'
+            );
+        }
+
+        $this->db->trans_commit();
+
+        return array(
+            'status' => true,
+            'message' =>
+                ($old_employee_id > 0)
+                    ? 'Joining / Fixing task reassigned successfully.'
+                    : 'Joining / Fixing task assigned successfully.'
+        );
+    }
+
+
+    /* =========================================================
+     * APPROVE + HANDOVER
+     * ========================================================= */
+
+    public function joining_fixing_supervisor_approve_and_handover(
+        $task_id,
+        $supervisor_employee_id,
+        $next_department_id,
+        $remarks
+    ) {
+        $task_id =
+            (int)$task_id;
+
+        $supervisor_employee_id =
+            (int)$supervisor_employee_id;
+
+        $next_department_id =
+            (int)$next_department_id;
+
+        $remarks =
+            trim($remarks);
+
+        if (
+            !$task_id ||
+            !$supervisor_employee_id
+        ) {
+
+            return array(
+                'status'  => false,
+                'message' => 'Invalid approval data.'
+            );
+        }
+
+        if (!$next_department_id) {
+
+            return array(
+                'status'  => false,
+                'message' => 'Next department is required.'
+            );
+        }
+
+        if ($remarks === '') {
+
+            return array(
+                'status'  => false,
+                'message' => 'Handover remarks are required.'
+            );
+        }
+
+
+        /*
+         * Current task.
+         */
+        $task = $this->db
+            ->select('*')
+            ->from('production_tasks')
+            ->where(
+                'task_id',
+                $task_id
+            )
+            ->where(
+                'department_id',
+                self::JOINING_FIXING_DEPARTMENT_ID
+            )
+            ->get()
+            ->row();
+
+        if (!$task) {
+
+            return array(
+                'status'  => false,
+                'message' =>
+                    'Joining / Fixing task not found.'
+            );
+        }
+
+
+        $current_status =
+            strtolower(trim($task->status));
+
+
+        if (
+            $current_status !== 'completed' &&
+            $current_status !== 'supervisor review' &&
+            $current_status !== 'review'
+        ) {
+
+            return array(
+                'status'  => false,
+                'message' =>
+                    'Only completed/review tasks can be handed over.'
+            );
+        }
+
+
+        /*
+         * Prevent duplicate approved handover.
+         */
+        $existing = $this->db
+            ->where(
+                'from_task_id',
+                $task_id
+            )
+            ->where(
+                'to_department_id',
+                $next_department_id
+            )
+            ->where(
+                'approval_status',
+                'Approved'
+            )
+            ->get(
+                'production_task_handover'
+            )
+            ->row();
+
+        if ($existing) {
+
+            return array(
+                'status'  => false,
+                'message' =>
+                    'This task has already been handed over.'
+            );
+        }
+
+
+        $now =
+            date('Y-m-d H:i:s');
+
+        $this->db->trans_begin();
+
+
+        /*
+         * Mark current task Approved.
+         */
+        $this->db
+            ->where(
+                'task_id',
+                $task_id
+            )
+            ->where(
+                'department_id',
+                self::JOINING_FIXING_DEPARTMENT_ID
+            )
+            ->update(
+                'production_tasks',
+                array(
+                    'status' =>
+                        'Approved',
+
+                    'updated_at' =>
+                        $now
+                )
+            );
+
+
+        /*
+         * Status history.
+         */
+        $this->db->insert(
+            'production_task_status_history',
+            array(
+                'task_id' =>
+                    $task_id,
+
+                'old_status' =>
+                    $task->status,
+
+                'new_status' =>
+                    'Approved',
+
+                'remarks' =>
+                    $remarks,
+
+                'changed_by' =>
+                    $supervisor_employee_id,
+
+                'changed_at' =>
+                    $now
+            )
+        );
+
+
+        /*
+         * Create next department task.
+         *
+         * Employee is NULL.
+         */
+        $next_task = array(
+            'job_order_id' =>
+                $task->job_order_id,
+
+            'sales_order_id' =>
+                $task->sales_order_id,
+
+            'sales_order_product_id' =>
+                $task->sales_order_product_id,
+
+            'department_id' =>
+                $next_department_id,
+
+            'task_description' =>
+                $task->task_description,
+
+            'quantity' =>
+                $task->quantity,
+
+            'assigned_employee_id' =>
+                null,
+
+            'assigned_by' =>
+                $supervisor_employee_id,
+
+            'priority' =>
+                $task->priority,
+
+            'status' =>
+                'Pending',
+
+            'remarks' =>
+                $remarks,
+
+            'created_at' =>
+                $now
+        );
+
+        $this->db->insert(
+            'production_tasks',
+            $next_task
+        );
+
+        $next_task_id =
+            $this->db->insert_id();
+
+
+        if (
+            !$next_task_id ||
+            $this->db->trans_status() === false
+        ) {
+
+            $this->db->trans_rollback();
+
+            return array(
+                'status'  => false,
+                'message' =>
+                    'Unable to create next department task.'
+            );
+        }
+
+
+        /*
+         * Initial history for next department.
+         */
+        $this->db->insert(
+            'production_task_status_history',
+            array(
+                'task_id' =>
+                    $next_task_id,
+
+                'old_status' =>
+                    null,
+
+                'new_status' =>
+                    'Pending',
+
+                'remarks' =>
+                    'Task received from Joining / Fixing.',
+
+                'changed_by' =>
+                    $supervisor_employee_id,
+
+                'changed_at' =>
+                    $now
+            )
+        );
+
+
+        /*
+         * Handover.
+         */
+        $this->db->insert(
+            'production_task_handover',
+            array(
+                'from_task_id' =>
+                    $task_id,
+
+                'from_department_id' =>
+                    self::JOINING_FIXING_DEPARTMENT_ID,
+
+                'to_department_id' =>
+                    $next_department_id,
+
+                'approved_by' =>
+                    $supervisor_employee_id,
+
+                'approval_status' =>
+                    'Approved',
+
+                'remarks' =>
+                    $remarks,
+
+                'handed_over_at' =>
+                    $now
+            )
+        );
+
+
+        /*
+         * Supervisor note.
+         */
+        $this->db->insert(
+            'production_task_notes',
+            array(
+                'task_id' =>
+                    $task_id,
+
+                'employee_id' =>
+                    $supervisor_employee_id,
+
+                'note_type' =>
+                    'Handover',
+
+                'note' =>
+                    $remarks,
+
+                'added_by_role' =>
+                    'Supervisor',
+
+                'created_at' =>
+                    $now
+            )
+        );
+
+
+        if (
+            $this->db->trans_status() === false
+        ) {
+
+            $this->db->trans_rollback();
+
+            return array(
+                'status'  => false,
+                'message' =>
+                    'Unable to complete Joining / Fixing handover.'
+            );
+        }
+
+        $this->db->trans_commit();
+
+        return array(
+            'status' => true,
+
+            'message' =>
+                'Joining / Fixing task approved and handed over successfully.',
+
+            'next_task_id' =>
+                $next_task_id
+        );
+    }
+
+
+    /* =========================================================
+     * SUPERVISOR REWORK
+     * ========================================================= */
+
+    public function joining_fixing_supervisor_rework(
+        $task_id,
+        $supervisor_employee_id,
+        $remarks
+    ) {
+        $task_id =
+            (int)$task_id;
+
+        $supervisor_employee_id =
+            (int)$supervisor_employee_id;
+
+        $remarks =
+            trim($remarks);
+
+        if (
+            !$task_id ||
+            !$supervisor_employee_id
+        ) {
+
+            return array(
+                'status'  => false,
+                'message' => 'Invalid rework data.'
+            );
+        }
+
+        if ($remarks === '') {
+
+            return array(
+                'status'  => false,
+                'message' => 'Rework reason is required.'
+            );
+        }
+
+
+        $task = $this->db
+            ->select('*')
+            ->from('production_tasks')
+            ->where(
+                'task_id',
+                $task_id
+            )
+            ->where(
+                'department_id',
+                self::JOINING_FIXING_DEPARTMENT_ID
+            )
+            ->get()
+            ->row();
+
+        if (!$task) {
+
+            return array(
+                'status'  => false,
+                'message' =>
+                    'Joining / Fixing task not found.'
+            );
+        }
+
+
+        $current_status =
+            strtolower(trim($task->status));
+
+
+        if (
+            $current_status !== 'completed' &&
+            $current_status !== 'supervisor review' &&
+            $current_status !== 'review'
+        ) {
+
+            return array(
+                'status'  => false,
+                'message' =>
+                    'Only completed/review tasks can be sent for rework.'
+            );
+        }
+
+
+        $now =
+            date('Y-m-d H:i:s');
+
+        $this->db->trans_begin();
+
+
+        /*
+         * Keep assigned employee.
+         */
+        $this->db
+            ->where(
+                'task_id',
+                $task_id
+            )
+            ->where(
+                'department_id',
+                self::JOINING_FIXING_DEPARTMENT_ID
+            )
+            ->update(
+                'production_tasks',
+                array(
+                    'status' =>
+                        'Rework',
+
+                    'updated_at' =>
+                        $now
+                )
+            );
+
+
+        /*
+         * Status history.
+         */
+        $this->db->insert(
+            'production_task_status_history',
+            array(
+                'task_id' =>
+                    $task_id,
+
+                'old_status' =>
+                    $task->status,
+
+                'new_status' =>
+                    'Rework',
+
+                'remarks' =>
+                    $remarks,
+
+                'changed_by' =>
+                    $supervisor_employee_id,
+
+                'changed_at' =>
+                    $now
+            )
+        );
+
+
+        /*
+         * Rework handover.
+         */
+        $this->db->insert(
+            'production_task_handover',
+            array(
+                'from_task_id' =>
+                    $task_id,
+
+                'from_department_id' =>
+                    self::JOINING_FIXING_DEPARTMENT_ID,
+
+                'to_department_id' =>
+                    self::JOINING_FIXING_DEPARTMENT_ID,
+
+                'approved_by' =>
+                    $supervisor_employee_id,
+
+                'approval_status' =>
+                    'Rework',
+
+                'remarks' =>
+                    $remarks,
+
+                'handed_over_at' =>
+                    $now
+            )
+        );
+
+
+        /*
+         * Supervisor note.
+         */
+        $this->db->insert(
+            'production_task_notes',
+            array(
+                'task_id' =>
+                    $task_id,
+
+                'employee_id' =>
+                    $supervisor_employee_id,
+
+                'note_type' =>
+                    'Rework',
+
+                'note' =>
+                    $remarks,
+
+                'added_by_role' =>
+                    'Supervisor',
+
+                'created_at' =>
+                    $now
+            )
+        );
+
+
+        if (
+            $this->db->trans_status() === false
+        ) {
+
+            $this->db->trans_rollback();
+
+            return array(
+                'status'  => false,
+                'message' =>
+                    'Unable to send task for rework.'
+            );
+        }
+
+        $this->db->trans_commit();
+
+        return array(
+            'status' => true,
+            'message' =>
+                'Joining / Fixing task has been sent for rework.'
+        );
+    }
+
+
+    /* =========================================================
+     * SUPERVISOR NOTE
+     * ========================================================= */
+
+    public function insert_joining_fixing_supervisor_note(
+        $task_id,
+        $employee_id,
+        $note_type,
+        $note
+    ) {
+        $task_id =
+            (int)$task_id;
+
+        $employee_id =
+            (int)$employee_id;
+
+        $note_type =
+            trim($note_type);
+
+        $note =
+            trim($note);
+
+        if (
+            !$task_id ||
+            !$employee_id ||
+            $note === ''
+        ) {
+
+            return array(
+                'status'  => false,
+                'message' => 'Invalid note data.'
+            );
+        }
+
+
+        $task = $this->db
+            ->where(
+                'task_id',
+                $task_id
+            )
+            ->where(
+                'department_id',
+                self::JOINING_FIXING_DEPARTMENT_ID
+            )
+            ->get(
+                'production_tasks'
+            )
+            ->row();
+
+        if (!$task) {
+
+            return array(
+                'status'  => false,
+                'message' =>
+                    'Joining / Fixing task not found.'
+            );
+        }
+
+
+        $insert =
+            $this->db->insert(
+                'production_task_notes',
+                array(
+                    'task_id' =>
+                        $task_id,
+
+                    'employee_id' =>
+                        $employee_id,
+
+                    'note_type' =>
+                        ($note_type !== ''
+                            ? $note_type
+                            : 'General'),
+
+                    'note' =>
+                        $note,
+
+                    'added_by_role' =>
+                        'Supervisor',
+
+                    'created_at' =>
+                        date('Y-m-d H:i:s')
+                )
+            );
+
+        return $insert
+            ? array(
+                'status' => true,
+                'message' =>
+                    'Supervisor note saved successfully.'
+            )
+            : array(
+                'status' => false,
+                'message' =>
+                    'Unable to save supervisor note.'
+            );
+    }
+
+
+    /* =========================================================
+     * SUPERVISOR TIMELINE
+     * ========================================================= */
+
+    public function get_joining_fixing_supervisor_timeline(
+        $task_id
+    ) {
+        return $this->get_joining_fixing_timeline_base(
+            $task_id
+        );
+    }
+
+
+    /* =========================================================
+     * HANDOVER
+     * ========================================================= */
+
+    public function get_joining_fixing_task_handover(
+        $task_id
+    ) {
+        $task_id =
+            (int)$task_id;
+
+        if (!$task_id) {
+            return null;
+        }
+
+        return $this->db
+            ->where(
+                'from_task_id',
+                $task_id
+            )
+            ->order_by(
+                'handover_id',
+                'DESC'
+            )
+            ->limit(1)
+            ->get(
+                'production_task_handover'
+            )
+            ->row();
+    }
+
+
+    /* =========================================================
+     * GET JOINING / FIXING EMPLOYEE
+     * ========================================================= */
+
+    public function get_joining_fixing_employee(
+        $employee_id
+    ) {
+        $employee_id =
+            (int)$employee_id;
+
+        if (!$employee_id) {
+            return null;
+        }
+
+        $this->db->select("
+            employee_id,
+            employee_name,
+            uid_number,
+            department_id,
+            designation_id,
+            active
+        ");
+
+        $this->db->from(
+            'employee_master'
+        );
+
+        $this->db->where(
+            'employee_id',
+            $employee_id
+        );
+
+        $this->db->where(
+            'department_id',
+            self::JOINING_FIXING_DEPARTMENT_ID
+        );
+
+        if (
+            self::JOINING_FIXING_EMPLOYEE_DESIGNATION_ID > 0
+        ) {
+            $this->db->where(
+                'designation_id',
+                self::JOINING_FIXING_EMPLOYEE_DESIGNATION_ID
+            );
+        }
+
+        $this->db->where(
+            'active',
+            1
+        );
+
+        return $this->db
+            ->get()
+            ->row();
+    }
+
+
+    /* =========================================================
+     * GET MY EMPLOYEE TASKS
+     * ========================================================= */
+
+    public function get_joining_fixing_employee_tasks(
+        $employee_id
+    ) {
+        $employee_id =
+            (int)$employee_id;
+
+        if (!$employee_id) {
+            return array();
+        }
+
+        $this->db->select("
+            pt.task_id,
+            pt.job_order_id,
+            pt.sales_order_id,
+            pt.sales_order_product_id,
+            pt.department_id,
+            pt.task_description,
+            pt.quantity,
+            pt.assigned_employee_id,
+            pt.assigned_by,
+            pt.priority,
+            pt.status,
+            pt.remarks,
+            pt.started_at,
+            pt.completed_at,
+            pt.created_at,
+            pt.updated_at,
+
+            jo.job_order_no,
+            jo.order_no,
+
+            som.so_code,
+
+            sp.product_id,
+            sp.quantity AS ordered_quantity,
+
+            im.product_name AS product_name,
+            im.product_code,
+
+            em.employee_name,
+            em.uid_number
+        ", false);
+
+        $this->db->from(
+            'production_tasks pt'
+        );
+
+        $this->db->join(
+            'job_order jo',
+            'jo.job_order_id = pt.job_order_id',
+            'left'
+        );
+
+        $this->db->join(
+            'sales_order_master som',
+            'som.so_id = pt.sales_order_id',
+            'left'
+        );
+
+        $this->db->join(
+            'sales_order_products sp',
+            'sp.product_table_id = pt.sales_order_product_id',
+            'left'
+        );
+
+        $this->db->join(
+            'item_master im',
+            'im.product_id = sp.product_id',
+            'left'
+        );
+
+        $this->db->join(
+            'employee_master em',
+            'em.employee_id = pt.assigned_employee_id',
+            'left'
+        );
+
+        $this->db->where(
+            'pt.department_id',
+            self::JOINING_FIXING_DEPARTMENT_ID
+        );
+
+        $this->db->where(
+            'pt.assigned_employee_id',
+            $employee_id
+        );
+
+        $this->db->where_not_in(
+            'LOWER(pt.status)',
+            array(
+                'handed over',
+                'handover'
+            )
+        );
+
+        $this->db->order_by(
+            'pt.created_at',
+            'DESC'
+        );
+
+        return $this->db
+            ->get()
+            ->result_array();
+    }
+    //GET ONE EMPLOYEE TASK
+
+    public function get_joining_fixing_task_for_employee(
+        $task_id,
+        $employee_id
+    ) {
+        $task_id =
+            (int)$task_id;
+
+        $employee_id =
+            (int)$employee_id;
+
+        if (
+            !$task_id ||
+            !$employee_id
+        ) {
+            return null;
+        }
+
+        $this->db->select("
+            pt.*,
+
+            jo.job_order_no,
+            jo.order_no,
+            som.so_code,sp.quantity AS ordered_quantity,
+
+            im.product_name AS product_name,
+            im.product_code,
+
+            em.employee_name,
+            em.uid_number
+        ", false);
+
+        $this->db->from(
+            'production_tasks pt'
+        );
+
+        $this->db->join(
+            'job_order jo',
+            'jo.job_order_id = pt.job_order_id',
+            'left'
+        );
+
+        $this->db->join(
+            'sales_order_master som',
+            'som.so_id = pt.sales_order_id',
+            'left'
+        );
+
+        $this->db->join(
+            'sales_order_products sp',
+            'sp.product_table_id = pt.sales_order_product_id',
+            'left'
+        );
+
+        $this->db->join(
+            'item_master im',
+            'im.product_id = sp.product_id',
+            'left'
+        );
+
+        $this->db->join(
+            'employee_master em',
+            'em.employee_id = pt.assigned_employee_id',
+            'left'
+        );
+
+        $this->db->where(
+            'pt.task_id',
+            $task_id
+        );
+
+        $this->db->where(
+            'pt.department_id',
+            self::JOINING_FIXING_DEPARTMENT_ID
+        );
+
+        $this->db->where(
+            'pt.assigned_employee_id',
+            $employee_id
+        );
+
+        return $this->db
+            ->get()
+            ->row();
+    }
+
+    //EMPLOYEE STATUS UPDATE
+
+    public function update_joining_fixing_employee_task_status(
+        $task_id,
+        $employee_id,
+        $new_status,
+        $remarks = ''
+    ) {
+        $task_id =
+            (int)$task_id;
+
+        $employee_id =
+            (int)$employee_id;
+
+        $new_status =
+            trim($new_status);
+
+        $remarks =
+            trim($remarks);
+
+        if (
+            !$task_id ||
+            !$employee_id ||
+            $new_status === ''
+        ) {
+
+            return array(
+                'status'  => false,
+                'message' => 'Invalid task or employee.'
+            );
+        }
+
+
+        $task =
+            $this->get_joining_fixing_task_for_employee(
+                $task_id,
+                $employee_id
+            );
+
+        if (!$task) {
+
+            return array(
+                'status'  => false,
+                'message' =>
+                    'Task not found or not assigned to you.'
+            );
+        }
+
+
+        $old_status =
+            trim($task->status);
+
+        $old =
+            strtolower($old_status);
+
+        $new =
+            strtolower($new_status);
+
+
+        /*
+         * Allowed workflow.
+         */
+        $allowed = array(
+
+            'pending' => array(
+                'in progress'
+            ),
+
+            'in progress' => array(
+                'hold',
+                'completed'
+            ),
+
+            'hold' => array(
+                'in progress'
+            ),
+
+            'rework' => array(
+                'in progress'
+            ),
+
+            'qc rework' => array(
+                'in progress'
+            ),
+
+            'rejected' => array(
+                'in progress'
+            )
+        );
+
+
+        if (
+            !isset($allowed[$old]) ||
+            !in_array(
+                $new,
+                $allowed[$old]
+            )
+        ) {
+
+            return array(
+                'status'  => false,
+                'message' =>
+                    'Invalid status transition from ' .
+                    $old_status .
+                    ' to ' .
+                    $new_status .
+                    '.'
+            );
+        }
+
+
+        /*
+         * Hold / Complete require note.
+         */
+        if (
+            (
+                $new === 'hold' ||
+                $new === 'completed'
+            ) &&
+            $remarks === ''
+        ) {
+
+            return array(
+                'status'  => false,
+                'message' =>
+                    'Note is required for Hold/Complete.'
+            );
+        }
+
+
+        $now =
+            date('Y-m-d H:i:s');
+
+
+        $update = array(
+            'status' =>
+                $new_status,
+
+            'updated_at' =>
+                $now
+        );
+
+
+        if (
+            $new === 'in progress' &&
+            empty($task->started_at)
+        ) {
+
+            $update['started_at'] =
+                $now;
+        }
+
+
+        if ($new === 'completed') {
+
+            $update['completed_at'] =
+                $now;
+        }
+
+
+        $this->db->trans_begin();
+
+
+        /*
+         * Update task.
+         */
+        $this->db
+            ->where(
+                'task_id',
+                $task_id
+            )
+            ->where(
+                'department_id',
+                self::JOINING_FIXING_DEPARTMENT_ID
+            )
+            ->where(
+                'assigned_employee_id',
+                $employee_id
+            )
+            ->update(
+                'production_tasks',
+                $update
+            );
+
+
+        /*
+         * Status history.
+         */
+        $this->db->insert(
+            'production_task_status_history',
+            array(
+                'task_id' =>
+                    $task_id,
+
+                'old_status' =>
+                    $old_status,
+
+                'new_status' =>
+                    $new_status,
+
+                'remarks' =>
+                    $remarks,
+
+                'changed_by' =>
+                    $employee_id,
+
+                'changed_at' =>
+                    $now
+            )
+        );
+
+
+        /*
+         * Automatic note.
+         */
+        if ($remarks !== '') {
+
+            $note_type =
+                'General';
+
+            if ($new === 'hold') {
+
+                $note_type =
+                    'Hold Reason';
+
+            } elseif ($new === 'completed') {
+
+                $note_type =
+                    'Completion';
+
+            } elseif (
+                $new === 'in progress' &&
+                in_array(
+                    $old,
+                    array(
+                        'rework',
+                        'qc rework',
+                        'rejected'
+                    )
+                )
+            ) {
+
+                $note_type =
+                    'Rework';
+            }
+
+
+            $this->db->insert(
+                'production_task_notes',
+                array(
+                    'task_id' =>
+                        $task_id,
+
+                    'employee_id' =>
+                        $employee_id,
+
+                    'note_type' =>
+                        $note_type,
+
+                    'note' =>
+                        $remarks,
+
+                    'added_by_role' =>
+                        'Employee',
+
+                    'created_at' =>
+                        $now
+                )
+            );
+        }
+
+
+        if (
+            $this->db->trans_status() === false
+        ) {
+
+            $this->db->trans_rollback();
+
+            return array(
+                'status'  => false,
+                'message' =>
+                    'Database error while updating task.'
+            );
+        }
+
+
+        $this->db->trans_commit();
+
+        return array(
+            'status'  => true,
+            'message' =>
+                'Task status updated successfully.'
+        );
+    }
+
+    //EMPLOYEE NOTE
+
+    public function insert_joining_fixing_employee_note(
+        $task_id,
+        $employee_id,
+        $note_type,
+        $note
+    ) {
+        $task_id =
+            (int)$task_id;
+
+        $employee_id =
+            (int)$employee_id;
+
+        $note_type =
+            trim($note_type);
+
+        $note =
+            trim($note);
+
+        if (
+            !$task_id ||
+            !$employee_id ||
+            $note === ''
+        ) {
+
+            return array(
+                'status'  => false,
+                'message' => 'Invalid note data.'
+            );
+        }
+
+
+        $employee =
+            $this->get_joining_fixing_employee(
+                $employee_id
+            );
+
+        if (!$employee) {
+
+            return array(
+                'status'  => false,
+                'message' =>
+                    'Invalid Joining / Fixing employee.'
+            );
+        }
+
+
+        $task =
+            $this->get_joining_fixing_task_for_employee(
+                $task_id,
+                $employee_id
+            );
+
+        if (!$task) {
+
+            return array(
+                'status'  => false,
+                'message' =>
+                    'Task is not assigned to this employee.'
+            );
+        }
+
+
+        $insert =
+            $this->db->insert(
+                'production_task_notes',
+                array(
+                    'task_id' =>
+                        $task_id,
+
+                    'employee_id' =>
+                        $employee_id,
+
+                    'note_type' =>
+                        (
+                            $note_type !== ''
+                                ? $note_type
+                                : 'General'
+                        ),
+
+                    'note' =>
+                        $note,
+
+                    'added_by_role' =>
+                        'Employee',
+
+                    'created_at' =>
+                        date('Y-m-d H:i:s')
+                )
+            );
+
+        return $insert
+            ? array(
+                'status' => true,
+                'message' =>
+                    'Work note saved successfully.'
+            )
+            : array(
+                'status' => false,
+                'message' =>
+                    'Unable to save note.'
+            );
+    }
+
+
+    //EMPLOYEE STATUS HISTORY
+
+    public function get_joining_fixing_employee_status_history(
+        $task_id
+    ) {
+        $this->db->select("
+            h.task_id,
+            h.old_status,
+            h.new_status,
+            h.remarks,
+            h.changed_at
+        ", false);
+
+        $this->db->from(
+            'production_task_status_history h'
+        );
+
+        $this->db->where(
+            'h.task_id',
+            (int)$task_id
+        );
+
+        $this->db->order_by(
+            'h.changed_at',
+            'DESC'
+        );
+
+        return $this->db
+            ->get()
+            ->result_array();
+    }
+
+    //TIMELINE
+
+    private function get_joining_fixing_timeline_base(
+        $task_id
+    ) {
+        $timeline = array();
+
+        $task_id =
+            (int)$task_id;
+
+        if (!$task_id) {
+            return $timeline;
+        }
+
+
+        /*
+         * STATUS HISTORY
+         */
+        $this->db->select("
+            'status' AS entry_type,
+
+            h.task_id,
+
+            h.old_status AS from_status,
+
+            h.new_status AS to_status,
+
+            h.remarks AS note,
+
+            h.changed_at AS created_at,
+
+            CAST(NULL AS CHAR) AS note_type,
+
+            CAST(NULL AS CHAR) AS employee_name,
+
+            CAST(NULL AS CHAR) AS added_by_role
+        ", false);
+
+        $this->db->from(
+            'production_task_status_history h'
+        );
+
+        $this->db->where(
+            'h.task_id',
+            $task_id
+        );
+
+        $history =
+            $this->db
+                ->get()
+                ->result();
+
+        foreach ($history as $row) {
+
+            $timeline[] =
+                $row;
+        }
+
+
+        /*
+         * NOTES
+         */
+        $this->db->select("
+            'note' AS entry_type,
+
+            n.task_id,
+
+            CAST(NULL AS CHAR) AS from_status,
+
+            CAST(NULL AS CHAR) AS to_status,
+
+            n.note,
+
+            n.created_at,
+
+            n.note_type,
+
+            em.employee_name,
+
+            n.added_by_role
+        ", false);
+
+        $this->db->from(
+            'production_task_notes n'
+        );
+
+        $this->db->join(
+            'employee_master em',
+            'em.employee_id = n.employee_id',
+            'left'
+        );
+
+        $this->db->where(
+            'n.task_id',
+            $task_id
+        );
+
+        $notes =
+            $this->db
+                ->get()
+                ->result();
+
+        foreach ($notes as $row) {
+
+            $timeline[] =
+                $row;
+        }
+
+
+        /*
+         * Sort chronologically.
+         */
+        usort(
+            $timeline,
+            function ($a, $b) {
+
+                $timeA =
+                    !empty($a->created_at)
+                        ? strtotime($a->created_at)
+                        : 0;
+
+                $timeB =
+                    !empty($b->created_at)
+                        ? strtotime($b->created_at)
+                        : 0;
+
+                if ($timeA == $timeB) {
+                    return 0;
+                }
+
+                return
+                    ($timeA < $timeB)
+                        ? -1
+                        : 1;
+            }
+        );
+
+        return $timeline;
+    }
+
+
+    public function get_joining_fixing_employee_timeline(
+        $task_id
+    ) {
+        return $this->get_joining_fixing_timeline_base(
+            $task_id
+        );
+    }
 
 }

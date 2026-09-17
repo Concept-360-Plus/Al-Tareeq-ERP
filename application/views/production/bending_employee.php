@@ -892,7 +892,7 @@ function getBendingEmployeeActions(row)
 
     html +=
         '<button type="button" ' +
-        'class="btn btn-xs btn-default ' +
+        'class="btn btn-xs btn-success ' +
         'bending-employee-note-btn" ' +
         'data-task-id="' + taskId + '" ' +
         'title="Add Work Note">' +
