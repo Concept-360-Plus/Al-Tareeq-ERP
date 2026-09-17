@@ -1144,6 +1144,15 @@ class Hr extends CI_Controller
 
 	function add_emp_attendance()
 	{
+		$user = $this->session->userdata('user_id');
+
+		if (!has_access($user, 'Hr/view_emp_attendance_list', 'A')) {
+			$data['title'] = 'Access Denied';
+			$data['main_content'] = 'errors/access_control.php';
+			$this->load->view('includes/template', $data);
+			return;
+		}
+
 		$data['title'] = "Employee Attendance";
 
 		// $this->load->model('Users_model');
@@ -1156,6 +1165,15 @@ class Hr extends CI_Controller
 	}
 	function view_emp_attendance_list()
 	{
+		$user = $this->session->userdata('user_id');
+
+		if (!has_view_access($user, 'Hr/view_emp_attendance_list')) {
+			$data['title'] = 'Access Denied';
+			$data['main_content'] = 'errors/access_control.php';
+			$this->load->view('includes/template', $data);
+			return;
+		}
+
 		$data['title'] = "Employee Attendance List";
 		$this->load->model('Hr_model');
 		$data['records'] = $this->Hr_model->get_emp_attendance_list();
@@ -1227,7 +1245,7 @@ class Hr extends CI_Controller
 
 		if (empty($id)) {
 
-			$this->session->set_flashdata('error','Invalid attendance record.');
+			$this->session->set_flashdata('error', 'Invalid attendance record.');
 
 			redirect('Hr/view_emp_attendance_list');
 			return;
@@ -1237,14 +1255,14 @@ class Hr extends CI_Controller
 		$result = $this->Hr_model->update_emp_attendance($id);
 
 		if ($result) {
-			$this->session->set_flashdata('success','Attendance record updated successfully.');
+			$this->session->set_flashdata('success', 'Attendance record updated successfully.');
 			redirect('Hr/view_emp_attendance_list');
 		} else {
-			$this->session->set_flashdata('error','Unable to update attendance record. The employee/date combination may already exist.');
+			$this->session->set_flashdata('error', 'Unable to update attendance record. The employee/date combination may already exist.');
 			redirect('Hr/edit_emp_attendance/' . $id);
 		}
 	}
-	
+
 	function delete_attendance_emp()
 	{
 		$user = $this->session->userdata('user_id');
@@ -2003,6 +2021,136 @@ class Hr extends CI_Controller
 	// 	$data['main_content'] = 'hr/emp_monthly_salary_add.php';
 	// 	$this->load->view('includes/template', $data);
 	// }
+
+	// public function add_monthly_salary()
+	// {
+	// 	$data['title'] = "Monthly Salary Report";
+
+	// 	$this->load->model('Hr_model');
+
+	// 	// ======================
+	// 	// MONTH SELECTION
+	// 	// ======================
+	// 	$effective_date = $this->input->post('effective_date');
+
+	// 	if (empty($effective_date)) {
+	// 		$effective_date = date('Y-m');
+	// 	}
+
+	// 	$data['effective_date'] = $effective_date;
+
+	// 	$selected_month = date('Y-m', strtotime($effective_date));
+	// 	$start_date     = date('Y-m-01', strtotime($selected_month));
+	// 	$end_date       = date('Y-m-t', strtotime($selected_month));
+	// 	$days_in_month  = date('t', strtotime($selected_month));
+
+	// 	// ======================
+	// 	// EMPLOYEE LIST
+	// 	// ======================
+	// 	$employees = $this->Hr_model->get_employee_list();
+
+	// 	$result = [];
+
+	// 	// ======================
+	// 	// LOOP EMPLOYEES
+	// 	// ======================
+	// 	foreach ($employees as $emp) {
+
+	// 		$emp_id = $emp->employee_id;
+
+	// 		// ======================
+	// 		// SKIP IF ALREADY GENERATED
+	// 		// ======================
+	// 		$exists = $this->Hr_model->check_salary_exist($emp_id, $start_date);
+
+	// 		if ($exists > 0) {
+	// 			continue;
+	// 		}
+
+	// 		// ======================
+	// 		// ATTENDANCE
+	// 		// ======================
+	// 		$attendance = $this->Hr_model->get_attendance_details($emp_id, $start_date, $end_date);
+
+	// 		$present_count = isset($attendance->present_count) ? (float)$attendance->present_count : 0;
+	// 		$half_count    = isset($attendance->half_count) ? (float)$attendance->half_count : 0;
+
+	// 		$present_days = ($present_count * 1) + ($half_count * 0.5);
+	// 		$leave_days   = max(0, $days_in_month - $present_days);
+
+	// 		// ======================
+	// 		// SALARY STRUCTURE
+	// 		// ======================
+	// 		$emp_structure = $this->Hr_model->get_salary_structure_data_new($emp_id);
+
+	// 		$basic_salary     = 0;
+	// 		$total_allowances = 0;
+	// 		$total_deductions = 0;
+
+	// 		if (!empty($emp_structure)) {
+
+	// 			$basic_salary = (float)$emp_structure->basic_salary;
+
+	// 			$details = $this->Hr_model->get_salary_structure_details($emp_structure->sid);
+
+	// 			foreach ($details as $row) {
+	// 				if ($row->allowance_type == 'A') {
+	// 					$total_allowances += $row->amount;
+	// 				} else {
+	// 					$total_deductions += $row->amount;
+	// 				}
+	// 			}
+	// 		}
+
+	// 		// ======================
+	// 		// SALARY CALCULATION (FIXED)
+	// 		// ======================
+	// 		$per_day = ($days_in_month > 0 && $basic_salary > 0)
+	// 			? ($basic_salary / $days_in_month)
+	// 			: 0;
+
+	// 		if ($present_days <= 0) {
+
+	// 			// ❌ No attendance → no salary
+	// 			$monthly_basic = 0;
+	// 			$gross = 0;
+	// 			$net   = 0;
+	// 		} else {
+
+	// 			$monthly_basic = $per_day * $present_days;
+
+	// 			$gross = $monthly_basic + $total_allowances;
+
+	// 			$net   = $gross - $total_deductions;
+	// 		}
+
+	// 		// ======================
+	// 		// RESULT
+	// 		// ======================
+	// 		$result[] = (object)[
+	// 			'employee_id'   => $emp_id,
+	// 			'employee_name' => $emp->employee_name,
+	// 			'working_days'  => $days_in_month,
+	// 			'present_days'  => $present_days,
+	// 			'leave_days'    => $leave_days,
+	// 			'basic_salary'  => $basic_salary,
+	// 			'allowances'    => $total_allowances,
+	// 			'deductions'    => $total_deductions,
+	// 			'overtime'      => 0,
+	// 			'gross_salary'  => $gross,
+	// 			'net_pay'       => $net
+	// 		];
+	// 	}
+
+	// 	// ======================
+	// 	// PASS TO VIEW
+	// 	// ======================
+	// 	$data['employee_salary_data'] = $result;
+
+	// 	$data['main_content'] = 'hr/emp_monthly_salary_add';
+	// 	$this->load->view('includes/template', $data);
+	// }
+
 	public function add_monthly_salary()
 	{
 		$data['title'] = "Monthly Salary Report";
@@ -2012,125 +2160,173 @@ class Hr extends CI_Controller
 		// ======================
 		// MONTH SELECTION
 		// ======================
+
 		$effective_date = $this->input->post('effective_date');
 
 		if (empty($effective_date)) {
 			$effective_date = date('Y-m');
 		}
 
-		$data['effective_date'] = $effective_date;
-
 		$selected_month = date('Y-m', strtotime($effective_date));
-		$start_date     = date('Y-m-01', strtotime($selected_month));
-		$end_date       = date('Y-m-t', strtotime($selected_month));
-		$days_in_month  = date('t', strtotime($selected_month));
+
+		$start_date = date(
+			'Y-m-01',
+			strtotime($selected_month)
+		);
+
+		$end_date = date(
+			'Y-m-t',
+			strtotime($selected_month)
+		);
+
+		$days_in_month = (int) date(
+			't',
+			strtotime($selected_month)
+		);
+
+		$data['effective_date'] = $selected_month;
+		$data['days_in_month'] = $days_in_month;
+
 
 		// ======================
 		// EMPLOYEE LIST
 		// ======================
+
 		$employees = $this->Hr_model->get_employee_list();
 
 		$result = [];
 
+
 		// ======================
-		// LOOP EMPLOYEES
+		// CALCULATE EACH EMPLOYEE
 		// ======================
+
 		foreach ($employees as $emp) {
 
 			$emp_id = $emp->employee_id;
 
-			// ======================
-			// SKIP IF ALREADY GENERATED
-			// ======================
-			$exists = $this->Hr_model->check_salary_exist($emp_id, $start_date);
+
+			// ---------------------------------
+			// Skip already generated salary
+			// ---------------------------------
+
+			$exists = $this->Hr_model->check_salary_exist(
+				$emp_id,
+				$start_date
+			);
 
 			if ($exists > 0) {
 				continue;
 			}
 
-			// ======================
-			// ATTENDANCE
-			// ======================
-			$attendance = $this->Hr_model->get_attendance_details($emp_id, $start_date, $end_date);
 
-			$present_count = isset($attendance->present_count) ? (float)$attendance->present_count : 0;
-			$half_count    = isset($attendance->half_count) ? (float)$attendance->half_count : 0;
+			// ---------------------------------
+			// Get complete salary calculation
+			// ---------------------------------
 
-			$present_days = ($present_count * 1) + ($half_count * 0.5);
-			$leave_days   = max(0, $days_in_month - $present_days);
+			$salary = $this->Hr_model->calculate_monthly_salary(
+				$emp_id,
+				$start_date,
+				$end_date
+			);
 
-			// ======================
-			// SALARY STRUCTURE
-			// ======================
-			$emp_structure = $this->Hr_model->get_salary_structure_data_new($emp_id);
 
-			$basic_salary     = 0;
-			$total_allowances = 0;
-			$total_deductions = 0;
+			// ---------------------------------
+			// No salary structure
+			// ---------------------------------
 
-			if (!empty($emp_structure)) {
+			if ($salary === false) {
 
-				$basic_salary = (float)$emp_structure->basic_salary;
-
-				$details = $this->Hr_model->get_salary_structure_details($emp_structure->sid);
-
-				foreach ($details as $row) {
-					if ($row->allowance_type == 'A') {
-						$total_allowances += $row->amount;
-					} else {
-						$total_deductions += $row->amount;
-					}
-				}
+				continue;
 			}
 
-			// ======================
-			// SALARY CALCULATION (FIXED)
-			// ======================
-			$per_day = ($days_in_month > 0 && $basic_salary > 0)
-				? ($basic_salary / $days_in_month)
-				: 0;
 
-			if ($present_days <= 0) {
+			// ---------------------------------
+			// Convert OT minutes to HH:MM
+			// ---------------------------------
 
-				// ❌ No attendance → no salary
-				$monthly_basic = 0;
-				$gross = 0;
-				$net   = 0;
-			} else {
+			$overtime_minutes =
+				(int) $salary['overtime_minutes'];
 
-				$monthly_basic = $per_day * $present_days;
+			$overtime_hours =
+				floor($overtime_minutes / 60);
 
-				$gross = $monthly_basic + $total_allowances;
+			$overtime_remaining_minutes =
+				$overtime_minutes % 60;
 
-				$net   = $gross - $total_deductions;
-			}
+			$overtime_display = sprintf(
+				'%02d:%02d',
+				$overtime_hours,
+				$overtime_remaining_minutes
+			);
 
-			// ======================
-			// RESULT
-			// ======================
-			$result[] = (object)[
-				'employee_id'   => $emp_id,
-				'employee_name' => $emp->employee_name,
-				'working_days'  => $days_in_month,
-				'present_days'  => $present_days,
-				'leave_days'    => $leave_days,
-				'basic_salary'  => $basic_salary,
-				'allowances'    => $total_allowances,
-				'deductions'    => $total_deductions,
-				'overtime'      => 0,
-				'gross_salary'  => $gross,
-				'net_pay'       => $net
+
+			// ---------------------------------
+			// Result for View
+			// ---------------------------------
+
+			$result[] = (object) [
+
+				'employee_id' =>
+				$emp_id,
+
+				'employee_name' =>
+				$emp->employee_name,
+
+				'working_days' =>
+				$salary['days_in_month'],
+
+				'present_days' =>
+				$salary['present_days'],
+
+				'half_days' =>
+				$salary['half_days'],
+
+				'absent_days' =>
+				$salary['absent_days'],
+
+				'payable_days' =>
+				$salary['payable_days'],
+
+				'basic_salary' =>
+				$salary['basic_salary'],
+
+				'allowances' =>
+				$salary['total_allowances'],
+
+				'deductions' =>
+				$salary['total_deduction'],
+
+				'overtime' =>
+				$overtime_display,
+
+				'overtime_amount' =>
+				$salary['overtime_amount'],
+
+				'gross_salary' =>
+				$salary['gross_salary'],
+
+				'net_pay' =>
+				$salary['net_salary']
 			];
 		}
 
+
 		// ======================
-		// PASS TO VIEW
+		// PASS DATA TO VIEW
 		// ======================
+
 		$data['employee_salary_data'] = $result;
 
-		$data['main_content'] = 'hr/emp_monthly_salary_add';
-		$this->load->view('includes/template', $data);
+		$data['main_content'] =
+			'hr/emp_monthly_salary_add';
+
+		$this->load->view(
+			'includes/template',
+			$data
+		);
 	}
+
 	/*function add_monthly_salary_data()
 	   {
 		   $data['title'] = "Monthly Salary";
@@ -2584,139 +2780,384 @@ class Hr extends CI_Controller
 		echo json_encode($result);
 	}
 
+	// public function add_monthly_salary_data()
+	// {
+	// 	$this->load->model('Hr_model');
+
+	// 	// =======================
+	// 	// POST DATA DEBUG
+	// 	// =======================
+	// 	$employee_ids   = $this->input->post('employee_ids');
+	// 	$effective_date = $this->input->post('effective_date');
+
+	// 	log_message('debug', 'EMPLOYEE IDS: ' . print_r($employee_ids, true));
+	// 	log_message('debug', 'EFFECTIVE DATE: ' . $effective_date);
+
+	// 	if (empty($employee_ids)) {
+	// 		$this->session->set_flashdata('error', 'No employees selected');
+	// 		redirect('Hr/add_monthly_salary');
+	// 	}
+
+	// 	// =======================
+	// 	// MONTH FIX + DEBUG
+	// 	// =======================
+	// 	if (empty($effective_date)) {
+	// 		$effective_date = date('Y-m');
+	// 	}
+
+	// 	$month = date('Y-m', strtotime($effective_date . '-01'));
+	// 	$start_date = $month . '-01';
+	// 	$end_date   = date('Y-m-t', strtotime($start_date));
+	// 	$days_in_month = date('t', strtotime($start_date));
+
+	// 	log_message('debug', "MONTH: $month | START: $start_date | END: $end_date | DAYS: $days_in_month");
+
+	// 	foreach ($employee_ids as $emp_id) {
+	// 		log_message('debug', "PROCESSING EMPLOYEE: $emp_id");
+
+	// 		// =======================
+	// 		// EMPLOYEE DATA
+	// 		// =======================
+	// 		$emp = $this->Hr_model->get_employee_by_id($emp_id);
+
+	// 		if (!$emp) {
+	// 			log_message('error', "Employee not found: $emp_id");
+	// 			continue;
+	// 		}
+
+	// 		// =======================
+	// 		// ATTENDANCE DEBUG
+	// 		// =======================
+	// 		$attendance = $this->Hr_model->get_attendance_details($emp_id, $start_date, $end_date);
+
+	// 		log_message('debug', 'ATTENDANCE RAW: ' . print_r($attendance, true));
+
+	// 		$present = isset($attendance->present_count) ? (float)$attendance->present_count : 0;
+	// 		$half    = isset($attendance->half_count) ? (float)$attendance->half_count : 0;
+
+	// 		$present_days = ($present * 1) + ($half * 0.5);
+	// 		$leave_days   = max(0, $days_in_month - $present_days);
+
+	// 		log_message('debug', "PRESENT: $present | HALF: $half | TOTAL: $present_days");
+
+	// 		// =======================
+	// 		// SALARY STRUCTURE DEBUG
+	// 		// =======================
+	// 		$structure = $this->Hr_model->get_salary_structure_by_employee($emp_id);
+
+	// 		log_message('debug', 'STRUCTURE: ' . print_r($structure, true));
+
+	// 		$basic_salary = 0;
+	// 		$sid = 0;
+
+	// 		if (!empty($structure)) {
+	// 			$basic_salary = (float)$structure->basic_salary;
+	// 			$sid = $structure->sid;
+	// 		}
+
+	// 		log_message('debug', "BASIC SALARY: $basic_salary | SID: $sid");
+
+	// 		// =======================
+	// 		// STRUCTURE DETAILS
+	// 		// =======================
+	// 		$details = $this->Hr_model->get_salary_structure_details($sid);
+
+	// 		log_message('debug', 'STRUCTURE DETAILS: ' . print_r($details, true));
+
+	// 		$total_allowance = 0;
+	// 		$total_deduction = 0;
+
+	// 		foreach ($details as $row) {
+	// 			if ($row->allowance_type == 'A') {
+	// 				$total_allowance += $row->amount;
+	// 			} else {
+	// 				$total_deduction += $row->amount;
+	// 			}
+	// 		}
+
+	// 		log_message('debug', "ALLOWANCE: $total_allowance | DEDUCTION: $total_deduction");
+
+	// 		// =======================
+	// 		// SALARY CALCULATION
+	// 		// =======================
+	// 		$per_day = ($days_in_month > 0) ? ($basic_salary / $days_in_month) : 0;
+	// 		$monthly_basic = $per_day * $present_days;
+
+	// 		$gross = $monthly_basic + $total_allowance;
+	// 		$net   = $gross - $total_deduction;
+
+	// 		log_message('debug', "PER DAY: $per_day | MONTH BASIC: $monthly_basic | GROSS: $gross | NET: $net");
+
+	// 		// =======================
+	// 		// INSERT DATA
+	// 		// =======================
+	// 		$data = [
+	// 			'emp_id'          => $emp_id,
+	// 			'salary_month'    => $start_date,
+	// 			'working_days'    => $days_in_month,
+	// 			'present_days'    => $present_days,
+	// 			'leave_days'      => $leave_days,
+	// 			'basic_salary'    => $basic_salary,
+	// 			'total_allowance' => $total_allowance,
+	// 			'total_deduction' => $total_deduction,
+	// 			'overtime'        => 0,
+	// 			'gross_salary'    => $gross,
+	// 			'net_salary'      => $net,
+	// 			'created_data'    => date('Y-m-d H:i:s')
+	// 		];
+
+	// 		log_message('debug', 'FINAL INSERT: ' . print_r($data, true));
+
+	// 		$this->db->insert('employee_monthly_salary', $data);
+	// 	}
+
+	// 	$this->session->set_flashdata('success', 'Salary generated successfully');
+	// 	redirect('Hr/view_emp_monthly_salary_list');
+	// }
+
 	public function add_monthly_salary_data()
 	{
 		$this->load->model('Hr_model');
 
-		// =======================
-		// POST DATA DEBUG
-		// =======================
-		$employee_ids   = $this->input->post('employee_ids');
-		$effective_date = $this->input->post('effective_date');
 
-		log_message('debug', 'EMPLOYEE IDS: ' . print_r($employee_ids, true));
-		log_message('debug', 'EFFECTIVE DATE: ' . $effective_date);
+		// =======================
+		// GET POST DATA
+		// =======================
+
+		$employee_ids =
+			$this->input->post('employee_ids');
+
+		$effective_date =
+			$this->input->post('effective_date');
+
+
+		// =======================
+		// VALIDATE EMPLOYEES
+		// =======================
 
 		if (empty($employee_ids)) {
-			$this->session->set_flashdata('error', 'No employees selected');
+
+			$this->session->set_flashdata(
+				'error',
+				'No employees selected'
+			);
+
 			redirect('Hr/add_monthly_salary');
+
+			return;
 		}
 
+
 		// =======================
-		// MONTH FIX + DEBUG
+		// MONTH
 		// =======================
+
 		if (empty($effective_date)) {
 			$effective_date = date('Y-m');
 		}
 
-		$month = date('Y-m', strtotime($effective_date . '-01'));
-		$start_date = $month . '-01';
-		$end_date   = date('Y-m-t', strtotime($start_date));
-		$days_in_month = date('t', strtotime($start_date));
+		$month = date(
+			'Y-m',
+			strtotime($effective_date . '-01')
+		);
 
-		log_message('debug', "MONTH: $month | START: $start_date | END: $end_date | DAYS: $days_in_month");
+		$start_date = $month . '-01';
+
+		$end_date = date(
+			'Y-m-t',
+			strtotime($start_date)
+		);
+
+
+		// =======================
+		// START TRANSACTION
+		// =======================
+
+		$this->db->trans_start();
+
+
+		// =======================
+		// PROCESS EMPLOYEES
+		// =======================
 
 		foreach ($employee_ids as $emp_id) {
-			log_message('debug', "PROCESSING EMPLOYEE: $emp_id");
 
-			// =======================
-			// EMPLOYEE DATA
-			// =======================
-			$emp = $this->Hr_model->get_employee_by_id($emp_id);
+			$emp_id = (int) $emp_id;
 
-			if (!$emp) {
-				log_message('error', "Employee not found: $emp_id");
+
+			// ---------------------------------
+			// Check employee exists
+			// ---------------------------------
+
+			$employee =
+				$this->Hr_model->get_employee_by_id(
+					$emp_id
+				);
+
+			if (!$employee) {
 				continue;
 			}
 
-			// =======================
-			// ATTENDANCE DEBUG
-			// =======================
-			$attendance = $this->Hr_model->get_attendance_details($emp_id, $start_date, $end_date);
 
-			log_message('debug', 'ATTENDANCE RAW: ' . print_r($attendance, true));
+			// ---------------------------------
+			// Prevent duplicate payroll
+			// ---------------------------------
 
-			$present = isset($attendance->present_count) ? (float)$attendance->present_count : 0;
-			$half    = isset($attendance->half_count) ? (float)$attendance->half_count : 0;
+			$exists =
+				$this->Hr_model->check_salary_exist(
+					$emp_id,
+					$start_date
+				);
 
-			$present_days = ($present * 1) + ($half * 0.5);
-			$leave_days   = max(0, $days_in_month - $present_days);
-
-			log_message('debug', "PRESENT: $present | HALF: $half | TOTAL: $present_days");
-
-			// =======================
-			// SALARY STRUCTURE DEBUG
-			// =======================
-			$structure = $this->Hr_model->get_salary_structure_by_employee($emp_id);
-
-			log_message('debug', 'STRUCTURE: ' . print_r($structure, true));
-
-			$basic_salary = 0;
-			$sid = 0;
-
-			if (!empty($structure)) {
-				$basic_salary = (float)$structure->basic_salary;
-				$sid = $structure->sid;
+			if ($exists > 0) {
+				continue;
 			}
 
-			log_message('debug', "BASIC SALARY: $basic_salary | SID: $sid");
 
-			// =======================
-			// STRUCTURE DETAILS
-			// =======================
-			$details = $this->Hr_model->get_salary_structure_details($sid);
+			// ---------------------------------
+			// Calculate salary SERVER-SIDE
+			// ---------------------------------
 
-			log_message('debug', 'STRUCTURE DETAILS: ' . print_r($details, true));
+			$salary =
+				$this->Hr_model->calculate_monthly_salary(
+					$emp_id,
+					$start_date,
+					$end_date
+				);
 
-			$total_allowance = 0;
-			$total_deduction = 0;
 
-			foreach ($details as $row) {
-				if ($row->allowance_type == 'A') {
-					$total_allowance += $row->amount;
-				} else {
-					$total_deduction += $row->amount;
-				}
+			// ---------------------------------
+			// No salary structure
+			// ---------------------------------
+
+			if ($salary === false) {
+
+				log_message(
+					'error',
+					'Salary structure not found for employee: ' . $emp_id
+				);
+
+				continue;
 			}
 
-			log_message('debug', "ALLOWANCE: $total_allowance | DEDUCTION: $total_deduction");
 
-			// =======================
-			// SALARY CALCULATION
-			// =======================
-			$per_day = ($days_in_month > 0) ? ($basic_salary / $days_in_month) : 0;
-			$monthly_basic = $per_day * $present_days;
+			// ---------------------------------
+			// Convert OT minutes to TIME
+			// ---------------------------------
 
-			$gross = $monthly_basic + $total_allowance;
-			$net   = $gross - $total_deduction;
+			$overtime_minutes =
+				(int) $salary['overtime_minutes'];
 
-			log_message('debug', "PER DAY: $per_day | MONTH BASIC: $monthly_basic | GROSS: $gross | NET: $net");
+			$overtime_hours =
+				floor($overtime_minutes / 60);
 
-			// =======================
-			// INSERT DATA
-			// =======================
+			$overtime_remaining_minutes =
+				$overtime_minutes % 60;
+
+			$overtime_time = sprintf(
+				'%02d:%02d:00',
+				$overtime_hours,
+				$overtime_remaining_minutes
+			);
+
+
+			// ---------------------------------
+			// Prepare payroll record
+			// ---------------------------------
+
 			$data = [
-				'emp_id'          => $emp_id,
-				'salary_month'    => $start_date,
-				'working_days'    => $days_in_month,
-				'present_days'    => $present_days,
-				'leave_days'      => $leave_days,
-				'basic_salary'    => $basic_salary,
-				'total_allowance' => $total_allowance,
-				'total_deduction' => $total_deduction,
-				'overtime'        => 0,
-				'gross_salary'    => $gross,
-				'net_salary'      => $net,
-				'created_data'    => date('Y-m-d H:i:s')
+
+				'emp_id' =>
+				$emp_id,
+
+				'salary_month' =>
+				$start_date,
+
+				'working_days' =>
+				$salary['days_in_month'],
+
+				'present_days' =>
+				$salary['present_days'],
+
+				'leave_days' =>
+				$salary['absent_days'],
+
+				'basic_salary' =>
+				$salary['basic_salary'],
+
+				'daily_basic' =>
+				$salary['daily_basic'],
+
+				'total_allowance' =>
+				$salary['total_allowances'],
+
+				'total_deduction' =>
+				$salary['total_deduction'],
+
+				'overtime' =>
+				$overtime_time,
+
+				'overtime_amt' =>
+				$salary['overtime_amount'],
+
+				'gross_salary' =>
+				$salary['gross_salary'],
+
+				'net_salary' =>
+				$salary['net_salary'],
+
+				'created_data' =>
+				date('Y-m-d H:i:s')
 			];
 
-			log_message('debug', 'FINAL INSERT: ' . print_r($data, true));
 
-			$this->db->insert('employee_monthly_salary', $data);
+			// ---------------------------------
+			// Insert payroll
+			// ---------------------------------
+
+			$this->db->insert(
+				'employee_monthly_salary',
+				$data
+			);
 		}
 
-		$this->session->set_flashdata('success', 'Salary generated successfully');
-		redirect('Hr/view_emp_monthly_salary_list');
+
+		// =======================
+		// COMPLETE TRANSACTION
+		// =======================
+
+		$this->db->trans_complete();
+
+
+		// =======================
+		// TRANSACTION RESULT
+		// =======================
+
+		if ($this->db->trans_status() === FALSE) {
+
+			$this->session->set_flashdata(
+				'error',
+				'Error while generating salary'
+			);
+
+			redirect('Hr/add_monthly_salary');
+
+			return;
+		}
+
+
+		// =======================
+		// SUCCESS
+		// =======================
+
+		$this->session->set_flashdata(
+			'success',
+			'Salary generated successfully'
+		);
+
+		redirect(
+			'Hr/view_emp_monthly_salary_list'
+		);
 	}
 	///////////////////////////////////////////End advance salary//////////////////////////////////////////
 

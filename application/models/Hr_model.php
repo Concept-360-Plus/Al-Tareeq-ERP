@@ -3256,26 +3256,410 @@ class Hr_model extends CI_Model
 
 		return $query->row();
 	}
+
+	public function get_salary_structure_for_month($employee_id, $end_date)
+	{
+		return $this->db
+			->where('emp_id', $employee_id)
+			->where('effective_date <=', $end_date)
+			->order_by('effective_date', 'DESC')
+			->limit(1)
+			->get('salary_structure')
+			->row();
+	}
+
+	public function get_salary_component_totals($salary_structure_id)
+	{
+		$query = $this->db->query("
+        SELECT
+            COALESCE(SUM(
+                CASE
+                    WHEN am.allowance_type = 'A'
+                    THEN ssd.amount
+                    ELSE 0
+                END
+            ), 0) AS total_allowances,
+
+            COALESCE(SUM(
+                CASE
+                    WHEN am.allowance_type = 'D'
+                    THEN ssd.amount
+                    ELSE 0
+                END
+            ), 0) AS total_deductions
+
+        FROM salary_structure_details ssd
+
+        LEFT JOIN allowance_master am
+            ON am.sno = ssd.allowance_id
+
+        WHERE ssd.sid = ?
+    ", [$salary_structure_id]);
+
+		$row = $query->row();
+
+		return [
+			'total_allowances' => (float) ($row->total_allowances ?? 0),
+			'total_deductions' => (float) ($row->total_deductions ?? 0)
+		];
+	}
+
+	public function calculate_monthly_salary($employee_id, $start_date, $end_date)
+	{
+		/*
+     * ---------------------------------------------------------
+     * 1. BASIC MONTH INFORMATION
+     * ---------------------------------------------------------
+     */
+
+		$days_in_month = (int) date(
+			't',
+			strtotime($start_date)
+		);
+
+		/*
+     * ---------------------------------------------------------
+     * 2. SALARY STRUCTURE
+     * ---------------------------------------------------------
+     */
+
+		$salary_structure = $this->get_salary_structure_for_month(
+			$employee_id,
+			$end_date
+		);
+
+		if (!$salary_structure) {
+			return false;
+		}
+
+		$basic_salary = (float) ($salary_structure->basic_salary ?? 0);
+
+		/*
+     * ---------------------------------------------------------
+     * 3. SALARY RATES
+     *
+     * Daily   = Basic / Total days in month
+     * Hourly  = Daily / 8
+     * Minute  = Hourly / 60
+     * ---------------------------------------------------------
+     */
+
+		$daily_basic = 0;
+		$hourly_rate = 0;
+		$minute_rate = 0;
+
+		if ($days_in_month > 0 && $basic_salary > 0) {
+
+			$daily_basic = $basic_salary / $days_in_month;
+
+			$hourly_rate = $daily_basic / 8;
+
+			$minute_rate = $hourly_rate / 60;
+		}
+
+		/*
+     * ---------------------------------------------------------
+     * 4. ATTENDANCE
+     * ---------------------------------------------------------
+     */
+
+		$attendance = $this->get_attendance_details(
+			$employee_id,
+			$start_date,
+			$end_date
+		);
+
+		$present_days = (float) ($attendance->present_count ?? 0);
+
+		$half_days = (float) ($attendance->half_count ?? 0);
+		$absent_days = (float) ($attendance->absent_count ?? 0);
+
+		$half_days = (float) ($attendance->half_count ?? 0);
+
+		$worked_minutes = (int) ($attendance->worked_minutes ?? 0);
+
+		/*
+ * Deduction entered from Employee Attendance
+ */
+		$deductible_days =
+			(float) ($attendance->deductible_days ?? 0);
+
+		$deductible_hours =
+			(float) ($attendance->deductible_hours ?? 0);
+
+		$deductible_minutes =
+			(float) ($attendance->deductible_minutes ?? 0);
+
+		/*
+     * Half day = 0.5 day for payroll calculation.
+     */
+
+		$attendance_deduction_days =
+			($absent_days * $daily_basic)
+			+
+			($half_days * 0.5 * $daily_basic);
+
+		/*
+     * Short working hours/minutes deduction.
+     */
+
+		$attendance_deduction_minutes =
+			$deductible_minutes * $minute_rate;
+
+		/*
+     * Total attendance deduction.
+     */
+
+		$attendance_deduction =
+			$attendance_deduction_days
+			+
+			$attendance_deduction_minutes;
+
+		/*
+     * ---------------------------------------------------------
+     * 5. OVERTIME
+     * ---------------------------------------------------------
+     */
+
+		$overtime_minutes = $this->get_overtime_by_id(
+			$employee_id,
+			$start_date
+		);
+
+		$overtime_amount =
+			$overtime_minutes * $minute_rate;
+
+		/*
+     * ---------------------------------------------------------
+     * 6. FIXED ALLOWANCES / DEDUCTIONS
+     * ---------------------------------------------------------
+     */
+
+		$components = $this->get_salary_component_totals(
+			$salary_structure->sid
+		);
+
+		$total_allowances =
+			(float) $components['total_allowances'];
+
+		$total_deductions =
+			(float) $components['total_deductions'];
+
+		/*
+     * ---------------------------------------------------------
+     * 7. GROSS SALARY
+     *
+     * Gross is before attendance/fixed deductions.
+     * ---------------------------------------------------------
+     */
+
+		$structure_gross_salary =
+			(float) ($salary_structure->gross_salary ?? 0);
+
+		$gross_salary =
+			$structure_gross_salary
+			+ $overtime_amount;
+
+		/*
+     * ---------------------------------------------------------
+     * 8. TOTAL DEDUCTIONS
+     * ---------------------------------------------------------
+     */
+
+		$total_payroll_deduction =
+			$attendance_deduction
+			+
+			$total_deductions;
+
+		/*
+     * ---------------------------------------------------------
+     * 9. NET SALARY
+     * ---------------------------------------------------------
+     */
+
+		$net_salary =
+			$gross_salary
+			-
+			$attendance_deduction;
+
+		/*
+     * ---------------------------------------------------------
+     * 10. RETURN COMPLETE CALCULATION
+     * ---------------------------------------------------------
+     */
+
+		return [
+			'employee_id' => $employee_id,
+
+			'salary_structure_id' =>
+			$salary_structure->sid,
+
+			'salary_month' =>
+			date('Y-m-01', strtotime($start_date)),
+
+			'days_in_month' =>
+			$days_in_month,
+
+			'basic_salary' =>
+			round($basic_salary, 2),
+
+			'daily_basic' =>
+			round($daily_basic, 4),
+
+			'hourly_rate' =>
+			round($hourly_rate, 4),
+
+			'minute_rate' =>
+			round($minute_rate, 4),
+
+			'present_days' =>
+			$present_days,
+
+			'half_days' =>
+			$half_days,
+
+			'absent_days' =>
+			$absent_days,
+
+			'worked_minutes' =>
+			$worked_minutes,
+
+			'deductible_minutes' =>
+			$deductible_minutes,
+
+			'attendance_deduction_days' =>
+			round($attendance_deduction_days, 2),
+
+			'attendance_deduction_minutes' =>
+			round($attendance_deduction_minutes, 2),
+
+			'attendance_deduction' =>
+			round($attendance_deduction, 2),
+
+			'overtime_minutes' =>
+			$overtime_minutes,
+
+			'overtime_amount' =>
+			round($overtime_amount, 2),
+
+			'total_allowances' =>
+			round($total_allowances, 2),
+
+			'fixed_deductions' =>
+			round($total_deductions, 2),
+
+			'gross_salary' =>
+			round($gross_salary, 2),
+
+			'total_deduction' =>
+			round($total_payroll_deduction, 2),
+
+			'net_salary' =>
+			round($net_salary, 2)
+		];
+	}
+
 	function get_salary_structure_details($id)
 	{
 		$query = $this->db->query("select * from salary_structure_details s, allowance_master am where s.allowance_id=am.sno and  s.sid='$id' ");
 		return $query->result();
 	}
 
+	// function get_attendance_details($employee_id, $start_date, $end_date)
+	// {
+	// 	$query = $this->db->query("
+	//     SELECT 
+	//         COALESCE(SUM(CASE WHEN attendence = 'present' THEN 1 ELSE 0 END),0) AS present_count,
+	//         COALESCE(SUM(CASE WHEN attendence = 'half_day' THEN 1 ELSE 0 END),0) AS half_count,
+	//         COALESCE(SUM(CASE WHEN attendence = 'absent' THEN 1 ELSE 0 END),0) AS absent_count
+	//     FROM employee_attendance
+	//     WHERE employee_id = ?
+	//     AND Attendance_date BETWEEN ? AND ?
+	// ", [$employee_id, $start_date, $end_date]);
+
+	// 	return $query->row();
+	// }
+
 	function get_attendance_details($employee_id, $start_date, $end_date)
 	{
 		$query = $this->db->query("
-        SELECT 
-            COALESCE(SUM(CASE WHEN attendence = 'present' THEN 1 ELSE 0 END),0) AS present_count,
-            COALESCE(SUM(CASE WHEN attendence = 'half_day' THEN 1 ELSE 0 END),0) AS half_count,
-            COALESCE(SUM(CASE WHEN attendence = 'absent' THEN 1 ELSE 0 END),0) AS absent_count
+        SELECT
+
+            /* Attendance counts */
+            COALESCE(SUM(
+                CASE
+                    WHEN LOWER(attendence) = 'present'
+                    THEN 1
+                    ELSE 0
+                END
+            ), 0) AS present_count,
+
+            COALESCE(SUM(
+                CASE
+                    WHEN LOWER(attendence) = 'half_day'
+                    THEN 1
+                    ELSE 0
+                END
+            ), 0) AS half_count,
+
+            COALESCE(SUM(
+                CASE
+                    WHEN LOWER(attendence) = 'absent'
+                    THEN 1
+                    ELSE 0
+                END
+            ), 0) AS absent_count,
+
+            /* Actual worked minutes */
+            COALESCE(SUM(
+                CASE
+                    WHEN LOWER(attendence) IN ('present', 'half_day')
+                    AND in_time IS NOT NULL
+                    AND out_time IS NOT NULL
+                    THEN TIMESTAMPDIFF(MINUTE, in_time, out_time)
+                    ELSE 0
+                END
+            ), 0) AS worked_minutes,
+
+            /*
+             * IMPORTANT:
+             * Read the deductible values entered
+             * from Employee Attendance screen.
+             */
+            COALESCE(SUM(
+                CASE
+                    WHEN is_deductible = 1
+                    THEN deductible_days
+                    ELSE 0
+                END
+            ), 0) AS deductible_days,
+
+            COALESCE(SUM(
+                CASE
+                    WHEN is_deductible = 1
+                    THEN deductible_hours
+                    ELSE 0
+                END
+            ), 0) AS deductible_hours,
+
+            COALESCE(SUM(
+                CASE
+                    WHEN is_deductible = 1
+                    THEN deductible_minutes
+                    ELSE 0
+                END
+            ), 0) AS deductible_minutes
+
         FROM employee_attendance
+
         WHERE employee_id = ?
         AND Attendance_date BETWEEN ? AND ?
+
     ", [$employee_id, $start_date, $end_date]);
 
 		return $query->row();
 	}
+
 	function add_basic_enquiry()
 	{
 		$basic_enq_data = array(
@@ -3610,18 +3994,32 @@ class Hr_model extends CI_Model
 			->get('employee_monthly_salary')
 			->num_rows();
 	}
+	// function get_overtime_by_id($user_id, $ot_date)
+	// {
+	// 	$query = $this->db
+	// 		->select('overtime')
+	// 		->from('employee_overtime')
+	// 		->where('employee_id', $user_id)
+	// 		->where('DATE_FORMAT(date_ot, "%Y-%m") =', $ot_date)
+	// 		->get();
+
+	// 	return $query->row()->overtime ?? 0;
+	// }
 	function get_overtime_by_id($user_id, $ot_date)
 	{
+		$start_date = date('Y-m-01', strtotime($ot_date));
+		$end_date   = date('Y-m-t', strtotime($ot_date));
+
 		$query = $this->db
-			->select('overtime')
+			->select('COALESCE(SUM(overtime_minutes), 0) AS overtime_minutes', false)
 			->from('employee_overtime')
 			->where('employee_id', $user_id)
-			->where('DATE_FORMAT(date_ot, "%Y-%m") =', $ot_date)
+			->where('date_ot >=', $start_date)
+			->where('date_ot <=', $end_date)
 			->get();
 
-		return $query->row()->overtime ?? 0;
+		return (int) ($query->row()->overtime_minutes ?? 0);
 	}
-
 	//overtime type
 	// function get_overtime_type_by_id($user_id,$ot_date)
 	// {
