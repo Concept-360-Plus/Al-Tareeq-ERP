@@ -54,6 +54,7 @@
                                 <th>Payable Days</th>
                                 <th>Basic Salary</th>
                                 <th>Allowances</th>
+                                <th>Commission</th>
                                 <th>Deductions</th>
                                 <th>Overtime Hrs</th>
                                 <th>Overtime Amount</th>
@@ -104,6 +105,13 @@
 
                                     <td>
                                         <?= number_format($row->allowances, 2) ?>
+                                    </td>
+
+                                    <td>
+                                        <?= number_format(
+                                            (float)$row->commission_amount,
+                                            2
+                                        ) ?>
                                     </td>
 
                                     <td>

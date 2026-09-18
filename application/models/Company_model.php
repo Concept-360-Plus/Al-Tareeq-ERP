@@ -343,8 +343,8 @@ class Company_model extends CI_Model
         }
 
         $this->db->order_by(
-            'e.employee_name',
-            'ASC'
+            'e.employee_id',
+            'DESC'
         );
 
         return $this->db->get()->result();
