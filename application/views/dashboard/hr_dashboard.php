@@ -86,38 +86,6 @@
         background: linear-gradient(135deg, #C62828, #E53935);
     }
 
-
-    .hr-kpi:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(0, 0, 0, .10);
-    }
-
-    .hr-kpi h4 {
-        margin: 0 0 10px;
-        font-size: 14px;
-        color: #555;
-    }
-
-    .hr-kpi h2 {
-        margin: 0;
-        font-size: 28px;
-        font-weight: 600;
-        color: #4f6f8f;
-    }
-
-    .hr-kpi small {
-        color: #888;
-    }
-
-    .hr-kpi-icon {
-        position: absolute;
-        right: 18px;
-        top: 20px;
-        font-size: 28px;
-        opacity: .25;
-        color: #5b7c99;
-    }
-
     .hr-panel {
         background: #fff;
         border: 1px solid #eee;
@@ -219,6 +187,12 @@
     .kpi-payroll-pending .hr-kpi-icon {
         color: #dc3545;
     }
+
+    .hr-chart-container {
+        position: relative;
+        height: 280px;
+        width: 100%;
+    }
 </style>
 
 
@@ -231,7 +205,7 @@
     <div class="row">
 
         <div class="col-lg-3 col-md-6">
-            <a href="<?= site_url('Company/list_employee'); ?>"
+            <a href="<?= site_url('Hr/list_employee'); ?>"
                 style="text-decoration:none;color:inherit;">
 
                 <div class="hr-kpi kpi-blue">
@@ -316,7 +290,7 @@
             <a href="<?= site_url('Hr/view_emp_monthly_salary_list'); ?>"
                 style="text-decoration:none;color:inherit;">
 
-                <div class="hr-kpi">
+                <div class="hr-kpi kpi-purple">
 
                     <i class="fa fa-money hr-kpi-icon"></i>
 
@@ -348,7 +322,7 @@
             <a href="<?= site_url('Hr/view_joining_application_list'); ?>"
                 style="text-decoration:none;color:inherit;">
 
-                <div class="hr-kpi">
+                <div class="hr-kpi kpi-teal">
 
                     <i class="fa fa-user-plus hr-kpi-icon"></i>
 
@@ -372,7 +346,7 @@
             <a href="<?= site_url('Hr/view_emp_resignation_list'); ?>"
                 style="text-decoration:none;color:inherit;">
 
-                <div class="hr-kpi">
+                <div class="hr-kpi kpi-red">
 
                     <i class="fa fa-user-times hr-kpi-icon"></i>
 
@@ -396,7 +370,7 @@
             <a href="<?= site_url('Hr/view_leave_application_list'); ?>"
                 style="text-decoration:none;color:inherit;">
 
-                <div class="hr-kpi">
+                <div class="hr-kpi kpi-orange">
 
                     <i class="fa fa-clock-o hr-kpi-icon"></i>
 
@@ -420,7 +394,7 @@
             <a href="<?= site_url('Hr/view_emp_monthly_salary_list'); ?>"
                 style="text-decoration:none;color:inherit;">
 
-                <div class="hr-kpi">
+                <div class="hr-kpi kpi-red">
 
                     <i class="fa fa-exclamation-circle hr-kpi-icon"></i>
 
@@ -458,8 +432,9 @@
                     </small>
                 </h4>
 
-                <canvas id="attendanceTrendChart"
-                    height="120"></canvas>
+                <div class="hr-chart-container">
+                    <canvas id="attendanceTrendChart"></canvas>
+                </div>
 
             </div>
 
@@ -478,8 +453,10 @@
                     </small>
                 </h4>
 
-                <canvas id="employeeMovementChart"
-                    height="120"></canvas>
+                <div class="hr-chart-container">
+                    <canvas id="employeeMovementChart"></canvas>
+                </div>
+
 
             </div>
 
@@ -498,8 +475,9 @@
                     Leave Analysis
                 </h4>
 
-                <canvas id="leaveAnalysisChart"
-                    height="180"></canvas>
+                <div class="hr-chart-container">
+                    <canvas id="leaveAnalysisChart"></canvas>
+                </div>
 
             </div>
 
@@ -515,8 +493,10 @@
                     Monthly Payroll Cost
                 </h4>
 
-                <canvas id="payrollTrendChart"
-                    height="180"></canvas>
+                <div class="hr-chart-container">
+                    <canvas id="payrollTrendChart"></canvas>
+                </div>
+
 
             </div>
 
@@ -1082,9 +1062,14 @@
 
                     data: {
 
-                        labels: attendanceData.map(
-                            x => x.attendance_date
-                        ),
+                        labels: attendanceData.map(function(x) {
+                            const date = new Date(x.attendance_date + 'T00:00:00');
+
+                            return date.toLocaleDateString('en-GB', {
+                                day: '2-digit',
+                                month: 'short'
+                            });
+                        }),
 
                         datasets: [
 
@@ -1144,7 +1129,9 @@
                         scales: {
                             yAxes: [{
                                 ticks: {
-                                    beginAtZero: true
+                                    beginAtZero: true,
+                                    stepSize: 1,
+                                    precision: 0
                                 }
                             }]
                         }
@@ -1208,7 +1195,9 @@
                         scales: {
                             yAxes: [{
                                 ticks: {
-                                    beginAtZero: true
+                                    beginAtZero: true,
+                                    stepSize: 1,
+                                    precision: 0
                                 }
                             }]
                         }
@@ -1266,13 +1255,7 @@
                                 padding: 15
                             }
                         },
-                        scales: {
-                            yAxes: [{
-                                ticks: {
-                                    beginAtZero: true
-                                }
-                            }]
-                        }
+
                     }
                 }
             );

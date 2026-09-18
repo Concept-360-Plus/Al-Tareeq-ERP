@@ -101,34 +101,48 @@ class Hr_model extends CI_Model
 	public function get_dashboard_attendance_trend()
 	{
 		$sql = "
-			SELECT
-				DATE(Attendance_date) AS attendance_date,
-				SUM(
-					CASE
-						WHEN LOWER(attendence) = 'present'
-						THEN 1 ELSE 0
-					END
-				) AS present,
-				SUM(
-					CASE
-						WHEN LOWER(attendence) = 'absent'
-						THEN 1 ELSE 0
-					END
-				) AS absent,
-				SUM(
-					CASE
-						WHEN LOWER(attendence) IN ('leave','vacation')
-						THEN 1 ELSE 0
-					END
-				) AS leave_count
-			FROM employee_attendance
-			WHERE Attendance_date >= DATE_SUB(
-				CURDATE(),
-				INTERVAL 6 DAY
-			)
-			GROUP BY DATE(Attendance_date)
-			ORDER BY attendance_date ASC
-		";
+        SELECT
+            d.attendance_date,
+
+            COALESCE(SUM(
+                CASE
+                    WHEN LOWER(a.attendence) = 'present'
+                    THEN 1 ELSE 0
+                END
+            ), 0) AS present,
+
+            COALESCE(SUM(
+                CASE
+                    WHEN LOWER(a.attendence) = 'absent'
+                    THEN 1 ELSE 0
+                END
+            ), 0) AS absent,
+
+            COALESCE(SUM(
+                CASE
+                    WHEN LOWER(a.attendence) IN ('leave', 'vacation')
+                    THEN 1 ELSE 0
+                END
+            ), 0) AS leave_count
+
+        FROM
+        (
+            SELECT CURDATE() - INTERVAL 6 DAY AS attendance_date
+            UNION ALL SELECT CURDATE() - INTERVAL 5 DAY
+            UNION ALL SELECT CURDATE() - INTERVAL 4 DAY
+            UNION ALL SELECT CURDATE() - INTERVAL 3 DAY
+            UNION ALL SELECT CURDATE() - INTERVAL 2 DAY
+            UNION ALL SELECT CURDATE() - INTERVAL 1 DAY
+            UNION ALL SELECT CURDATE()
+        ) d
+
+        LEFT JOIN employee_attendance a
+            ON DATE(a.Attendance_date) = d.attendance_date
+
+        GROUP BY d.attendance_date
+        ORDER BY d.attendance_date ASC
+    ";
+
 		return $this->db->query($sql)->result();
 	}
 
@@ -3372,9 +3386,8 @@ class Hr_model extends CI_Model
 		$present_days = (float) ($attendance->present_count ?? 0);
 
 		$half_days = (float) ($attendance->half_count ?? 0);
-		$absent_days = (float) ($attendance->absent_count ?? 0);
 
-		$half_days = (float) ($attendance->half_count ?? 0);
+		$absent_days = (float) ($attendance->absent_count ?? 0);
 
 		$worked_minutes = (int) ($attendance->worked_minutes ?? 0);
 
@@ -3391,25 +3404,45 @@ class Hr_model extends CI_Model
 			(float) ($attendance->deductible_minutes ?? 0);
 
 		/*
-     * Half day = 0.5 day for payroll calculation.
-     */
+ * ---------------------------------------------------------
+ * 4A. PAYABLE DAYS
+ * ---------------------------------------------------------
+ *
+ * Full absent day  = 1 day deduction
+ * Half day         = 0.5 day deduction
+ */
+		$payable_days =
+			$days_in_month
+			- $absent_days
+			- ($half_days * 0.5);
 
+		$payable_days = max(0, $payable_days);
+
+
+		/*
+ * ---------------------------------------------------------
+ * 4B. ATTENDANCE / LEAVE DEDUCTION
+ * ---------------------------------------------------------
+ *
+ * Absent days + half days are deducted from Basic Salary.
+ */
 		$attendance_deduction_days =
 			($absent_days * $daily_basic)
 			+
 			($half_days * 0.5 * $daily_basic);
 
-		/*
-     * Short working hours/minutes deduction.
-     */
 
+		/*
+ * Deduction for short working time entered
+ * in Employee Attendance.
+ */
 		$attendance_deduction_minutes =
 			$deductible_minutes * $minute_rate;
 
-		/*
-     * Total attendance deduction.
-     */
 
+		/*
+ * Total attendance / leave deduction.
+ */
 		$attendance_deduction =
 			$attendance_deduction_days
 			+
@@ -3446,18 +3479,31 @@ class Hr_model extends CI_Model
 			(float) $components['total_deductions'];
 
 		/*
-     * ---------------------------------------------------------
-     * 7. GROSS SALARY
-     *
-     * Gross is before attendance/fixed deductions.
-     * ---------------------------------------------------------
-     */
+		* ---------------------------------------------------------
+		* 6A. APPROVED SALES COMMISSION
+		* ---------------------------------------------------------
+		*/
 
-		$structure_gross_salary =
-			(float) ($salary_structure->gross_salary ?? 0);
+		$commission_amount =
+			$this->get_approved_commission_for_employee(
+				$employee_id,
+				$start_date,
+				$end_date
+			);
 
+		/*
+		* ---------------------------------------------------------
+		* 7. GROSS SALARY
+		* ---------------------------------------------------------
+		*
+		* Gross salary is BEFORE deductions.
+		*
+		* Basic + Allowances + Overtime
+		*/
 		$gross_salary =
-			$structure_gross_salary
+			$basic_salary
+			+ $total_allowances
+			+ $commission_amount
 			+ $overtime_amount;
 
 		/*
@@ -3480,7 +3526,7 @@ class Hr_model extends CI_Model
 		$net_salary =
 			$gross_salary
 			-
-			$attendance_deduction;
+			$total_payroll_deduction;
 
 		/*
      * ---------------------------------------------------------
@@ -3521,6 +3567,9 @@ class Hr_model extends CI_Model
 			'absent_days' =>
 			$absent_days,
 
+			'payable_days' =>
+			round($payable_days, 2),
+
 			'worked_minutes' =>
 			$worked_minutes,
 
@@ -3541,6 +3590,9 @@ class Hr_model extends CI_Model
 
 			'overtime_amount' =>
 			round($overtime_amount, 2),
+
+			'commission_amount' =>
+			round($commission_amount, 2),
 
 			'total_allowances' =>
 			round($total_allowances, 2),
@@ -4587,6 +4639,40 @@ class Hr_model extends CI_Model
 	}
 
 	////// Commission Reports Ends /////////
+
+	/**
+	 * Get approved commission for an employee
+	 * for the selected salary month.
+	 */
+	public function get_approved_commission_for_employee(
+		$employee_id,
+		$start_date,
+		$end_date
+	) {
+		$sql = "
+        SELECT
+            COALESCE(SUM(ct.commission_amount), 0) AS commission_amount
+        FROM commission_transactions ct
+        INNER JOIN sales_rep_master sr
+            ON sr.sales_rep_id = ct.sales_rep_id
+        WHERE sr.emp_id = ?
+          AND ct.status = 'Approved'
+          AND ct.eligible_date BETWEEN ? AND ?
+    ";
+
+		$query = $this->db->query(
+			$sql,
+			[
+				$employee_id,
+				$start_date,
+				$end_date
+			]
+		);
+
+		$row = $query->row();
+
+		return (float) ($row->commission_amount ?? 0);
+	}
 
 	///////////////////////////////////////////COMMISSION SETUP ENDS//////////////////////////////////////////
 

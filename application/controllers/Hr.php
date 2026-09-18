@@ -2300,6 +2300,9 @@ class Hr extends CI_Controller
 				'overtime' =>
 				$overtime_display,
 
+				'commission_amount' =>
+				$salary['commission_amount'],
+
 				'overtime_amount' =>
 				$salary['overtime_amount'],
 
@@ -3091,6 +3094,9 @@ class Hr extends CI_Controller
 				'total_allowance' =>
 				$salary['total_allowances'],
 
+				'commission_amount' =>
+				$salary['commission_amount'],
+
 				'total_deduction' =>
 				$salary['total_deduction'],
 
@@ -3119,6 +3125,37 @@ class Hr extends CI_Controller
 				'employee_monthly_salary',
 				$data
 			);
+
+			$salary_insert_id = $this->db->insert_id();
+
+			// ---------------------------------
+			// Mark Approved Commission as Paid
+			// ---------------------------------
+
+			if ($salary_insert_id && (float)$salary['commission_amount'] > 0) {
+
+				$this->db->query("
+					UPDATE commission_transactions ct
+					INNER JOIN sales_rep_master sr
+						ON sr.sales_rep_id = ct.sales_rep_id
+					SET
+						ct.status = 'Paid',
+						ct.payment_date = CURDATE(),
+						ct.payment_mode = 'Payroll',
+						ct.paid_by = ?,
+						ct.paid_datetime = NOW(),
+						ct.payroll_sid = ?
+					WHERE sr.emp_id = ?
+					AND ct.status = 'Approved'
+					AND ct.eligible_date BETWEEN ? AND ?
+				", [
+					$this->session->userdata('user_id'),
+					$salary_insert_id,
+					$emp_id,
+					$start_date,
+					$end_date
+				]);
+			}
 		}
 
 
