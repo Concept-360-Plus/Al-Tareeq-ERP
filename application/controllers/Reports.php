@@ -3081,9 +3081,10 @@ class Reports extends CI_Controller
     $this->load->model('Users_model');
     $this->load->model('Setup_model');
     $this->load->model('Company_model');
+    $this->load->model('Hr_model');
 
     // Dropdowns
-    $data['user_records'] = $this->Users_model->get_active_user_list();
+    $data['user_records'] = $this->Hr_model->get_employee_list();
     $data['departments'] = $this->Company_model->get_department_list();
     $data['designations'] = $this->Setup_model->get_designation_list();
 
@@ -3235,7 +3236,7 @@ class Reports extends CI_Controller
     $data['selected_dept'] = $dept_id;
     $data['departments'] = $this->Company_model->get_department_list();
 
-    $this->load->view('Print/print_monthly_leave_report', $data);
+    $this->load->view('Reports/Hr/Print/print_monthly_leave_report', $data);
   }
 
   public function export_monthly_leave_report()
@@ -3256,7 +3257,7 @@ class Reports extends CI_Controller
       $data['selected_dept_name'] = 'All';
     }
 
-    $this->load->view('excel_reports/export_monthly_leave_report', $data);
+    $this->load->view('Reports/Hr/Export/export_monthly_leave_report', $data);
   }
 
   public function monthly_attendance_report()
@@ -3316,7 +3317,7 @@ class Reports extends CI_Controller
       );
     }
 
-    $this->load->view('Print/print_monthly_attendance_report', $data);
+    $this->load->view('Reports/Hr/Print/print_monthly_attendance_report', $data);
   }
 
 
@@ -3342,7 +3343,7 @@ class Reports extends CI_Controller
     }
 
 
-    $this->load->view('excel_reports/export_monthly_attendance_report', $data);
+    $this->load->view('Reports/Hr/Export/export_monthly_attendance_report', $data);
   }
 
   public function monthly_payroll_report()
@@ -3367,7 +3368,7 @@ class Reports extends CI_Controller
       'selected_dept' => $selected_dept,
       'user_id' => $user_id,
       'departments' => $this->Company_model->get_department_list(),
-      'user_records' => $this->Users_model->get_user_list(),
+      'user_records' => $this->Hr_model->get_employee_list(),
       'records' => null,
       'days_in_month' => null,
       'holiday_count' => null,
@@ -3394,7 +3395,7 @@ class Reports extends CI_Controller
         'user_id' => $user_id,
       ];
       $data['records'] = $this->Hr_model->get_monthly_payroll_report($filters);
-      $data['holiday_count'] = $this->Hr_model->get_emp_holiday_count();
+      // $data['holiday_count'] = $this->Hr_model->get_emp_holiday_count();
 
       foreach ($data['records'] as &$record) {
         $record->days_in_month = $days_in_month;
@@ -3430,7 +3431,7 @@ class Reports extends CI_Controller
       'user_records' => $this->Users_model->get_user_list(),
       'days_in_month' => 0,
       'records' => [],
-      'holiday_count' => $this->Hr_model->get_emp_holiday_count(),
+      // 'holiday_count' => $this->Hr_model->get_emp_holiday_count(),
       'generate_flag' => $is_generated,
     ];
 
@@ -3444,7 +3445,7 @@ class Reports extends CI_Controller
       $data['records'] = $this->Hr_model->get_monthly_payroll_report($filter_data);
     }
 
-    $this->load->view('Print/print_monthly_payroll_report', $data);
+    $this->load->view('Reports/Hr/Print/print_monthly_payroll_report', $data);
   }
 
 
@@ -3470,7 +3471,7 @@ class Reports extends CI_Controller
       'user_records' => $this->Users_model->get_user_list(),
       'days_in_month' => 0,
       'records' => [],
-      'holiday_count' => $this->Hr_model->get_emp_holiday_count(),
+      // 'holiday_count' => $this->Hr_model->get_emp_holiday_count(),
       'generate_flag' => $is_generated,
     ];
 
@@ -3484,7 +3485,7 @@ class Reports extends CI_Controller
       $data['records'] = $this->Hr_model->get_monthly_payroll_report($filter_data);
     }
 
-    $this->load->view('excel_reports/export_monthly_payroll_report', $data);
+    $this->load->view('Reports/Hr/Export/export_monthly_payroll_report', $data);
   }
 
   /////////////////// HR REPORTS ENDS ////////////////////////

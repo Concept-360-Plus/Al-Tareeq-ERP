@@ -24,7 +24,7 @@
           <select name="designation_id" class="form-control select2">
             <option value="">All</option>
             <?php foreach ($designations as $desig): ?>
-              <option value="<?= $desig->did ?>" <?= ($selected_desig == $desig->did) ? 'selected' : '' ?>>
+              <option value="<?= $desig->id ?>" <?= ($selected_desig == $desig->id) ? 'selected' : '' ?>>
                 <?= htmlspecialchars($desig->designation_name) ?>
               </option>
             <?php endforeach; ?>
@@ -36,10 +36,16 @@
           <label for="user_id">Employee</label>
           <select id="user_id" name="user_id" class="form-select select2">
             <option value="">All</option>
-            <?php foreach ($user_records as $user): ?>
-              <option value="<?= $user->user_id ?>" <?= ($user->user_id == $user_id) ? 'selected' : '' ?>>
-                <?= htmlspecialchars($user->user_name . ' (' . $user->user_code . ')') ?>
+            <?php foreach ($user_records as $employee): ?>
+
+              <option
+                value="<?= $employee->employee_id ?>"
+                <?= ($employee->employee_id == $user_id) ? 'selected' : '' ?>>
+                <?= htmlspecialchars(
+                  $employee->employee_name . ' (' . $employee->user_code . ')'
+                ) ?>
               </option>
+
             <?php endforeach; ?>
           </select>
         </div>
@@ -74,33 +80,34 @@
           </tr>
         </thead>
         <tbody>
-  <?php if (!empty($records)): ?>
-    <?php $i = 1; foreach ($records as $row): ?>
-      <tr>
-        <td><?= $i++ ?></td>
-        <td><?= htmlspecialchars($row->user_name ?? '-') ?></td>
-        <td><?= htmlspecialchars($row->designation_name ?? '-') ?></td>
-        <td><?= htmlspecialchars($row->dept_name ?? '-') ?></td>
-        <td><?= htmlspecialchars($row->joining_date ?? '-') ?></td>
-        <td><?= htmlspecialchars($row->contact_no ?? '-') ?></td>
-        <td><?= htmlspecialchars($row->email_id ?? '-') ?></td>
-        <td><?= htmlspecialchars($row->basic_salary ?? '-') ?></td>
+          <?php if (!empty($records)): ?>
+            <?php $i = 1;
+            foreach ($records as $row): ?>
+              <tr>
+                <td><?= $i++ ?></td>
+                <td><?= htmlspecialchars($row->user_name ?? '-') ?></td>
+                <td><?= htmlspecialchars($row->designation_name ?? '-') ?></td>
+                <td><?= htmlspecialchars($row->dept_name ?? '-') ?></td>
+                <td><?= htmlspecialchars($row->joining_date ?? '-') ?></td>
+                <td><?= htmlspecialchars($row->contact_no ?? '-') ?></td>
+                <td><?= htmlspecialchars($row->email_id ?? '-') ?></td>
+                <td><?= htmlspecialchars($row->basic_salary ?? '-') ?></td>
 
-      </tr>
-    <?php endforeach; ?>
-  <?php elseif ($is_generated): ?>
-    <tr>
-      <td colspan="7" class="text-center text-danger">No records found.</td>
-    </tr>
-  <?php endif; ?>
-</tbody>
+              </tr>
+            <?php endforeach; ?>
+          <?php elseif ($is_generated): ?>
+            <tr>
+              <td colspan="7" class="text-center text-danger">No records found.</td>
+            </tr>
+          <?php endif; ?>
+        </tbody>
 
       </table>
     </div>
   </div>
 </div>
 <script>
-  $(document).ready(function () {
+  $(document).ready(function() {
     // Initialize Select2
     $('.select2').select2();
 
@@ -112,7 +119,7 @@
     }
 
     // Print Action
-    $('#printBtn').on('click', function () {
+    $('#printBtn').on('click', function() {
       const form = document.getElementById('main');
       form.action = '<?= base_url('index.php/Reports/print_employee_report') ?>';
       form.target = '_blank';
@@ -122,7 +129,7 @@
     });
 
     // Export Action
-    $('#exportBtn').on('click', function () {
+    $('#exportBtn').on('click', function() {
       const form = document.getElementById('main');
       form.action = '<?= base_url('index.php/Reports/export_employee_report') ?>';
       form.target = '_blank';

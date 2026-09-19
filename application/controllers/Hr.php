@@ -2279,6 +2279,9 @@ class Hr extends CI_Controller
 				'present_days' =>
 				$salary['present_days'],
 
+				'paid_leave_days' =>
+				$salary['paid_leave_days'],
+
 				'half_days' =>
 				$salary['half_days'],
 
@@ -3084,6 +3087,12 @@ class Hr extends CI_Controller
 
 				'leave_days' =>
 				$salary['absent_days'],
+
+				'paid_leave' =>
+				$salary['paid_leave_days'],
+
+				'payment_days' =>
+				$salary['payable_days'],
 
 				'basic_salary' =>
 				$salary['basic_salary'],
