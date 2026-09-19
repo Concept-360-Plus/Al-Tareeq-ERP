@@ -1,7 +1,7 @@
 <div class="card">
   <div class="card-body">
     <form method="post" action="<?= base_url('index.php/Reports/monthly_payroll_report') ?>" id="filterForm" class="row g-3 align-items-end w-100">
-      
+
       <input type="hidden" name="generate" id="generateFlag" value="0">
 
       <div class="col-md-3">
@@ -25,9 +25,19 @@
         <label for="user_id" class="form-label">Employee</label>
         <select name="user_id" id="user_id" class="form-select select2">
           <option value="">All</option>
-          <?php foreach ($user_records as $user): ?>
-            <option value="<?= $user->user_id ?>" <?= ($user_id == $user->user_id) ? 'selected' : '' ?>>
-              <?= htmlspecialchars($user->user_name . ' (' . $user->user_code . ')') ?>
+          <?php foreach ($user_records as $employee): ?>
+            <option
+              value="<?= $employee->employee_id ?>"
+              <?= ($user_id == $employee->employee_id)
+                ? 'selected'
+                : '' ?>>
+
+              <?= htmlspecialchars(
+                $employee->employee_name
+                  . ' ('
+                  . $employee->user_code
+                  . ')'
+              ) ?>
             </option>
           <?php endforeach; ?>
         </select>
@@ -42,7 +52,7 @@
 
     <!-- Report Table below -->
     <div class="table-responsive mt-3">
-    <table id="datatable" class="table table-striped table-bordered nowrap" style="width:100%">
+      <table id="datatable" class="table table-striped table-bordered nowrap" style="width:100%">
         <thead class="table-light">
           <tr>
             <th>Sr No</th>
@@ -62,36 +72,41 @@
           </tr>
         </thead>
         <tbody>
-  <?php if (isset($generate) && $generate == 1): ?>
-    <?php if (!empty($records)): ?>
-      <?php $i = 1; foreach ($records as $r): ?>
-        <tr>
-          <td><?= $i++ ?></td>
-          <td class="text-start"><?= htmlspecialchars($r->user_name) ?></td>
-          
-          <td><?= $r->working_days ?? 0 ?></td>
-          <td><?= $r->leave_days ?? 0 ?></td>
-          <td><?= $r->present_days ?? 0 ?></td>
-          <td><?= $r->paid_leave ?? 0 ?></td>
-          <td><?= $r->payment_days ?? 0 ?></td>
-          <td><?= $r->overtime; ?></td>
-          <td><?= $r->overtime_amt; ?></td>
-          <td><?= number_format($r->basic_salary ?? 0, 2) ?></td>
-          <td><?= number_format($r->total_allowance ?? 0, 2) ?></td>
-          <td><?= number_format($r->total_deduction ?? 0, 2) ?></td>
-          <td><?= number_format($r->gross_salary ?? 0, 2) ?></td>
-          <td><strong><?= number_format($r->net_salary ?? 0, 2) ?></strong></td>
-        </tr>
-      <?php endforeach; ?>
-    <?php else: ?>
-      <!-- Empty state with 14 TDs -->
-      <tr><td colspan="14" class="text-center text-danger">No records found</td></tr>
-    <?php endif; ?>
-  <?php else: ?>
-    <!-- Not generated yet - also 14 TDs -->
-    <tr><td colspan="14" class="text-center">Click "Generate" to view report</td></tr>
-  <?php endif; ?>
-</tbody>
+          <?php if (isset($generate) && $generate == 1): ?>
+            <?php if (!empty($records)): ?>
+              <?php $i = 1;
+              foreach ($records as $r): ?>
+                <tr>
+                  <td><?= $i++ ?></td>
+                  <td class="text-start"><?= htmlspecialchars($r->user_name) ?></td>
+
+                  <td><?= $r->working_days ?? 0 ?></td>
+                  <td><?= $r->leave_days ?? 0 ?></td>
+                  <td><?= $r->present_days ?? 0 ?></td>
+                  <td><?= $r->paid_leave ?? 0 ?></td>
+                  <td><?= $r->payment_days ?? 0 ?></td>
+                  <td><?= $r->overtime; ?></td>
+                  <td><?= $r->overtime_amt; ?></td>
+                  <td><?= number_format($r->basic_salary ?? 0, 2) ?></td>
+                  <td><?= number_format($r->total_allowance ?? 0, 2) ?></td>
+                  <td><?= number_format($r->total_deduction ?? 0, 2) ?></td>
+                  <td><?= number_format($r->gross_salary ?? 0, 2) ?></td>
+                  <td><strong><?= number_format($r->net_salary ?? 0, 2) ?></strong></td>
+                </tr>
+              <?php endforeach; ?>
+            <?php else: ?>
+              <!-- Empty state with 14 TDs -->
+              <tr>
+                <td colspan="14" class="text-center text-danger">No records found</td>
+              </tr>
+            <?php endif; ?>
+          <?php else: ?>
+            <!-- Not generated yet - also 14 TDs -->
+            <tr>
+              <td colspan="14" class="text-center">Click "Generate" to view report</td>
+            </tr>
+          <?php endif; ?>
+        </tbody>
 
       </table>
     </div>
@@ -99,75 +114,75 @@
 </div>
 
 <style>
-.btn-sm {
-  font-size: 0.875rem;
-  padding: 0.25rem 0.5rem;
-  line-height: 1.5;
-}
+  .btn-sm {
+    font-size: 0.875rem;
+    padding: 0.25rem 0.5rem;
+    line-height: 1.5;
+  }
 </style>
 
 <script>
-function setGenerateFlag(value) {
-  document.getElementById('generateFlag').value = value;
-}
-
-
-$(document).ready(function () {
-  <?php if (isset($generate) && $generate == 1 && !empty($records)): ?>
-    $('#datatable').DataTable({
-      responsive: true,
-      destroy: true,
-      language: {
-        emptyTable: "No payroll data available"
-      }
-    });
-  <?php endif; ?>
-});
-
-function submitPrint() {
-  const form = document.getElementById('filterForm');
-  const formData = new FormData(form);
-  formData.set('generate', '1');
-
-  const printForm = document.createElement('form');
-  printForm.method = 'post';
-  printForm.action = '<?= base_url('index.php/Reports/print_monthly_payroll_report') ?>';
-  printForm.target = '_blank';
-  printForm.style.display = 'none';
-
-  for (const [key, value] of formData.entries()) {
-    const input = document.createElement('input');
-    input.type = 'hidden';
-    input.name = key;
-    input.value = value;
-    printForm.appendChild(input);
+  function setGenerateFlag(value) {
+    document.getElementById('generateFlag').value = value;
   }
 
-  document.body.appendChild(printForm);
-  printForm.submit();
-  document.body.removeChild(printForm);
-}
 
-function submitExport() {
-  const form = document.getElementById('filterForm');
-  const formData = new FormData(form);
-  formData.set('generate', '1');
+  $(document).ready(function() {
+    <?php if (isset($generate) && $generate == 1 && !empty($records)): ?>
+      $('#datatable').DataTable({
+        responsive: true,
+        destroy: true,
+        language: {
+          emptyTable: "No payroll data available"
+        }
+      });
+    <?php endif; ?>
+  });
 
-  const exportForm = document.createElement('form');
-  exportForm.method = 'post';
-  exportForm.action = '<?= base_url('index.php/Reports/export_monthly_payroll_report') ?>';
-  exportForm.style.display = 'none';
+  function submitPrint() {
+    const form = document.getElementById('filterForm');
+    const formData = new FormData(form);
+    formData.set('generate', '1');
 
-  for (const [key, value] of formData.entries()) {
-    const input = document.createElement('input');
-    input.type = 'hidden';
-    input.name = key;
-    input.value = value;
-    exportForm.appendChild(input);
+    const printForm = document.createElement('form');
+    printForm.method = 'post';
+    printForm.action = '<?= base_url('index.php/Reports/print_monthly_payroll_report') ?>';
+    printForm.target = '_blank';
+    printForm.style.display = 'none';
+
+    for (const [key, value] of formData.entries()) {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = key;
+      input.value = value;
+      printForm.appendChild(input);
+    }
+
+    document.body.appendChild(printForm);
+    printForm.submit();
+    document.body.removeChild(printForm);
   }
 
-  document.body.appendChild(exportForm);
-  exportForm.submit();
-  document.body.removeChild(exportForm);
-}
+  function submitExport() {
+    const form = document.getElementById('filterForm');
+    const formData = new FormData(form);
+    formData.set('generate', '1');
+
+    const exportForm = document.createElement('form');
+    exportForm.method = 'post';
+    exportForm.action = '<?= base_url('index.php/Reports/export_monthly_payroll_report') ?>';
+    exportForm.style.display = 'none';
+
+    for (const [key, value] of formData.entries()) {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = key;
+      input.value = value;
+      exportForm.appendChild(input);
+    }
+
+    document.body.appendChild(exportForm);
+    exportForm.submit();
+    document.body.removeChild(exportForm);
+  }
 </script>

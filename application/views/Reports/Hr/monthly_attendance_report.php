@@ -103,14 +103,7 @@
 </div>
 
 <script>
-  $(document).ready(function () {
+$(document).ready(function () {
     $('.select2').select2();
-
-    $('#datatable').DataTable({
-      responsive: true,
-      language: {
-        emptyTable: "No attendance records found."
-      }
-    });
-  });
+});
 </script>

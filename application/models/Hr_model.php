@@ -12,26 +12,42 @@ class Hr_model extends CI_Model
 	{
 		$sql = "
 			SELECT
-				SUM(
+
+				COALESCE(SUM(
 					CASE
-						WHEN LOWER(attendence) = 'present'
-						THEN 1 ELSE 0
+						WHEN LOWER(TRIM(attendence)) = 'present'
+						THEN 1
+						ELSE 0
 					END
-				) AS present_count,
-				SUM(
+				), 0) AS present_count,
+
+				COALESCE(SUM(
 					CASE
-						WHEN LOWER(attendence) = 'absent'
-						THEN 1 ELSE 0
+						WHEN LOWER(TRIM(attendence)) = 'half_day'
+						THEN 1
+						ELSE 0
 					END
-				) AS absent_count,
-				SUM(
+				), 0) AS half_day_count,
+
+				COALESCE(SUM(
 					CASE
-						WHEN LOWER(attendence) IN ('leave','vacation')
-						THEN 1 ELSE 0
+						WHEN LOWER(TRIM(attendence)) = 'absent'
+						THEN 1
+						ELSE 0
 					END
-				) AS leave_count
+				), 0) AS absent_count,
+
+				COALESCE(SUM(
+					CASE
+						WHEN LOWER(TRIM(attendence)) IN ('leave', 'vacation')
+						THEN 1
+						ELSE 0
+					END
+				), 0) AS leave_count
+
 			FROM employee_attendance
-			WHERE Attendance_date = CURDATE()
+
+			WHERE DATE(Attendance_date) = CURDATE()
 		";
 
 		return $this->db->query($sql)->row();
@@ -3389,6 +3405,8 @@ class Hr_model extends CI_Model
 
 		$absent_days = (float) ($attendance->absent_count ?? 0);
 
+		$paid_leave_days = (float) ($attendance->paid_leave_count ?? 0);
+
 		$worked_minutes = (int) ($attendance->worked_minutes ?? 0);
 
 		/*
@@ -3412,11 +3430,14 @@ class Hr_model extends CI_Model
  * Half day         = 0.5 day deduction
  */
 		$payable_days =
-			$days_in_month
-			- $absent_days
-			- ($half_days * 0.5);
+			$present_days
+			+ $paid_leave_days
+			+ ($half_days * 0.5);
 
-		$payable_days = max(0, $payable_days);
+		$payable_days = min(
+			$days_in_month,
+			max(0, $payable_days)
+		);
 
 
 		/*
@@ -3561,6 +3582,9 @@ class Hr_model extends CI_Model
 			'present_days' =>
 			$present_days,
 
+			'paid_leave_days' =>
+			round($paid_leave_days, 2),
+
 			'half_days' =>
 			$half_days,
 
@@ -3632,84 +3656,451 @@ class Hr_model extends CI_Model
 	// 	return $query->row();
 	// }
 
+	// function get_attendance_details($employee_id, $start_date, $end_date)
+	// {
+	// 	$query = $this->db->query("
+	//     SELECT
+
+	//         /* Attendance counts */
+	//         COALESCE(SUM(
+	//             CASE
+	//                 WHEN LOWER(attendence) = 'present'
+	//                 THEN 1
+	//                 ELSE 0
+	//             END
+	//         ), 0) AS present_count,
+
+	//         COALESCE(SUM(
+	//             CASE
+	//                 WHEN LOWER(attendence) = 'half_day'
+	//                 THEN 1
+	//                 ELSE 0
+	//             END
+	//         ), 0) AS half_count,
+
+	//         COALESCE(SUM(
+	//             CASE
+	//                 WHEN LOWER(attendence) = 'absent'
+	//                 THEN 1
+	//                 ELSE 0
+	//             END
+	//         ), 0) AS absent_count,
+
+	//         /* Actual worked minutes */
+	//         COALESCE(SUM(
+	//             CASE
+	//                 WHEN LOWER(attendence) IN ('present', 'half_day')
+	//                 AND in_time IS NOT NULL
+	//                 AND out_time IS NOT NULL
+	//                 THEN TIMESTAMPDIFF(MINUTE, in_time, out_time)
+	//                 ELSE 0
+	//             END
+	//         ), 0) AS worked_minutes,
+
+	//         /*
+	//          * IMPORTANT:
+	//          * Read the deductible values entered
+	//          * from Employee Attendance screen.
+	//          */
+	//         COALESCE(SUM(
+	//             CASE
+	//                 WHEN is_deductible = 1
+	//                 THEN deductible_days
+	//                 ELSE 0
+	//             END
+	//         ), 0) AS deductible_days,
+
+	//         COALESCE(SUM(
+	//             CASE
+	//                 WHEN is_deductible = 1
+	//                 THEN deductible_hours
+	//                 ELSE 0
+	//             END
+	//         ), 0) AS deductible_hours,
+
+	//         COALESCE(SUM(
+	//             CASE
+	//                 WHEN is_deductible = 1
+	//                 THEN deductible_minutes
+	//                 ELSE 0
+	//             END
+	//         ), 0) AS deductible_minutes
+
+	//     FROM employee_attendance
+
+	//     WHERE employee_id = ?
+	//     AND Attendance_date BETWEEN ? AND ?
+
+	// ", [$employee_id, $start_date, $end_date]);
+
+	// 	return $query->row();
+	// }
+
 	function get_attendance_details($employee_id, $start_date, $end_date)
 	{
-		$query = $this->db->query("
+		$sql = "
         SELECT
 
-            /* Attendance counts */
+            /* ============================================
+             * PRESENT DAYS
+             *
+             * No attendance + no approved leave
+             * = PRESENT
+             * ============================================ */
             COALESCE(SUM(
                 CASE
-                    WHEN LOWER(attendence) = 'present'
-                    THEN 1
-                    ELSE 0
+
+                    /* Approved leave is NOT present */
+                    WHEN EXISTS (
+                        SELECT 1
+                        FROM employee_leave l
+                        INNER JOIN leave_approval la
+                            ON la.approval_leave_id = l.leave_id
+                        WHERE l.employee_id = ?
+                          AND la.leave_status = 1
+                          AND d.attendance_date
+                              BETWEEN l.start_date AND l.end_date
+                    )
+                    THEN 0
+
+                    /* Explicit absent */
+                    WHEN COALESCE(a.absent_flag, 0) = 1
+                    THEN 0
+
+                    /* Half day is not a full present day */
+                    WHEN COALESCE(a.half_flag, 0) = 1
+                    THEN 0
+
+                    /* Present OR no attendance record */
+                    ELSE 1
+
                 END
             ), 0) AS present_count,
 
+
+            /* ============================================
+             * HALF DAYS
+             * ============================================ */
             COALESCE(SUM(
                 CASE
-                    WHEN LOWER(attendence) = 'half_day'
+
+                    WHEN EXISTS (
+                        SELECT 1
+                        FROM employee_leave l
+                        INNER JOIN leave_approval la
+                            ON la.approval_leave_id = l.leave_id
+                        WHERE l.employee_id = ?
+                          AND la.leave_status = 1
+                          AND d.attendance_date
+                              BETWEEN l.start_date AND l.end_date
+                    )
+                    THEN 0
+
+                    WHEN COALESCE(a.half_flag, 0) = 1
                     THEN 1
+
                     ELSE 0
+
                 END
             ), 0) AS half_count,
 
+
+            /* ============================================
+             * ABSENT DAYS
+             * ============================================ */
             COALESCE(SUM(
                 CASE
-                    WHEN LOWER(attendence) = 'absent'
+
+                    WHEN EXISTS (
+                        SELECT 1
+                        FROM employee_leave l
+                        INNER JOIN leave_approval la
+                            ON la.approval_leave_id = l.leave_id
+                        WHERE l.employee_id = ?
+                          AND la.leave_status = 1
+                          AND d.attendance_date
+                              BETWEEN l.start_date AND l.end_date
+                    )
+                    THEN 0
+
+                    WHEN COALESCE(a.absent_flag, 0) = 1
                     THEN 1
+
                     ELSE 0
+
                 END
             ), 0) AS absent_count,
 
-            /* Actual worked minutes */
+
+            /* ============================================
+             * APPROVED LEAVE DAYS
+             *
+             * For now approved leave is treated as PAID.
+             * Change this if Al-Tareeq has paid/unpaid leave
+             * rules.
+             * ============================================ */
             COALESCE(SUM(
                 CASE
-                    WHEN LOWER(attendence) IN ('present', 'half_day')
-                    AND in_time IS NOT NULL
-                    AND out_time IS NOT NULL
-                    THEN TIMESTAMPDIFF(MINUTE, in_time, out_time)
+                    WHEN EXISTS (
+                        SELECT 1
+                        FROM employee_leave l
+                        INNER JOIN leave_approval la
+                            ON la.approval_leave_id = l.leave_id
+                        WHERE l.employee_id = ?
+                          AND la.leave_status = 1
+                          AND d.attendance_date
+                              BETWEEN l.start_date AND l.end_date
+                    )
+                    THEN 1
+
                     ELSE 0
+                END
+            ), 0) AS paid_leave_count,
+
+
+            /* ============================================
+             * WORKED MINUTES
+             * ============================================ */
+            COALESCE(SUM(
+                CASE
+
+                    WHEN EXISTS (
+                        SELECT 1
+                        FROM employee_leave l
+                        INNER JOIN leave_approval la
+                            ON la.approval_leave_id = l.leave_id
+                        WHERE l.employee_id = ?
+                          AND la.leave_status = 1
+                          AND d.attendance_date
+                              BETWEEN l.start_date AND l.end_date
+                    )
+                    THEN 0
+
+                    ELSE COALESCE(a.worked_minutes, 0)
+
                 END
             ), 0) AS worked_minutes,
 
-            /*
-             * IMPORTANT:
-             * Read the deductible values entered
-             * from Employee Attendance screen.
-             */
+
+            /* ============================================
+             * DEDUCTIBLE DAYS
+             * ============================================ */
             COALESCE(SUM(
                 CASE
-                    WHEN is_deductible = 1
-                    THEN deductible_days
-                    ELSE 0
+
+                    WHEN EXISTS (
+                        SELECT 1
+                        FROM employee_leave l
+                        INNER JOIN leave_approval la
+                            ON la.approval_leave_id = l.leave_id
+                        WHERE l.employee_id = ?
+                          AND la.leave_status = 1
+                          AND d.attendance_date
+                              BETWEEN l.start_date AND l.end_date
+                    )
+                    THEN 0
+
+                    ELSE COALESCE(a.deductible_days, 0)
+
                 END
             ), 0) AS deductible_days,
 
+
+            /* ============================================
+             * DEDUCTIBLE HOURS
+             * ============================================ */
             COALESCE(SUM(
                 CASE
-                    WHEN is_deductible = 1
-                    THEN deductible_hours
-                    ELSE 0
+
+                    WHEN EXISTS (
+                        SELECT 1
+                        FROM employee_leave l
+                        INNER JOIN leave_approval la
+                            ON la.approval_leave_id = l.leave_id
+                        WHERE l.employee_id = ?
+                          AND la.leave_status = 1
+                          AND d.attendance_date
+                              BETWEEN l.start_date AND l.end_date
+                    )
+                    THEN 0
+
+                    ELSE COALESCE(a.deductible_hours, 0)
+
                 END
             ), 0) AS deductible_hours,
 
+
+            /* ============================================
+             * DEDUCTIBLE MINUTES
+             * ============================================ */
             COALESCE(SUM(
                 CASE
-                    WHEN is_deductible = 1
-                    THEN deductible_minutes
-                    ELSE 0
+
+                    WHEN EXISTS (
+                        SELECT 1
+                        FROM employee_leave l
+                        INNER JOIN leave_approval la
+                            ON la.approval_leave_id = l.leave_id
+                        WHERE l.employee_id = ?
+                          AND la.leave_status = 1
+                          AND d.attendance_date
+                              BETWEEN l.start_date AND l.end_date
+                    )
+                    THEN 0
+
+                    ELSE COALESCE(a.deductible_minutes, 0)
+
                 END
             ), 0) AS deductible_minutes
 
-        FROM employee_attendance
 
-        WHERE employee_id = ?
-        AND Attendance_date BETWEEN ? AND ?
+        FROM
+        (
+            SELECT DATE_ADD(?, INTERVAL n DAY) AS attendance_date
+            FROM
+            (
+                SELECT 0 AS n UNION ALL
+                SELECT 1 UNION ALL
+                SELECT 2 UNION ALL
+                SELECT 3 UNION ALL
+                SELECT 4 UNION ALL
+                SELECT 5 UNION ALL
+                SELECT 6 UNION ALL
+                SELECT 7 UNION ALL
+                SELECT 8 UNION ALL
+                SELECT 9 UNION ALL
+                SELECT 10 UNION ALL
+                SELECT 11 UNION ALL
+                SELECT 12 UNION ALL
+                SELECT 13 UNION ALL
+                SELECT 14 UNION ALL
+                SELECT 15 UNION ALL
+                SELECT 16 UNION ALL
+                SELECT 17 UNION ALL
+                SELECT 18 UNION ALL
+                SELECT 19 UNION ALL
+                SELECT 20 UNION ALL
+                SELECT 21 UNION ALL
+                SELECT 22 UNION ALL
+                SELECT 23 UNION ALL
+                SELECT 24 UNION ALL
+                SELECT 25 UNION ALL
+                SELECT 26 UNION ALL
+                SELECT 27 UNION ALL
+                SELECT 28 UNION ALL
+                SELECT 29 UNION ALL
+                SELECT 30
+            ) numbers
+        ) d
 
-    ", [$employee_id, $start_date, $end_date]);
+        LEFT JOIN
+        (
+            SELECT
 
-		return $query->row();
+                Attendance_date,
+
+                MAX(
+                    CASE
+                        WHEN LOWER(TRIM(attendence)) = 'present'
+                        THEN 1
+                        ELSE 0
+                    END
+                ) AS present_flag,
+
+                MAX(
+                    CASE
+                        WHEN LOWER(TRIM(attendence)) = 'half_day'
+                        THEN 1
+                        ELSE 0
+                    END
+                ) AS half_flag,
+
+                MAX(
+                    CASE
+                        WHEN LOWER(TRIM(attendence)) = 'absent'
+                        THEN 1
+                        ELSE 0
+                    END
+                ) AS absent_flag,
+
+                SUM(
+                    CASE
+                        WHEN LOWER(TRIM(attendence))
+                             IN ('present', 'half_day')
+                             AND in_time IS NOT NULL
+                             AND out_time IS NOT NULL
+                        THEN TIMESTAMPDIFF(
+                            MINUTE,
+                            in_time,
+                            out_time
+                        )
+                        ELSE 0
+                    END
+                ) AS worked_minutes,
+
+                SUM(
+                    CASE
+                        WHEN is_deductible = 1
+                        THEN deductible_days
+                        ELSE 0
+                    END
+                ) AS deductible_days,
+
+                SUM(
+                    CASE
+                        WHEN is_deductible = 1
+                        THEN deductible_hours
+                        ELSE 0
+                    END
+                ) AS deductible_hours,
+
+                SUM(
+                    CASE
+                        WHEN is_deductible = 1
+                        THEN deductible_minutes
+                        ELSE 0
+                    END
+                ) AS deductible_minutes
+
+            FROM employee_attendance
+
+            WHERE employee_id = ?
+              AND Attendance_date BETWEEN ? AND ?
+
+            GROUP BY Attendance_date
+
+        ) a
+            ON a.Attendance_date = d.attendance_date
+
+        WHERE d.attendance_date <= ?
+
+    ";
+
+		$params = [
+
+			/* Approved leave checks */
+			$employee_id,
+			$employee_id,
+			$employee_id,
+			$employee_id,
+			$employee_id,
+			$employee_id,
+			$employee_id,
+			$employee_id,
+
+			/* Calendar */
+			$start_date,
+
+			/* Attendance */
+			$employee_id,
+			$start_date,
+			$end_date,
+
+			/* Calendar end */
+			$end_date
+		];
+
+		return $this->db->query($sql, $params)->row();
 	}
 
 	function add_basic_enquiry()
@@ -4705,5 +5096,681 @@ class Hr_model extends CI_Model
 		$this->db->order_by('j.start_date', 'ASC');
 
 		return $this->db->get()->result();
+	}
+
+	public function get_monthly_attendance_summary($from_date, $to_date, $dept_id = '')
+	{
+		$this->db->select("
+        a.*,
+
+        e.employee_id,
+        e.user_code,
+        e.employee_name AS user_name,
+
+        d.dept_name,
+
+        des.designation_name
+    ");
+
+		$this->db->from('employee_attendance a');
+
+		// Employee Master
+		$this->db->join(
+			'employee_master e',
+			'e.employee_id = a.employee_id',
+			'left'
+		);
+
+		// Department
+		$this->db->join(
+			'department_master d',
+			'd.dept_id = e.department_id',
+			'left'
+		);
+
+		// Designation
+		$this->db->join(
+			'designation_master des',
+			'des.id = e.designation_id',
+			'left'
+		);
+
+		// Date filter
+		$this->db->where(
+			'a.Attendance_date >=',
+			$from_date
+		);
+
+		$this->db->where(
+			'a.Attendance_date <=',
+			$to_date
+		);
+
+		// Department filter
+		if (!empty($dept_id)) {
+
+			$this->db->where(
+				'e.department_id',
+				$dept_id
+			);
+		}
+
+		// Sort
+		$this->db->order_by(
+			'a.Attendance_date',
+			'ASC'
+		);
+
+		$query = $this->db->get();
+
+		return $query->result();
+	}
+
+	public function get_monthly_payroll_report($filters)
+	{
+		// ---------------------------------------------------------
+		// Validate month
+		// ---------------------------------------------------------
+		if (
+			empty($filters['month']) ||
+			!strtotime($filters['month'])
+		) {
+			return [];
+		}
+
+		$month = date('Y-m', strtotime($filters['month']));
+
+		$start_date = date(
+			'Y-m-01',
+			strtotime($filters['month'])
+		);
+
+		$end_date = date(
+			'Y-m-t',
+			strtotime($filters['month'])
+		);
+
+		$days_in_month = (int) date(
+			't',
+			strtotime($filters['month'])
+		);
+
+		// ---------------------------------------------------------
+		// Filters
+		// ---------------------------------------------------------
+		$department_id = !empty($filters['department_id'])
+			? (int) $filters['department_id']
+			: 0;
+
+		$employee_id = !empty($filters['user_id'])
+			? (int) $filters['user_id']
+			: 0;
+
+
+		// ---------------------------------------------------------
+		// Department condition
+		// ---------------------------------------------------------
+		$department_condition = '';
+
+		if ($department_id > 0) {
+
+			$department_condition =
+				" AND e.department_id = " . $department_id;
+		}
+
+
+		// ---------------------------------------------------------
+		// Employee condition
+		// ---------------------------------------------------------
+		$employee_condition = '';
+
+		if ($employee_id > 0) {
+
+			$employee_condition =
+				" AND e.employee_id = " . $employee_id;
+		}
+
+
+		// ---------------------------------------------------------
+		// Payroll Query
+		// ---------------------------------------------------------
+		$sql = "
+        SELECT
+
+            /* =========================
+             * EMPLOYEE
+             * ========================= */
+            e.employee_id,
+            e.user_code,
+            e.employee_name AS user_name,
+
+            e.department_id,
+
+            d.dept_name,
+
+            des.designation_name,
+
+
+            /* =========================
+             * SALARY STRUCTURE
+             * ========================= */
+            s.sid AS salary_structure_id,
+
+            COALESCE(
+                s.gross_salary,
+                0
+            ) AS structure_gross_salary,
+
+            COALESCE(
+                s.basic_salary,
+                0
+            ) AS basic_salary,
+
+            COALESCE(
+                s.total_allowances,
+                0
+            ) AS total_allowance,
+
+            COALESCE(
+                s.total_deductions,
+                0
+            ) AS total_deduction,
+
+
+            /* =========================
+             * MONTH
+             * ========================= */
+            '$month' AS selected_month,
+
+            $days_in_month AS working_days,
+
+
+            /* =========================
+             * ATTENDANCE
+             * ========================= */
+
+            COALESCE(att.present_days, 0)
+                AS present_days,
+
+            COALESCE(att.half_days, 0)
+                AS half_days,
+
+            COALESCE(att.absent_days, 0)
+                AS absent_days,
+
+            COALESCE(att.attendance_leave_days, 0)
+                AS attendance_leave_days,
+
+            COALESCE(att.deductible_days, 0)
+                AS deductible_days,
+
+
+            /* =========================
+             * APPROVED LEAVE
+             * ========================= */
+
+            COALESCE(
+                lv.leave_days,
+                0
+            ) AS leave_days,
+
+            /*
+             * There is no separate paid/unpaid
+             * leave flag/table in the current DB.
+             *
+             * Therefore approved leave is treated
+             * as paid leave for this report.
+             */
+            COALESCE(
+                lv.leave_days,
+                0
+            ) AS paid_leave,
+
+
+            /* =========================
+             * PAYMENT DAYS
+             * ========================= */
+
+            GREATEST(
+                (
+                    COALESCE(att.present_days, 0)
+                    +
+                    (
+                        COALESCE(att.half_days, 0) * 0.5
+                    )
+                    +
+                    COALESCE(lv.leave_days, 0)
+                    -
+                    COALESCE(att.deductible_days, 0)
+                ),
+                0
+            ) AS payment_days,
+
+
+            /* =========================
+             * OVERTIME
+             * ========================= */
+
+            COALESCE(
+                ot.overtime_hours,
+                0
+            ) AS overtime,
+
+
+            /* =========================
+             * OVERTIME AMOUNT
+             *
+             * Basic / Working Days / 8
+             * × OT Hours × 1.5
+             * ========================= */
+
+            ROUND(
+                (
+                    COALESCE(s.basic_salary, 0)
+                    /
+                    $days_in_month
+                    /
+                    8
+                    *
+                    COALESCE(ot.overtime_hours, 0)
+                    *
+                    1.5
+                ),
+                2
+            ) AS overtime_amt,
+
+
+            /* =========================
+             * EARNED BASIC
+             * ========================= */
+
+            ROUND(
+                (
+                    COALESCE(s.basic_salary, 0)
+                    /
+                    $days_in_month
+                    *
+                    GREATEST(
+                        (
+                            COALESCE(att.present_days, 0)
+                            +
+                            (
+                                COALESCE(att.half_days, 0)
+                                * 0.5
+                            )
+                            +
+                            COALESCE(lv.leave_days, 0)
+                            -
+                            COALESCE(att.deductible_days, 0)
+                        ),
+                        0
+                    )
+                ),
+                2
+            ) AS earned_basic,
+
+
+            /* =========================
+             * GROSS PAY
+             * ========================= */
+
+            ROUND(
+                (
+                    (
+                        COALESCE(s.basic_salary, 0)
+                        /
+                        $days_in_month
+                        *
+                        GREATEST(
+                            (
+                                COALESCE(att.present_days, 0)
+                                +
+                                (
+                                    COALESCE(att.half_days, 0)
+                                    * 0.5
+                                )
+                                +
+                                COALESCE(lv.leave_days, 0)
+                                -
+                                COALESCE(att.deductible_days, 0)
+                            ),
+                            0
+                        )
+                    )
+                    +
+                    COALESCE(s.total_allowances, 0)
+                    +
+                    (
+                        COALESCE(
+                            ot.overtime_hours,
+                            0
+                        )
+                        *
+                        (
+                            COALESCE(s.basic_salary, 0)
+                            /
+                            $days_in_month
+                            /
+                            8
+                            *
+                            1.5
+                        )
+                    )
+                ),
+                2
+            ) AS gross_salary,
+
+
+            /* =========================
+             * NET PAY
+             * ========================= */
+
+            ROUND(
+                (
+                    (
+                        (
+                            COALESCE(s.basic_salary, 0)
+                            /
+                            $days_in_month
+                            *
+                            GREATEST(
+                                (
+                                    COALESCE(att.present_days, 0)
+                                    +
+                                    (
+                                        COALESCE(att.half_days, 0)
+                                        * 0.5
+                                    )
+                                    +
+                                    COALESCE(lv.leave_days, 0)
+                                    -
+                                    COALESCE(att.deductible_days, 0)
+                                ),
+                                0
+                            )
+                        )
+                        +
+                        COALESCE(s.total_allowances, 0)
+                        +
+                        (
+                            COALESCE(
+                                ot.overtime_hours,
+                                0
+                            )
+                            *
+                            (
+                                COALESCE(s.basic_salary, 0)
+                                /
+                                $days_in_month
+                                /
+                                8
+                                *
+                                1.5
+                            )
+                        )
+                    )
+                    -
+                    COALESCE(s.total_deductions, 0)
+                ),
+                2
+            ) AS net_salary
+
+
+        FROM employee_master e
+
+
+        /* =====================================================
+         * DEPARTMENT
+         * ===================================================== */
+
+        LEFT JOIN department_master d
+            ON d.dept_id = e.department_id
+
+
+        /* =====================================================
+         * DESIGNATION
+         * ===================================================== */
+
+        LEFT JOIN designation_master des
+            ON des.id = e.designation_id
+
+
+        /* =====================================================
+         * LATEST SALARY STRUCTURE
+         *
+         * Select the latest salary structure whose
+         * effective date is <= selected month end.
+         * ===================================================== */
+
+        INNER JOIN salary_structure s
+            ON s.sid = (
+                SELECT s2.sid
+                FROM salary_structure s2
+                WHERE s2.emp_id = e.employee_id
+                  AND s2.effective_date <= '$end_date'
+                ORDER BY
+                    s2.effective_date DESC,
+                    s2.sid DESC
+                LIMIT 1
+            )
+
+
+        /* =====================================================
+         * ATTENDANCE SUMMARY
+         * ===================================================== */
+
+        LEFT JOIN
+        (
+            SELECT
+
+                employee_id,
+
+                SUM(
+                    CASE
+                        WHEN LOWER(TRIM(attendence))
+                            = 'present'
+                        THEN 1
+                        ELSE 0
+                    END
+                ) AS present_days,
+
+
+                SUM(
+                    CASE
+                        WHEN LOWER(TRIM(attendence))
+                            = 'half_day'
+                        THEN 1
+                        ELSE 0
+                    END
+                ) AS half_days,
+
+
+                SUM(
+                    CASE
+                        WHEN LOWER(TRIM(attendence))
+                            = 'absent'
+                        THEN 1
+                        ELSE 0
+                    END
+                ) AS absent_days,
+
+
+                SUM(
+                    CASE
+                        WHEN LOWER(TRIM(attendence))
+                            IN ('leave', 'vacation')
+                        THEN 1
+                        ELSE 0
+                    END
+                ) AS attendance_leave_days,
+
+
+                SUM(
+                    CASE
+                        WHEN is_deductible = 1
+                        THEN deductible_days
+                        ELSE 0
+                    END
+                ) AS deductible_days
+
+
+            FROM employee_attendance
+
+            WHERE Attendance_date
+                BETWEEN '$start_date'
+                AND '$end_date'
+
+            GROUP BY employee_id
+
+        ) att
+
+            ON att.employee_id = e.employee_id
+
+
+        /* =====================================================
+         * APPROVED EMPLOYEE LEAVE
+         *
+         * employee_leave + leave_approval
+         * ===================================================== */
+
+        LEFT JOIN
+        (
+            SELECT
+
+                l.employee_id,
+
+                SUM(
+                    DATEDIFF(
+                        LEAST(
+                            l.end_date,
+                            '$end_date'
+                        ),
+                        GREATEST(
+                            l.start_date,
+                            '$start_date'
+                        )
+                    ) + 1
+                ) AS leave_days
+
+            FROM employee_leave l
+
+            WHERE
+                l.start_date <= '$end_date'
+
+                AND l.end_date >= '$start_date'
+
+                AND EXISTS
+                (
+                    SELECT 1
+                    FROM leave_approval la
+
+                    WHERE
+                        la.approval_leave_id = l.leave_id
+
+                        AND la.app_id =
+                        (
+                            SELECT MAX(la2.app_id)
+                            FROM leave_approval la2
+                            WHERE
+                                la2.approval_leave_id
+                                = l.leave_id
+                        )
+
+                        AND la.leave_status = 1
+                )
+
+            GROUP BY l.employee_id
+
+        ) lv
+
+            ON lv.employee_id = e.employee_id
+
+
+        /* =====================================================
+         * OVERTIME
+         * ===================================================== */
+
+        LEFT JOIN
+        (
+            SELECT
+
+                employee_id,
+
+                ROUND(
+                    SUM(
+                        CASE
+
+                            WHEN
+                                overtime_minutes IS NOT NULL
+                                AND overtime_minutes > 0
+
+                            THEN overtime_minutes
+
+                            ELSE
+                                COALESCE(overtime, 0) * 60
+
+                        END
+                    ) / 60,
+                    2
+                ) AS overtime_hours
+
+            FROM employee_overtime
+
+            WHERE date_ot
+                BETWEEN '$start_date'
+                AND '$end_date'
+
+            GROUP BY employee_id
+
+        ) ot
+
+            ON ot.employee_id = e.employee_id
+
+
+        /* =====================================================
+         * FILTERS
+         * ===================================================== */
+
+        WHERE 1 = 1
+
+            $department_condition
+
+            $employee_condition
+
+
+            /* Employee should already have joined */
+
+            AND (
+                e.joining_date IS NULL
+                OR e.joining_date <= '$end_date'
+            )
+
+
+            /* =================================================
+             * PRESERVE YOUR EXISTING BEHAVIOUR:
+             *
+             * Don't show employees whose payroll has already
+             * been generated for this month.
+             * ================================================= */
+
+            AND NOT EXISTS
+            (
+                SELECT 1
+                FROM employee_monthly_salary ems
+
+                WHERE
+                    ems.emp_id = e.employee_id
+
+                    AND ems.salary_month = '$start_date'
+            )
+
+
+        ORDER BY e.employee_name ASC
+    ";
+
+
+		$query = $this->db->query($sql);
+
+		return $query->result();
 	}
 }

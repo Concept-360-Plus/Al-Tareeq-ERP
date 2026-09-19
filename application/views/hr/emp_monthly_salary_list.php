@@ -80,7 +80,7 @@
                     <th>Employee Name</th>
                     <th>Salary Month</th>
                     <th>Working Days</th>
-                    <th>Total Leave</th>
+                    <th>Absent Days</th>
                     <th>Present Days</th>
                     <th>Paid Leave</th>
                     <th>Payment Days</th>

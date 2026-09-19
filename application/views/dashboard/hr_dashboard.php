@@ -239,20 +239,20 @@
                     <h2>
                         <?= number_format(
                             $today_present
+                                + $today_half_day
                                 + $today_absent
                                 + $today_leave
                         ); ?>
                     </h2>
 
                     <small>
-                        P:
-                        <?= $today_present; ?>
+                        P: <?= $today_present; ?>
                         &nbsp;
-                        A:
-                        <?= $today_absent; ?>
+                        HD: <?= $today_half_day; ?>
                         &nbsp;
-                        L:
-                        <?= $today_leave; ?>
+                        A: <?= $today_absent; ?>
+                        &nbsp;
+                        L: <?= $today_leave; ?>
                     </small>
 
                 </div>

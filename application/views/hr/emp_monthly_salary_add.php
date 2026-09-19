@@ -49,6 +49,7 @@
                                 <th>Employee</th>
                                 <th>Working Days</th>
                                 <th>Present</th>
+                                <th>Paid Leave</th>
                                 <th>Half Day</th>
                                 <th>Absent</th>
                                 <th>Payable Days</th>
@@ -85,6 +86,10 @@
 
                                     <td>
                                         <?= number_format($row->present_days, 0) ?>
+                                    </td>
+
+                                    <td>
+                                        <?= number_format($row->paid_leave_days, 2) ?>
                                     </td>
 
                                     <td>
